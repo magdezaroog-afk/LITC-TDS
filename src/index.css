@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+:root {
+  --neon-blue: #00e5ff;
+  --neon-green: #00ffaa;
+  --bg-dark: #0b0f19;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--bg-dark);
+  color: #fff;
+  min-height: 100vh;
+  /* background with neon glowing orbs */
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.1), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(0, 255, 170, 0.1), transparent 25%);
+  background-attachment: fixed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2); 
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border); 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3); 
+}
+
+a {
+  text-decoration: none;
+  color: var(--neon-blue);
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: var(--neon-green);
+  text-shadow: 0 0 8px var(--neon-green);
+}

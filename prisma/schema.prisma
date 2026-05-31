@@ -1,0 +1,669 @@
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. إدارة الهوية والأمان والموارد والموقع
+// ==========================================
+model Location {
+  id           Int      @id @default(autoincrement())
+  building     String   
+  floor        String?  
+  office       String?  
+  tickets      Ticket[] 
+  defaultUsers User[]   @relation("UserDefaultLocation")
+}
+
+model User {
+  id                    Int      @id @default(autoincrement())
+  username              String   @unique
+  email                 String   @unique
+  password              String?
+  fullName              String
+  isActive              Boolean  @default(true)
+  isVip                 Boolean  @default(false)
+  preferredLang         String   @default("ar")
+  
+  mfaEnabled            Boolean  @default(false)
+  mfaSecret             String?
+  
+  isAvailable           Boolean  @default(true)
+  delegatedUserId       Int?     
+  
+  managerId             Int?
+  manager               User?    @relation("UserManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subordinates          User[]   @relation("UserManager")
+
+  failedAttempts        Int      @default(0)
+  lockoutEnd            DateTime?
+  resetToken            String?  @unique
+  resetTokenExpires     DateTime?
+  totalStorageUsedBytes BigInt   @default(0)
+  
+  isDeleted             Boolean  @default(false)
+  deletedAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  roleId                Int
+  role                  Role     @relation(fields: [roleId], references: [id])
+  
+  defaultLocationId     Int?       
+  defaultLocation       Location?  @relation("UserDefaultLocation", fields: [defaultLocationId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  
+  departmentId          Int?
+  department            Department? @relation("DeptMembers", fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  
+  buildingId            String?
+  
+  delegatedUser         User?    @relation("UserDelegation", fields: [delegatedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  delegatesReceived     User[]   @relation("UserDelegation")
+  
+  teams                 UserTeam[]
+  comments              TicketComment[]
+  approvals             WorkflowApproval[]
+  assignments           TicketAssignment[]
+  evaluations           TicketEvaluation[]
+  articlesCreated       KnowledgeArticle[] 
+}
+
+model Role {
+  id                     Int          @id @default(autoincrement())
+  name                   String       @unique
+  templateId             Int?         
+  template               UITemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  defaultCanViewInternal Boolean      @default(false)
+  users                  User[]
+  permissions            TransferPermission[]
+  widgetActions          WidgetAction[]
+  allowedTransitions     TicketStateTransition[] 
+}
+
+// ==========================================
+// 2. الهيكل التنظيمي والفرق المتعددة
+// ==========================================
+model CompanyDivision {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique
+  departments  Department[]
+}
+
+model Department {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  isDeleted      Boolean  @default(false)
+  assignmentMode String   @default("PULL")
+  routingStrategy String  @default("POOL")
+  isDelegated    Boolean  @default(false)
+  divisionId     Int
+  division       CompanyDivision @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  
+  users          User[]   @relation("DeptMembers")
+  teams          Team[]
+  assets         Asset[]  @relation("DepartmentAssets")
+  permissions    TransferPermission[] @relation("TargetDept")
+}
+
+model Team {
+  id             Int      @id @default(autoincrement())
+  name           String
+  isDeleted      Boolean  @default(false)
+  routingStrategy String  @default("POOL")
+  isDelegated    Boolean  @default(false)
+  departmentId   Int
+  department     Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  
+  users          UserTeam[] 
+  assignments    TicketAssignment[]
+  permissions    TransferPermission[] @relation("TargetTeam")
+}
+
+model UserTeam {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  teamId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, teamId])
+}
+
+model TransferPermission {
+  id                    Int         @id @default(autoincrement())
+  roleId                Int         
+  role                  Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  targetDeptId          Int?        
+  targetDepartment      Department? @relation("TargetDept", fields: [targetDeptId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  targetTeamId          Int?        
+  targetTeam            Team?       @relation("TargetTeam", fields: [targetTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  canViewInternal       Boolean     @default(false)
+  
+  @@unique([roleId, targetDeptId, targetTeamId])
+}
+
+// ==========================================
+// 3. محرك الواجهات، التخصيص الديناميكي والإعدادات
+// ==========================================
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  settingKey  String   @unique
+  settingValue String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model SystemTranslation { 
+  id        Int    @id @default(autoincrement())
+  langCode  String 
+  tableKey  String 
+  recordId  Int    
+  fieldKey  String 
+  textValue String 
+  @@unique([langCode, tableKey, recordId, fieldKey])
+}
+
+model SystemExtension { 
+  id           Int      @id @default(autoincrement())
+  name         String   @unique 
+  version      String   
+  metadataJson String   
+  uploadedAt   DateTime @default(now())
+  checksum     String   @unique 
+  isVerified   Boolean  @default(false) 
+  widgets      Widget[]
+}
+
+model UITheme { 
+  id              Int          @id @default(autoincrement())
+  themeName       String       @unique 
+  primaryColor    String   
+  secondaryColor  String   
+  templates       UITemplate[]
+}
+
+model UITemplate {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  themeId      Int?           
+  theme        UITheme?       @relation(fields: [themeId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  roles        Role[]
+  widgets      TemplateWidget[]
+}
+
+model Widget {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  extensionId  Int? 
+  extension    SystemExtension? @relation(fields: [extensionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  fields       WidgetField[]
+  actions      WidgetAction[]
+  templates    TemplateWidget[]
+}
+
+model TemplateWidget {
+  id           Int      @id @default(autoincrement())
+  templateId   Int
+  widgetId     Int
+  orderIndex   Int      @default(0)
+  template     UITemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  widget       Widget     @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  
+  @@unique([templateId, widgetId])
+}
+
+model WidgetField {
+  id              Int      @id @default(autoincrement())
+  widgetId        Int
+  widget          Widget   @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  fieldName       String
+  fieldType       String
+  orderIndex      Int      @default(0)
+  fieldData       TicketFieldData[]
+}
+
+model WidgetAction {
+  id          Int    @id @default(autoincrement())
+  widgetId    Int
+  actionId    Int
+  roleId      Int
+  orderIndex  Int    @default(0)
+  widget      Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  action      Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  role        Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model Action {
+  id          Int    @id @default(autoincrement())
+  name        String
+  apiEndpoint String
+  widgets     WidgetAction[]
+}
+
+// ==========================================
+// 4. إدارة الأصول، المعدات والبنية التحتية ونوافذ الصيانة
+// ==========================================
+model Asset {
+  id           Int      @id @default(autoincrement())
+  assetName    String   
+  assetTag     String   @unique 
+  assetType    String   
+  status       String   @default("OPERATIONAL")
+  
+  parentId     Int?
+  parentAsset  Asset?   @relation("AssetHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childAssets  Asset[]  @relation("AssetHierarchy")
+  
+  departmentId Int?
+  department   Department? @relation("DepartmentAssets", fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  
+  createdAt    DateTime @default(now())
+  tickets      TicketAsset[]
+}
+
+model TicketAsset {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  assetId   Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  @@unique([ticketId, assetId])
+}
+
+model MaintenanceWindow {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String?
+  startTime      DateTime
+  endTime        DateTime
+  affectedSystem String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+// ==========================================
+// 5. قاعدة المعرفة، الوسوم، أكواد الإغلاق، الموردين والأولويات
+// ==========================================
+model Vendor {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  contactEmail String?
+  contactPhone String?
+  slaAgreement String?
+  createdAt    DateTime @default(now())
+  escalations  TicketVendorEscalation[]
+}
+
+model PriorityMatrix {
+  id            Int      @id @default(autoincrement())
+  impact        String   
+  urgency       String   
+  priority      String   
+  slaMultiplier Float    @default(1.0)
+  
+  @@unique([impact, urgency])
+}
+
+model KnowledgeArticle {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  isPublished Boolean  @default(false)
+  viewCount   Int      @default(0)
+  categoryId  Int
+  category    IssueCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  authorId    Int
+  author      User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  colorCode   String?
+  tickets     TicketTag[]
+}
+
+model TicketTag {
+  id        Int    @id @default(autoincrement())
+  ticketId  Int
+  tagId     Int
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tag       Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([ticketId, tagId])
+}
+
+model ClosureCode {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique 
+  description String
+  tickets     Ticket[]
+}
+
+// ==========================================
+// 6. التذاكر وحوكمة الحالات والتصعيد
+// ==========================================
+model IssueCategory {
+  id            Int      @id @default(autoincrement())
+  name          String
+  isDeleted     Boolean  @default(false)
+  parentId      Int?
+  parent        IssueCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subCategories IssueCategory[] @relation("CategoryHierarchy")
+  tickets       Ticket[]
+  slaRules      StatusSlaRule[]
+  articles      KnowledgeArticle[] 
+}
+
+model TicketState {
+  id                 Int      @id @default(autoincrement())
+  name               String   @unique 
+  label              String
+  tickets            Ticket[]
+  slaRules           StatusSlaRule[]
+  fromTransitions    TicketStateTransition[] @relation("FromState")
+  toTransitions      TicketStateTransition[] @relation("ToState")
+}
+
+model TicketStateTransition {
+  id               Int         @id @default(autoincrement())
+  fromStateId      Int
+  toStateId        Int
+  roleId           Int?        
+  triggerEndpoint  String?     
+  
+  fromState        TicketState @relation("FromState", fields: [fromStateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  toState          TicketState @relation("ToState", fields: [toStateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role             Role?       @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@unique([fromStateId, toStateId, roleId])
+}
+
+model TicketRelation {
+  id             Int      @id @default(autoincrement())
+  sourceTicketId Int
+  targetTicketId Int
+  relationType   String   
+  
+  sourceTicket   Ticket   @relation("SourceRelations", fields: [sourceTicketId], references: [id], onDelete: Cascade)
+  targetTicket   Ticket   @relation("TargetRelations", fields: [targetTicketId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([sourceTicketId, targetTicketId])
+}
+
+model TicketVendorEscalation {
+  id              Int      @id @default(autoincrement())
+  ticketId        Int
+  ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  vendorId        Int
+  vendor          Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorTicketRef String?  
+  status          String   @default("OPEN") 
+  notes           String?
+  escalatedAt     DateTime @default(now())
+  resolvedAt      DateTime?
+}
+
+model Ticket {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String
+  ticketType       String   @default("TECHNICAL")
+  channel          String   @default("PORTAL") 
+  isVip            Boolean  @default(false)
+  
+  urgency          String   @default("MEDIUM") 
+  impact           String   @default("MEDIUM") 
+  priority         String   @default("MEDIUM") 
+  
+  firstResponseTimeMins Int?
+  version          Int      @default(0)
+  
+  closureCodeId    Int?
+  closureCode      ClosureCode? @relation(fields: [closureCodeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resolutionNotes  String?
+  
+  locationId       Int?     
+  location         Location? @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  stateId          Int
+  state            TicketState @relation(fields: [stateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categoryId       Int
+  category         IssueCategory @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentId         Int?
+  parentTicket     Ticket?  @relation("SubTickets", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subTickets       Ticket[] @relation("SubTickets")
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isDeleted        Boolean  @default(false)
+
+  dynamicData      TicketFieldData[]
+  attachments      TicketAttachment[]
+  comments         TicketComment[]
+  logs             TicketLog[]
+  slaTrackers      TicketStatusSlaTracker[]
+  assignments      TicketAssignment[]
+  approvals        WorkflowApproval[]
+  evaluations      TicketEvaluation[]
+  assets           TicketAsset[] 
+  sourceRelations  TicketRelation[] @relation("SourceRelations")
+  targetRelations  TicketRelation[] @relation("TargetRelations")
+  tags             TicketTag[] 
+  vendorEscalations TicketVendorEscalation[] 
+  
+  @@index([parentId])
+  @@index([stateId])
+  @@index([createdAt])
+}
+
+model TicketEvaluation { 
+  id           Int      @id @default(autoincrement())
+  ticketId     Int
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId       Int      
+  user         User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rating       Int?     
+  feedback     String?  
+  createdAt    DateTime @default(now())
+}
+
+model TicketFieldData {
+  id           Int      @id @default(autoincrement())
+  ticketId     Int
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fieldId      Int
+  field        WidgetField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  fieldValue   String
+  attachmentId Int?
+  attachment   TicketAttachment? @relation(fields: [attachmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  @@unique([ticketId, fieldId])
+  @@index([ticketId]) 
+}
+
+model TicketAttachment {
+  id           Int      @id @default(autoincrement())
+  ticketId     Int
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  commentId    Int?
+  comment      TicketComment? @relation(fields: [commentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  fileChecksum String   @unique 
+  fileName     String
+  fileUrl      String
+  uploadedAt   DateTime @default(now())
+  fieldData    TicketFieldData[]
+}
+
+model TicketComment {
+  id          Int      @id @default(autoincrement())
+  ticketId    Int
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId      Int?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  commentText String
+  isInternal  Boolean  @default(false) 
+  createdAt   DateTime @default(now())
+  
+  attachments TicketAttachment[] 
+  
+  @@index([ticketId])
+}
+
+model WorkflowApproval {
+  id           Int      @id @default(autoincrement())
+  ticketId     Int
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  approvedById Int
+  approvedBy   User     @relation(fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stageName    String   
+  status       String   
+  createdAt    DateTime @default(now())
+}
+
+model TicketAssignment {
+  id               Int      @id @default(autoincrement())
+  ticketId         Int
+  ticket           Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  assignedTeamId   Int?
+  assignedTeam     Team?    @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignedTechId   Int?
+  assignedTech     User?    @relation(fields: [assignedTechId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignedAt       DateTime @default(now())
+  isCurrentActive  Boolean  @default(true)  
+
+  @@index([assignedTechId, isCurrentActive]) 
+}
+
+// ==========================================
+// 7. محرك الـ SLA، الإشعارات، والتدقيق الشامل
+// ==========================================
+model NotificationQueue {
+  id           Int      @id @default(autoincrement())
+  type         String   
+  recipient    String   
+  subject      String?
+  body         String
+  status       String   @default("PENDING") 
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model BusinessHours { 
+  id          Int      @id @default(autoincrement())
+  dayOfWeek   Int      
+  startTime   String   
+  endTime     String   
+  isWorkDay   Boolean  @default(true)
+}
+
+model Holiday {
+  id          Int      @id @default(autoincrement())
+  name        String   
+  holidayDate DateTime @unique 
+}
+
+model StatusSlaRule {
+  id               Int      @id @default(autoincrement())
+  stateId          Int
+  state            TicketState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  categoryId       Int?
+  category         IssueCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  maxDurationMins  Int
+  escalationLevel  Int      @default(1)
+  actionType       String   @default("NOTIFY")
+  isActive         Boolean  @default(true)
+  trackers         TicketStatusSlaTracker[]
+}
+
+model TicketStatusSlaTracker {
+  id              Int      @id @default(autoincrement())
+  ticketId        Int
+  ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  slaRuleId       Int
+  slaRule         StatusSlaRule @relation(fields: [slaRuleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  slaStatus       String   @default("COMPLIANT") 
+  deadlineDateTime DateTime 
+  breachedAt      DateTime?
+  
+  isPaused        Boolean  @default(false)
+  pauseLogs       SlaPauseLog[]
+  notificationLogs StatusSlaNotificationLog[] 
+}
+
+model SlaPauseLog {
+  id                    Int      @id @default(autoincrement())
+  trackerId             Int
+  tracker               TicketStatusSlaTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  isDuringBusinessHours Boolean  @default(true)
+}
+
+model StatusSlaNotificationLog { 
+  id         Int                    @id @default(autoincrement())
+  trackerId  Int
+  tracker    TicketStatusSlaTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  sentToRole String                 
+  sentAt     DateTime               @default(now())
+}
+
+model TicketLog {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  action    String   
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  entity    String
+  entityId  Int
+  action    String
+  changedBy Int
+  changes   String 
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+// ==========================================
+// 8. ???????? ??????????? ???????? (Decoupled Units & References)
+// ==========================================
+model SystemReference {
+  id          Int               @id @default(autoincrement())
+  globalId    String            @unique @default(uuid())
+  name        String
+  type        String            // e.g. "BUILDING", "DEPARTMENT", "ISSUE"
+  parentId    Int?
+  parent      SystemReference?  @relation("ReferenceTree", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    SystemReference[] @relation("ReferenceTree")
+  isActive    Boolean           @default(true) // ????? ??????
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// ==========================================
+// 9. Notification Policies (Batch 2)
+// ==========================================
+model NotificationPolicy {
+  id              Int      @id @default(autoincrement())
+  eventType       String   @unique
+  soundEnabled    Boolean  @default(true)
+  flashEnabled    Boolean  @default(false)
+  toastEnabled    Boolean  @default(true)
+  repeatInterval  Int      @default(0) // 0 means no repeat, otherwise interval in minutes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Governance Ledger Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
+    pre { background: #222; color: #0f0; padding: 10px; border-radius: 4px; overflow: auto; }
+    button { padding: 8px 12px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Governance Ledger (Live)</h1>
+  <button id="loadBtn">Load Latest 5 Events</button>
+  <pre id="output">Click “Load Latest 5 Events” to fetch data.</pre>
+
+  <script>
+    const btn = document.getElementById('loadBtn');
+    const out = document.getElementById('output');
+    btn.onclick = async () => {
+      out.textContent = 'Fetching...';
+      try {
+        const resp = await fetch('http://localhost:5555/api/v1/admin/governance-ledger', {
+          headers: { 'Authorization': 'Bearer mock_jwt_token_user_1_1037' }
+        });
+        if (!resp.ok) {
+          out.textContent = `Error ${resp.status}: ${resp.statusText}`;
+          return;
+        }
+        const data = await resp.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        out.textContent = 'Fetch failed: ' + e;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+{
+  "project": "LITC-TS v43.5",
+  "checkpointTimestamp": "2026-05-27T12:30:00+02:00",
+  "lockdownPhase": "SOVEREIGN_OPERATIONS_COMMAND_CENTER",
+  "status": "COMPLETED",
+  "architectureState": {
+    "database": {
+      "server": ".\\SQLEXPRESS",
+      "databaseName": "LITC_TS_v43",
+      "tables": ["Tickets", "ChildTickets", "WorkflowAuditLogs", "RolePermissions", "SLAConfigurations", "NotificationConfigurations", "GovernanceAuditLogs"],
+      "scriptFile": "database_setup_v43.sql",
+      "proceduresFile": "stored_procedures_v43.sql"
+    },
+    "backend": {
+      "controllerFile": "src/backend/controllers/DatabaseController.ts",
+      "version": "v43.5",
+      "immutabilityPattern": "Object.freeze(new DatabaseControllerClass()) — exported singleton",
+      "circuitBreakerEngine": {
+        "type": "Tri-State Circuit Breaker (CLOSED / OPEN / HALF-OPEN)",
+        "moduleScopeVariables": [
+          "circuitState: CircuitState — starts CLOSED",
+          "consecutiveExhaustedFailures: number — failure counter",
+          "CIRCUIT_OPEN_THRESHOLD: 3 — failures before OPEN",
+          "circuitHalfOpenTimerId: NodeJS.Timeout | null — OPEN→HALF-OPEN timer",
+          "HALF_OPEN_DELAY_MS: 30000 — cooldown before probe attempt",
+          "circuitOpenedAt: string | null — ISO timestamp of last OPEN"
+        ],
+        "transitions": {
+          "CLOSED → OPEN": "consecutiveExhaustedFailures reaches CIRCUIT_OPEN_THRESHOLD (3)",
+          "OPEN → HALF-OPEN": "After 30s cooldown via circuitHalfOpenTimerId",
+          "HALF-OPEN → CLOSED": "recordSuccess() on any successful operation",
+          "HALF-OPEN → OPEN": "recordExhaustedFailure() if probe fails"
+        },
+        "eventBroadcast": "EventBus.emit('CIRCUIT_BREAKER_STATE_CHANGED', { state, reason, timestamp, queueSize })",
+        "exportedFunctions": ["enqueueOperation", "registerFlushExecutor", "getCircuitBreakerSnapshot", "CircuitState (type)", "QueuedOperation (interface)"],
+        "manualOverride": "executeForcedCircuitOverride(targetState) — forces CLOSED (with Auto-Flush) or OPEN"
+      },
+      "inMemoryQueue": {
+        "description": "FIFO array for offline operation storage during OPEN state",
+        "moduleScopeVariables": [
+          "inMemoryQueue: QueuedOperation[] — the queue array",
+          "isFlushing: boolean — mutex guard against concurrent flushes",
+          "FLUSH_EXECUTOR_MAP: Record<string, Function> — registered executors"
+        ],
+        "registeredExecutors": ["TRANSFER_TICKET → executeTransferTicket()", "BROADCAST_CONFIG → RealTimeSynchronizer.broadcast('CONFIG_UPDATED')"],
+        "autoFlushTrigger": "scheduleAutoFlush() called from recordSuccess() when HALF-OPEN→CLOSED or upon Manual Override to CLOSED",
+        "flushMechanism": "setImmediate() → flushQueue() — non-blocking FIFO drain",
+        "flushBroadcast": "EventBus.emit('QUEUE_FLUSHED', { flushedCount, failedCount, remaining, timestamp })"
+      },
+      "resiliencyEngine": {
+        "retryPolicy": {
+          "function": "withRetry<T>(operation, label)",
+          "delays": [200, 500, 1000],
+          "maxAttempts": 3,
+          "transientFaultCodes": ["ECONNRESET", "ETIMEOUT", "ESOCKET", "SQL 1205", "SQL -2"],
+          "onExhaustion": "recordExhaustedFailure(label) — feeds the Circuit Breaker",
+          "onSuccess": "recordSuccess(label) — may close the circuit"
+        },
+        "healthCheck": {
+          "method": "executeHealthCheck()",
+          "route": "GET /api/v1/admin/health",
+          "guard": "authMiddleware + IT_Admin RBAC",
+          "telemetryPayload": "{ status, database, slaWorker, circuitBreaker: { state, queueSize, openedAt }, timestamp }"
+        }
+      },
+      "routesRegistered": [
+        {"method": "GET",  "path": "/api/v1/ui/config",                       "guard": "authMiddleware"},
+        {"method": "GET",  "path": "/api/v1/tickets/:id/transitions",          "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/tickets/:id/transitions",          "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/sla/recalculate/:ticketId",        "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/sla/check-breaches",              "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/db-tickets",                       "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/db-tickets/:id/transfer",          "guard": "authMiddleware"},
+        {"method": "POST", "path": "/api/v1/db-tickets/:id/close",             "guard": "authMiddleware"},
+        {"method": "GET",  "path": "/api/v1/auth/permissions/:roleName",       "guard": "authMiddleware"},
+        {"method": "PUT",  "path": "/api/v1/admin/permissions",                "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "GET",  "path": "/api/v1/admin/audit-logs",                 "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "GET",  "path": "/api/v1/admin/sla-config/:serviceType",    "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "PUT",  "path": "/api/v1/admin/sla-config",                 "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "GET",  "path": "/api/v1/admin/analytics/sla",             "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "GET",  "path": "/api/v1/admin/notification-config/:serviceType", "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "PUT",  "path": "/api/v1/admin/notification-config",        "guard": "authMiddleware + IT_Admin RBAC"},
+        {"method": "GET",  "path": "/api/v1/admin/health",                     "guard": "authMiddleware + IT_Admin RBAC", "added": "v43.2", "upgraded": "v43.4"},
+        {"method": "GET",  "path": "/api/v1/admin/circuit-breaker",            "guard": "authMiddleware + IT_Admin RBAC", "added": "v43.3"},
+        {"method": "POST", "path": "/api/v1/admin/circuit-breaker/override",   "guard": "authMiddleware + IT_Admin RBAC", "added": "v43.4"},
+        {"method": "GET",  "path": "/api/v1/admin/governance-ledger",          "guard": "authMiddleware + IT_Admin RBAC", "added": "v43.4"},
+        {"method": "POST", "path": "/api/v1/admin/departments/fields",         "guard": "authMiddleware + IT_Admin RBAC", "added": "v43.5"},
+        {"method": "GET",  "path": "/api/v1/departments/fields/:departmentId", "guard": "authMiddleware", "added": "v43.5"}
+      ]
+    },
+    "realTimeBroadcaster": {
+      "file": "src/services/RealTimeSynchronizer.ts",
+      "version": "v43.2",
+      "supportedBroadcastTypes": [
+        "PERMISSIONS_UPDATED", "TICKET_TRANSFERRED", "TICKET_ESCALATED",
+        "CONFIG_UPDATED", "CONNECTION_STATUS_CHANGED"
+      ]
+    },
+    "frontend": {
+      "operationalDashboard": {
+        "file": "src/components/dashboard/OperationalDashboard.tsx",
+        "version": "v43.5",
+        "newFeatures": [
+          "circuitBreakerState state (CircuitState type: CLOSED | OPEN | HALF-OPEN)",
+          "queuedOpsCount state — count of queued operations",
+          "CIRCUIT_BREAKER_STATE_CHANGED EventBus listener with strict cleanup",
+          "QUEUE_FLUSHED EventBus listener — resets badge and shows flush toast",
+          "Amber neon Circuit Breaker OPEN Banner (fixed bottom-left, 130px from bottom)",
+          "circuitBreakerFlash CSS keyframe (2.2s amber glow animation)",
+          "Banner shows operation count: 'X عملية في الطابور'",
+          "Banner reassures employee: 'تم حفظ عمليتك مؤقتاً وسيتم تنفيذها تلقائياً فور استقرار الاتصال'",
+          "Import of CircuitState type from DatabaseController (type-only import)",
+          "Dynamic ticket creation modal with department selection and custom fields integration",
+          "Zero-flicker state updates (setFields) avoiding component re-mounts",
+          "CONFIG_UPDATED EventBus listener keeping custom fields synced at runtime"
+        ],
+        "cleanupGuard": "All EventBus subscriptions deregistered in useEffect cleanup return block"
+      },
+      "adminGovernanceConsole": {
+        "file": "src/components/admin/AdminGovernanceConsole.tsx",
+        "version": "v43.5",
+        "features": [
+          "Sovereign Operations Command Center (Dark Glassmorphism Theme)",
+          "5s Live Telemetry Polling (circuit state, queue size, latency, SLA worker)",
+          "Strict polling cleanup on unmount",
+          "Emergency Manual Override Panel (CLOSED / OPEN)",
+          "Pure CSS Gauges & Neon animations (cmdScan, cmdPulse, overrideBlink, neonPulse)",
+          "Sovereign Crisis & Override Ledger Glassmorphic Timeline UI",
+          "Department UI Builder collapsible section with custom field configuration",
+          "Strict AbortController cleanup in useEffect on department toggle or component unmount"
+        ]
+      }
+    }
+  },
+  "verificationResults": {
+    "systemIntegrityTest": "PASSED (3/3) — Exit Code: 0",
+    "storedProceduresTest": "PASSED (4/4) — Exit Code: 0",
+    "apiEndpointsTest": "PASSED (all endpoints, Auth & Error Middleware) — Exit Code: 0",
+    "iamPermissionsTest": "PASSED — Exit Code: 0",
+    "adminConsoleTest": "PASSED — Exit Code: 0",
+    "realtimeSyncTest": "PASSED — Exit Code: 0",
+    "dynamicSlaEscalationTest": "PASSED — Exit Code: 0",
+    "governanceAnalyticsTest": "PASSED — Exit Code: 0",
+    "notificationHubTest": "PASSED — Exit Code: 0",
+    "liveConfigPropagationTest": "PASSED — Exit Code: 0",
+    "sovereignResiliencyTest": "PASSED (24/24) — Exit Code: 0",
+    "sovereignCircuitBreakerTest": "PASSED (51/51 checks) — Exit Code: 0",
+    "sovereignCommandCenterTest": "PASSED (55/55 checks: Full Telemetry + Manual Override + Auto-Flush validation) — Exit Code: 0",
+    "dynamicUiFieldsTest": "PASSED (4/4 endpoints and Prototype Pollution check) — Exit Code: 0"
+  },
+  "buildState": "GREEN",
+  "notes": "Dynamic UI Fields & Department Builder fully integrated and unified at LITC-TS v43.5. All integration tests passed successfully."
+}
