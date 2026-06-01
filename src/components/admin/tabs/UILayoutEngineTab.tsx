@@ -85,7 +85,7 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: '1.2fr 2fr 1fr',
     gap: '24px',
-    height: '75vh'
+    height: 'calc(100vh - 120px)'
   },
   glassBox: {
     backgroundColor: '#0c1322',
@@ -182,6 +182,58 @@ const styles = {
   }
 };
 
+const propertyLabelsAr: Record<string, string> = {
+  isEscalated: 'تم التصعيد',
+  escalatedTo: 'جهة التصعيد',
+  dateRangeEnabled: 'تفعيل نطاق التاريخ',
+  allowedScope: 'النطاق المسموح به',
+  routingFilters: 'فلاتر التوجيه',
+  injectedFieldForComparison: 'حقل المقارنة المحقون',
+  forceWhatsApp: 'تفعيل إشعارات واتساب',
+  isToastEnabled: 'تفعيل التنبيهات المنبثقة (Toast)',
+  isBellEnabled: 'تفعيل أيقونة الجرس',
+  toggleTicketComplete: 'تنبيه اكتمال التذكرة',
+  toggleReassignment: 'تنبيه إعادة الإسناد',
+  toggleExternalTransfer: 'تنبيه التحويل الخارجي',
+  toggleSubTicketCreation: 'تنبيه إنشاء تذكرة فرعية',
+  subordinatePerformanceAlerts: 'تنبيهات أداء المرؤوسين',
+  incomingTicketWatch: 'مراقبة التذاكر الواردة',
+  slaDelayMinutes: 'دقائق التأخير المسموحة لـ SLA',
+  inApp: 'إشعارات داخل التطبيق',
+  office365Email: 'تفعيل بريد Office 365',
+  emergencyWhatsApp: 'واتساب الطوارئ',
+  itemDefinitionAuthority: 'صلاحية تعريف المواد',
+  flexibleApprovalChain: 'سلسلة الاعتماد المرنة',
+  allowManagerToEnforceRules: 'السماح للمدير بفرض القواعد',
+  enableGranularPolicyAssignment: 'تفعيل تخصيص السياسات الدقيق',
+  enableAssetLineageTracking: 'تتبع مسار الأصول',
+  allowAdvancedReportExport: 'السماح بالتصدير المتقدم للتقارير',
+  reportVisibilityScope: 'نطاق رؤية التقارير',
+  routingStrategy: 'استراتيجية التوجيه',
+  isDelegated: 'مفوض',
+  notificationType: 'نوع الإشعار',
+  intervalReminder: 'مدة التذكير (ثواني)',
+  eventTypeBinding: 'ربط نوع الحدث',
+  defaultSlaMinutes: 'دقائق SLA الافتراضية',
+  IsEscalationEnabled: 'تفعيل التصعيد',
+  EscalationTargetRole: 'دور هدف التصعيد',
+  linkedRole: 'الدور المرتبط',
+  CanTransfer: 'صلاحية التحويل',
+  CanClose: 'صلاحية الإغلاق',
+  endpoint: 'رابط النهاية (Endpoint)',
+  allowPublicAccess: 'السماح بالوصول العام',
+  requireApprovalToPublish: 'يتطلب موافقة للنشر',
+  exportFormats: 'صيغ التصدير',
+  autoSchedule: 'جدولة تلقائية',
+  allowNestedFields: 'السماح بالحقول المتداخلة',
+  maxFieldsPerEntity: 'الحد الأقصى للحقول لكل كيان',
+  aiModel: 'نموذج الذكاء الاصطناعي',
+  knowledgeBaseSync: 'مزامنة قاعدة المعرفة',
+  autoReplyTickets: 'رد تلقائي على التذاكر',
+  maxInMemory: 'الحد الأقصى بالذاكرة',
+  appendOnly: 'إضافة فقط (Append Only)'
+};
+
 export function UILayoutEngineTab() {
   const [components, setComponents] = useState<UIComponentDefinition[]>(initialComponents);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
@@ -190,6 +242,13 @@ export function UILayoutEngineTab() {
   const [previewRole, setPreviewRole] = useState<string>('Super_Admin');
   const [previewActiveTab, setPreviewActiveTab] = useState<string>('');
   const [previewDynamicFields, setPreviewDynamicFields] = useState<any[]>([]);
+  const [previewDesc, setPreviewDesc] = useState<string>('');
+
+  // --- Landing Manager State ---
+  const [isManagerMode, setIsManagerMode] = useState<boolean>(true);
+  const [showSavedList, setShowSavedList] = useState<boolean>(false);
+  const [showNameModal, setShowNameModal] = useState<boolean>(false);
+  const [interfaceName, setInterfaceName] = useState<string>('');
 
   useEffect(() => {
     // Load dynamic fields from local storage for the Sandbox
@@ -244,14 +303,66 @@ export function UILayoutEngineTab() {
     }));
   };
 
+  if (isManagerMode) {
+    return (
+      <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #0f172a, #1e293b)'}}>
+        <div style={{ background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: '600px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+          <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔮</div>
+          <h1 style={{ fontSize: '28px', color: '#f8fafc', marginBottom: '15px', fontWeight: 'bold' }}>مدير حوكمة وتخصيص واجهات النظام - LITC</h1>
+          <p style={{ fontSize: '15px', color: '#94a3b8', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <button 
+              onClick={() => {
+                setIsManagerMode(false);
+                setShowNameModal(true);
+              }}
+              style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(59, 130, 246, 0.7)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)'; }}
+            >
+              <span>➕</span> إنشاء واجهة جديدة
+            </button>
+            
+            <button 
+              onClick={() => setShowSavedList(!showSavedList)}
+              style={{ width: '100%', padding: '16px', background: 'rgba(255, 255, 255, 0.05)', color: '#e2e8f0', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+            >
+              <span>📁</span> الواجهات الجاهزة والمحفوظة
+            </button>
+          </div>
+
+          {showSavedList && (
+            <div style={{ marginTop: '20px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px', padding: '15px', textAlign: 'right' }}>
+              <div style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '10px', textAlign: 'center' }}>لا توجد واجهات محفوظة حالياً.</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <div>
+    <>
+      <div style={{...styles.container, filter: showNameModal ? 'blur(10px)' : 'none', pointerEvents: showNameModal ? 'none' : 'auto', transition: 'filter 0.3s ease' }}>
+        <div style={{...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div>
           <h2 style={styles.title}>محرك تصميم الواجهات السياقية (Contextual UI Engine)</h2>
           <p style={styles.subtitle}>تخصيص الخصائص الذكية (Inspector) وبناء واجهات المستخدمين سيادياً بـ Zero-Lag.</p>
         </div>
-        <button style={styles.saveBtn}>حفظ التوزيع النهائي</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => setIsManagerMode(true)}
+            style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e2e8f0', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+          >
+            ⬅️ العودة لمدير الواجهات
+          </button>
+          <button style={styles.saveBtn}>حفظ التوزيع النهائي</button>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -483,80 +594,7 @@ export function UILayoutEngineTab() {
                     </div>
                   )}
 
-                  {selectedComponent.id === 'ticket_create' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>توجيه التذكرة التلقائي المزدوج (Multi-Destination Route):</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {[
-                          { id: 'IT_SUPPORT', label: 'تقنية المعلومات (دعم عام)' },
-                          { id: 'IT_NETWORK', label: 'تقنية المعلومات (شبكات)' },
-                          { id: 'MAINTENANCE', label: 'الصيانة والمرافق' },
-                          { id: 'HR', label: 'الموارد البشرية' }
-                        ].map(dept => {
-                          const destinations = selectedComponent.properties.destinationRoutes || ['IT_SUPPORT'];
-                          const isChecked = destinations.includes(dept.id);
-                          return (
-                            <label key={dept.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input 
-                                type="checkbox" 
-                                checked={isChecked} 
-                                onChange={e => {
-                                  let newRoutes = [...destinations];
-                                  if (e.target.checked) newRoutes.push(dept.id);
-                                  else newRoutes = newRoutes.filter((r: string) => r !== dept.id);
-                                  handlePropertyChange(selectedComponent.id, 'destinationRoutes', newRoutes);
-                                }} 
-                              />
-                              {dept.label}
-                            </label>
-                          );
-                        })}
-                      </div>
 
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص إنشاء التذكرة المتقدمة:</h5>
-                      
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.attachmentsEnabled || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentsEnabled', e.target.checked)} />
-                          السماح بالمرفقات (Attachments Enabled)
-                        </label>
-                        {selectedComponent.properties.attachmentsEnabled && (
-                          <div style={{ paddingRight: '20px', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={selectedComponent.properties.mandatoryAttachments || false} 
-                                onChange={e => handlePropertyChange(selectedComponent.id, 'mandatoryAttachments', e.target.checked)} />
-                              إجبار المستخدم على إرفاق ملف (Mandatory)
-                            </label>
-                            <div>
-                              <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>الحد الأقصى للمرفق (MB):</span>
-                              <input type="number" style={{ ...styles.input, width: '80px', padding: '4px 8px' }} 
-                                value={selectedComponent.properties.attachmentMaxSizeMB || 5} 
-                                onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentMaxSizeMB', parseInt(e.target.value))} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.slaConditions || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'slaConditions', e.target.checked)} />
-                          ربط التذكرة بشروط الـ SLA فور إنشائها
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.voiceToText || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'voiceToText', e.target.checked)} />
-                          تفعيل الإدخال الصوتي (Voice-to-Text) للمستخدم
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.showPriority || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'showPriority', e.target.checked)} />
-                          إظهار حقل "الأولوية" (Priority Field)
-                        </label>
-                      </div>
-                    </div>
-                  )}
 
                   {selectedComponent.id === 'ticket_inbox' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
@@ -679,6 +717,119 @@ export function UILayoutEngineTab() {
                         <option value="EDIT">تعديل (Edit)</option>
                         <option value="FULL_ACCESS">تحكم كامل (Full Access)</option>
                       </select>
+                    </div>
+                  )}
+
+                  {/* ═══ ticket_create Inspector ═══ */}
+                  {selectedComponent.id === 'ticket_create' && (
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص إنشاء وتوجيه التذاكر:</h5>
+                      
+                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.attachmentsEnabled || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentsEnabled', e.target.checked)} />
+                          السماح بالمرفقات للمستخدم
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.mandatoryAttachments || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'mandatoryAttachments', e.target.checked)} />
+                          إجبار المستخدم على إرفاق ملف
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.slaConditions || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'slaConditions', e.target.checked)} />
+                          ربط التذكرة بشروط الـ SLA فور إنشائها
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.voiceToText || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'voiceToText', e.target.checked)} />
+                          تفعيل الإدخال الصوتي الذكي (تحويل الصوت إلى نص)
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.showPriority || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'showPriority', e.target.checked)} />
+                          إظهار حقل مستوى الأولوية
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.mandatoryDescription || false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'mandatoryDescription', e.target.checked)} />
+                          إجبار المستخدم على كتابة وصف المشكلة
+                        </label>
+                      </div>
+
+                      <div style={{ marginBottom: '15px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>الحد الأقصى للمرفق (ميجابايت):</h6>
+                        <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }} value={selectedComponent.properties.attachmentMaxSizeMB || 5}
+                          onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentMaxSizeMB', parseInt(e.target.value))} />
+                      </div>
+
+                      <div style={{ marginBottom: '15px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>أنواع المرفقات المسموح بها:</h6>
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('PDF')} 
+                              onChange={e => {
+                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
+                                const newExts = e.target.checked 
+                                  ? Array.from(new Set([...exts, 'PDF', 'DOCX']))
+                                  : exts.filter((x: string) => x !== 'PDF' && x !== 'DOCX');
+                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
+                              }} />
+                            وثائق ومستندات (PDF, DOCX)
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('PNG')} 
+                              onChange={e => {
+                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
+                                const newExts = e.target.checked 
+                                  ? Array.from(new Set([...exts, 'PNG', 'JPG']))
+                                  : exts.filter((x: string) => x !== 'PNG' && x !== 'JPG');
+                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
+                              }} />
+                            صور ولقطات شاشة (PNG, JPG)
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('ZIP')} 
+                              onChange={e => {
+                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
+                                const newExts = e.target.checked 
+                                  ? Array.from(new Set([...exts, 'ZIP', 'RAR']))
+                                  : exts.filter((x: string) => x !== 'ZIP' && x !== 'RAR');
+                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
+                              }} />
+                            ملفات مضغوطة (ZIP, RAR)
+                          </label>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '15px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>توجيه التذكرة التلقائي المزدوج:</h6>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                          {(selectedComponent.properties.destinationRoutes || []).map((route: string, idx: number) => (
+                            <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                              {route}
+                              <span style={{ cursor: 'pointer', color: '#f87171' }} onClick={() => {
+                                const routes = selectedComponent.properties.destinationRoutes.filter((r: string) => r !== route);
+                                handlePropertyChange(selectedComponent.id, 'destinationRoutes', routes);
+                              }}>×</span>
+                            </span>
+                          ))}
+                        </div>
+                        <select style={styles.input} onChange={e => {
+                          const routes = selectedComponent.properties.destinationRoutes || [];
+                          if (!routes.includes(e.target.value) && e.target.value !== '') {
+                            handlePropertyChange(selectedComponent.id, 'destinationRoutes', [...routes, e.target.value]);
+                          }
+                          e.target.value = ''; // reset
+                        }}>
+                          <option value="">إضافة مسار توجيه...</option>
+                          <option value="IT_SUPPORT">الدعم التقني</option>
+                          <option value="MAINTENANCE">الصيانة العامة</option>
+                          <option value="HR">الموارد البشرية</option>
+                          <option value="SECURITY">الأمن والسلامة</option>
+                        </select>
+                      </div>
                     </div>
                   )}
 
@@ -1024,12 +1175,12 @@ export function UILayoutEngineTab() {
                     <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', padding: '20px'}}>لا توجد خصائص إضافية</div>
                   ) : (
                     <div>
-                      {Object.entries(selectedComponent.properties).filter(([k]) => !['destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport'].includes(k)).map(([key, val]) => {
+                      {Object.entries(selectedComponent.properties).filter(([k]) => !['destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport', 'issueTypeCustomization', 'injectedDynamicFields', 'attachmentAllowedExtensions', 'routingDestination', 'cascadingDropdowns', 'dependencyMapping'].includes(k)).map(([key, val]) => {
                         // Boolean toggle
                         if (typeof val === 'boolean') {
                           return (
                             <div key={key} style={{...styles.propBox, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                              <span style={{fontSize: '12px', color: '#cbd5e1'}}>{key}</span>
+                              <span style={{fontSize: '12px', color: '#cbd5e1'}}>{propertyLabelsAr[key] || key}</span>
                               <div 
                                 style={val ? styles.switchTrue : styles.switchFalse}
                                 onClick={() => handlePropertyChange(selectedComponent.id, key, !val)}
@@ -1043,7 +1194,7 @@ export function UILayoutEngineTab() {
                         if (Array.isArray(val)) {
                           return (
                             <div key={key} style={styles.propBox}>
-                              <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '8px'}}>{key}</div>
+                              <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '8px'}}>{propertyLabelsAr[key] || key}</div>
                               <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px'}}>
                                 {val.map((item, idx) => (
                                   <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px'}}>
@@ -1067,7 +1218,7 @@ export function UILayoutEngineTab() {
                         // String / Number
                         return (
                           <div key={key} style={styles.propBox}>
-                            <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '4px'}}>{key}</div>
+                            <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '4px'}}>{propertyLabelsAr[key] || key}</div>
                             <input 
                               style={styles.input}
                               value={String(val)}
@@ -1092,10 +1243,10 @@ export function UILayoutEngineTab() {
       </DragDropContext>
 
       {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '650px' }}>
+      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
         
         {/* Sandbox Toolbar */}
-        <div style={{ background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+        <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
           <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a' }}>
             <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
           </div>
@@ -1146,22 +1297,112 @@ export function UILayoutEngineTab() {
                     {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
                   </h2>
                   
-                  {previewActiveTab === 'ticket_create' && previewDynamicFields.length > 0 && (
-                    <div style={{ padding: '20px', background: 'rgba(248, 250, 252, 0.6)', borderRadius: '12px', border: '1px solid rgba(203, 213, 225, 0.5)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-                      <h4 style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#334155', fontWeight: 'bold' }}>الحقول الديناميكية المرتبطة:</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                        {previewDynamicFields.map(f => (
-                          <div key={f.id}>
-                            <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '8px', fontWeight: 'bold' }}>{f.name}</label>
-                            <select style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', transition: 'border 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }} onFocus={(e) => e.target.style.borderColor = '#0ea5e9'} onBlur={(e) => e.target.style.borderColor = 'rgba(203, 213, 225, 0.8)'}>
-                              <option>اختر...</option>
-                              {f.options?.map((opt: string) => <option key={opt}>{opt}</option>)}
-                            </select>
+                  {previewActiveTab === 'ticket_create' && (() => {
+                    const tProps = activeComponents.find(c => c.id === 'ticket_create')?.properties || {};
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* SLA Glowing Badge */}
+                        {tProps.slaConditions && (
+                          <div style={{ alignSelf: 'flex-start', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.5)', borderRadius: '20px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 'bold', fontSize: '12px', boxShadow: '0 0 10px rgba(239, 68, 68, 0.3)' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 8px #ef4444' }}></span>
+                            خاضع لشروط الـ SLA - مؤقت نشط
                           </div>
-                        ))}
+                        )}
+
+                        {/* Title & Description with Voice Input */}
+                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>تفاصيل التذكرة الأساسية</h4>
+                          <input type="text" placeholder="عنوان التذكرة" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', marginBottom: '15px', outline: 'none' }} />
+                          <div style={{ position: 'relative', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold' }}>
+                                وصف المشكلة بالتفصيل
+                                {tProps.mandatoryDescription && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                              </label>
+                            </div>
+                            <textarea 
+                              placeholder="وصف المشكلة بالتفصيل..." 
+                              value={previewDesc}
+                              onChange={e => setPreviewDesc(e.target.value)}
+                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', resize: 'none' }}></textarea>
+                            {tProps.voiceToText && (
+                              <button style={{ position: 'absolute', bottom: '15px', left: '15px', background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 12px rgba(14, 165, 233, 0.5)' }}>
+                                <span style={{ fontSize: '16px', color: '#fff' }}>🎙️</span>
+                              </button>
+                            )}
+                          </div>
+                          {tProps.showPriority && (
+                            <div>
+                              <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '8px', fontWeight: 'bold' }}>مستوى أهمية البلاغ</label>
+                              <select style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.5)', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', color: '#334155', fontWeight: 'bold' }}>
+                                <option>عادية</option>
+                                <option>متوسطة</option>
+                                <option>حرجة جداً طارئة</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Dynamic Fields Section */}
+                        {previewDynamicFields.length > 0 && (
+                          <div style={{ padding: '20px', background: 'rgba(248, 250, 252, 0.6)', borderRadius: '12px', border: '1px solid rgba(203, 213, 225, 0.5)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <h4 style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#334155', fontWeight: 'bold' }}>الحقول الديناميكية المرتبطة:</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                              {previewDynamicFields.map(f => (
+                                <div key={f.id}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '8px', fontWeight: 'bold' }}>{f.name}</label>
+                                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', transition: 'border 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }} onFocus={(e) => e.target.style.borderColor = '#0ea5e9'} onBlur={(e) => e.target.style.borderColor = 'rgba(203, 213, 225, 0.8)'}>
+                                    <option>اختر...</option>
+                                    {f.options?.map((opt: string) => <option key={opt}>{opt}</option>)}
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Attachments Drag & Drop Zone */}
+                        {tProps.attachmentsEnabled && (
+                          <label style={{ marginTop: '12px', padding: '24px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', border: '2px dashed rgba(147, 197, 253, 1)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#64748b', cursor: 'pointer', transition: 'all 0.3s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)'}>
+                            <input type="file" style={{ display: 'none' }} />
+                            <span style={{ fontSize: '32px' }}>☁️</span>
+                            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#3b82f6' }}>اسحب وأفلت ملفات الدعم هنا، أو اضغط لتصفح واختيار ملف من جهازك</span>
+                            <span style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                              الحد الأقصى: {tProps.attachmentMaxSizeMB || 5} ميجابايت | الأنواع المدعومة: {(tProps.attachmentAllowedExtensions || []).length > 0 ? tProps.attachmentAllowedExtensions.join(', ') : 'الكل'}
+                            </span>
+                            {tProps.mandatoryAttachments && (
+                              <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px' }}>مرفق إلزامي</span>
+                            )}
+                          </label>
+                        )}
+
+                        <button 
+                          disabled={tProps.mandatoryDescription && previewDesc.trim() === ''}
+                          style={{ 
+                            width: '100%', padding: '14px', 
+                            background: tProps.mandatoryDescription && previewDesc.trim() === '' ? '#cbd5e1' : 'linear-gradient(135deg, #10b981, #059669)', 
+                            color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 'bold', 
+                            cursor: tProps.mandatoryDescription && previewDesc.trim() === '' ? 'not-allowed' : 'pointer', 
+                            boxShadow: tProps.mandatoryDescription && previewDesc.trim() === '' ? 'none' : '0 0 20px rgba(16, 185, 129, 0.4)', 
+                            transition: 'all 0.3s' 
+                          }} 
+                          onMouseEnter={(e) => { 
+                            if (!(tProps.mandatoryDescription && previewDesc.trim() === '')) {
+                              e.currentTarget.style.transform = 'translateY(-2px)'; 
+                              e.currentTarget.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.6)'; 
+                            }
+                          }} 
+                          onMouseLeave={(e) => { 
+                            if (!(tProps.mandatoryDescription && previewDesc.trim() === '')) {
+                              e.currentTarget.style.transform = 'translateY(0)'; 
+                              e.currentTarget.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.4)'; 
+                            }
+                          }}>
+                          إرسال التذكرة إلى الأقسام المحددة 🚀
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {previewActiveTab === 'admin_analytics' && (
                     <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
@@ -1248,5 +1489,31 @@ export function UILayoutEngineTab() {
         </div>
       </div>
     </div>
+
+      {showNameModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.4)' }}>
+          <div style={{ background: 'rgba(30, 41, 59, 0.95)', backdropFilter: 'blur(16px)', padding: '40px', borderRadius: '20px', width: '400px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h3 style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '20px' }}>تسمية الواجهة الجديدة</h3>
+            <input 
+              autoFocus
+              type="text" 
+              placeholder="مثال: واجهة مركز الدعم الفني" 
+              value={interfaceName}
+              onChange={e => setInterfaceName(e.target.value)}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(0, 0, 0, 0.2)', color: '#fff', fontSize: '15px', marginBottom: '20px', outline: 'none', transition: 'border-color 0.3s' }}
+              onFocus={e => e.target.style.borderColor = '#3b82f6'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'}
+            />
+            <button 
+              disabled={interfaceName.trim() === ''}
+              onClick={() => setShowNameModal(false)}
+              style={{ width: '100%', padding: '14px', background: interfaceName.trim() === '' ? '#475569' : 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: interfaceName.trim() === '' ? 'not-allowed' : 'pointer', transition: 'all 0.3s' }}
+            >
+              إنشاء وبدء التصميم 🚀
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
