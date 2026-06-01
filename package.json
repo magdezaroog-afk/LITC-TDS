@@ -13,7 +13,8 @@
     "test:transition": "npx tsx test_transition.ts",
     "test:ui": "npx tsx test_ui_service.ts",
     "test:sla": "npx tsx test_sla_engine.ts",
-    "test:api": "npx tsx test_api_endpoints.ts"
+    "test:api": "npx tsx test_api_endpoints.ts",
+    "watch:backup": "node auto-backup.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
