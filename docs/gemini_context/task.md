@@ -1,0 +1,4 @@
+- [x] Fix UILayoutEngineTab syntax errors.
+- [x] Restore correct DOM structure for Sandbox Toolbar.
+- [x] Inject analytics and comparison inspectors cleanly.
+- [x] Verify JSX with `tsc`.

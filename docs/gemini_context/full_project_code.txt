@@ -1,3 +1,5 @@
+// --- FILE: src/components/admin/tabs/UILayoutEngineTab.tsx ---
+
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -2036,6 +2038,102 @@ export function UILayoutEngineTab() {
                     </div>
                   )}
 
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{textAlign: 'center', opacity: 0.5, marginTop: '80px'}}>
+                  <div style={{fontSize: '32px', marginBottom: '16px'}}>🖱️</div>
+                  <div style={{fontSize: '12px', color: '#94a3b8'}}>حدد مكوناً من مساحة العمل<br/>لاستعراض وتخصيص الخصائص</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </DragDropContext>
+
+      {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
+      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
+        
+        {/* Sandbox Toolbar */}
+        <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
+          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a' }}>
+            <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
+          </div>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
+            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: 'rgba(255,255,255,0.9)', fontSize: '12px', color: '#334155', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
+              <option value="Super_Admin">مدير نظام (Super Admin)</option>
+              <option value="Dept_Head">رئيس قسم (Dept Head)</option>
+              <option value="Field_Engineer">مهندس ميداني (Field Engineer)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Sandbox Shell Areas */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: 'rtl', padding: '20px', gap: '20px' }}>
+          
+          {/* Top Navbar Zone */}
+          <div style={{ height: '65px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'flex-end', gap: '15px' }}>
+            {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
+              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', gap: '20px' }}>
+            {/* Dynamic Sidebar Zone */}
+            <div style={{ width: '260px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '25px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px', fontWeight: '800', letterSpacing: '0.5px' }}>القائمة الملاحية (DYNAMIC SIDEBAR)</div>
+              {activeComponents.filter(c => c.target_zone === 'Main_Viewport').map(c => (
+                <div key={c.id} 
+                  onClick={() => setPreviewActiveTab(c.id)}
+                  style={{ padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', background: previewActiveTab === c.id ? 'rgba(56, 189, 248, 0.15)' : 'transparent', color: previewActiveTab === c.id ? '#0284c7' : '#475569', border: previewActiveTab === c.id ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', boxShadow: previewActiveTab === c.id ? '0 4px 6px rgba(56, 189, 248, 0.1)' : 'none' }}
+                  onMouseEnter={(e) => { if (previewActiveTab !== c.id) e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; }}
+                  onMouseLeave={(e) => { if (previewActiveTab !== c.id) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {c.name}
+                </div>
+              ))}
+            </div>
+
+            {/* Main Viewport Zone */}
+            <div style={{ flex: 1, background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '30px', overflowY: 'auto' }}>
+              {previewActiveTab ? (
+                <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <h2 style={{ margin: '0 0 25px 0', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ width: '8px', height: '24px', background: '#0ea5e9', borderRadius: '4px' }}></span>
+                    {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
+                  </h2>
+                  
+                  {previewActiveTab === 'ticket_create' && (() => {
+                    const tProps = activeComponents.find(c => c.id === 'ticket_create')?.properties || {};
+                    const targets = tProps.targetDestinations || [];
+                    const isInstantRouting = targets.length === 1;
+                    const maxDesc = tProps.descriptionLimit || 1000;
+                    const taxRaw = tProps.issueTaxonomyRaw || '';
+                    const taxonomyLines = taxRaw.split('\n').filter((l: string) => l.trim() !== '');
+                    const taxonomyList = taxonomyLines.map((line: string) => {
+                      const [main, sub] = line.split('|');
+                      return { main: main?.trim() || '', sub: sub ? sub.split(',').map((s: string) => s.trim()) : [] };
+                    }).filter((t: any) => t.main !== '');
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        
+                        {!isInstantRouting && (
+                          <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                            <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#0369a1', fontWeight: 'bold' }}>توجيه التذكرة (Routing)</h4>
+                            <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#ef4444' }}>*</span></label>
+                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}>
+                              <option value="">-- اختر الإدارة المستقبلة --</option>
+                              {targets.map((deptId: string) => {
+                                const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
+                                return <option key={deptId} value={deptId}>{deptName}</option>;
+                              })}
+
                   {/* ═══ analytics_dashboard Inspector ═══ */}
                   {selectedComponent.id === 'analytics_dashboard' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
@@ -2134,101 +2232,7 @@ export function UILayoutEngineTab() {
                       </div>
                     </div>
                   )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{textAlign: 'center', opacity: 0.5, marginTop: '80px'}}>
-                  <div style={{fontSize: '32px', marginBottom: '16px'}}>🖱️</div>
-                  <div style={{fontSize: '12px', color: '#94a3b8'}}>حدد مكوناً من مساحة العمل<br/>لاستعراض وتخصيص الخصائص</div>
-                </div>
-              )}
-            </div>
-          </div>
 
-        </div>
-      </DragDropContext>
-
-      {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
-        
-        {/* Sandbox Toolbar */}
-        <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a' }}>
-            <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
-          </div>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
-            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: 'rgba(255,255,255,0.9)', fontSize: '12px', color: '#334155', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
-              <option value="Super_Admin">مدير نظام (Super Admin)</option>
-              <option value="Dept_Head">رئيس قسم (Dept Head)</option>
-              <option value="Field_Engineer">مهندس ميداني (Field Engineer)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Sandbox Shell Areas */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: 'rtl', padding: '20px', gap: '20px' }}>
-          
-          {/* Top Navbar Zone */}
-          <div style={{ height: '65px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'flex-end', gap: '15px' }}>
-            {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', gap: '20px' }}>
-            {/* Dynamic Sidebar Zone */}
-            <div style={{ width: '260px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '25px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px', fontWeight: '800', letterSpacing: '0.5px' }}>القائمة الملاحية (DYNAMIC SIDEBAR)</div>
-              {activeComponents.filter(c => c.target_zone === 'Main_Viewport').map(c => (
-                <div key={c.id} 
-                  onClick={() => setPreviewActiveTab(c.id)}
-                  style={{ padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', background: previewActiveTab === c.id ? 'rgba(56, 189, 248, 0.15)' : 'transparent', color: previewActiveTab === c.id ? '#0284c7' : '#475569', border: previewActiveTab === c.id ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', boxShadow: previewActiveTab === c.id ? '0 4px 6px rgba(56, 189, 248, 0.1)' : 'none' }}
-                  onMouseEnter={(e) => { if (previewActiveTab !== c.id) e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; }}
-                  onMouseLeave={(e) => { if (previewActiveTab !== c.id) e.currentTarget.style.background = 'transparent'; }}
-                >
-                  {c.name}
-                </div>
-              ))}
-            </div>
-
-            {/* Main Viewport Zone */}
-            <div style={{ flex: 1, background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '30px', overflowY: 'auto' }}>
-              {previewActiveTab ? (
-                <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ margin: '0 0 25px 0', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ width: '8px', height: '24px', background: '#0ea5e9', borderRadius: '4px' }}></span>
-                    {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
-                  </h2>
-                  
-                  {previewActiveTab === 'ticket_create' && (() => {
-                    const tProps = activeComponents.find(c => c.id === 'ticket_create')?.properties || {};
-                    const targets = tProps.targetDestinations || [];
-                    const isInstantRouting = targets.length === 1;
-                    const maxDesc = tProps.descriptionLimit || 1000;
-                    const taxRaw = tProps.issueTaxonomyRaw || '';
-                    const taxonomyLines = taxRaw.split('\n').filter((l: string) => l.trim() !== '');
-                    const taxonomyList = taxonomyLines.map((line: string) => {
-                      const [main, sub] = line.split('|');
-                      return { main: main?.trim() || '', sub: sub ? sub.split(',').map((s: string) => s.trim()) : [] };
-                    }).filter((t: any) => t.main !== '');
-
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        
-                        {!isInstantRouting && (
-                          <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                            <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#0369a1', fontWeight: 'bold' }}>توجيه التذكرة (Routing)</h4>
-                            <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#ef4444' }}>*</span></label>
-                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}>
-                              <option value="">-- اختر الإدارة المستقبلة --</option>
-                              {targets.map((deptId: string) => {
-                                const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
-                                return <option key={deptId} value={deptId}>{deptName}</option>;
-                              })}
                             </select>
                           </div>
                         )}
@@ -2428,64 +2432,62 @@ export function UILayoutEngineTab() {
 {previewActiveTab === 'analytics_dashboard' && (() => {
   const p = activeComponents.find(c => c.id === 'analytics_dashboard')?.properties || {};
   const isOverride = p.adminOverride || false;
-  // NOTE: In the sandbox, 'previewRole' is used to simulate the role viewing the UI
-  const isSectionHead = previewRole === 'Dept_Head'; // Adjusted to match the actual roles dropdown value
-  const drilldown = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowEngineerDrilldown);
-  const locationF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowLocationFilter);
-  const taxF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowTaxonomyFilter);
+  const drilldown = isOverride || p.managerAnalyticsControl?.allowEngineerDrilldown;
+  const locationF = isOverride || p.managerAnalyticsControl?.allowLocationFilter;
+  const taxF = isOverride || p.managerAnalyticsControl?.allowTaxonomyFilter;
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
+      {/* Filters Area (Glassmorphic) */}
       <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(16px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>لوحة التحليل المركزي (OLAP Engine)</span>
-          {isOverride && <span style={{ fontSize: '10px', background: '#fca5a5', color: '#7f1d1d', padding: '4px 8px', borderRadius: '4px' }}>Admin Override Active</span>}
-        </h4>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#047857', fontWeight: 'bold' }}>محرك التحليل المركزي (OLAP Filters)</h4>
         
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-          {locationF ? (
-            <select style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}>
-              <option>📍 تصفية حسب المبنى</option>
-              <option>المبنى الرئيسي (طرابلس)</option>
-              <option>فرع بنغازي</option>
-            </select>
-          ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+          {locationF && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>البُعد الجغرافي (مبنى/مكتب)</label>
+              <select style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.9)', outline: 'none', fontSize: '12px', color: '#334155' }}>
+                <option>كل المباني</option>
+                <option>المبنى الرئيسي</option>
+              </select>
+            </div>
           )}
           
-          {taxF ? (
-            <select style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}>
-              <option>🗂️ تصفية حسب التصنيف</option>
-              <option>أعطال تقنية</option>
-              <option>أعطال تشغيلية</option>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '11px', color: '#64748b' }}>البُعد الهيكلي (قسم/فريق{drilldown ? '/مهندس' : ''})</label>
+            <select style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.9)', outline: 'none', fontSize: '12px', color: '#334155' }}>
+              <option>كافة الكوادر</option>
+              {drilldown && <option>م. أحمد (شبكات)</option>}
+              {drilldown && <option>م. خليل (دعم)</option>}
             </select>
-          ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
-          )}
-        </div>
+            {!drilldown && <span style={{ fontSize: '9px', color: '#ef4444' }}>محجوب (قيود الإدارة)</span>}
+          </div>
 
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <div style={{ flex: 2, height: '220px', background: 'rgba(255,255,255,0.8)', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '32px' }}>📊</span>
-            <span style={{ fontWeight: 'bold', color: '#475569' }}>مؤشرات الأداء الزمنية</span>
-          </div>
+          {taxF && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>البُعد التصنيفي (نوع المشكلة)</label>
+              <select style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.9)', outline: 'none', fontSize: '12px', color: '#334155' }}>
+                <option>كل التصنيفات</option>
+                <option>مشاكل الشبكة</option>
+              </select>
+            </div>
+          )}
           
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {drilldown ? (
-              <div style={{ flex: 1, background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '15px', display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '10px' }}>🏆 أفضل المهندسين أداءً</span>
-                <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}><span>م. أحمد سالم</span><span>120 تذكرة</span></div>
-                <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}><span>م. سارة علي</span><span>115 تذكرة</span></div>
-              </div>
-            ) : (
-              <div style={{ flex: 1, background: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ef4444', textAlign: 'center' }}>
-                <span style={{ fontSize: '24px', marginBottom: '5px' }}>🔒</span>
-                <span style={{ fontSize: '11px', fontWeight: 'bold' }}>تفاصيل المهندسين محجوبة</span>
-                <span style={{ fontSize: '9px' }}>بناءً على قيود الصلاحية</span>
-              </div>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '11px', color: '#64748b' }}>البُعد الزمني</label>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <input type="date" style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.9)', outline: 'none', fontSize: '11px', color: '#334155' }} />
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Mock Chart Area */}
+      <div style={{ height: '200px', padding: '20px', background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%)', backdropFilter: 'blur(20px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '20px' }}>
+        {/* Animated Mock Bars */}
+        {[60, 100, 40, 80, 50].map((h, i) => (
+          <div key={i} style={{ width: '40px', height: `${h}%`, background: 'linear-gradient(180deg, #10b981 0%, #047857 100%)', borderRadius: '8px 8px 0 0', opacity: 0.8, transition: 'height 0.5s ease', boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)' }}></div>
+        ))}
       </div>
     </div>
   );
@@ -2494,39 +2496,55 @@ export function UILayoutEngineTab() {
 {previewActiveTab === 'cross_comparison' && (() => {
   const p = activeComponents.find(c => c.id === 'cross_comparison')?.properties || {};
   const maxElements = p.maxComparisonElements || 3;
-  const types = p.allowedComparisonTypes || ['ENGINEERS'];
-  const activeType = types[0] || 'ENGINEERS';
+  const types = p.allowedComparisonTypes || [];
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
-        {types.map((t: string) => (
-          <div key={t} style={{ padding: '8px 16px', background: t === activeType ? '#8b5cf6' : 'rgba(255,255,255,0.6)', color: t === activeType ? '#fff' : '#64748b', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: `1px solid ${t === activeType ? '#8b5cf6' : 'rgba(203, 213, 225, 0.8)'}`, transition: 'all 0.3s' }}>
-            {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
+      <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(16px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#6d28d9', fontWeight: 'bold' }}>المقارنات التقاطعية متعددة العناصر</h4>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '15px' }}>
+          {types.map((t: string) => (
+            <span key={t} style={{ padding: '6px 12px', background: 'rgba(109, 40, 217, 0.1)', color: '#6d28d9', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+              {t === 'ENGINEERS' ? 'مقارنة الكوادر' : t === 'LOCATIONS' ? 'مقارنة المواقع' : 'مقارنة المشاكل'}
+            </span>
+          ))}
+        </div>
+
+        <div style={{ padding: '15px', background: 'rgba(255,255,255,0.8)', borderRadius: '8px', border: '1px dashed #a78bfa' }}>
+          <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '10px' }}>اختر حتى {maxElements} عناصر للمقارنة:</label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {Array.from({ length: Math.min(3, maxElements) }).map((_, i) => (
+              <div key={i} style={{ flex: 1, padding: '8px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#334155', textAlign: 'center' }}>
+                عنصر {i + 1}
+              </div>
+            ))}
+            {maxElements > 3 && (
+              <div style={{ flex: 1, padding: '8px', background: 'rgba(241, 245, 249, 0.5)', borderRadius: '6px', border: '1px dashed #cbd5e1', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+                + المزيد (حتى {maxElements})
+              </div>
+            )}
           </div>
-        ))}
-        {types.length === 0 && <span style={{ fontSize: '12px', color: '#ef4444' }}>لا توجد أنواع مقارنات مسموحة</span>}
+        </div>
       </div>
 
-      <div style={{ height: '300px', padding: '20px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(20px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)', display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'flex-end' }}>
-        <div style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'أسماء المهندسين' : activeType === 'LOCATIONS' ? 'أسماء المباني' : 'أنواع المشاكل'})</div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid #cbd5e1' }}>
-           {['يناير', 'فبراير', 'مارس'].map((month, idx) => (
-             <div key={month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-               <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
-                  {Array.from({ length: maxElements }).map((_, barIdx) => {
-                     const colors = [['#8b5cf6', '#6d28d9'], ['#ec4899', '#be185d'], ['#3b82f6', '#1d4ed8'], ['#10b981', '#047857']];
-                     const color = colors[barIdx % colors.length];
-                     const h = 40 + Math.random() * 50;
-                     return (
-                       <div key={barIdx} style={{ width: maxElements > 5 ? '10px' : '20px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '4px 4px 0 0', opacity: 0.9, transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }} title={`عنصر ${barIdx + 1}`}></div>
-                     );
-                  })}
-               </div>
-               <span style={{ fontSize: '11px', color: '#64748b' }}>{month}</span>
-             </div>
-           ))}
-        </div>
+      {/* Multi-Element Mock Chart Area */}
+      <div style={{ height: '250px', padding: '20px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(20px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', marginBottom: '10px' }}>معدل سرعة الإنجاز (SLA)</div>
+        {/* Render grouped bars for up to 3 selected elements */}
+        {['يناير', 'فبراير', 'مارس'].map((month, i) => (
+          <div key={month} style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
+            <span style={{ width: '40px', fontSize: '11px', color: '#64748b' }}>{month}</span>
+            <div style={{ flex: 1, display: 'flex', gap: '5px', height: '100%', alignItems: 'center' }}>
+               {/* Element 1 Bar */}
+               <div style={{ width: `${60 + i*10}%`, height: '12px', background: 'linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)', borderRadius: '6px', opacity: 0.9, transition: 'width 0.5s ease' }}></div>
+               {/* Element 2 Bar */}
+               <div style={{ width: `${80 - i*15}%`, height: '12px', background: 'linear-gradient(90deg, #ec4899 0%, #be185d 100%)', borderRadius: '6px', opacity: 0.9, transition: 'width 0.5s ease' }}></div>
+               {/* Element 3 Bar */}
+               {(maxElements >= 3) && <div style={{ width: `${40 + i*20}%`, height: '12px', background: 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)', borderRadius: '6px', opacity: 0.9, transition: 'width 0.5s ease' }}></div>}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
