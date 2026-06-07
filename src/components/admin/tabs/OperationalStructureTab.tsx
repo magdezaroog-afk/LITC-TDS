@@ -713,6 +713,26 @@ export const OperationalStructureTab: React.FC = () => {
                 <option value="ASSIGNED">المنسبين للهيكل فقط</option>
                 <option value="UNASSIGNED">غير المنسبين (متاحين للتعيين)</option>
               </select>
+              {poolFilterStatus === 'ASSIGNED' && (
+                 <>
+                   <select value={filterAssignedDeptId} onChange={e => { setFilterAssignedDeptId(e.target.value); setFilterAssignedDivId(''); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                     <option value="">-- الفلترة بالإدارة --</option>
+                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                   </select>
+                   {filterAssignedDeptId && (
+                     <select value={filterAssignedDivId} onChange={e => { setFilterAssignedDivId(e.target.value); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                       <option value="">-- الفلترة بالقسم --</option>
+                       {departments.find(d => d.id === filterAssignedDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
+                     </select>
+                   )}
+                   {filterAssignedDivId && (
+                     <select value={filterAssignedTeamId} onChange={e => setFilterAssignedTeamId(e.target.value)} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                       <option value="">-- الفلترة بالفريق --</option>
+                       {departments.find(d => d.id === filterAssignedDeptId)?.divisions.find(dv => dv.id === filterAssignedDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                     </select>
+                   )}
+                 </>
+              )}
               
               {selectedPoolUsers.length > 0 && (
                 <div style={{ display: 'flex', gap: '10px', marginLeft: '10px' }}>
@@ -742,6 +762,7 @@ export const OperationalStructureTab: React.FC = () => {
                   <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>البريد الإلكتروني</th>
                   <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الرتبة والدور</th>
                   <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>حالة التنسيب</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'center', fontSize: '13px', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -781,6 +802,12 @@ export const OperationalStructureTab: React.FC = () => {
                           <span style={{ color: '#94a3b8' }}>- غير منسب -</span>
                         )}
                       </td>
+                      <td style={{ padding: '12px 15px' }}>
+                          <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                            <button onClick={(e) => { e.stopPropagation(); handleOpenProfile(user); }} style={{ background: 'transparent', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#7dd3fc', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🪪 بطاقة المستخدم</button>
+                            <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(user); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>🔄 نقل</button>
+                          </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -792,44 +819,82 @@ export const OperationalStructureTab: React.FC = () => {
       </div>
 
       {/* --- MODALS --- */}
+      {/* 🪪 Killer Super Profile Modal */}
       {profileModalUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)' }}>
-          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '40px', borderRadius: '20px', width: '450px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: '#fff', fontWeight: 'bold' }}>
-                  {profileModalUser.name.charAt(0)}
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.98)', padding: '30px', borderRadius: '16px', width: '500px', border: profileEditData.status === 'BLOCKED' ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', paddingBottom: '20px', borderBottom: '1px dashed rgba(255,255,255,0.1)' }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #0284c7, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '35px', border: '3px solid rgba(255,255,255,0.1)' }}>
+                  👤
                 </div>
-                <div>
-                  <h3 style={{ color: '#f8fafc', fontSize: '22px', marginBottom: '5px', margin: 0 }}>{profileModalUser.name}</h3>
-                  <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>{profileModalUser.employeeId}</p>
+                {profileEditData.status === 'BLOCKED' && (
+                  <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#ef4444', color: 'white', borderRadius: '50%', width: '25px', height: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #0f172a' }}>🚫</div>
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ color: '#f8fafc', fontSize: '22px', margin: '0 0 5px 0' }}>{profileModalUser.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                   <span style={{ color: '#94a3b8', fontSize: '13px', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '4px' }}>{profileModalUser.employeeId}</span>
+                   {profileModalUser.departmentId && <span style={{ color: '#10b981', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }}>منسب للهيكل</span>}
                 </div>
               </div>
-              <button onClick={() => setProfileModalUser(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '24px', cursor: 'pointer' }}>×</button>
+            </div>
+            
+            {/* Editable Fields */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
+               <div>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>الاسم الكامل</label>
+                  <input type="text" value={profileEditData.name} onChange={e => setProfileEditData({...profileEditData, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px' }} />
+               </div>
+               <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ flex: 1 }}>
+                     <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>البريد الإلكتروني</label>
+                     <input type="email" value={profileEditData.email} onChange={e => setProfileEditData({...profileEditData, email: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                     <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>رقم الهاتف</label>
+                     <input type="text" value={profileEditData.phone} onChange={e => setProfileEditData({...profileEditData, phone: e.target.value})} placeholder="09X XXX XXXX" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px' }} />
+                  </div>
+               </div>
+               <div>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>واجهة النظام الافتراضية</label>
+                  <select value={profileEditData.activeUI} onChange={e => setProfileEditData({...profileEditData, activeUI: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px' }}>
+                     <option value="ticket_create">Ticket Create (إنشاء تذاكر)</option>
+                     <option value="inbound_tickets">Inbound Hub (استقبال التذاكر)</option>
+                     <option value="analytics_dashboard">Analytics Dashboard (لوحة التحليلات)</option>
+                  </select>
+               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '10px' }}>
-                <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '5px' }}>البريد الإلكتروني</div>
-                <div style={{ color: '#e2e8f0', fontSize: '14px' }}>{profileModalUser.email}</div>
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                 <button onClick={() => setProfileEditData({...profileEditData, status: profileEditData.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED'})} style={{ background: profileEditData.status === 'BLOCKED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: profileEditData.status === 'BLOCKED' ? '#10b981' : '#fca5a5', border: profileEditData.status === 'BLOCKED' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                   {profileEditData.status === 'BLOCKED' ? '✅ فك الحظر' : '🚫 حظر المستخدم'}
+                 </button>
+
+                 <button onClick={() => {
+                    setProfileModalUser(null);
+                    setSingleMoveUser(profileModalUser); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true);
+                 }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#cbd5e1', padding: '10px 15px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                   🔄 نقل وإدارة
+                 </button>
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '10px' }}>
-                <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '5px' }}>الدور الحالي</div>
-                <div style={{ color: profileModalUser.role === 'OPERATIONAL_MANAGER' ? '#c4b5fd' : '#bae6fd', fontSize: '14px', fontWeight: 'bold' }}>
-                  {profileModalUser.role === 'OPERATIONAL_MANAGER' ? 'مسؤول تشغيلي (Operational Manager)' : 'مستخدم تشغيلي (Operational User)'}
-                </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                 <button onClick={() => setProfileModalUser(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', padding: '10px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+                 <button onClick={() => {
+                    setOperationalUsers(prev => prev.map(u => u.id === profileModalUser.id ? { ...u, ...profileEditData } : u));
+                    setProfileModalUser(null);
+                 }} style={{ background: '#38bdf8', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
+                    💾 حفظ التعديلات
+                 </button>
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '10px' }}>
-                <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '5px' }}>موقع التنسيب</div>
-                <div style={{ color: '#e2e8f0', fontSize: '14px' }}>
-                  {profileModalUser.departmentId ? (
-                    <>
-                      إدارة: {departments.find(d => d.id === profileModalUser.departmentId)?.name}
-                      {profileModalUser.divisionId ? ` / قسم: ${departments.find(d => d.id === profileModalUser.departmentId)?.divisions.find(dv => dv.id === profileModalUser.divisionId)?.name}` : ''}
-                    </>
-                  ) : 'غير منسب حالياً'}
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
