@@ -632,10 +632,13 @@ export const OperationalStructureTab: React.FC = () => {
                                 {team.expanded && (
                                   <div style={{ paddingRight: '25px', marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '5px', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
                                     {team.users.map(u => (
-                                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '6px 15px', borderRadius: '6px', border: '1px dotted rgba(255,255,255,0.05)' }}>
-                                        <span style={{ fontSize: '12px' }}>👤</span>
-                                        <span style={{ fontSize: '12px', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
-                                        <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
+                                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', padding: '6px 15px', borderRadius: '6px', border: '1px dotted rgba(255,255,255,0.05)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                           <span style={{ fontSize: '12px' }}>👤</span>
+                                           <span style={{ fontSize: '12px', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
+                                           <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
                                       </div>
                                     ))}
                                     {team.users.length === 0 && <div style={{ fontSize: '11px', color: '#64748b', padding: '5px 10px' }}>لا يوجد أعضاء في هذا الفريق.</div>}
