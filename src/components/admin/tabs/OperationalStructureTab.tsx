@@ -162,7 +162,7 @@ export const OperationalStructureTab: React.FC = () => {
 
   const [profileEditData, setProfileEditData] = useState<any>({});
   const handleOpenProfile = (u: any) => {
-     handleOpenProfile(u);
+     setProfileModalUser(u);
      setProfileEditData({
        name: u.name || '',
        email: u.email || `${u.employeeId}@litc.ly`,
@@ -217,7 +217,15 @@ export const OperationalStructureTab: React.FC = () => {
     const isAssigned = !!u.departmentId;
     if (poolFilterStatus === 'ASSIGNED' && !isAssigned) return false;
     if (poolFilterStatus === 'UNASSIGNED' && isAssigned) return false;
-    return true;
+
+    let matchesHierarchy = true;
+    if (poolFilterStatus === 'ASSIGNED') {
+       if (filterAssignedDeptId && u.departmentId !== filterAssignedDeptId) matchesHierarchy = false;
+       if (filterAssignedDivId && u.divisionId !== filterAssignedDivId) matchesHierarchy = false;
+       if (filterAssignedTeamId && u.teamId !== filterAssignedTeamId) matchesHierarchy = false;
+    }
+
+    return matchesHierarchy;
   });
 
   // --- Handlers ---
