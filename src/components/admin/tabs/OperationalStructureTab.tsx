@@ -62,11 +62,11 @@ const initialOperationalUsers: OrgUser[] = [
   { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
   { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
   { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-  { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' },
-  { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' },
+  { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
+  { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
   { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' },
-  { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' },
-  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
+  { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' },
+  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
 ];
 
 const initialDepartments: OrgDepartment[] = [
@@ -102,51 +102,29 @@ const initialDepartments: OrgDepartment[] = [
               { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
               { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' }
             ]
-          }
-        ],
-        unassignedUsers: [
-          { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
-          { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' }
-        ]
-      },
-      {
-        id: 'sec_evaluation',
-        name: 'فريق التقييم',
-        isIndependent: true,
-        expanded: true,
-        headId: 'op6',
-        teams: [
+          },
           {
             id: 'team_evaluation_sub',
             name: 'فريق التقييم',
             leaderId: 'op6',
             users: [
-              { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' }
+              { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' }
             ]
-          }
-        ],
-        unassignedUsers: [
-           { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' }
-        ]
-      },
-      {
-        id: 'sec_external_maint',
-        name: 'فريق الصيانة الخارجية',
-        isIndependent: true,
-        expanded: true,
-        headId: 'op9',
-        teams: [
+          },
           {
             id: 'team_external_sub',
             name: 'فريق الصيانة الخارجية',
             leaderId: 'op9',
             users: [
-              { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
+              { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
             ]
           }
         ],
         unassignedUsers: [
-           { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
+          { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
+          { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
+          { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
+          { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
         ]
       }
     ]
@@ -224,8 +202,10 @@ export const OperationalStructureTab: React.FC = () => {
           if (d.managerId === leaderIdToSave && (editEntityType !== 'DEPARTMENT' || d.id !== editEntityId)) d.managerId = undefined;
           d.divisions.forEach(dv => {
             if (dv.headId === leaderIdToSave && (editEntityType !== 'DIVISION' || dv.id !== editEntityId)) dv.headId = undefined;
+            dv.unassignedUsers = dv.unassignedUsers.filter(u => u.id !== leaderIdToSave);
             dv.teams.forEach(t => {
               if (t.leaderId === leaderIdToSave && (editEntityType !== 'TEAM' || t.id !== editEntityId)) t.leaderId = undefined;
+              t.users = t.users.filter(u => u.id !== leaderIdToSave);
             });
           });
         });
@@ -276,15 +256,23 @@ export const OperationalStructureTab: React.FC = () => {
     
     departments.forEach(d => {
       if (d.managerId === editEntityLeaderId && (editEntityType !== 'DEPARTMENT' || d.id !== editEntityId)) {
-        conflictRoleName = `مدير إدارة (${d.name})`;
+        conflictRoleName = `مدير إدارة التابعة لـ (${d.name})`;
       }
       d.divisions.forEach(dv => {
         if (dv.headId === editEntityLeaderId && (editEntityType !== 'DIVISION' || dv.id !== editEntityId)) {
-          conflictRoleName = `رئيس قسم (${dv.name})`;
+          conflictRoleName = `رئيس قسم التابعة لـ (${dv.name})`;
+        }
+        if (dv.unassignedUsers.some(u => u.id === editEntityLeaderId) && conflictRoleName === '') {
+           // Might be just unassigned in division
+           const uRole = dv.unassignedUsers.find(u => u.id === editEntityLeaderId)?.role;
+           if (uRole === 'OPERATIONAL_USER') conflictRoleName = `عضو فريق غير منسب التابعة لـ (${dv.name})`;
         }
         dv.teams.forEach(t => {
           if (t.leaderId === editEntityLeaderId && (editEntityType !== 'TEAM' || t.id !== editEntityId)) {
-            conflictRoleName = `قائد فريق (${t.name})`;
+            conflictRoleName = `قائد فريق التابعة لـ (${t.name})`;
+          }
+          if (t.users.some(u => u.id === editEntityLeaderId) && conflictRoleName === '') {
+             conflictRoleName = `عضو فريق التابعة لـ (${t.name})`;
           }
         });
       });
@@ -647,7 +635,7 @@ export const OperationalStructureTab: React.FC = () => {
                     -- بدون مسؤول حالياً --
                   </div>
                   {operationalUsers
-                    .filter(u => u.name.includes(editEntityLeaderSearchTerm) || u.employeeId.includes(editEntityLeaderSearchTerm))
+                    .filter(u => u.name.toLowerCase().includes(editEntityLeaderSearchTerm.toLowerCase()) || u.employeeId.toLowerCase().includes(editEntityLeaderSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(editEntityLeaderSearchTerm.toLowerCase()))
                     .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
                     .map(u => (
                       <div 
@@ -703,9 +691,11 @@ export const OperationalStructureTab: React.FC = () => {
               <span>⚠️</span> تحذير: شاغر تشغيلي محتمل!
             </h3>
             <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', marginBottom: '25px' }}>
-              المستخدم المحدد يشغل حالياً منصب <strong>{pendingReassignment.oldRoleName}</strong>. 
+              المستخدم المحدد يشغل حالياً صفة <strong>{pendingReassignment.oldRoleName}</strong>. 
               <br/><br/>
-              عند نقله لتولي منصب <strong>{pendingReassignment.newRoleName}</strong>، سيصبح منصبه القديم <strong>فارغاً تماماً</strong> وسيتطلب منك تعيين شخص آخر لاحقاً.
+              هل أنت متأكد أنك ستقوم بنقل هذا الاسم لصفة <strong>{pendingReassignment.newRoleName}</strong> داخل الهيكل التشغيلي؟
+              <br/><br/>
+              موافقتك ستعني نقله وإفراغ مكانه السابق.
               <br/><br/>
               هل أنت متأكد من رغبتك في إتمام النقل؟
             </p>
