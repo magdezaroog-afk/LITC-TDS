@@ -2041,6 +2041,8 @@ export function UILayoutEngineTab() {
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#10b981', marginBottom: '15px' }}>📈 إعدادات التحليل المركزي (Analytics)</h5>
                       
+                      {currentBuilderRole === 'IT_ADMIN' ? (
+                        <>
                       <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '15px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
                           <div>
@@ -2085,6 +2087,12 @@ export function UILayoutEngineTab() {
                           <div style={selectedComponent.properties.adminOverride ? styles.knobTrue : styles.knobFalse}></div>
                         </div>
                       </div>
+                      </>
+                      ) : (
+                        <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
+                          🔒 هذه الإعدادات مخصصة لمدير النظام (IT_ADMIN) فقط.
+                        </div>
+                      )}
                     </div>
                   )}
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 // ─── Core Roles & Org Structure Interfaces ───
-export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'OPERATIONAL_MANAGER' | 'SYSTEM_ADMIN';
+export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'TEAM_LEADER' | 'SECTION_HEAD' | 'OPERATIONAL_MANAGER' | 'SYSTEM_ADMIN' | 'IT_ADMIN';
 
 export interface OrgUser {
   id: string;
@@ -57,11 +57,16 @@ const mockAvailableInterfaces: AvailableUI[] = [
 
 // ─── Mock Data for Org Structure ───
 const initialOperationalUsers: OrgUser[] = [
-  { id: 'op1', name: 'عصام فتحي', email: 'esam@litc.ly', employeeId: 'OP-101', role: 'OPERATIONAL_MANAGER', positionTitle: 'مدير إدارة', departmentId: 'dept_it' },
-  { id: 'op2', name: 'وليد حسن', email: 'waleed@litc.ly', employeeId: 'OP-102', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'div_net' },
-  { id: 'op3', name: 'منى صالح', email: 'mona@litc.ly', employeeId: 'OP-103', role: 'OPERATIONAL_USER' },
-  { id: 'op4', name: 'رامي سعيد', email: 'rami@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER' },
-  { id: 'op5', name: 'نور الدين', email: 'noor@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER' },
+  { id: 'op1', name: 'م. مجدي الزروق', email: 'majdi.alzarrouk@litc.ly', employeeId: 'OP-101', role: 'OPERATIONAL_MANAGER', positionTitle: 'مدير إدارة', departmentId: 'dept_it' },
+  { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
+  { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
+  { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
+  { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
+  { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' },
+  { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' },
+  { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' },
+  { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' },
+  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
 ];
 
 const initialDepartments: OrgDepartment[] = [
@@ -72,24 +77,77 @@ const initialDepartments: OrgDepartment[] = [
     expanded: true,
     divisions: [
       {
-        id: 'div_net',
+        id: 'sec_networking',
         name: 'قسم الشبكات',
         isIndependent: false,
         expanded: true,
-        teams: [
-          { id: 'team_field', name: 'فريق الصيانة الميدانية', users: [] }
-        ],
+        headId: 'op8',
+        teams: [],
         unassignedUsers: [
-          { id: 'op2', name: 'وليد حسن', email: 'waleed@litc.ly', employeeId: 'OP-102', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'div_net' }
+           { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' }
         ]
       },
       {
-        id: 'div_support',
+        id: 'sec_tech_support',
         name: 'قسم الدعم الفني',
         isIndependent: false,
-        expanded: false,
-        teams: [],
-        unassignedUsers: []
+        expanded: true,
+        headId: 'op2',
+        teams: [
+          { 
+            id: 'team_field_support', 
+            name: 'فريق الدعم الميداني', 
+            leaderId: 'op3',
+            users: [
+              { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
+              { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' }
+            ]
+          }
+        ],
+        unassignedUsers: [
+          { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
+          { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' }
+        ]
+      },
+      {
+        id: 'sec_evaluation',
+        name: 'فريق التقييم',
+        isIndependent: true,
+        expanded: true,
+        headId: 'op6',
+        teams: [
+          {
+            id: 'team_evaluation_sub',
+            name: 'فريق التقييم',
+            leaderId: 'op6',
+            users: [
+              { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' }
+            ]
+          }
+        ],
+        unassignedUsers: [
+           { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_evaluation', teamId: 'team_evaluation_sub' }
+        ]
+      },
+      {
+        id: 'sec_external_maint',
+        name: 'فريق الصيانة الخارجية',
+        isIndependent: true,
+        expanded: true,
+        headId: 'op9',
+        teams: [
+          {
+            id: 'team_external_sub',
+            name: 'فريق الصيانة الخارجية',
+            leaderId: 'op9',
+            users: [
+              { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
+            ]
+          }
+        ],
+        unassignedUsers: [
+           { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_external_maint', teamId: 'team_external_sub' }
+        ]
       }
     ]
   }
@@ -266,7 +324,7 @@ export const OperationalStructureTab: React.FC = () => {
     setTimeout(() => {
       const allDivs = Array.from(document.querySelectorAll('div'));
       // Find the tab that contains "UI Layout Engine"
-      const uiTab = allDivs.find(div => div.textContent && div.textContent.includes('UI Layout Engine') && div.onClick == null && div.style.cursor === 'pointer');
+      const uiTab = allDivs.find(div => div.textContent && div.textContent.includes('UI Layout Engine') && div.onclick == null && div.style.cursor === 'pointer');
       
       if (uiTab) {
         (uiTab as HTMLElement).click();
