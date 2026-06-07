@@ -156,6 +156,13 @@ export const OperationalStructureTab: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const [pendingReassignment, setPendingReassignment] = useState<{ userId: string, oldRoleName: string, newRoleName: string } | null>(null);
 
+  // --- Advanced Delete Team States ---
+  const [deleteTeamModalOpen, setDeleteTeamModalOpen] = useState<boolean>(false);
+  const [teamToDelete, setTeamToDelete] = useState<any>(null);
+  const [divisionOfTeamToDelete, setDivisionOfTeamToDelete] = useState<any>(null);
+  const [deleteTeamAction, setDeleteTeamAction] = useState<'UNASSIGN' | 'MOVE_TO_DIVISION' | 'MERGE'>('MOVE_TO_DIVISION');
+  const [deleteTeamTargetId, setDeleteTeamTargetId] = useState<string>('');
+
   // --- Computed Pool Data ---
   const filteredPool = operationalUsers.filter(u => {
     if (poolSearchQuery.trim() !== '') {
@@ -325,6 +332,67 @@ export const OperationalStructureTab: React.FC = () => {
   };
 
 
+
+  const handleOpenDeleteTeamModal = (team: any, division: any) => {
+    if (team.users.length === 0 && !team.leaderId) {
+       handleDeleteEntity('TEAM', team.id, team.name);
+       return;
+    }
+    setTeamToDelete(team);
+    setDivisionOfTeamToDelete(division);
+    setDeleteTeamAction('MOVE_TO_DIVISION');
+    setDeleteTeamTargetId('');
+    setDeleteTeamModalOpen(true);
+  };
+
+  const executeAdvancedDeleteTeam = () => {
+    const usersToMove: any[] = [...teamToDelete.users];
+    
+    let leaderObj = null;
+    if (teamToDelete.leaderId) {
+       leaderObj = operationalUsers.find(u => u.id === teamToDelete.leaderId);
+    }
+
+    setDepartments(prev => {
+      return prev.map(dept => {
+        return {
+          ...dept,
+          divisions: dept.divisions.map(div => {
+            if (div.id === divisionOfTeamToDelete.id) {
+               const newDiv = { ...div };
+               
+               if (deleteTeamAction === 'UNASSIGN') {
+                  // They become unassigned globally, removed from structure
+               } 
+               else if (deleteTeamAction === 'MOVE_TO_DIVISION') {
+                  newDiv.unassignedUsers = [...newDiv.unassignedUsers, ...usersToMove.map(u => ({...u, role: 'OPERATIONAL_USER', teamId: undefined}))];
+                  if (leaderObj && !newDiv.unassignedUsers.some((u: any) => u.id === leaderObj.id)) {
+                     newDiv.unassignedUsers.push({...leaderObj, role: 'OPERATIONAL_USER', teamId: undefined});
+                  }
+               }
+               else if (deleteTeamAction === 'MERGE') {
+                  newDiv.teams = newDiv.teams.map((t: any) => {
+                     if (t.id === deleteTeamTargetId) {
+                        const tUsers = [...t.users, ...usersToMove.map(u => ({...u, teamId: t.id}))];
+                        if (leaderObj && !tUsers.some((u:any) => u.id === leaderObj.id)) {
+                           tUsers.push({...leaderObj, role: 'OPERATIONAL_USER', teamId: t.id});
+                        }
+                        return { ...t, users: tUsers };
+                     }
+                     return t;
+                  });
+               }
+               newDiv.teams = newDiv.teams.filter((t: any) => t.id !== teamToDelete.id);
+               return newDiv;
+            }
+            return div;
+          })
+        };
+      });
+    });
+    setDeleteTeamModalOpen(false);
+  };
+
   const handleDeleteEntity = (type: 'DEPARTMENT' | 'DIVISION' | 'TEAM', id: string, name: string) => {
     if (!window.confirm(`هل أنت متأكد من رغبتك في حذف (${name})؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
 
@@ -437,7 +505,7 @@ export const OperationalStructureTab: React.FC = () => {
                                 </div>
                                 <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
                                    <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>✏️ تعديل</button>
-                                   <button onClick={() => handleDeleteEntity('TEAM', team.id, team.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
+                                   <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
                                 </div>
                               </div>
                             ))}
@@ -728,6 +796,67 @@ export const OperationalStructureTab: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button onClick={() => setPendingReassignment(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء التعيين</button>
               <button onClick={() => executeSaveEntity(pendingReassignment.userId)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>نعم، أتمم النقل وأفرغ المنصب القديم</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Delete Team Advanced Modal */}
+      {deleteTeamModalOpen && teamToDelete && divisionOfTeamToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(239, 68, 68, 0.5)', boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)' }}>
+            <h3 style={{ color: '#fca5a5', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>⚠️</span> خيارات حذف فريق ({teamToDelete.name})
+            </h3>
+            <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+              يحتوي هذا الفريق على <strong>{teamToDelete.users.length + (teamToDelete.leaderId ? 1 : 0)}</strong> مستخدمين (بما في ذلك قائد الفريق). يرجى تحديد مصير هؤلاء الكوادر التشغيلية قبل إتمام عملية الحذف.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'MOVE_TO_DIVISION' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'MOVE_TO_DIVISION' ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <input type="radio" name="deleteAction" checked={deleteTeamAction === 'MOVE_TO_DIVISION'} onChange={() => setDeleteTeamAction('MOVE_TO_DIVISION')} />
+                <div>
+                  <div style={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '14px' }}>إرجاعهم تحت القسم بدون فريق</div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px' }}>سيصبحون أفراداً عاديين متاحين للتعيين تحت "{divisionOfTeamToDelete.name}"</div>
+                </div>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'MERGE' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'MERGE' ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <input type="radio" name="deleteAction" checked={deleteTeamAction === 'MERGE'} onChange={() => setDeleteTeamAction('MERGE')} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '14px' }}>نقلهم ودمجهم مع فريق آخر داخل القسم</div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px' }}>سيتم نقلهم جميعاً كأعضاء عاديين للفريق المختار</div>
+                  {deleteTeamAction === 'MERGE' && (
+                     <select 
+                       value={deleteTeamTargetId} 
+                       onChange={e => setDeleteTeamTargetId(e.target.value)} 
+                       style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                     >
+                        <option value="">-- اختر الفريق الوجهة --</option>
+                        {divisionOfTeamToDelete.teams.filter((t: any) => t.id !== teamToDelete.id).map((t: any) => (
+                           <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                     </select>
+                  )}
+                </div>
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'UNASSIGN' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'UNASSIGN' ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <input type="radio" name="deleteAction" checked={deleteTeamAction === 'UNASSIGN'} onChange={() => setDeleteTeamAction('UNASSIGN')} />
+                <div>
+                  <div style={{ color: '#fca5a5', fontWeight: 'bold', fontSize: '14px' }}>تسريح إلى دليل الكوادر (خارج الهيكل)</div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px' }}>سيتم تجريدهم من انتمائهم بالكامل ونقلهم لحوض الموظفين غير المنسبين</div>
+                </div>
+              </label>
+
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setDeleteTeamModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+              <button disabled={deleteTeamAction === 'MERGE' && !deleteTeamTargetId} onClick={executeAdvancedDeleteTeam} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 'not-allowed' : 'pointer', opacity: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 0.5 : 1, boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>
+                 تنفيذ الإجراء والحذف
+              </button>
             </div>
           </div>
         </div>
