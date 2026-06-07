@@ -154,7 +154,24 @@ export const OperationalStructureTab: React.FC = () => {
   const [poolSearchQuery, setPoolSearchQuery] = useState<string>('');
   const [poolFilterStatus, setPoolFilterStatus] = useState<'ALL' | 'ASSIGNED' | 'UNASSIGNED'>('ALL');
   const [selectedPoolUsers, setSelectedPoolUsers] = useState<string[]>([]);
-  const [profileModalUser, setProfileModalUser] = useState<OrgUser | null>(null);
+  const [profileModalUser, setProfileModalUser] = useState<any>(null);
+
+  const [filterAssignedDeptId, setFilterAssignedDeptId] = useState<string>('');
+  const [filterAssignedDivId, setFilterAssignedDivId] = useState<string>('');
+  const [filterAssignedTeamId, setFilterAssignedTeamId] = useState<string>('');
+
+  const [profileEditData, setProfileEditData] = useState<any>({});
+  const handleOpenProfile = (u: any) => {
+     handleOpenProfile(u);
+     setProfileEditData({
+       name: u.name || '',
+       email: u.email || `${u.employeeId}@litc.ly`,
+       phone: u.phone || '',
+       activeUI: u.activeUI || 'ticket_create',
+       status: u.status || 'ACTIVE'
+     });
+  };
+
   const [assignUsersModalOpen, setAssignUsersModalOpen] = useState<boolean>(false);
   
   // --- Universal Edit Entity Modal States ---
@@ -565,7 +582,7 @@ export const OperationalStructureTab: React.FC = () => {
                     <span style={{ fontSize: '18px', transform: dept.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#3b82f6' }}>▶</span>
                     <span style={{ fontWeight: '900', fontSize: '16px', color: '#f8fafc' }}>{dept.name}</span>
                     {dept.managerId && (
-                      <span onClick={(e) => { e.stopPropagation(); setProfileModalUser(operationalUsers.find(u => u.id === dept.managerId) || null); }} style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', border: '1px solid rgba(59,130,246,0.3)' }}>
+                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === dept.managerId) || null); }} style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', border: '1px solid rgba(59,130,246,0.3)' }}>
                         مدير الإدارة: {operationalUsers.find(u => u.id === dept.managerId)?.name}
                       </span>
                     )}
@@ -589,7 +606,7 @@ export const OperationalStructureTab: React.FC = () => {
                             <span style={{ fontSize: '14px', transform: div.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#64748b' }}>▶</span>
                             <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#cbd5e1' }}>{div.name}</span>
                             {div.headId && (
-                              <span onClick={(e) => { e.stopPropagation(); setProfileModalUser(operationalUsers.find(u => u.id === div.headId) || null); }} style={{ fontSize: '10px', background: 'rgba(99, 102, 241, 0.2)', color: '#c7d2fe', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(99,102,241,0.3)' }}>
+                              <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === div.headId) || null); }} style={{ fontSize: '10px', background: 'rgba(99, 102, 241, 0.2)', color: '#c7d2fe', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(99,102,241,0.3)' }}>
                                 رئيس القسم: {operationalUsers.find(u => u.id === div.headId)?.name}
                               </span>
                             )}
@@ -619,7 +636,7 @@ export const OperationalStructureTab: React.FC = () => {
                                     <span style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: 'bold' }}>{team.name}</span>
                                     <span style={{ fontSize: '11px', color: '#64748b' }}>({team.users.length} أعضاء)</span>
                                     {team.leaderId && (
-                                      <span onClick={(e) => { e.stopPropagation(); setProfileModalUser(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '10px', background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(236,72,153,0.3)' }}>
+                                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '10px', background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(236,72,153,0.3)' }}>
                                         قائد الفريق: {operationalUsers.find(u => u.id === team.leaderId)?.name}
                                       </span>
                                     )}
@@ -635,7 +652,7 @@ export const OperationalStructureTab: React.FC = () => {
                                       <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', padding: '6px 15px', borderRadius: '6px', border: '1px dotted rgba(255,255,255,0.05)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                            <span style={{ fontSize: '12px' }}>👤</span>
-                                           <span style={{ fontSize: '12px', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
+                                           <span style={{ fontSize: '12px', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
                                            <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
                                         </div>
                                         <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
@@ -651,7 +668,7 @@ export const OperationalStructureTab: React.FC = () => {
                               <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '8px 15px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                    <span style={{ fontSize: '14px' }}>👤</span>
-                                   <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
+                                   <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
                                    <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
@@ -750,7 +767,7 @@ export const OperationalStructureTab: React.FC = () => {
                         }} />
                       </td>
                       <td style={{ padding: '12px 15px', fontSize: '13px', color: '#cbd5e1' }}>{user.employeeId}</td>
-                      <td style={{ padding: '12px 15px', fontSize: '14px', fontWeight: 'bold', color: '#f8fafc', cursor: 'pointer' }} onClick={() => setProfileModalUser(user)}>{user.name}</td>
+                      <td style={{ padding: '12px 15px', fontSize: '14px', fontWeight: 'bold', color: '#f8fafc', cursor: 'pointer' }} onClick={() => handleOpenProfile(user)}>{user.name}</td>
                       <td style={{ padding: '12px 15px', fontSize: '13px', color: '#94a3b8' }}>{user.email}</td>
                       <td style={{ padding: '12px 15px', fontSize: '12px' }}>
                         <span style={{ background: user.role === 'OPERATIONAL_MANAGER' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(2, 132, 199, 0.2)', color: user.role === 'OPERATIONAL_MANAGER' ? '#c4b5fd' : '#bae6fd', padding: '4px 8px', borderRadius: '4px', border: user.role === 'OPERATIONAL_MANAGER' ? '1px solid #8b5cf6' : '1px solid #0284c7' }}>
