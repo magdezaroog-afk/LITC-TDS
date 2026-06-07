@@ -21,6 +21,7 @@ export interface OrgTeam {
   leaderId?: string;
   assignedInterfaceId?: string;
   users: OrgUser[];
+  expanded?: boolean;
 }
 
 export interface OrgDivision {
@@ -132,8 +133,22 @@ const initialDepartments: OrgDepartment[] = [
 ];
 
 export const OperationalStructureTab: React.FC = () => {
-  const [operationalUsers, setOperationalUsers] = useState<OrgUser[]>(initialOperationalUsers);
-  const [departments, setDepartments] = useState<OrgDepartment[]>(initialDepartments);
+  const [operationalUsers, setOperationalUsers] = useState<OrgUser[]>(() => {
+    const saved = localStorage.getItem('mockOperationalUsers');
+    return saved ? JSON.parse(saved) : initialOperationalUsers;
+  });
+  const [departments, setDepartments] = useState<OrgDepartment[]>(() => {
+    const saved = localStorage.getItem('mockDepartments');
+    return saved ? JSON.parse(saved) : initialDepartments;
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('mockOperationalUsers', JSON.stringify(operationalUsers));
+  }, [operationalUsers]);
+
+  React.useEffect(() => {
+    localStorage.setItem('mockDepartments', JSON.stringify(departments));
+  }, [departments]);
   
   // --- Org Structure Advanced V2 States ---
   const [poolSearchQuery, setPoolSearchQuery] = useState<string>('');
@@ -390,6 +405,25 @@ export const OperationalStructureTab: React.FC = () => {
         };
       });
     });
+
+    setOperationalUsers(prev => prev.map(u => {
+      const isMember = usersToMove.some((mu: any) => mu.id === u.id);
+      const isLeader = leaderObj && leaderObj.id === u.id;
+      
+      if (isMember || isLeader) {
+         if (deleteTeamAction === 'UNASSIGN') {
+            return { ...u, departmentId: undefined, divisionId: undefined, teamId: undefined, role: 'OPERATIONAL_USER', positionTitle: undefined };
+         }
+         if (deleteTeamAction === 'MOVE_TO_DIVISION') {
+            return { ...u, teamId: undefined, role: 'OPERATIONAL_USER' };
+         }
+         if (deleteTeamAction === 'MERGE') {
+            return { ...u, teamId: deleteTeamTargetId, role: 'OPERATIONAL_USER' };
+         }
+      }
+      return u;
+    }));
+
     setDeleteTeamModalOpen(false);
   };
 
@@ -492,21 +526,42 @@ export const OperationalStructureTab: React.FC = () => {
                         {div.expanded && (
                           <div style={{ paddingRight: '30px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {div.teams.map(team => (
-                              <div key={team.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <span style={{ fontSize: '14px' }}>🛡️</span>
-                                  <span style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: 'bold' }}>{team.name}</span>
-                                  <span style={{ fontSize: '11px', color: '#64748b' }}>({team.users.length} أعضاء)</span>
-                                  {team.leaderId && (
-                                    <span onClick={(e) => { e.stopPropagation(); setProfileModalUser(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '10px', background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(236,72,153,0.3)' }}>
-                                      قائد الفريق: {operationalUsers.find(u => u.id === team.leaderId)?.name}
-                                    </span>
-                                  )}
+                              <div key={team.id}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }} onClick={() => {
+                                  setDepartments(prev => prev.map(d => d.id === dept.id ? {
+                                    ...d, divisions: d.divisions.map(dv => dv.id === div.id ? {
+                                      ...dv, teams: dv.teams.map(t => t.id === team.id ? { ...t, expanded: !t.expanded } : t)
+                                    } : dv)
+                                  } : d));
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '12px', transform: team.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#64748b' }}>▶</span>
+                                    <span style={{ fontSize: '14px' }}>🛡️</span>
+                                    <span style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: 'bold' }}>{team.name}</span>
+                                    <span style={{ fontSize: '11px', color: '#64748b' }}>({team.users.length} أعضاء)</span>
+                                    {team.leaderId && (
+                                      <span onClick={(e) => { e.stopPropagation(); setProfileModalUser(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '10px', background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(236,72,153,0.3)' }}>
+                                        قائد الفريق: {operationalUsers.find(u => u.id === team.leaderId)?.name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
+                                     <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>✏️ تعديل</button>
+                                     <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
+                                  </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
-                                   <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>✏️ تعديل</button>
-                                   <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
-                                </div>
+                                {team.expanded && (
+                                  <div style={{ paddingRight: '25px', marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '5px', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {team.users.map(u => (
+                                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '6px 15px', borderRadius: '6px', border: '1px dotted rgba(255,255,255,0.05)' }}>
+                                        <span style={{ fontSize: '12px' }}>👤</span>
+                                        <span style={{ fontSize: '12px', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
+                                        <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
+                                      </div>
+                                    ))}
+                                    {team.users.length === 0 && <div style={{ fontSize: '11px', color: '#64748b', padding: '5px 10px' }}>لا يوجد أعضاء في هذا الفريق.</div>}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             
