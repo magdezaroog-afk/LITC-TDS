@@ -177,6 +177,19 @@ export const OperationalStructureTab: React.FC = () => {
   const [divisionOfTeamToDelete, setDivisionOfTeamToDelete] = useState<any>(null);
   const [deleteTeamAction, setDeleteTeamAction] = useState<'UNASSIGN' | 'MOVE_TO_DIVISION' | 'MERGE'>('MOVE_TO_DIVISION');
   const [deleteTeamTargetId, setDeleteTeamTargetId] = useState<string>('');
+// --- Advanced Universal Assignment States ---
+  const [conflictModalOpen, setConflictModalOpen] = useState<boolean>(false);
+  const [conflictUsersList, setConflictUsersList] = useState<OrgUser[]>([]);
+  
+  const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState<boolean>(false);
+  const [bulkAssignUsers, setBulkAssignUsers] = useState<string[]>([]);
+  
+  const [singleMoveModalOpen, setSingleMoveModalOpen] = useState<boolean>(false);
+  const [singleMoveUser, setSingleMoveUser] = useState<OrgUser | null>(null);
+
+  const [targetDeptId, setTargetDeptId] = useState<string>('');
+  const [targetDivId, setTargetDivId] = useState<string>('');
+  const [targetTeamId, setTargetTeamId] = useState<string>('');
 
   // --- Computed Pool Data ---
   const filteredPool = operationalUsers.filter(u => {
@@ -358,6 +371,72 @@ export const OperationalStructureTab: React.FC = () => {
     setDeleteTeamAction('MOVE_TO_DIVISION');
     setDeleteTeamTargetId('');
     setDeleteTeamModalOpen(true);
+  };
+
+
+  const executeUniversalMove = (usersToMoveIds: string[], action: 'UNASSIGN' | 'ASSIGN', destDeptId?: string, destDivId?: string, destTeamId?: string) => {
+     setDepartments(prev => {
+       let next = JSON.parse(JSON.stringify(prev)) as OrgDepartment[];
+       
+       next.forEach(dept => {
+          if (dept.managerId && usersToMoveIds.includes(dept.managerId)) dept.managerId = undefined;
+          dept.divisions.forEach(div => {
+             if (div.headId && usersToMoveIds.includes(div.headId)) div.headId = undefined;
+             div.unassignedUsers = div.unassignedUsers.filter((u: any) => !usersToMoveIds.includes(u.id));
+             div.teams.forEach(team => {
+                if (team.leaderId && usersToMoveIds.includes(team.leaderId)) team.leaderId = undefined;
+                team.users = team.users.filter((u: any) => !usersToMoveIds.includes(u.id));
+             });
+          });
+       });
+
+       if (action === 'ASSIGN' && destDeptId && destDivId) {
+          const usersObjs = operationalUsers.filter(u => usersToMoveIds.includes(u.id)).map(u => ({...u, role: 'OPERATIONAL_USER' as CoreRole, departmentId: destDeptId, divisionId: destDivId, teamId: destTeamId}));
+          const dept = next.find(d => d.id === destDeptId);
+          if (dept) {
+             const div = dept.divisions.find(d => d.id === destDivId);
+             if (div) {
+                if (destTeamId) {
+                   const team = div.teams.find(t => t.id === destTeamId);
+                   if (team) team.users.push(...usersObjs);
+                } else {
+                   div.unassignedUsers.push(...usersObjs);
+                }
+             }
+          }
+       }
+       return next;
+     });
+
+     setOperationalUsers(prev => prev.map(u => {
+        if (usersToMoveIds.includes(u.id)) {
+           if (action === 'UNASSIGN') {
+              return { ...u, role: 'OPERATIONAL_USER', departmentId: undefined, divisionId: undefined, teamId: undefined, positionTitle: undefined };
+           } else {
+              return { ...u, role: 'OPERATIONAL_USER', departmentId: destDeptId, divisionId: destDivId, teamId: destTeamId, positionTitle: undefined };
+           }
+        }
+        return u;
+     }));
+  };
+
+  const handleBulkAssignClick = () => {
+     const conflicts = operationalUsers.filter(u => selectedPoolUsers.includes(u.id) && !!u.departmentId);
+     if (conflicts.length > 0) {
+        setConflictUsersList(conflicts);
+        setConflictModalOpen(true);
+     } else {
+        setBulkAssignUsers(selectedPoolUsers);
+        setTargetDeptId(''); setTargetDivId(''); setTargetTeamId('');
+        setBulkAssignModalOpen(true);
+     }
+  };
+
+  const handleBulkUnassignClick = () => {
+     if (window.confirm('هل أنت متأكد من إرجاع المحددين كمستخدمين عاديين وتجريدهم من انتمائهم الحالي؟')) {
+        executeUniversalMove(selectedPoolUsers, 'UNASSIGN');
+        setSelectedPoolUsers([]);
+     }
   };
 
   const executeAdvancedDeleteTeam = () => {
@@ -566,10 +645,13 @@ export const OperationalStructureTab: React.FC = () => {
                             ))}
                             
                             {div.unassignedUsers.map(u => (
-                              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '8px 15px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                <span style={{ fontSize: '14px' }}>👤</span>
-                                <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
-                                <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
+                              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '8px 15px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                   <span style={{ fontSize: '14px' }}>👤</span>
+                                   <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setProfileModalUser(u)}>{u.name}</span>
+                                   <span style={{ fontSize: '10px', color: '#64748b' }}>({u.employeeId})</span>
+                                </div>
+                                <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
                               </div>
                             ))}
 
@@ -614,10 +696,10 @@ export const OperationalStructureTab: React.FC = () => {
               
               {selectedPoolUsers.length > 0 && (
                 <div style={{ display: 'flex', gap: '10px', marginLeft: '10px' }}>
-                  <button style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setAssignUsersModalOpen(true)}>
+                  <button style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }} onClick={handleBulkAssignClick}>
                     تنسيب المحددين ({selectedPoolUsers.length})
                   </button>
-                  <button style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <button onClick={handleBulkUnassignClick} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                     إرجاع كمستخدمين عاديين
                   </button>
                 </div>
@@ -912,6 +994,168 @@ export const OperationalStructureTab: React.FC = () => {
               <button disabled={deleteTeamAction === 'MERGE' && !deleteTeamTargetId} onClick={executeAdvancedDeleteTeam} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 'not-allowed' : 'pointer', opacity: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 0.5 : 1, boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>
                  تنفيذ الإجراء والحذف
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ---------------- Advanced Assignment Modals ---------------- */}
+
+      {/* Conflict Modal */}
+      {conflictModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '550px', border: '1px solid rgba(245, 158, 11, 0.5)', boxShadow: '0 25px 50px -12px rgba(245, 158, 11, 0.3)' }}>
+            <h3 style={{ color: '#fcd34d', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>⚠️</span> تحذير: ارتباطات تشغيلية متعارضة
+            </h3>
+            <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', marginBottom: '15px' }}>
+              بعض الأسماء المحددة تشغل بالفعل وظائف وتنسيبات داخل الهيكل التشغيلي:
+            </p>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }} className="scrollbar-thin">
+               {conflictUsersList.map(u => {
+                  let roleDesc = u.role === 'OPERATIONAL_MANAGER' ? 'مدير' : u.role === 'SECTION_HEAD' ? 'رئيس قسم' : u.role === 'TEAM_LEADER' ? 'قائد فريق' : 'عضو منسب';
+                  let loc = departments.find(d => d.id === u.departmentId)?.name || '';
+                  if (u.divisionId) loc += ` / ` + departments.find(d => d.id === u.departmentId)?.divisions.find(dv => dv.id === u.divisionId)?.name;
+                  if (u.teamId) loc += ` / ` + departments.find(d => d.id === u.departmentId)?.divisions.find(dv => dv.id === u.divisionId)?.teams.find(t => t.id === u.teamId)?.name;
+                  return (
+                     <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '13px' }}>{u.name}</span>
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>{roleDesc} في ({loc})</span>
+                     </div>
+                  )
+               })}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+              <button onClick={() => setConflictModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء الإجراء</button>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                 <button onClick={() => {
+                    const noConflicts = selectedPoolUsers.filter(id => !conflictUsersList.some(cu => cu.id === id));
+                    if (noConflicts.length === 0) {
+                       alert('لا يوجد أي مستخدم غير متعارض لنقله.');
+                       setConflictModalOpen(false);
+                    } else {
+                       setBulkAssignUsers(noConflicts);
+                       setTargetDeptId(''); setTargetDivId(''); setTargetTeamId('');
+                       setConflictModalOpen(false);
+                       setBulkAssignModalOpen(true);
+                    }
+                 }} style={{ background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.5)', color: '#93c5fd', padding: '10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    استبعاد المتعارضين ونقل الباقي
+                 </button>
+                 <button onClick={() => {
+                    setBulkAssignUsers(selectedPoolUsers);
+                    setTargetDeptId(''); setTargetDivId(''); setTargetTeamId('');
+                    setConflictModalOpen(false);
+                    setBulkAssignModalOpen(true);
+                 }} style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)' }}>
+                    تجاوز وإفراغ ونقل الجميع
+                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Assign Destination Modal */}
+      {bulkAssignModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 25px 50px -12px rgba(56, 189, 248, 0.3)' }}>
+            <h3 style={{ color: '#38bdf8', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>🎯</span> تحديد وجهة النقل لـ ({bulkAssignUsers.length}) مستخدم
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
+               <div>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>الإدارة الوجهة</label>
+                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                     <option value="">-- اختر الإدارة --</option>
+                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+               </div>
+               
+               {targetDeptId && (
+                  <div>
+                     <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>القسم الوجهة</label>
+                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <option value="">-- اختر القسم --</option>
+                        {departments.find(d => d.id === targetDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
+                     </select>
+                  </div>
+               )}
+
+               {targetDivId && (
+                  <div>
+                     <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '5px' }}>الفريق الوجهة (اختياري)</label>
+                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <option value="">-- تنسيب كعضو قسم بدون فريق --</option>
+                        {departments.find(d => d.id === targetDeptId)?.divisions.find(dv => dv.id === targetDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                     </select>
+                  </div>
+               )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setBulkAssignModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+              <button disabled={!targetDeptId || !targetDivId} onClick={() => {
+                 executeUniversalMove(bulkAssignUsers, 'ASSIGN', targetDeptId, targetDivId, targetTeamId);
+                 setBulkAssignModalOpen(false);
+                 setSelectedPoolUsers([]);
+              }} style={{ background: '#38bdf8', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1, boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
+                 تأكيد وتنسيب الجميع كأعضاء عاديين
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Move / Manage Modal for Division Unassigned */}
+      {singleMoveModalOpen && singleMoveUser && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ color: '#f8fafc', fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>⚙️</span> خيارات العضو ({singleMoveUser.name})
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '25px' }}>
+               <button onClick={() => {
+                  executeUniversalMove([singleMoveUser.id], 'UNASSIGN');
+                  setSingleMoveModalOpen(false);
+               }} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '12px', borderRadius: '8px', cursor: 'pointer', textAlign: 'right', fontWeight: 'bold' }}>
+                  تسريح وإرجاع لحوض الكوادر كمستخدم عادي
+               </button>
+               
+               <div style={{ marginTop: '10px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '15px' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '10px', fontWeight: 'bold' }}>أو نقله إلى مكان آخر:</div>
+                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '10px' }}>
+                     <option value="">-- اختر الإدارة --</option>
+                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                  {targetDeptId && (
+                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '10px' }}>
+                        <option value="">-- اختر القسم --</option>
+                        {departments.find(d => d.id === targetDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
+                     </select>
+                  )}
+                  {targetDivId && (
+                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '15px' }}>
+                        <option value="">-- تنسيب كعضو قسم بدون فريق --</option>
+                        {departments.find(d => d.id === targetDeptId)?.divisions.find(dv => dv.id === targetDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                     </select>
+                  )}
+                  <button disabled={!targetDeptId || !targetDivId} onClick={() => {
+                     executeUniversalMove([singleMoveUser.id], 'ASSIGN', targetDeptId, targetDivId, targetTeamId);
+                     setSingleMoveModalOpen(false);
+                  }} style={{ width: '100%', background: '#38bdf8', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1 }}>
+                     تنفيذ النقل
+                  </button>
+               </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+               <button onClick={() => setSingleMoveModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '8px 15px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إغلاق</button>
             </div>
           </div>
         </div>
