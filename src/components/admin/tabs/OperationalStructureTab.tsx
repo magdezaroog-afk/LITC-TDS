@@ -324,6 +324,32 @@ export const OperationalStructureTab: React.FC = () => {
     }, 100);
   };
 
+
+  const handleDeleteEntity = (type: 'DEPARTMENT' | 'DIVISION' | 'TEAM', id: string, name: string) => {
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف (${name})؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+
+    setDepartments(prev => {
+      if (type === 'DEPARTMENT') {
+        return prev.filter(d => d.id !== id);
+      }
+      return prev.map(dept => {
+        if (type === 'DIVISION') {
+          return { ...dept, divisions: dept.divisions.filter(dv => dv.id !== id) };
+        }
+        if (type === 'TEAM') {
+          return {
+            ...dept,
+            divisions: dept.divisions.map(div => ({
+              ...div,
+              teams: div.teams.filter(t => t.id !== id)
+            }))
+          };
+        }
+        return dept;
+      });
+    });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', textAlign: 'start' }}>
       
@@ -365,7 +391,7 @@ export const OperationalStructureTab: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => handleOpenEditModal('DEPARTMENT', dept)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>✏️ تعديل</button>
-                    <button style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ حذف</button>
+                    <button onClick={() => handleDeleteEntity('DEPARTMENT', dept.id, dept.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ حذف</button>
                   </div>
                 </div>
                 
@@ -391,7 +417,7 @@ export const OperationalStructureTab: React.FC = () => {
                           <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
                              <button onClick={() => handleOpenEditModal('DIVISION', div)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>✏️ تعديل</button>
                              <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>➕ إضافة فريق</button>
-                             <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>🔄 نقل</button>
+                             <button onClick={() => handleDeleteEntity('DIVISION', div.id, div.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>🗑️ حذف</button>
                           </div>
                         </div>
                         
@@ -411,7 +437,7 @@ export const OperationalStructureTab: React.FC = () => {
                                 </div>
                                 <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
                                    <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>✏️ تعديل</button>
-                                   <button style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>حذف</button>
+                                   <button onClick={() => handleDeleteEntity('TEAM', team.id, team.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
                                 </div>
                               </div>
                             ))}
