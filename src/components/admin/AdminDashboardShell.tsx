@@ -3,15 +3,13 @@ import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { UILayoutEngineTab } from './tabs/UILayoutEngineTab';
 import { OperationalStructureTab } from './tabs/OperationalStructureTab';
-import { GlobalUserMatrixTab } from './tabs/GlobalUserMatrixTab';
-import { SecurityControlTab } from './tabs/SecurityControlTab';
 import { DynamicFieldsTab } from './tabs/DynamicFieldsTab';
 
 export const AdminDashboardShell: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'users' | 'security' | 'dynamic_fields'>('ui');
+  const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields'>('ui');
 
   const isAdmin = user && user.role === 'IT_Admin';
 
@@ -94,23 +92,15 @@ export const AdminDashboardShell: React.FC = () => {
         <div style={getTabStyle('operations')} onClick={() => setActiveTab('operations')}>
           🏢 إدارة الهيكل التشغيلي (Operations)
         </div>
-        <div style={getTabStyle('users')} onClick={() => setActiveTab('users')}>
-          👥 المصفوفة التنظيمية (User Matrix)
-        </div>
         <div style={getTabStyle('dynamic_fields')} onClick={() => setActiveTab('dynamic_fields')}>
           ✨ الحقول الديناميكية (Dynamic Fields)
-        </div>
-        <div style={getTabStyle('security')} onClick={() => setActiveTab('security')}>
-          🛡️ الأمان وقاعدة البيانات (Security Core)
         </div>
       </div>
 
       <div style={{ marginTop: '10px' }}>
         {activeTab === 'ui' && <UILayoutEngineTab />}
         {activeTab === 'operations' && <OperationalStructureTab />}
-        {activeTab === 'users' && <GlobalUserMatrixTab />}
         {activeTab === 'dynamic_fields' && <DynamicFieldsTab />}
-        {activeTab === 'security' && <SecurityControlTab />}
       </div>
     </div>
   );

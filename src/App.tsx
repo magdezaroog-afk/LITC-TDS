@@ -16,6 +16,7 @@ import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider } from './engine/ui-loader/LanguageContext';
 import { OperationalEntitiesConsole } from './components/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './components/admin/NotificationPolicyConsole';
+import { SecurityControlTab } from './components/admin/tabs/SecurityControlTab';
 import { FloatingAIBot } from './components/bot/FloatingAIBot';
 import { EmployeeWorkspace } from './components/dashboard/EmployeeWorkspace';
 import { DepartmentHeadWorkspace } from './components/dashboard/DepartmentHeadWorkspace';
@@ -111,6 +112,7 @@ const Navigation: React.FC = () => {
       <Link to="/" style={linkStyle('/')}>الرئيسية</Link>
       {user && (user.role === 'IT_Admin' || user.role === 'admin') && (
         <>
+          <Link to="/admin/security" style={linkStyle('/admin/security')}>الأمان وقاعدة البيانات</Link>
           <Link to="/admin/policies" style={linkStyle('/admin/policies')}>سياسات الإشعارات</Link>
         </>
       )}
@@ -157,6 +159,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><AdminGovernanceConsole /></ProtectedRoute>} />
           <Route path="/admin/operational" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><OperationalEntitiesConsole /></ProtectedRoute>} />
           <Route path="/admin/policies" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><NotificationPolicyConsole /></ProtectedRoute>} />
+          <Route path="/admin/security" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><SecurityControlTab /></ProtectedRoute>} />
           
           {/* Department Head Route */}
           <Route path="/head" element={<ProtectedRoute allowedRoles={['Department_Head', 'HEAD_DEPT', 'IT_Admin', 'admin']}><DepartmentHeadWorkspace /></ProtectedRoute>} />
