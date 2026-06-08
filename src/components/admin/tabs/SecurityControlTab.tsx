@@ -130,7 +130,7 @@ export const SecurityControlTab: React.FC = () => {
   const tableStyle: React.CSSProperties = {
     width: '100%',
     borderCollapse: 'collapse',
-    background: 'rgba(255, 255, 255, 0.04)',
+    background: 'rgba(0, 0, 0, 0.03)',
     borderRadius: '12px',
     overflow: 'hidden',
     border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -140,7 +140,7 @@ export const SecurityControlTab: React.FC = () => {
   const thStyle: React.CSSProperties = {
     padding: theme.spacing.md,
     textAlign: 'start',
-    background: 'rgba(0, 82, 204, 0.25)',
+    background: 'rgba(99, 102, 241, 0.08)',
     borderBottom: '2px solid rgba(255, 255, 255, 0.12)',
     fontSize: '14px',
     fontWeight: 'bold'
@@ -160,7 +160,7 @@ export const SecurityControlTab: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         {/* System Health */}
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ background: 'rgba(99,102,241,0.04)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
           <h4 style={{ color: theme.colors.primary, marginBottom: '15px' }}>مؤشرات صحة النظام (System Health)</h4>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '15px' }}>
             <div style={{ width: '15px', height: '15px', borderRadius: '50%', background: healthStatus === 'healthy' ? '#00ff78' : healthStatus === 'degraded' ? '#ffab00' : '#de350b', boxShadow: `0 0 10px ${healthStatus === 'healthy' ? '#00ff78' : healthStatus === 'degraded' ? '#ffab00' : '#de350b'}` }} />
@@ -170,7 +170,7 @@ export const SecurityControlTab: React.FC = () => {
         </div>
 
         {/* Circuit Breaker */}
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ background: 'rgba(99,102,241,0.04)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
           <h4 style={{ color: theme.colors.primary, marginBottom: '15px' }}>قاطع الدائرة السيادي (Sovereign Circuit Breaker)</h4>
           <div style={{ marginBottom: '10px' }}>الحالة الحالية: <strong style={{ color: circuitState === 'CLOSED' ? '#00ff78' : '#de350b' }}>{circuitState}</strong></div>
           <div style={{ marginBottom: '15px' }}>حجم طابور الانتظار: {queueSize} طلب</div>
@@ -197,7 +197,7 @@ export const SecurityControlTab: React.FC = () => {
           </thead>
           <tbody>
             {auditLogs.length > 0 ? auditLogs.map(log => (
-              <tr key={log.logId} style={{ background: 'rgba(255,255,255,0.01)' }}>
+              <tr key={log.logId} style={{ background: 'rgba(0,0,0,0.01)' }}>
                 <td style={tdStyle}>{log.logId}</td>
                 <td style={tdStyle}>تحويل التذكرة #{log.ticketId} من {log.sourceDepartment} إلى {log.targetDepartment}</td>
                 <td style={tdStyle}>{log.transferReason}</td>

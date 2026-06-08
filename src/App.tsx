@@ -82,6 +82,7 @@ const NotFoundPage: React.FC = () => {
 const Navigation: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const { t, toggleLanguage, language, dir } = useLanguage();
   
   // Hide Navigation on specific workspaces
   if (location.pathname === '/employee' || location.pathname === '/head' || location.pathname === '/login') return null;
@@ -95,7 +96,8 @@ const Navigation: React.FC = () => {
     backdropFilter: 'blur(20px)',
     borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
-    fontFamily: "'Inter', sans-serif"
+    fontFamily: "'Inter', sans-serif",
+    direction: dir
   };
 
   const linkStyle = (path: string): React.CSSProperties => {
@@ -115,18 +117,33 @@ const Navigation: React.FC = () => {
 
   return (
     <nav style={navStyle}>
-      <div style={{ fontWeight: '800', marginRight: 'auto', color: '#0f172a', fontSize: '16px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>LITC-TS</span>
+      <div style={{ fontWeight: '800', [dir === 'rtl' ? 'marginRight' : 'marginLeft']: 'auto', color: '#0f172a', fontSize: '16px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+        <span style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('footer.brand')}</span>
         <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>v43.5</span>
       </div>
-      <Link to="/" style={linkStyle('/')}>الرئيسية</Link>
-      {user && (user.role === 'IT_Admin' || user.role === 'admin') && (
-        <>
-          <Link to="/admin/security" style={linkStyle('/admin/security')}>🛡️ الأمان وقاعدة البيانات</Link>
-          <Link to="/admin/policies" style={linkStyle('/admin/policies')}>🔔 سياسات الإشعارات</Link>
-        </>
-      )}
-      <Link to="/profile" style={linkStyle('/profile')}>👤 الملف الشخصي</Link>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={toggleLanguage}
+          style={{
+            background: 'rgba(99, 102, 241, 0.08)',
+            border: 'none',
+            color: '#6366f1',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          🌐 {t('nav.language')}
+        </button>
+        <Link to="/profile" style={linkStyle('/profile')}>👤 {t('nav.profile')}</Link>
+      </div>
     </nav>
   );
 };

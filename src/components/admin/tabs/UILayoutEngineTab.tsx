@@ -56,8 +56,8 @@ const styles = {
   container: {
     width: '100%',
     minHeight: '100vh',
-    backgroundColor: '#070B14',
-    color: '#ffffff',
+    backgroundColor: '#0f172a',
+    color: '#0f172a',
     padding: '24px',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     direction: 'rtl' as const,
@@ -74,7 +74,7 @@ const styles = {
   title: {
     fontSize: '24px',
     fontWeight: 'bold',
-    color: '#22d3ee',
+    color: '#6366f1',
     margin: 0,
     marginBottom: '8px'
   },
@@ -85,7 +85,7 @@ const styles = {
   },
   saveBtn: {
     backgroundColor: '#059669',
-    color: '#ffffff',
+    color: '#0f172a',
     border: 'none',
     padding: '10px 24px',
     borderRadius: '6px',
@@ -101,7 +101,7 @@ const styles = {
     height: 'calc(100vh - 120px)'
   },
   glassBox: {
-    backgroundColor: '#0c1322',
+    backgroundColor: '#0f172a',
     border: '1px solid rgba(6, 182, 212, 0.3)',
     borderRadius: '12px',
     display: 'flex',
@@ -110,7 +110,7 @@ const styles = {
     boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
   },
   boxHeader: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#f1f5f9',
     padding: '16px',
     borderBottom: '1px solid rgba(6, 182, 212, 0.3)',
     textAlign: 'center' as const
@@ -119,7 +119,7 @@ const styles = {
     margin: 0,
     fontSize: '14px',
     fontWeight: 'bold',
-    color: '#34d399'
+    color: '#059669'
   },
   boxSub: {
     margin: '4px 0 0 0',
@@ -133,14 +133,14 @@ const styles = {
     padding: '0 8px',
   },
   item: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
+    backgroundColor: '#e8eef6',
+    border: '1px solid #e2e8f0',
     borderRadius: '8px',
     padding: '12px',
     marginBottom: '12px',
     fontSize: '12px',
     fontWeight: 'bold',
-    color: '#e2e8f0',
+    color: '#334155',
     transition: 'background-color 0.2s, box-shadow 0.2s, border-color 0.2s',
     display: 'flex',
     justifyContent: 'space-between',
@@ -149,7 +149,7 @@ const styles = {
   },
   itemActive: {
     border: '1px solid #22d3ee',
-    backgroundColor: '#164e63'
+    backgroundColor: '#e0f2fe'
   },
   propBox: {
     backgroundColor: '#000000',
@@ -160,10 +160,10 @@ const styles = {
   },
   input: {
     width: '100%',
-    backgroundColor: '#0f172a',
-    border: '1px solid #334155',
+    backgroundColor: '#f1f5f9',
+    border: '1px solid #e2e8f0',
     borderRadius: '4px',
-    color: '#22d3ee',
+    color: '#6366f1',
     padding: '8px',
     fontSize: '12px',
     boxSizing: 'border-box' as const,
@@ -180,7 +180,7 @@ const styles = {
   switchFalse: {
     width: '36px',
     height: '20px',
-    backgroundColor: '#334155',
+    backgroundColor: '#475569',
     borderRadius: '10px',
     position: 'relative' as const,
     cursor: 'pointer'
@@ -319,7 +319,7 @@ const HardCeilingToggle = ({
   };
 
   return (
-    <div style={{ marginTop: '6px', marginBottom: '12px', marginLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(15, 23, 42, 0.8)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={e => e.stopPropagation()}>
+    <div style={{ marginTop: '6px', marginBottom: '12px', marginLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0, 0, 0, 0.4)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={e => e.stopPropagation()}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <input 
           type="checkbox" 
@@ -337,7 +337,7 @@ const HardCeilingToggle = ({
           <span style={{ fontSize: '10px', color: '#94a3b8' }}>أو قم بتفويض التعديل للأدوار التالية تتابعياً:</span>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {['OPERATIONAL_MANAGER', 'OPERATIONAL_USER'].map(r => (
-              <label key={r} style={{ fontSize: '10px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+              <label key={r} style={{ fontSize: '10px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={currentConfig.allowedRoles.includes(r as CoreRole)}
@@ -564,13 +564,13 @@ export function UILayoutEngineTab() {
 
   if (isManagerMode) {
     return (
-      <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #0f172a, #1e293b)'}}>
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: showSavedList ? '800px' : '600px', width: '100%', transition: 'max-width 0.3s ease', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+      <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #f8fafc, #eef2ff)'}}>
+        <div style={{ background: 'rgba(0, 0, 0, 0.02)', backdropFilter: 'blur(16px)', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: showSavedList ? '800px' : '600px', width: '100%', transition: 'max-width 0.3s ease', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
           
           {!showSavedList ? (
             <>
               <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔮</div>
-              <h1 style={{ fontSize: '28px', color: '#f8fafc', marginBottom: '15px', fontWeight: 'bold' }}>مدير حوكمة وتخصيص واجهات النظام - LITC</h1>
+              <h1 style={{ fontSize: '28px', color: '#0f172a', marginBottom: '15px', fontWeight: 'bold' }}>مدير حوكمة وتخصيص واجهات النظام - LITC</h1>
               <p style={{ fontSize: '15px', color: '#94a3b8', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
               
 
@@ -581,7 +581,7 @@ export function UILayoutEngineTab() {
                     setIsManagerMode(false);
                     setShowNameModal(true);
                   }}
-                  style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                  style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(59, 130, 246, 0.7)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)'; }}
                 >
@@ -590,25 +590,25 @@ export function UILayoutEngineTab() {
                 
                 <button 
                   onClick={() => setShowSavedList(true)}
-                  style={{ width: '100%', padding: '16px', background: 'rgba(255, 255, 255, 0.05)', color: '#e2e8f0', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                  style={{ width: '100%', padding: '16px', background: 'rgba(99, 102, 241, 0.04)', color: '#334155', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.04)'}
                 >
                   <span>📁</span> الواجهات الجاهزة والمحفوظة
                 </button>
               </div>
             </>
           ) : (
-            <div style={{ background: 'rgba(0, 0, 0, 0.3)', borderRadius: '16px', padding: '20px', textAlign: 'right', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <div style={{ background: 'rgba(241, 245, 249, 0.9)', borderRadius: '16px', padding: '20px', textAlign: 'right', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: '#38bdf8', margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 style={{ color: '#6366f1', margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span>📁</span> الواجهات الجاهزة والمحفوظة
                 </h3>
                 <button 
                   onClick={() => setShowSavedList(false)} 
-                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#f8fafc', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#0f172a', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.12)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
                 >
                   العودة للقائمة
                 </button>
@@ -626,17 +626,17 @@ export function UILayoutEngineTab() {
                     const categoryInterfaces = savedInterfaces.filter(ui => ui.roleType === category.key);
                     if (categoryInterfaces.length === 0) return null;
                     return (
-                      <div key={category.key} style={{ background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', padding: '15px', border: `1px solid ${category.color}40` }}>
+                      <div key={category.key} style={{ background: 'rgba(0, 0, 0, 0.02)', borderRadius: '12px', padding: '15px', border: `1px solid ${category.color}40` }}>
                         <h4 style={{ color: category.color, margin: '0 0 15px 0', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: category.color, display: 'inline-block' }}></span>
                           {category.label} ({categoryInterfaces.length})
                         </h4>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
                           {categoryInterfaces.map(ui => (
-                            <div key={ui.id} style={{ background: 'rgba(0, 0, 0, 0.4)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.2s' }}
+                            <div key={ui.id} style={{ background: 'rgba(241, 245, 249, 0.95)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.2s' }}
                                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = `${category.color}80`; }}
-                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)'; }}>
-                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f8fafc' }}>{ui.name}</div>
+                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.04)'; }}>
+                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>{ui.name}</div>
                               <div style={{ fontSize: '10px', color: '#64748b' }}>آخر تعديل: {ui.lastUpdated}</div>
                               <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
                                 <button onClick={() => handleLoadInterface(ui)} style={{ flex: 1, padding: '5px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.4)', color: '#60a5fa', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>تعديل ⚙️</button>
@@ -656,14 +656,14 @@ export function UILayoutEngineTab() {
 
       {/* ─── Data Loss Warning Modal ─── */}
       {showWarningModal && interfaceToLoad && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             <h3 style={{ color: '#f87171', margin: '0 0 15px 0', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: فقدان العمل غير المحفوظ
             </h3>
             
-            <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#38bdf8' }}>({interfaceName})</strong>.
+            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#6366f1' }}>({interfaceName})</strong>.
               <br/><br/>
               محاولة فتح واجهة <strong style={{ color: '#f59e0b' }}>({interfaceToLoad.name})</strong> ستؤدي إلى إزالة كل التعديلات الحالية غير المحفوظة والمكونات الموزعة وإعادة تحميل مساحة العمل بالواجهة المطلوبة.
             </p>
@@ -686,7 +686,7 @@ export function UILayoutEngineTab() {
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                 }}
-                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
               >
                 إلغاء والعودة
               </button>
@@ -726,9 +726,9 @@ export function UILayoutEngineTab() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             onClick={() => { setIsManagerMode(true); setShowSavedList(true); }}
-            style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e2e8f0', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+            style={{ background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#334155', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.04)'}
           >
             ⬅️ العودة لمدير الواجهات
           </button>
@@ -742,7 +742,7 @@ export function UILayoutEngineTab() {
           {/* RIGHT: INACTIVE REPOSITORY */}
           <div style={styles.glassBox}>
             <div style={styles.boxHeader}>
-              <h3 style={{...styles.boxTitle, color: '#38bdf8'}}>📦 مستودع المكونات المعطلة</h3>
+              <h3 style={{...styles.boxTitle, color: '#6366f1'}}>📦 مستودع المكونات المعطلة</h3>
               <p style={styles.boxSub}>اسحب المكون للوحة الفعالة لتركيبه</p>
             </div>
             <Droppable droppableId="inactive-repository">
@@ -761,8 +761,8 @@ export function UILayoutEngineTab() {
                     const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                     if (groupComponents.length === 0) return null;
                     return (
-                      <div key={group.key} style={{ marginBottom: '15px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
-                        <div style={{ padding: '12px', background: 'rgba(0, 0, 0, 0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', fontWeight: 'bold', color: '#38bdf8', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
+                      <div key={group.key} style={{ marginBottom: '15px', background: 'rgba(0, 0, 0, 0.02)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
+                        <div style={{ padding: '12px', background: 'rgba(241, 245, 249, 0.9)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', fontWeight: 'bold', color: '#6366f1', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
                           {group.title} <span style={{ color: '#94a3b8' }}>({groupComponents.length})</span>
                         </div>
                         <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -779,7 +779,7 @@ export function UILayoutEngineTab() {
                                       ...styles.item,
                                       ...provided.draggableProps.style,
                                       marginBottom: 0,
-                                      backgroundColor: snapshot.isDragging ? '#1e1b4b' : 'rgba(15, 23, 42, 0.6)',
+                                      backgroundColor: snapshot.isDragging ? '#ede9fe' : 'rgba(15, 23, 42, 0.6)',
                                       border: snapshot.isDragging ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)',
                                       backdropFilter: snapshot.isDragging ? 'none' : 'blur(10px)',
                                       boxShadow: snapshot.isDragging ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)' : 'none'
@@ -834,7 +834,7 @@ export function UILayoutEngineTab() {
                                   ...(selectedComponentId === comp.id ? styles.itemActive : {}),
                                   ...provided.draggableProps.style,
                                   boxShadow: snapshot.isDragging ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)' : 'none',
-                                  border: snapshot.isDragging ? '1px solid #38bdf8' : (selectedComponentId === comp.id ? '1px solid #38bdf8' : '1px solid #334155'),
+                                  border: snapshot.isDragging ? '1px solid #38bdf8' : (selectedComponentId === comp.id ? '1px solid #38bdf8' : '1px solid #e2e8f0'),
                                   backdropFilter: snapshot.isDragging ? 'none' : 'none'
                                 }}
                               >
@@ -862,7 +862,7 @@ export function UILayoutEngineTab() {
             <div style={styles.scrollArea}>
               {selectedComponent ? (
                 <div>
-                  <div style={{backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', marginBottom: '20px'}}>
+                  <div style={{backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '8px', marginBottom: '20px'}}>
                     <div style={{fontSize: '10px', color: '#64748b', marginBottom: '4px'}}>المعرف (ID)</div>
                     <div style={{fontFamily: 'monospace', fontSize: '11px', color: '#c084fc'}}>{selectedComponent.id}</div>
                     <div style={{fontSize: '10px', color: '#64748b', marginTop: '12px', marginBottom: '4px'}}>الاسم</div>
@@ -871,9 +871,9 @@ export function UILayoutEngineTab() {
 
                   {/* CUSTOM PANELS */}
                   {selectedComponent.id === 'admin_sovereign_custody_ledger_v10' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>الفلاتر التشغيلية المتاحة لتوليد التقارير:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'BY_ITEM_TYPE', label: 'فرز حسب الصنف الفردي أو المجموعات' },
                           { id: 'BY_DATE_RANGE', label: 'فرز حسب النطاق الزمني والتاريخ' },
@@ -907,7 +907,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>أعمدة البيانات المسموح بظهورها في التقرير:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
                           { id: 'SHOW_ISSUER_IDENTITY', label: 'عرض هوية المسؤول المفوِّض للصرف' },
                           { id: 'SHOW_RECEIVER_IDENTITY', label: 'عرض هوية الموظف المستلم الفعلي' },
@@ -944,10 +944,10 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_archive Inspector ═══ */}
                   {selectedComponent.id === 'admin_archive' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص الأرشيف المركزي:</h5>
                       
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
 <>{isPropertyAllowed("enableTimelineAuditLog", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
@@ -973,7 +973,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>فلاتر الأرشيف المحقونة بالواجهة:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
                           { id: 'building_location', label: 'المبنى والموقع' },
                           { id: 'department', label: 'القسم' },
@@ -1010,7 +1010,7 @@ export function UILayoutEngineTab() {
 
 
                   {selectedComponent.id === 'ticket_inbox' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص وإجراءات التذاكر الواردة:</h5>
                       {[
                         { key: 'NEW', label: 'التذاكر الجديدة', actions: ['OPEN', 'RECEIVE', 'PREVIEW'] },
@@ -1021,10 +1021,10 @@ export function UILayoutEngineTab() {
                         const tabsConfig = selectedComponent.properties.tabsConfig || {};
                         const tabCfg = tabsConfig[tab.key] || { active: false, actions: [] };
                         return (
-                          <div key={tab.key} style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div key={tab.key} style={{ background: 'rgba(241,245,249,0.8)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
 <>{isPropertyAllowed("tabsConfig", selectedComponent.strict_ceiling_props) && (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold', color: tabCfg.active ? '#00e5ff' : '#ccc' }}>
+<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold', color: tabCfg.active ? '#6366f1' : '#ccc' }}>
                               <input 
                                 type="checkbox" 
                                 checked={tabCfg.active} 
@@ -1056,7 +1056,7 @@ export function UILayoutEngineTab() {
                                     return (
 <>{isPropertyAllowed("tabsConfig", selectedComponent.strict_ceiling_props) && (
                                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={action} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', padding: '3px 8px', background: isChecked ? 'rgba(0, 229, 255, 0.1)' : 'transparent', border: `1px solid ${isChecked ? 'rgba(0,229,255,0.3)' : 'rgba(255,255,255,0.05)'}`, borderRadius: '6px' }}>
+<label key={action} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', padding: '3px 8px', background: isChecked ? 'rgba(0, 229, 255, 0.1)' : 'transparent', border: `1px solid ${isChecked ? 'rgba(0,229,255,0.3)' : 'rgba(99,102,241,0.04)'}`, borderRadius: '6px' }}>
                                         <input type="checkbox" checked={isChecked} onChange={e => {
                                           let newActions = [...currentActions];
                                           if (e.target.checked) newActions.push(action); else newActions = newActions.filter((a: string) => a !== action);
@@ -1081,11 +1081,11 @@ export function UILayoutEngineTab() {
                   )}
 
                   {selectedComponent.id === 'sub_ticket_engine' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص وحوكمة التذاكر الفرعية:</h5>
                       
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>1. ضوابط المحتوى</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>1. ضوابط المحتوى</h6>
 <>{isPropertyAllowed("enableDescription", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '5px' }}>
@@ -1108,7 +1108,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>2. وضع التزامن (Concurrency Mode)</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>2. وضع التزامن (Concurrency Mode)</h6>
 <>{isPropertyAllowed("concurrencyMode", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
 <select style={styles.input} value={selectedComponent.properties.concurrencyMode || 'SEQUENTIAL'}
@@ -1123,14 +1123,14 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>3. الحد الأقصى للتذاكر الفرعية</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>3. الحد الأقصى للتذاكر الفرعية</h6>
                         <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }} 
                           value={selectedComponent.properties.maxSubTickets || 2}
                           onChange={e => handlePropertyChange(selectedComponent.id, 'maxSubTickets', parseInt(e.target.value))} />
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>4. نطاق التوجيه (Routing Scope)</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>4. نطاق التوجيه (Routing Scope)</h6>
 <>{isPropertyAllowed("routingScope", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
 <select style={styles.input} value={selectedComponent.properties.routingScope || 'INTERNAL_TEAM'}
@@ -1149,7 +1149,7 @@ export function UILayoutEngineTab() {
                   )}
 
                   {selectedComponent.id === 'tool_roles_perms' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>مستوى الصلاحيات (Access Level):</h5>
 <>{isPropertyAllowed("accessLevel", selectedComponent.strict_ceiling_props) && (
                       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -1171,10 +1171,10 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ ticket_create Inspector ═══ */}
                   {selectedComponent.id === 'ticket_create' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص إنشاء وتوجيه التذاكر:</h5>
                       
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
 <>{isPropertyAllowed("attachmentsEnabled", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
@@ -1244,14 +1244,14 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>الحد الأقصى للمرفق (ميجابايت):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>الحد الأقصى للمرفق (ميجابايت):</h6>
                         <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }} value={selectedComponent.properties.attachmentMaxSizeMB || 5}
                           onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentMaxSizeMB', parseInt(e.target.value))} />
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>أنواع المرفقات المسموح بها:</h6>
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>أنواع المرفقات المسموح بها:</h6>
+                        <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 <>{isPropertyAllowed("attachmentAllowedExtensions", selectedComponent.strict_ceiling_props) && (
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
@@ -1307,7 +1307,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>توجيه التذكرة التلقائي المزدوج:</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>توجيه التذكرة التلقائي المزدوج:</h6>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
                           {(selectedComponent.properties.destinationRoutes || []).map((route: string, idx: number) => (
                             <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}}>
@@ -1344,7 +1344,7 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_analytics Inspector ═══ */}
                   {selectedComponent.id === 'admin_analytics' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>نطاق الاستعلام (Data Scope):</h5>
 <>{isPropertyAllowed("dataScope", selectedComponent.strict_ceiling_props) && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
@@ -1367,7 +1367,7 @@ export function UILayoutEngineTab() {
 )}</>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>الفلاتر الديناميكية المتاحة:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'BUILDING', label: 'فلتر حسب المبنى' },
                           { id: 'ISSUE_TYPE', label: 'فلتر حسب نوع المشكلة' },
@@ -1406,7 +1406,7 @@ export function UILayoutEngineTab() {
 )}</>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px', marginTop: '15px' }}>الرسوم البيانية المفعلة:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
                           { id: 'kpi_cards', label: 'بطاقات KPI' },
                           { id: 'line_chart', label: 'رسم خطي (Line)' },
@@ -1437,9 +1437,9 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_leaderboard Inspector ═══ */}
                   {selectedComponent.id === 'admin_leaderboard' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>محاور المقارنة المتاحة (Dimensions):</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'EMP_VS_EMP', label: 'موظف مقابل موظف' },
                           { id: 'DEPT_VS_DEPT', label: 'قسم مقابل قسم' },
@@ -1467,7 +1467,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>مقاييس الأداء (Metrics):</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'VOLUME', label: 'حجم التذاكر (Volume)' },
                           { id: 'SPEED', label: 'سرعة الإغلاق (Speed)' },
@@ -1494,7 +1494,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>أوضاع العرض (Display Modes):</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
                           { id: 'SIDE_BAR', label: 'رسم عمودي مزدوج (Side-by-Side Bar)' },
                           { id: 'VARIANCE_TABLE', label: 'جدول نسبة التغيير (Variance %)' }
@@ -1523,7 +1523,7 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_archive Inspector ═══ */}
                   {selectedComponent.id === 'admin_archive' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>نطاق الوصول (Archive Scope):</h5>
 <>{isPropertyAllowed("archiveScope", selectedComponent.strict_ceiling_props) && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
@@ -1566,7 +1566,7 @@ export function UILayoutEngineTab() {
 )}</>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>فلاتر الواجهة المتاحة للمستخدم:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
                           { id: 'operator_name', label: 'تصفية باسم الموظف (Operator)' },
                           { id: 'end_user_name', label: 'تصفية باسم المستخدم النهائي' },
@@ -1597,9 +1597,9 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_profile Inspector ═══ */}
                   {selectedComponent.id === 'admin_profile' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص الملف الشخصي الديناميكي:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
 <>{isPropertyAllowed("allowThemeCustomization", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
@@ -1625,7 +1625,7 @@ export function UILayoutEngineTab() {
                       </div>
                       
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>مزود الهوية (Identity Provider):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>مزود الهوية (Identity Provider):</h6>
 <>{isPropertyAllowed("identityProvider", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
 <select style={styles.input} value={selectedComponent.properties.identityProvider || 'Microsoft_SSO'}
@@ -1642,7 +1642,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>لوحة الألوان المضيئة (Neon Palette):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>لوحة الألوان المضيئة (Neon Palette):</h6>
 <>{isPropertyAllowed("neonPalette", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
 <select style={styles.input} value={selectedComponent.properties.neonPalette || 'Cyber Blue'}
@@ -1659,7 +1659,7 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>شفافية المظهر الزجاجي (Glass Opacity):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>شفافية المظهر الزجاجي (Glass Opacity):</h6>
                         <input type="range" min="0.1" max="1.0" step="0.1" style={{ width: '100%' }}
                           value={selectedComponent.properties.glassOpacity || 0.6}
                           onChange={e => handlePropertyChange(selectedComponent.id, 'glassOpacity', parseFloat(e.target.value))} />
@@ -1670,9 +1670,9 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ tool_language_theme Inspector ═══ */}
                   {selectedComponent.id === 'tool_language_theme' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص اللغات والمظهر:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
 <>{isPropertyAllowed("allowUserSwitch", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
@@ -1698,7 +1698,7 @@ export function UILayoutEngineTab() {
                       </div>
                       
                       <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>اللغة الافتراضية (Default Language):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>اللغة الافتراضية (Default Language):</h6>
 <>{isPropertyAllowed("defaultLanguage", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
 <select style={styles.input} value={selectedComponent.properties.defaultLanguage || 'ar'}
@@ -1713,9 +1713,9 @@ export function UILayoutEngineTab() {
                       </div>
 
                       <div>
-                        <h6 style={{ fontSize: '12px', color: '#00e5ff', margin: '0 0 10px 0' }}>لون التوهج (Neon Glow Color):</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>لون التوهج (Neon Glow Color):</h6>
                         <input type="color" style={{ width: '100%', height: '40px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                          value={selectedComponent.properties.neonGlowColor || '#00e5ff'}
+                          value={selectedComponent.properties.neonGlowColor || '#6366f1'}
                           onChange={e => handlePropertyChange(selectedComponent.id, 'neonGlowColor', e.target.value)} />
                       </div>
                     </div>
@@ -1723,7 +1723,7 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_notifications Inspector ═══ */}
                   {selectedComponent.id === 'admin_notifications' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#f97316', marginBottom: '10px' }}>⚠️ ضوابط الحوكمة السيادية:</h5>
 <>{isPropertyAllowed("forceWhatsappCritical", selectedComponent.strict_ceiling_props) && (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1749,7 +1749,7 @@ export function UILayoutEngineTab() {
 )}</>
 
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>حدود التصعيد الزمني (SLA Thresholds):</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {(selectedComponent.properties.SLA_Thresholds || ['15m', '1h', '24h']).map((t: string, i: number) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '11px', color: '#ef4444' }}>⏳ المستوى {i + 1}:</span>
@@ -1767,9 +1767,9 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ admin_operational_console Inspector ═══ */}
                   {selectedComponent.id === 'admin_operational_console' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>طرق العرض المتاحة:</h5>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[{ id: 'TREE', label: 'شجري (Tree View)' }, { id: 'FLAT', label: 'مسطح (Flat View)' }].map(v => {
                           const views = selectedComponent.properties.allowedViews || [];
                           return (
@@ -1818,12 +1818,12 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ global_settings Inspector ═══ */}
                   {selectedComponent.id === 'global_settings' && currentBuilderRole === 'IT_ADMIN' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#8b5cf6', marginBottom: '15px' }}>🏢 إدارة مواقع الشركة (Corporate Location Assets)</h5>
                       
                       <div style={{ background: 'rgba(139, 92, 246, 0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
                         {corporateLocations.map(location => (
-                          <div key={location.id} style={{ marginBottom: '15px', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div key={location.id} style={{ marginBottom: '15px', padding: '10px', background: 'rgba(241,245,249,0.9)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                               <input 
                                 type="text" 
@@ -1854,7 +1854,7 @@ export function UILayoutEngineTab() {
                                       });
                                       setCorporateLocations(updated);
                                     }}
-                                    style={{ flex: 1, padding: '4px 8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: '#94a3b8', borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                                    style={{ flex: 1, padding: '4px 8px', background: 'rgba(241,245,249,0.8)', border: '1px solid rgba(255,255,255,0.05)', color: '#94a3b8', borderRadius: '4px', fontSize: '11px', outline: 'none' }}
                                   />
                                   <button onClick={() => {
                                     const updated = corporateLocations.map(loc => {
@@ -1883,7 +1883,7 @@ export function UILayoutEngineTab() {
                   )}
 
 
-<h4 style={{fontSize: '12px', color: '#c084fc', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '16px'}}>الخصائص المتقدمة المشتركة</h4>
+<h4 style={{fontSize: '12px', color: '#c084fc', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px'}}>الخصائص المتقدمة المشتركة</h4>
                   
                   {Object.keys(selectedComponent.properties).length === 0 ? (
                     <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', padding: '20px'}}>لا توجد خصائص إضافية</div>
@@ -1894,7 +1894,7 @@ export function UILayoutEngineTab() {
                         if (typeof val === 'boolean') {
                           return (
                             <div key={key} style={{...styles.propBox, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                              <span style={{fontSize: '12px', color: '#cbd5e1'}}>{propertyLabelsAr[key] || key}</span>
+                              <span style={{fontSize: '12px', color: '#475569'}}>{propertyLabelsAr[key] || key}</span>
                               <div 
                                 style={val ? styles.switchTrue : styles.switchFalse}
                                 onClick={() => handlePropertyChange(selectedComponent.id, key, !val)}
@@ -1908,7 +1908,7 @@ export function UILayoutEngineTab() {
                         if (Array.isArray(val)) {
                           return (
                             <div key={key} style={styles.propBox}>
-                              <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '8px'}}>{propertyLabelsAr[key] || key}</div>
+                              <div style={{fontSize: '12px', color: '#475569', marginBottom: '8px'}}>{propertyLabelsAr[key] || key}</div>
                               <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px'}}>
                                 {val.map((item, idx) => (
                                   <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px'}}>
@@ -1932,7 +1932,7 @@ export function UILayoutEngineTab() {
                         // String / Number
                         return (
                           <div key={key} style={styles.propBox}>
-                            <div style={{fontSize: '12px', color: '#cbd5e1', marginBottom: '4px'}}>{propertyLabelsAr[key] || key}</div>
+                            <div style={{fontSize: '12px', color: '#475569', marginBottom: '4px'}}>{propertyLabelsAr[key] || key}</div>
                             <input 
                               style={styles.input}
                               value={String(val)}
@@ -1944,11 +1944,11 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ inbound_tickets_hub Inspector ═══ */}
                   {selectedComponent.id === 'inbound_tickets_hub' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '15px' }}>⚡ إعدادات محرك الاستقبال (Inbound Hub)</h5>
                       
-                      <div style={{ marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px' }}>مصفوفة التصعيد الخارجي (Cross-Escalation):</h6>
+                      <div style={{ marginBottom: '15px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>مصفوفة التصعيد الخارجي (Cross-Escalation):</h6>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {[
                             { role: 'OPERATIONAL_MANAGER', label: 'مدير إدارة' },
@@ -1975,9 +1975,9 @@ export function UILayoutEngineTab() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block' }}>سحب التذاكر الجبري (Snatching Power)</span>
+                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>سحب التذاكر الجبري (Snatching Power)</span>
                           <span style={{ fontSize: '10px', color: '#64748b' }}>السماح للقادة بسحب التذاكر وإعادة توزيعها حسب نطاقهم</span>
                         </div>
                         <div
@@ -1992,12 +1992,12 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ quick_actions_panel Inspector ═══ */}
                   {selectedComponent.id === 'quick_actions_panel' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#f59e0b', marginBottom: '15px' }}>🚀 إعدادات الإجراءات السريعة (Quick Actions)</h5>
                       
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', marginBottom: '10px' }}>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block' }}>التحويل المشروط (Handshake Transfer)</span>
+                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>التحويل المشروط (Handshake Transfer)</span>
                           <span style={{ fontSize: '10px', color: '#64748b' }}>عدم انتقال الملكية إلا بعد قبول الطرف المستلم</span>
                         </div>
                         <div
@@ -2008,9 +2008,9 @@ export function UILayoutEngineTab() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block' }}>القفل الاعتمادي (Dependency Lock)</span>
+                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>القفل الاعتمادي (Dependency Lock)</span>
                           <span style={{ fontSize: '10px', color: '#64748b' }}>إمكانية قفل التذكرة الأم تلقائياً عند إنشاء تذكرة فرعية</span>
                         </div>
                         <div
@@ -2025,15 +2025,15 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ analytics_dashboard Inspector ═══ */}
                   {selectedComponent.id === 'analytics_dashboard' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#10b981', marginBottom: '15px' }}>📈 إعدادات التحليل المركزي (Analytics)</h5>
                       
                       {currentBuilderRole === 'IT_ADMIN' ? (
                         <>
-                      <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '15px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                      <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', marginBottom: '15px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
                           <div>
-                            <h6 style={{ fontSize: '13px', color: '#34d399', margin: '0 0 5px 0' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
+                            <h6 style={{ fontSize: '13px', color: '#059669', margin: '0 0 5px 0' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
                             <span style={{ fontSize: '10px', color: '#94a3b8' }}>تمكين المدير من التحكم في الفلاتر المتاحة لرؤساء الأقسام</span>
                           </div>
                         </div>
@@ -2046,7 +2046,7 @@ export function UILayoutEngineTab() {
                           const val = selectedComponent.properties.managerAnalyticsControl?.[ctrl.key] ?? false;
                           return (
                             <div key={ctrl.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                              <span style={{ fontSize: '12px', color: '#cbd5e1' }}>{ctrl.label}</span>
+                              <span style={{ fontSize: '12px', color: '#475569' }}>{ctrl.label}</span>
                               <div
                                 style={val ? styles.switchTrue : styles.switchFalse}
                                 onClick={() => {
@@ -2065,7 +2065,7 @@ export function UILayoutEngineTab() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                         <div>
                           <span style={{ fontSize: '12px', color: '#fca5a5', display: 'block', fontWeight: 'bold' }}>تجاوز الأدمين (Admin Absolute Override)</span>
-                          <span style={{ fontSize: '10px', color: '#cbd5e1' }}>فتح كافة الفلاتر إجبارياً متجاهلاً قيود المدراء (تجاوز صامت)</span>
+                          <span style={{ fontSize: '10px', color: '#475569' }}>فتح كافة الفلاتر إجبارياً متجاهلاً قيود المدراء (تجاوز صامت)</span>
                         </div>
                         <div
                           style={selectedComponent.properties.adminOverride ? styles.switchTrue : styles.switchFalse}
@@ -2076,7 +2076,7 @@ export function UILayoutEngineTab() {
                       </div>
                       </>
                       ) : (
-                        <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
+                        <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
                           🔒 هذه الإعدادات مخصصة لمدير النظام (IT_ADMIN) فقط.
                         </div>
                       )}
@@ -2085,11 +2085,11 @@ export function UILayoutEngineTab() {
 
                   {/* ═══ cross_comparison Inspector ═══ */}
                   {selectedComponent.id === 'cross_comparison' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#8b5cf6', marginBottom: '15px' }}>⚖️ المقارنات التقاطعية (N-Elements Comparison)</h5>
                       
                       <div style={{ marginBottom: '15px' }}>
-                        <label style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginBottom: '5px' }}>الحد الأقصى لعناصر المقارنة المتزامنة (N-Elements):</label>
+                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '5px' }}>الحد الأقصى لعناصر المقارنة المتزامنة (N-Elements):</label>
                         <input 
                           type="number" 
                           min={2} max={10}
@@ -2099,8 +2099,8 @@ export function UILayoutEngineTab() {
                         />
                       </div>
 
-                      <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '10px' }}>أنواع المقارنات المسموحة:</h6>
+                      <div style={{ padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>أنواع المقارنات المسموحة:</h6>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {[
                             { type: 'ENGINEERS', label: 'مقارنة الكوادر (أداء المهندسين)' },
@@ -2145,16 +2145,16 @@ export function UILayoutEngineTab() {
       </DragDropContext>
 
       {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
+      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#e8eef6', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
         
         {/* Sandbox Toolbar */}
         <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a' }}>
+          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#f1f5f9' }}>
             <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
           </div>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
-            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: 'rgba(255,255,255,0.9)', fontSize: '12px', color: '#334155', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
+            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: 'rgba(255,255,255,0.9)', fontSize: '12px', color: '#475569', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
               <option value="Super_Admin">مدير نظام (Super Admin)</option>
               <option value="Dept_Head">رئيس قسم (Dept Head)</option>
               <option value="Field_Engineer">مهندس ميداني (Field Engineer)</option>
@@ -2168,7 +2168,7 @@ export function UILayoutEngineTab() {
           {/* Top Navbar Zone */}
           <div style={{ height: '65px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'flex-end', gap: '15px' }}>
             {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
               </div>
             ))}
@@ -2194,7 +2194,7 @@ export function UILayoutEngineTab() {
             <div style={{ flex: 1, background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '30px', overflowY: 'auto' }}>
               {previewActiveTab ? (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ margin: '0 0 25px 0', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h2 style={{ margin: '0 0 25px 0', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ width: '8px', height: '24px', background: '#0ea5e9', borderRadius: '4px' }}></span>
                     {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
                   </h2>
@@ -2218,7 +2218,7 @@ export function UILayoutEngineTab() {
                           <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#0369a1', fontWeight: 'bold' }}>توجيه التذكرة (Routing)</h4>
                             <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#ef4444' }}>*</span></label>
-                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}>
+                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
                               <option value="">-- اختر الإدارة المستقبلة --</option>
                               {targets.map((deptId: string) => {
                                 const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
@@ -2229,14 +2229,14 @@ export function UILayoutEngineTab() {
                         )}
 
                         <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>الموقع الفعلي (Physical Location)</h4>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>الموقع الفعلي (Physical Location)</h4>
                           <div style={{ display: 'flex', gap: '15px' }}>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#ef4444' }}>*</span></label>
                               <select 
                                 value={selectedBuildingForPreview}
                                 onChange={e => setSelectedBuildingForPreview(e.target.value)}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}
                               >
                                 <option value="">-- المبنى --</option>
                                 {corporateLocations.map(loc => (
@@ -2248,7 +2248,7 @@ export function UILayoutEngineTab() {
                               <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#ef4444' }}>*</span></label>
                               <select 
                                 disabled={!selectedBuildingForPreview}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: !selectedBuildingForPreview ? '#f1f5f9' : '#fff', outline: 'none', color: '#334155' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: !selectedBuildingForPreview ? '#f1f5f9' : '#0f172a', outline: 'none', color: '#475569' }}
                               >
                                 <option value="">-- الإدارة أو المكتب --</option>
                                 {selectedBuildingForPreview && corporateLocations.find(l => l.id === selectedBuildingForPreview)?.offices.map(off => (
@@ -2260,18 +2260,18 @@ export function UILayoutEngineTab() {
                         </div>
 
                         <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
                           <div style={{ display: 'flex', gap: '15px' }}>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#ef4444' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}>
+                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
                                 <option value="">-- اختر المشكلة الرئيسية --</option>
                                 {taxonomyList.map((t: any, i: number) => <option key={i}>{t.main}</option>)}
                               </select>
                             </div>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#ef4444' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', color: '#334155' }}>
+                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
                                 <option value="">-- اختر المشكلة الفرعية --</option>
                               </select>
                             </div>
@@ -2279,9 +2279,9 @@ export function UILayoutEngineTab() {
                         </div>
 
                         <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>تفاصيل التذكرة والمرفقات</h4>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>تفاصيل التذكرة والمرفقات</h4>
                           
-                          <input type="text" placeholder="عنوان التذكرة (اختياري، يولد تلقائياً إن ترك فارغاً)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', marginBottom: '15px', outline: 'none' }} />
+                          <input type="text" placeholder="عنوان التذكرة (اختياري، يولد تلقائياً إن ترك فارغاً)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', marginBottom: '15px', outline: 'none' }} />
                           
                           <div style={{ marginBottom: '15px' }}>
                             <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -2290,7 +2290,7 @@ export function UILayoutEngineTab() {
                             </label>
                             <textarea 
                               placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
-                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#fff', outline: 'none', resize: 'vertical' }}
+                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', resize: 'vertical' }}
                             />
                           </div>
 
@@ -2305,7 +2305,7 @@ export function UILayoutEngineTab() {
                           </div>
                         </div>
 
-                        <button style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(14, 165, 233, 0.3)' }}>
+                        <button style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(14, 165, 233, 0.3)' }}>
                           إرسال التذكرة 🚀
                         </button>
                       </div>
@@ -2320,7 +2320,7 @@ export function UILayoutEngineTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>لوحة التذاكر الواردة</h4>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>لوحة التذاكر الواردة</h4>
         
         {/* Context-Aware Tabs Mock */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '10px' }}>
@@ -2333,18 +2333,18 @@ export function UILayoutEngineTab() {
 
         {/* Data Filtering Mock */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ padding: '15px', background: '#fff', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>تذكرة #10294</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9' }}>تذكرة #10294</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
             </div>
             {snatching && (
               <button style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px dashed rgba(239, 68, 68, 0.3)', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>سحب التذكرة ✋</button>
             )}
           </div>
-          <div style={{ padding: '15px', background: '#fff', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>تذكرة #10295</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9' }}>تذكرة #10295</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>تحديث النظام - جديدة</div>
             </div>
           </div>
@@ -2362,18 +2362,18 @@ export function UILayoutEngineTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
       <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#334155', fontWeight: 'bold' }}>الإجراءات السريعة (Quick Actions)</h4>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>الإجراءات السريعة (Quick Actions)</h4>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          <button style={{ padding: '10px 15px', background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(2, 132, 199, 0.2)' }}>
+          <button style={{ padding: '10px 15px', background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(2, 132, 199, 0.2)' }}>
             إسناد لنفسي 🙋‍♂️
           </button>
           
-          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#334155', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
+          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#475569', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
             تحويل التذكرة {handshake && <span style={{ color: '#f59e0b', fontSize: '10px', marginLeft: '5px' }}>(مشروط 🤝)</span>}
           </button>
 
-          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#334155', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
+          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#475569', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
             إنشاء تذكرة فرعية {depLock && <span style={{ color: '#ef4444', fontSize: '10px', marginLeft: '5px' }}>(قفل الاعتماد 🔒)</span>}
           </button>
         </div>
@@ -2395,7 +2395,7 @@ export function UILayoutEngineTab() {
                  <option>اختر الزميل...</option>
                  <option>م. خليل (فريق الشبكات)</option>
                </select>
-               <button style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}>إرسال طلب التحويل</button>
+               <button style={{ padding: '10px 20px', background: '#f59e0b', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}>إرسال طلب التحويل</button>
              </div>
            </div>
         ) : depLock ? (
@@ -2406,7 +2406,7 @@ export function UILayoutEngineTab() {
              <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#64748b', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#ef4444' }}>(معلقة Blocked)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', fontSize: '12px', outline: 'none' }} />
-               <button style={{ alignSelf: 'flex-end', padding: '10px 20px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
+               <button style={{ alignSelf: 'flex-end', padding: '10px 20px', background: '#0284c7', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
              </div>
            </div>
         ) : (
@@ -2432,7 +2432,7 @@ export function UILayoutEngineTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
       <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(16px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>لوحة التحليل المركزي (OLAP Engine)</span>
           {isOverride && <span style={{ fontSize: '10px', background: '#fca5a5', color: '#7f1d1d', padding: '4px 8px', borderRadius: '4px' }}>Admin Override Active</span>}
         </h4>
@@ -2467,8 +2467,8 @@ export function UILayoutEngineTab() {
           
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {drilldown ? (
-              <div style={{ flex: 1, background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '15px', display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '10px' }}>🏆 أفضل المهندسين أداءً</span>
+              <div style={{ flex: 1, background: '#0f172a', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '15px', display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '10px' }}>🏆 أفضل المهندسين أداءً</span>
                 <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}><span>م. أحمد سالم</span><span>120 تذكرة</span></div>
                 <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}><span>م. سارة علي</span><span>115 تذكرة</span></div>
               </div>
@@ -2496,7 +2496,7 @@ export function UILayoutEngineTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
       <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
         {types.map((t: string) => (
-          <div key={t} style={{ padding: '8px 16px', background: t === activeType ? '#8b5cf6' : 'rgba(255,255,255,0.6)', color: t === activeType ? '#fff' : '#64748b', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: `1px solid ${t === activeType ? '#8b5cf6' : 'rgba(203, 213, 225, 0.8)'}`, transition: 'all 0.3s' }}>
+          <div key={t} style={{ padding: '8px 16px', background: t === activeType ? '#8b5cf6' : 'rgba(255,255,255,0.6)', color: t === activeType ? '#0f172a' : '#64748b', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: `1px solid ${t === activeType ? '#8b5cf6' : 'rgba(203, 213, 225, 0.8)'}`, transition: 'all 0.3s' }}>
             {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
           </div>
         ))}
@@ -2533,7 +2533,7 @@ export function UILayoutEngineTab() {
                         if (previewRole === 'Field_Engineer') return false; // Role-based filtering simulation
                         return true;
                       }).map((chart, idx) => (
-                        <div key={idx} style={{ flex: 1, height: '180px', background: 'rgba(255, 255, 255, 0.9)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                        <div key={idx} style={{ flex: 1, height: '180px', background: 'rgba(255, 255, 255, 0.9)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                           {chart}
                         </div>
                       ))}
@@ -2552,13 +2552,13 @@ export function UILayoutEngineTab() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.6)', padding: '15px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
                           {activeComponents.find(c => c.id === 'admin_archive')?.properties.enabledUIFilters?.map((filter: string, idx: number) => (
-                            <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px', outline: 'none' }}>
+                            <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#0f172a', fontSize: '12px', outline: 'none' }}>
                               <option>تصفية: {filter}</option>
                             </select>
                           ))}
                         </div>
                         {activeComponents.find(c => c.id === 'admin_archive')?.properties.enableHistoricalExport && (
-                          <button style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)' }}>
+                          <button style={{ padding: '8px 16px', background: '#10b981', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)' }}>
                             تصدير التقرير 📥
                           </button>
                         )}
@@ -2573,7 +2573,7 @@ export function UILayoutEngineTab() {
                             <th style={{ padding: '12px 15px' }}>الحالة التاريخية</th>
                           </tr>
                         </thead>
-                        <tbody style={{ fontSize: '13px', color: '#334155' }}>
+                        <tbody style={{ fontSize: '13px', color: '#475569' }}>
                           {[1, 2, 3].map(row => (
                             <tr key={row} style={{ borderTop: '1px solid rgba(226, 232, 240, 0.5)' }}>
                               <td style={{ padding: '15px' }}>#TKT-2026-00{row}</td>
@@ -2615,11 +2615,11 @@ export function UILayoutEngineTab() {
 
       {showNameModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)' }}>
-          <div style={{ background: 'rgba(30, 41, 59, 0.95)', backdropFilter: 'blur(16px)', padding: '40px', borderRadius: '20px', width: '450px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '20px' }}>تعريف الواجهة الجديدة والتصنيف</h3>
+          <div style={{ background: 'rgba(255, 255, 255, 0.97)', backdropFilter: 'blur(16px)', padding: '40px', borderRadius: '20px', width: '450px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h3 style={{ color: '#0f172a', marginBottom: '20px', fontSize: '20px' }}>تعريف الواجهة الجديدة والتصنيف</h3>
             
             <div style={{ textAlign: 'right', marginBottom: '25px', marginTop: '20px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '12px', display: 'block' }}>1. أولاً: اختر التصنيف المعماري (الدور):</label>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#6366f1', marginBottom: '12px', display: 'block' }}>1. أولاً: اختر التصنيف المعماري (الدور):</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 {[
                   { id: 'IT_ADMIN', label: 'مسؤول نظام', icon: '🔴' },
@@ -2639,12 +2639,12 @@ export function UILayoutEngineTab() {
                     style={{ 
                       padding: '12px', 
                       borderRadius: '10px', 
-                      border: `1px solid ${interfaceCategory === role.id ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`, 
-                      background: interfaceCategory === role.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.3)',
+                      border: `1px solid ${interfaceCategory === role.id ? '#3b82f6' : 'rgba(99,102,241,0.08)'}`, 
+                      background: interfaceCategory === role.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(241,245,249,0.9)',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: interfaceCategory === role.id ? 'bold' : 'normal',
-                      color: interfaceCategory === role.id ? '#fff' : '#94a3b8',
+                      color: interfaceCategory === role.id ? '#0f172a' : '#94a3b8',
                       transition: 'background-color 0.2s, box-shadow 0.2s, border-color 0.2s',
                       display: 'flex',
                       alignItems: 'center',
@@ -2659,7 +2659,7 @@ export function UILayoutEngineTab() {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: '20px', opacity: interfaceCategory ? 1 : 0.4, transition: 'opacity 0.3s' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: interfaceCategory ? '#38bdf8' : '#64748b', marginBottom: '8px', display: 'block' }}>2. ثانياً: أدخل اسم الواجهة:</label>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: interfaceCategory ? '#6366f1' : '#64748b', marginBottom: '8px', display: 'block' }}>2. ثانياً: أدخل اسم الواجهة:</label>
               <input 
                 id="interface_name_input"
                 type="text" 
@@ -2667,7 +2667,7 @@ export function UILayoutEngineTab() {
                 value={interfaceName}
                 disabled={!interfaceCategory}
                 onChange={e => setInterfaceName(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px', boxSizing: 'border-box', borderRadius: '10px', border: `1px solid ${interfaceCategory ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`, background: interfaceCategory ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.1)', color: '#fff', fontSize: '15px', outline: 'none', transition: 'all 0.3s', cursor: interfaceCategory ? 'text' : 'not-allowed' }}
+                style={{ width: '100%', padding: '14px 16px', boxSizing: 'border-box', borderRadius: '10px', border: `1px solid ${interfaceCategory ? 'rgba(255, 255, 255, 0.3)' : 'rgba(99, 102, 241, 0.08)'}`, background: interfaceCategory ? 'rgba(241, 245, 249, 0.95)' : 'rgba(0, 0, 0, 0.1)', color: '#0f172a', fontSize: '15px', outline: 'none', transition: 'all 0.3s', cursor: interfaceCategory ? 'text' : 'not-allowed' }}
                 onFocus={e => { if(interfaceCategory) e.target.style.borderColor = '#3b82f6'; }}
                 onBlur={e => { if(interfaceCategory) e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)'; }}
               />
@@ -2675,23 +2675,23 @@ export function UILayoutEngineTab() {
 
             {/* 3. Cascading Dropdowns for Operational Context */}
             {(interfaceCategory === 'OPERATIONAL_USER' || interfaceCategory === 'OPERATIONAL_MANAGER') && (
-              <div style={{ textAlign: 'right', marginBottom: '25px', padding: '20px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
-                <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '15px', display: 'block' }}>3. ثالثاً: السياق التشغيلي للواجهة:</label>
+              <div style={{ textAlign: 'right', marginBottom: '25px', padding: '20px', background: 'rgba(99, 102, 241, 0.04)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+                <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#6366f1', marginBottom: '15px', display: 'block' }}>3. ثالثاً: السياق التشغيلي للواجهة:</label>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   
                   {interfaceCategory === 'OPERATIONAL_MANAGER' && (
-                    <div style={{ marginBottom: '10px', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-                      <label style={{ fontSize: '12px', color: '#22d3ee', marginBottom: '10px', display: 'block', fontWeight: 'bold' }}>تحديد مستوى الإدارة للمسؤول <span style={{color: '#ef4444'}}>*</span></label>
+                    <div style={{ marginBottom: '10px', background: 'rgba(241,245,249,0.9)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+                      <label style={{ fontSize: '12px', color: '#6366f1', marginBottom: '10px', display: 'block', fontWeight: 'bold' }}>تحديد مستوى الإدارة للمسؤول <span style={{color: '#ef4444'}}>*</span></label>
                       <div style={{ display: 'flex', gap: '15px' }}>
                         <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="DEPT_HEAD" checked={managementLevel === 'DEPT_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ accentColor: '#38bdf8' }} /> مدير إدارة
+                          <input type="radio" name="mgmt_level" value="DEPT_HEAD" checked={managementLevel === 'DEPT_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ accentColor: '#6366f1' }} /> مدير إدارة
                         </label>
                         <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="SECTION_HEAD" checked={managementLevel === 'SECTION_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedTeam(''); }} style={{ accentColor: '#38bdf8' }} /> رئيس قسم
+                          <input type="radio" name="mgmt_level" value="SECTION_HEAD" checked={managementLevel === 'SECTION_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedTeam(''); }} style={{ accentColor: '#6366f1' }} /> رئيس قسم
                         </label>
                         <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="TEAM_LEADER" checked={managementLevel === 'TEAM_LEADER'} onChange={e => setManagementLevel(e.target.value)} style={{ accentColor: '#38bdf8' }} /> رئيس فريق
+                          <input type="radio" name="mgmt_level" value="TEAM_LEADER" checked={managementLevel === 'TEAM_LEADER'} onChange={e => setManagementLevel(e.target.value)} style={{ accentColor: '#6366f1' }} /> رئيس فريق
                         </label>
                       </div>
                     </div>
@@ -2700,8 +2700,8 @@ export function UILayoutEngineTab() {
                   {((interfaceCategory === 'OPERATIONAL_USER') || (interfaceCategory === 'OPERATIONAL_MANAGER' && managementLevel)) && (
                     <>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '6px', display: 'block' }}>الإدارة التشغيلية <span style={{color: '#ef4444'}}>*</span></label>
-                        <select value={selectedDept} onChange={(e) => { setSelectedDept(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                        <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'block' }}>الإدارة التشغيلية <span style={{color: '#ef4444'}}>*</span></label>
+                        <select value={selectedDept} onChange={(e) => { setSelectedDept(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                           <option value="">-- اختر الإدارة --</option>
                           {interfaceCategory === 'OPERATIONAL_MANAGER' && managementLevel === 'DEPT_HEAD' && <option value="NEW_DEPARTMENT_PLACEHOLDER" style={{ color: '#fbbf24' }}>+ إضافة مسودة إدارة جديدة قيد الإنشاء</option>}
                           {mockOrgStructure.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -2710,8 +2710,8 @@ export function UILayoutEngineTab() {
                       
                       {((interfaceCategory === 'OPERATIONAL_USER') || (managementLevel === 'SECTION_HEAD' || managementLevel === 'TEAM_LEADER')) && selectedDept && selectedDept !== 'NEW_DEPARTMENT_PLACEHOLDER' && (
                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                          <label style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '6px', display: 'block' }}>القسم التشغيلي <span style={{color: '#ef4444'}}>*</span></label>
-                          <select value={selectedSection} onChange={(e) => { setSelectedSection(e.target.value); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                          <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'block' }}>القسم التشغيلي <span style={{color: '#ef4444'}}>*</span></label>
+                          <select value={selectedSection} onChange={(e) => { setSelectedSection(e.target.value); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                             <option value="">-- اختر القسم --</option>
                             {mockOrgStructure.find(d => d.id === selectedDept)?.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
@@ -2720,13 +2720,13 @@ export function UILayoutEngineTab() {
 
                       {((interfaceCategory === 'OPERATIONAL_USER') || (managementLevel === 'TEAM_LEADER')) && selectedSection && (
                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                          <label style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                          <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
                             <span>الفريق التشغيلي</span>
-                            <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: interfaceCategory === 'OPERATIONAL_USER' ? '#94a3b8' : '#ef4444' }}>
+                            <span style={{ fontSize: '10px', background: 'rgba(99,102,241,0.08)', padding: '2px 6px', borderRadius: '4px', color: interfaceCategory === 'OPERATIONAL_USER' ? '#94a3b8' : '#ef4444' }}>
                               {interfaceCategory === 'OPERATIONAL_USER' ? 'اختياري' : 'إجباري *'}
                             </span>
                           </label>
-                          <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                          <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
                             <option value="">{interfaceCategory === 'OPERATIONAL_USER' ? '-- بدون فريق محدد (تابعية مباشرة للقسم) --' : '-- اختر الفريق --'}</option>
                             {mockOrgStructure.find(d => d.id === selectedDept)?.sections.find(s => s.id === selectedSection)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                           </select>
@@ -2756,7 +2756,7 @@ export function UILayoutEngineTab() {
                   setShowNameModal(false);
                 }
               }}
-              style={{ width: '100%', padding: '14px', background: (interfaceName.trim() === '' || !interfaceCategory) ? '#475569' : 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: (interfaceName.trim() === '' || !interfaceCategory) ? 'not-allowed' : 'pointer', transition: 'all 0.3s' }}
+              style={{ width: '100%', padding: '14px', background: (interfaceName.trim() === '' || !interfaceCategory) ? '#475569' : 'linear-gradient(135deg, #10b981, #059669)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: (interfaceName.trim() === '' || !interfaceCategory) ? 'not-allowed' : 'pointer', transition: 'all 0.3s' }}
             >
               البدء بتصميم الواجهة 🚀
             </button>
@@ -2772,18 +2772,18 @@ export function UILayoutEngineTab() {
 
       {/* ─── Save Confirmation Report Modal ─── */}
       {showSaveReportModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '40px', borderRadius: '20px', width: '500px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#34d399', marginBottom: '20px', fontSize: '22px', textAlign: 'center' }}>✨ تقرير اعتماد الواجهة التشغيلية</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '40px', borderRadius: '20px', width: '500px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h3 style={{ color: '#059669', marginBottom: '20px', fontSize: '22px', textAlign: 'center' }}>✨ تقرير اعتماد الواجهة التشغيلية</h3>
             
-            <div style={{ background: 'rgba(0, 0, 0, 0.3)', borderRadius: '12px', padding: '20px', marginBottom: '25px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <div style={{ background: 'rgba(241, 245, 249, 0.9)', borderRadius: '12px', padding: '20px', marginBottom: '25px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
                 <span style={{ color: '#94a3b8', fontSize: '14px' }}>اسم الواجهة:</span>
-                <strong style={{ color: '#f8fafc', fontSize: '15px' }}>{interfaceName}</strong>
+                <strong style={{ color: '#0f172a', fontSize: '15px' }}>{interfaceName}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
                 <span style={{ color: '#94a3b8', fontSize: '14px' }}>الدور الرئيسي (التصنيف):</span>
-                <strong style={{ color: '#38bdf8', fontSize: '15px' }}>
+                <strong style={{ color: '#6366f1', fontSize: '15px' }}>
                   {interfaceCategory === 'IT_ADMIN' && '🔴 مسؤول نظام'}
                   {interfaceCategory === 'OPERATIONAL_MANAGER' && '🟠 مسؤول تشغيلي'}
                   {interfaceCategory === 'OPERATIONAL_USER' && '🔵 مستخدم تشغيلي'}
@@ -2796,7 +2796,7 @@ export function UILayoutEngineTab() {
               </div>
             </div>
 
-            <p style={{ color: '#cbd5e1', fontSize: '14px', textAlign: 'center', marginBottom: '30px', lineHeight: '1.6' }}>
+            <p style={{ color: '#475569', fontSize: '14px', textAlign: 'center', marginBottom: '30px', lineHeight: '1.6' }}>
               أنت على وشك اعتماد هذه الواجهة وإدراجها ضمن المنظومة التشغيلية لتكون متاحة للتخصيص والاستخدام. هل أنت متأكد من حفظ هذا التوزيع؟
             </p>
 
@@ -2822,13 +2822,13 @@ export function UILayoutEngineTab() {
                     setIsManagerMode(true);
                   }
                 }}
-                style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
               >
                 اعتماد وحفظ نهائي ✅
               </button>
               <button 
                 onClick={() => setShowSaveReportModal(false)}
-                style={{ flex: 1, padding: '14px', background: 'rgba(255, 255, 255, 0.05)', color: '#e2e8f0', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '14px', background: 'rgba(99, 102, 241, 0.04)', color: '#334155', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
               >
                 الرجوع للتعديل ↩️
               </button>
@@ -2839,14 +2839,14 @@ export function UILayoutEngineTab() {
 
       {/* ─── Data Loss Warning Modal ─── */}
       {showWarningModal && interfaceToLoad && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(30, 41, 59, 0.95)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             <h3 style={{ color: '#f87171', margin: '0 0 15px 0', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: فقدان العمل غير المحفوظ
             </h3>
             
-            <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#38bdf8' }}>({interfaceName})</strong>.
+            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#6366f1' }}>({interfaceName})</strong>.
               <br/><br/>
               محاولة فتح واجهة <strong style={{ color: '#f59e0b' }}>({interfaceToLoad.name})</strong> ستؤدي إلى إزالة كل التعديلات الحالية غير المحفوظة والمكونات الموزعة وإعادة تحميل مساحة العمل بالواجهة المطلوبة.
             </p>
@@ -2870,7 +2870,7 @@ export function UILayoutEngineTab() {
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                 }}
-                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
               >
                 إلغاء والعودة
               </button>

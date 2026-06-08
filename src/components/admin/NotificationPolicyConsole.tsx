@@ -36,12 +36,12 @@ export const NotificationPolicyConsole: React.FC = () => {
     alert('OU OOO1 OUSOO3OO O U,OO1OOOO O"U+O,OO-!');
   };
 
-  if (loading) return <div style={{ color: '#fff', padding: '20px' }}>جاري التحميل...</div>;
+  if (loading) return <div style={{ color: '#0f172a', padding: '20px' }}>جاري التحميل...</div>;
 
   return (
-    <div style={{ padding: '20px', color: '#fff', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', color: '#0f172a', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{
-        background: 'rgba(255, 255, 255, 0.05)',
+        background: 'rgba(99, 102, 241, 0.04)',
         backdropFilter: 'blur(10px)',
         borderRadius: '16px',
         padding: '25px',
@@ -59,7 +59,7 @@ export const NotificationPolicyConsole: React.FC = () => {
               alignItems: 'center', 
               justifyContent: 'space-between',
               padding: '15px',
-              background: 'rgba(0,0,0,0.3)',
+              background: 'rgba(241,245,249,0.9)',
               borderRadius: '10px',
               border: '1px solid rgba(255,255,255,0.05)'
             }}>
@@ -87,7 +87,7 @@ export const NotificationPolicyConsole: React.FC = () => {
                     type="number" 
                     value={policy.repeatInterval} 
                     onChange={(e) => updatePolicy(policy.eventType, 'repeatInterval', parseInt(e.target.value) || 0)}
-                    style={{ width: '60px', padding: '4px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+                    style={{ width: '60px', padding: '4px', background: '#f8fafc', color: '#0f172a', border: '1px solid #444', borderRadius: '4px' }}
                   />
                 </label>
               </div>
@@ -98,7 +98,7 @@ export const NotificationPolicyConsole: React.FC = () => {
         <div style={{ marginTop: '25px', textAlign: 'right' }}>
           <button onClick={handleSave} style={{
             background: theme.colors.primary,
-            color: '#fff',
+            color: '#0f172a',
             border: 'none',
             padding: '10px 20px',
             borderRadius: '8px',

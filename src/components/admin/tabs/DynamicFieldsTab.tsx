@@ -94,16 +94,16 @@ export const DynamicFieldsTab: React.FC = () => {
 
   const containerStyle: React.CSSProperties = {
     padding: '20px',
-    background: 'rgba(255,255,255,0.02)',
+    background: 'rgba(0,0,0,0.02)',
     borderRadius: '16px',
-    color: '#fff',
+    color: '#0f172a',
     border: '1px solid rgba(255,255,255,0.1)'
   };
 
   const btnStyle = (bg: string): React.CSSProperties => ({
     padding: '10px 20px',
     background: bg,
-    color: '#fff',
+    color: '#0f172a',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -112,7 +112,7 @@ export const DynamicFieldsTab: React.FC = () => {
   });
 
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(0,0,0,0.3)',
+    background: 'rgba(241,245,249,0.9)',
     padding: '15px',
     borderRadius: '8px',
     border: '1px solid rgba(0, 229, 255, 0.2)',
@@ -123,15 +123,15 @@ export const DynamicFieldsTab: React.FC = () => {
   };
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', background: '#111', color: '#fff', marginBottom: '15px' 
+    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', background: '#f8fafc', color: '#0f172a', marginBottom: '15px' 
   };
 
   return (
     <div style={containerStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
         <div>
-          <h2 style={{ margin: 0, color: '#00e5ff' }}>منشئ المستدلات الحرة (Free-form Schemas)</h2>
-          <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#aaa' }}>صمم قوائمك الخاصة واربطها ببعضها بحرية تامة دون قيود النظام.</p>
+          <h2 style={{ margin: 0, color: '#6366f1' }}>منشئ المستدلات الحرة (Free-form Schemas)</h2>
+          <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b' }}>صمم قوائمك الخاصة واربطها ببعضها بحرية تامة دون قيود النظام.</p>
         </div>
         {activeView === 'LIST' && (
           <button onClick={() => { resetForm(); setActiveView('CREATE'); }} style={btnStyle('linear-gradient(90deg, #00e5ff 0%, #0077ff 100%)')}>+ بناء مستدلة جديدة</button>
@@ -149,14 +149,14 @@ export const DynamicFieldsTab: React.FC = () => {
                 <div key={field.id} style={cardStyle}>
                   <div>
                     <strong style={{ fontSize: '15px' }}>{field.name}</strong>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
                       {parentField ? (
                         <span>🔗 يعتمد على: <span style={{ color: '#ffab00' }}>{parentField.name}</span></span>
                       ) : (
-                        <span style={{ color: '#00ffaa' }}>مستدلة رئيسية (مستقلة)</span>
+                        <span style={{ color: '#059669' }}>مستدلة رئيسية (مستقلة)</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
                       {field.dependsOn ? 'تحتوي على خيارات مخصصة بناءً على المصدر' : `الخيارات: ${field.options.join('، ')}`}
                     </div>
                   </div>
@@ -169,8 +169,8 @@ export const DynamicFieldsTab: React.FC = () => {
           )}
         </div>
       ) : (
-        <div style={{ background: 'rgba(0,0,0,0.4)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <h3 style={{ marginTop: 0, color: '#fff' }}>بناء مستدلة (Dropdown Field)</h3>
+        <div style={{ background: 'rgba(241,245,249,0.95)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 style={{ marginTop: 0, color: '#0f172a' }}>بناء مستدلة (Dropdown Field)</h3>
           
           <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px' }}>اسم المستدلة (مثال: الإدارات، تصنيف العطل):</label>
           <input 
@@ -192,11 +192,11 @@ export const DynamicFieldsTab: React.FC = () => {
           </select>
 
           {dependsOn ? (
-            <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed #555', marginBottom: '15px' }}>
+            <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px dashed #555', marginBottom: '15px' }}>
               <h5 style={{ margin: '0 0 10px 0', color: '#ffab00' }}>اربط الخيارات بالاعتماد على المصدر:</h5>
               {getParentOptions(dependsOn).map(parentOpt => (
                 <div key={parentOpt} style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#aaa', marginBottom: '5px' }}>إذا اختار المستخدم ({parentOpt})، أظهر له الخيارات التالية:</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '5px' }}>إذا اختار المستخدم ({parentOpt})، أظهر له الخيارات التالية:</label>
                   <input 
                     type="text" 
                     placeholder="خيارات مفصولة بفاصلة (مثال: مكتب أ، مكتب ب)..." 
@@ -221,7 +221,7 @@ export const DynamicFieldsTab: React.FC = () => {
           )}
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <button onClick={handleSaveField} style={btnStyle('#00e5ff')}>تكوين المستدلة وحفظها</button>
+            <button onClick={handleSaveField} style={btnStyle('#6366f1')}>تكوين المستدلة وحفظها</button>
             <button onClick={() => setActiveView('LIST')} style={{ ...btnStyle('transparent'), border: '1px solid #555' }}>إلغاء</button>
           </div>
         </div>
