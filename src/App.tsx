@@ -88,35 +88,45 @@ const Navigation: React.FC = () => {
   
   const navStyle: React.CSSProperties = {
     display: 'flex',
-    gap: '20px',
-    padding: '15px 30px',
-    background: 'rgba(0, 0, 0, 0.4)',
-    backdropFilter: 'blur(10px)',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    marginBottom: '20px'
+    alignItems: 'center',
+    gap: '24px',
+    padding: '14px 32px',
+    background: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(20px)',
+    borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+    fontFamily: "'Inter', sans-serif"
   };
 
-  const linkStyle = (path: string): React.CSSProperties => ({
-    color: location.pathname.startsWith(path) && path !== '/' || location.pathname === path ? '#00e5ff' : '#fff',
-    fontWeight: location.pathname.startsWith(path) && path !== '/' || location.pathname === path ? 'bold' : 'normal',
-    textShadow: location.pathname.startsWith(path) && path !== '/' || location.pathname === path ? '0 0 10px rgba(0,229,255,0.5)' : 'none',
-    textDecoration: 'none',
-    fontSize: '16px'
-  });
+  const linkStyle = (path: string): React.CSSProperties => {
+    const isActive = (location.pathname.startsWith(path) && path !== '/') || location.pathname === path;
+    return {
+      color: isActive ? '#6366f1' : '#64748b',
+      fontWeight: isActive ? '600' : '500',
+      textDecoration: 'none',
+      fontSize: '14px',
+      padding: '6px 14px',
+      borderRadius: '10px',
+      background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+      transition: 'all 0.25s ease',
+      letterSpacing: '0.2px'
+    };
+  };
 
   return (
     <nav style={navStyle}>
-      <div style={{ fontWeight: 'bold', marginRight: 'auto', color: '#00ffaa' }}>
-        LITC-TS v43.5
+      <div style={{ fontWeight: '800', marginRight: 'auto', color: '#0f172a', fontSize: '16px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>LITC-TS</span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>v43.5</span>
       </div>
       <Link to="/" style={linkStyle('/')}>الرئيسية</Link>
       {user && (user.role === 'IT_Admin' || user.role === 'admin') && (
         <>
-          <Link to="/admin/security" style={linkStyle('/admin/security')}>الأمان وقاعدة البيانات</Link>
-          <Link to="/admin/policies" style={linkStyle('/admin/policies')}>سياسات الإشعارات</Link>
+          <Link to="/admin/security" style={linkStyle('/admin/security')}>🛡️ الأمان وقاعدة البيانات</Link>
+          <Link to="/admin/policies" style={linkStyle('/admin/policies')}>🔔 سياسات الإشعارات</Link>
         </>
       )}
-      <Link to="/profile" style={linkStyle('/profile')}>الملف الشخصي</Link>
+      <Link to="/profile" style={linkStyle('/profile')}>👤 الملف الشخصي</Link>
     </nav>
   );
 };
