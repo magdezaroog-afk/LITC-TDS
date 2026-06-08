@@ -574,19 +574,6 @@ export function UILayoutEngineTab() {
               <p style={{ fontSize: '15px', color: '#94a3b8', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
               
 
-              <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'right' }}>
-                <label style={{ fontSize: '13px', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>👤 محاكي الباني (Role Simulator):</label>
-                <select 
-                  value={currentBuilderRole} 
-                  onChange={e => setCurrentBuilderRole(e.target.value as CoreRole)}
-                  style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', outline: 'none' }}
-                >
-                  <option value="IT_ADMIN">مسؤول نظام سيادي (IT Admin)</option>
-                  <option value="OPERATIONAL_MANAGER">مدير إدارة تشغيلي (Operational Manager)</option>
-                  <option value="OPERATIONAL_USER">رئيس قسم/فريق (Operational User)</option>
-                </select>
-                <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>اختبر كيف يخفي محرك הסقف الصارم الخصائص الممنوعة من الرتب الأدنى عند بنائهم للواجهات.</p>
-              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
                 <button 
