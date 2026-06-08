@@ -13,7 +13,7 @@ import { UserProfileConsole } from './components/profile/UserProfileConsole';
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
-import { LanguageProvider } from './engine/ui-loader/LanguageContext';
+import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
 import { OperationalEntitiesConsole } from './components/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './components/admin/NotificationPolicyConsole';
 import { SecurityControlTab } from './components/admin/tabs/SecurityControlTab';

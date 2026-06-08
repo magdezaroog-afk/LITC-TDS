@@ -110,7 +110,7 @@ export const GovernanceAnalytics: React.FC = () => {
     backdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 12px 40px 0 rgba(0, 0, 0, 0.3)',
-    color: '#ffffff',
+    color: '#0f172a',
     fontFamily: theme.typography.fontFamily,
     maxWidth: '1200px',
     margin: '20px auto',

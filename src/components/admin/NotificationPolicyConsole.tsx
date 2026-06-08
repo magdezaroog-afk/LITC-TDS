@@ -33,7 +33,7 @@ export const NotificationPolicyConsole: React.FC = () => {
   const handleSave = async () => {
     // Here we would normally make a PUT/POST request to save to backend DB
     console.log('Saving Notification Policies', policies);
-    alert('OU OOO1 OUSOO3OO O U,OO1OOOO O"U+O,OO-!');
+    alert('تم حفظ سياسات التنبيهات بنجاح!');
   };
 
   if (loading) return <div style={{ color: '#0f172a', padding: '20px' }}>جاري التحميل...</div>;

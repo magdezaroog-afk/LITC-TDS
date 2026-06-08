@@ -48,7 +48,7 @@ export const CrossEntityAnalytics: React.FC = () => {
     backdropFilter: 'blur(30px)',
     border: '1px solid rgba(0, 229, 255, 0.2)',
     boxShadow: '0 8px 32px 0 rgba(0, 229, 255, 0.1)',
-    color: '#ffffff',
+    color: '#0f172a',
     fontFamily: theme.typography.fontFamily,
     direction: 'rtl',
     position: 'relative',
@@ -136,7 +136,7 @@ export const CrossEntityAnalytics: React.FC = () => {
         <div style={cardGridStyle}>
           {data.map((entity, idx) => (
             <div key={idx} style={cardStyle} className="hover:scale-105">
-              <h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '18px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+              <h3 style={{ margin: '0 0 16px 0', color: '#0f172a', fontSize: '18px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px' }}>
                 {entity.department}
               </h3>
               

@@ -68,10 +68,10 @@ export const OperationalEntitiesConsole: React.FC = () => {
     e.preventDefault();
   };
 
-  if (loading) return <div style={{ color: '#fff', padding: '20px' }}>جاري التحميل...</div>;
+  if (loading) return <div style={{ color: '#0f172a', padding: '20px' }}>جاري التحميل...</div>;
 
   return (
-    <div style={{ padding: '20px', color: '#fff', display: 'flex', gap: '20px' }}>
+    <div style={{ padding: '20px', color: '#0f172a', display: 'flex', gap: '20px' }}>
       
       {/* Users Panel (Draggable) */}
       <div style={{

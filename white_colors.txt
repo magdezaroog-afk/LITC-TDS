@@ -1,0 +1,74 @@
+src/components\admin\AdminDashboardShell.tsx:296:background: isActive ? '#ffffff' : isHovered ? 'rgba(255,255,255,0.5)' : 'transparent',
+src/components\admin\AdminDashboardShell.tsx:325:fontSize: '18px', color: isActive ? '#fff' : tab.accentColor,
+src/components\admin\CrossEntityAnalytics.tsx:51:color: '#ffffff',
+src/components\admin\CrossEntityAnalytics.tsx:139:<h3 style={{ margin: '0 0 16px 0', color: '#fff', fontSize: '18px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+src/components\admin\GovernanceAnalytics.tsx:113:color: '#ffffff',
+src/components\admin\OperationalEntitiesConsole.tsx:71:if (loading) return <div style={{ color: '#fff', padding: '20px' }}>جاري التحميل...</div>;
+src/components\admin\OperationalEntitiesConsole.tsx:74:<div style={{ padding: '20px', color: '#fff', display: 'flex', gap: '20px' }}>
+src/components\admin\ReferenceTreeBuilder.tsx:102:color: '#fff',
+src/components\admin\ReferenceTreeBuilder.tsx:116:background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff',
+src/components\admin\ReferenceTreeBuilder.tsx:124:background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff',
+src/components\admin\ReferenceTreeBuilder.tsx:136:background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff',
+src/components\admin\ReferenceTreeBuilder.tsx:149:border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px',
+src/components\admin\ReferenceTreeBuilder.tsx:158:{loading ? <p style={{color: '#fff'}}>جاري التحميل...</p> : (
+src/components\admin\ReferenceTreeBuilder.tsx:159:<table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff' }}>
+src/components\admin\tabs\GlobalUserMatrixTab.tsx:146:const actionButtonStyle = (bgColor: string, color: string = '#fff'): React.CSSProperties => ({
+src/components\admin\tabs\GlobalUserMatrixTab.tsx:181:style={{ width: '100%', padding: '8px', marginBottom: '10px', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px' }}
+src/components\admin\tabs\GlobalUserMatrixTab.tsx:190:<button onClick={handleBulkChangeDept} style={{ width: '100%', padding: '6px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>تطبيق النقل</button>
+src/components\admin\tabs\OperationalStructureTab.tsx:842:<div style={{ position: 'absolute', bottom: -5, right: -5, background: '#ef4444', color: 'white', borderRadius: '50%', width: '25px', height: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #0f172a' }}>🚫</div>
+src/components\admin\tabs\OperationalStructureTab.tsx:996:<button onClick={handleCreateNewUI} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#6366f1', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+src/components\admin\tabs\UILayoutEngineTab.tsx:189:width: '14px', height: '14px', backgroundColor: 'white', borderRadius: '50%',
+src/components\admin\tabs\UILayoutEngineTab.tsx:193:width: '14px', height: '14px', backgroundColor: 'white', borderRadius: '50%',
+src/components\analytics\UniversalAnalyticsCube.tsx:43:color: '#ffffff',
+src/components\analytics\UniversalAnalyticsCube.tsx:77:<h4 style={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>{entity.name}</h4>
+src/components\analytics\UniversalAnalyticsCube.tsx:140:تم التحور بناءً على الصلاحية: <strong style={{ color: '#fff' }}>{data?.role}</strong>
+src/components\bot\FloatingAIBot.tsx:97:<strong style={{ color: '#fff', fontSize: '15px' }}>LITC-Bot Assistant</strong>
+src/components\bot\FloatingAIBot.tsx:106:color: '#fff',
+src/components\bot\FloatingAIBot.tsx:135:color: '#fff',
+src/components\bot\FloatingAIBot.tsx:143:color: '#fff',
+src/components\dashboard\DepartmentHeadWorkspace.tsx:84:<div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #6554c0 0%, #403294 100%)', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>ر</div>
+src/components\dashboard\DepartmentHeadWorkspace.tsx:114:<span style={{ fontSize: '12px', color: '#006644', background: '#e3fcef', padding: '4px 10px', borderRadius: '4px', whiteSpace: 'nowrap' }}>✔️ التفويض مفعل لديك</span>
+src/components\dashboard\DepartmentHeadWorkspace.tsx:122:<span style={{ fontSize: '12px', color: '#bf2600', background: '#ffebe6', padding: '4px 10px', borderRadius: '4px', whiteSpace: 'nowrap' }}>🔒 التوزيع مدار سيادياً من الإدارة</span>
+src/components\dashboard\DepartmentHeadWorkspace.tsx:151:<div key={ticket.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #dfe1e6', padding: '15px 20px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+src/components\dashboard\DepartmentHeadWorkspace.tsx:182:color: assignments[ticket.id] ? '#fff' : '#a5adba',
+src/components\dashboard\DepartmentHeadWorkspace.tsx:188:whiteSpace: 'nowrap'
+src/components\dashboard\EmployeeWorkspace.tsx:189:<div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0052cc 0%, #0747a6 100%)', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>م</div>
+src/components\dashboard\EmployeeWorkspace.tsx:199:<span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ff5630', color: '#fff', fontSize: '10px', width: '15px', height: '15px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>3</span>
+src/components\dashboard\EmployeeWorkspace.tsx:203:<select style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #dfe1e6', background: '#fff', cursor: 'pointer', fontSize: '12px', color: '#172b4d' }}>
+src/components\dashboard\EmployeeWorkspace.tsx:231:color: isRecording ? '#fff' : '#0052cc',
+src/components\dashboard\EmployeeWorkspace.tsx:291:<button onClick={handleTicketSubmit} disabled={!!fileError} style={{ width: '100%', padding: '12px', background: fileError ? '#ebecf0' : 'linear-gradient(90deg, #0052cc 0%, #0065ff 100%)', color: fileError ? '#a5adba' : '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: fileError ? 'not-allowed' : 'pointer', boxShadow: fileError ? 'none' : '0 4px 15px rgba(0, 82, 204, 0.2)', transition: 'all 0.2s', marginTop: '10px' }}>
+src/components\dashboard\EmployeeWorkspace.tsx:379:{allowedActionsForCurrentTab.includes('CLAIM') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>استلام التذكرة</button>}
+src/components\dashboard\EmployeeWorkspace.tsx:380:{allowedActionsForCurrentTab.includes('OPEN') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>فتح للمعالجة</button>}
+src/components\dashboard\EmployeeWorkspace.tsx:383:{allowedActionsForCurrentTab.includes('CLOSE') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#36b37e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>إغلاق التذكرة</button>}
+src/components\dashboard\EmployeeWorkspace.tsx:633:<div style={{ width: '40px', background: '#0052cc', height: `${val1}%`, borderRadius: '4px 4px 0 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '5px', color: '#fff', fontSize: '10px' }}>A</div>
+src/components\dashboard\EmployeeWorkspace.tsx:634:<div style={{ width: '40px', background: '#ff5630', height: `${val2}%`, borderRadius: '4px 4px 0 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '5px', color: '#fff', fontSize: '10px' }}>B</div>
+src/components\dashboard\EmployeeWorkspace.tsx:696:<button style={{ padding: '0 20px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>تطبيق</button>
+src/components\dashboard\EmployeeWorkspace.tsx:751:<button style={{ position: 'absolute', top: '15px', left: '15px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', transition: 'background 0.3s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>تغيير الغلاف 📷</button>
+src/components\dashboard\EmployeeWorkspace.tsx:757:<div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', border: '4px solid #0f172a', marginTop: '-45px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '36px', color: '#fff', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.5)' }}>
+src/components\dashboard\EmployeeWorkspace.tsx:909:<input type="number" defaultValue="15" disabled={lockSLA} style={{ width: '50px', padding: '5px', background: lockSLA ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: '#fff', fontSize: '12px', textAlign: 'center', cursor: lockSLA ? 'not-allowed' : 'text' }} />
+src/components\dashboard\EmployeeWorkspace.tsx:911:<span style={{ background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', opacity: forceWhatsApp ? 1 : 0.5 }}>📱 WhatsApp</span>
+src/components\dashboard\EmployeeWorkspace.tsx:918:<input type="number" defaultValue="2" disabled={lockSLA} style={{ width: '50px', padding: '5px', background: lockSLA ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: '#fff', fontSize: '12px', textAlign: 'center', cursor: lockSLA ? 'not-allowed' : 'text' }} />
+src/components\dashboard\EmployeeWorkspace.tsx:919:<select disabled={lockSLA} style={{ padding: '5px', background: lockSLA ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: '#fff', fontSize: '11px', cursor: lockSLA ? 'not-allowed' : 'pointer' }}>
+src/components\dashboard\EmployeeWorkspace.tsx:923:<span style={{ background: '#10b981', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', opacity: forceWhatsApp ? 1 : 0.5 }}>📱 WhatsApp</span>
+src/components\dashboard\OperationalDashboard.tsx:137:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:145:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:160:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:170:<div style={rowStyle} className="hover:scale-[1.01] hover:bg-white/15">
+src/components\dashboard\OperationalDashboard.tsx:180:color: '#fff',
+src/components\dashboard\OperationalDashboard.tsx:921:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:958:color: unreadCount > 0 ? '#ff3366' : '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:968:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:994:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1029:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1060:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1070:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1081:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1092:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1110:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1170:color: '#ffffff',
+src/components\dashboard\OperationalDashboard.tsx:1251:whiteSpace: 'nowrap'
+src/components\notifications\NeonSignalToast.tsx:69:color: '#fff',
+src/components\profile\ProfileHeader.tsx:84:<h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#fff' }}>{identity.fullName}</h2>
+src/components\profile\UserProfileConsole.tsx:60:color: '#ffffff',
+src/components\profile\UserProfileConsole.tsx:131:color: '#fff',
+src/components\profile\UserProfileConsole.tsx:154:color: '#fff',

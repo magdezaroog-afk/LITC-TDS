@@ -99,7 +99,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
       boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)`
     }}>
       <h3 style={{
-        color: '#fff',
+        color: '#0f172a',
         margin: '0 0 20px 0',
         textShadow: `0 0 10px ${theme.colors?.primary || '#00e5ff'}`
       }}>بناء المستدلات الديناميكية (Reference Tree Builder)</h3>
@@ -113,7 +113,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           style={{
-            background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff', 
+            background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', 
             padding: '10px 16px', borderRadius: '8px', flex: 1, minWidth: '200px'
           }}
         />
@@ -121,7 +121,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
           value={newType} 
           onChange={e => setNewType(e.target.value)}
           style={{
-            background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff', 
+            background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', 
             padding: '10px 16px', borderRadius: '8px', minWidth: '150px'
           }}
         >
@@ -133,7 +133,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
           value={newParentId} 
           onChange={e => setNewParentId(e.target.value)}
           style={{
-            background: 'rgba(0,0,0,0.3)', border: '1px solid #444', color: '#fff', 
+            background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', 
             padding: '10px 16px', borderRadius: '8px', minWidth: '150px'
           }}
         >
@@ -146,7 +146,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
           onClick={handleCreate}
           style={{
             background: `linear-gradient(135deg, ${theme.colors?.primary || '#00e5ff'} 0%, #0088ff 100%)`,
-            border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px',
+            border: 'none', color: '#0f172a', padding: '10px 24px', borderRadius: '8px',
             cursor: 'pointer', fontWeight: 'bold', boxShadow: `0 0 15px ${theme.colors?.primary || '#00e5ff'}60`
           }}
         >
@@ -155,10 +155,10 @@ export const ReferenceTreeBuilder: React.FC = () => {
       </div>
 
       <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-        {loading ? <p style={{color: '#fff'}}>جاري التحميل...</p> : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff' }}>
+        {loading ? <p style={{color: '#0f172a'}}>جاري التحميل...</p> : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#0f172a' }}>
             <thead>
-              <tr style={{ background: 'rgba(0,0,0,0.4)', borderBottom: `2px solid ${theme.colors?.primary || '#00e5ff'}` }}>
+              <tr style={{ background: '#f1f5f9', borderBottom: `2px solid ${theme.colors?.primary || '#00e5ff'}` }}>
                 <th style={{ padding: '12px', textAlign: 'right' }}>الاسم</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>النوع</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>المرجع الأب</th>
@@ -167,7 +167,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
             </thead>
             <tbody>
               {references.map(ref => (
-                <tr key={ref.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <tr key={ref.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                   <td style={{ padding: '12px' }}>{ref.name}</td>
                   <td style={{ padding: '12px' }}><span style={{
                     background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px'

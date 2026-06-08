@@ -178,7 +178,7 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
           {showDeptDropdown && (
             <div style={{ position: 'absolute', top: '100%', marginTop: '5px', background: '#172b4d', border: '1px solid #0052cc', borderRadius: '6px', padding: '10px', zIndex: 10, minWidth: '200px' }}>
               <select 
-                style={{ width: '100%', padding: '8px', marginBottom: '10px', background: 'rgba(0,0,0,0.3)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px' }}
+                style={{ width: '100%', padding: '8px', marginBottom: '10px', background: '#f8fafc', color: '#0f172a', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px' }}
                 value={selectedDept}
                 onChange={e => setSelectedDept(e.target.value)}
               >
@@ -187,7 +187,7 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
                 <option value="تقنية المعلومات/فريق السيرفرات">تقنية المعلومات / فريق السيرفرات</option>
                 <option value="الصيانة/المرافق">الصيانة / المرافق</option>
               </select>
-              <button onClick={handleBulkChangeDept} style={{ width: '100%', padding: '6px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>تطبيق النقل</button>
+              <button onClick={handleBulkChangeDept} style={{ width: '100%', padding: '6px', background: '#0052cc', color: '#0f172a', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>تطبيق النقل</button>
             </div>
           )}
         </div>
