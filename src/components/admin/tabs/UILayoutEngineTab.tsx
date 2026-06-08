@@ -80,7 +80,7 @@ const styles = {
   },
   subtitle: {
     fontSize: '12px',
-    color: '#94a3b8',
+    color: '#64748b',
     margin: 0
   },
   saveBtn: {
@@ -102,18 +102,26 @@ const styles = {
   },
   controlsGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1.5fr 1fr',
-    gap: '12px',
+    gridTemplateRows: '1fr 1.2fr',
+    gap: '24px',
     height: '100%'
   },
+  topControlsRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
+    height: '100%',
+    overflow: 'hidden'
+  },
   glassBox: {
-    backgroundColor: '#0f172a',
-    border: '1px solid rgba(6, 182, 212, 0.3)',
-    borderRadius: '12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(12px)',
+    border: '1px solid rgba(99, 102, 241, 0.2)',
+    borderRadius: '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
   },
   boxHeader: {
     backgroundColor: '#f1f5f9',
@@ -130,7 +138,7 @@ const styles = {
   boxSub: {
     margin: '4px 0 0 0',
     fontSize: '10px',
-    color: '#94a3b8'
+    color: '#64748b'
   },
   scrollArea: {
     flex: 1,
@@ -340,7 +348,7 @@ const HardCeilingToggle = ({
       
       {!currentConfig.adminAbsoluteOverride && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '22px', borderRight: '1px dashed #ef4444', paddingRight: '10px' }}>
-          <span style={{ fontSize: '10px', color: '#94a3b8' }}>أو قم بتفويض التعديل للأدوار التالية تتابعياً:</span>
+          <span style={{ fontSize: '10px', color: '#64748b' }}>أو قم بتفويض التعديل للأدوار التالية تتابعياً:</span>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {['OPERATIONAL_MANAGER', 'OPERATIONAL_USER'].map(r => (
               <label key={r} style={{ fontSize: '10px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
@@ -571,13 +579,13 @@ export function UILayoutEngineTab() {
   if (isManagerMode) {
     return (
       <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #f8fafc, #eef2ff)'}}>
-        <div style={{ background: 'rgba(0, 0, 0, 0.02)', backdropFilter: 'blur(16px)', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: showSavedList ? '800px' : '600px', width: '100%', transition: 'max-width 0.3s ease', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+        <div style={{ background: 'rgba(241, 245, 249, 0.5)', backdropFilter: 'blur(16px)', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: showSavedList ? '800px' : '600px', width: '100%', transition: 'max-width 0.3s ease', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
           
           {!showSavedList ? (
             <>
               <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔮</div>
               <h1 style={{ fontSize: '28px', color: '#0f172a', marginBottom: '15px', fontWeight: 'bold' }}>مدير حوكمة وتخصيص واجهات النظام - LITC</h1>
-              <p style={{ fontSize: '15px', color: '#94a3b8', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
+              <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
               
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -620,7 +628,7 @@ export function UILayoutEngineTab() {
                 </button>
               </div>
               {savedInterfaces.length === 0 ? (
-                <div style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px' }}>لا توجد واجهات محفوظة حالياً.</div>
+                <div style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', padding: '20px' }}>لا توجد واجهات محفوظة حالياً.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {[
@@ -632,7 +640,7 @@ export function UILayoutEngineTab() {
                     const categoryInterfaces = savedInterfaces.filter(ui => ui.roleType === category.key);
                     if (categoryInterfaces.length === 0) return null;
                     return (
-                      <div key={category.key} style={{ background: 'rgba(0, 0, 0, 0.02)', borderRadius: '12px', padding: '15px', border: `1px solid ${category.color}40` }}>
+                      <div key={category.key} style={{ background: 'rgba(241, 245, 249, 0.5)', borderRadius: '12px', padding: '15px', border: `1px solid ${category.color}40` }}>
                         <h4 style={{ color: category.color, margin: '0 0 15px 0', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: category.color, display: 'inline-block' }}></span>
                           {category.label} ({categoryInterfaces.length})
@@ -747,6 +755,7 @@ export function UILayoutEngineTab() {
       <DragDropContext onDragEnd={onDragEnd}>
         <div style={styles.controlsGrid}>
           
+          <div style={styles.topControlsRow}>
           {/* RIGHT: INACTIVE REPOSITORY */}
           <div style={styles.glassBox}>
             <div style={styles.boxHeader}>
@@ -769,9 +778,9 @@ export function UILayoutEngineTab() {
                     const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                     if (groupComponents.length === 0) return null;
                     return (
-                      <div key={group.key} style={{ marginBottom: '15px', background: 'rgba(0, 0, 0, 0.02)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
+                      <div key={group.key} style={{ marginBottom: '15px', background: 'rgba(241, 245, 249, 0.5)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
                         <div style={{ padding: '12px', background: 'rgba(241, 245, 249, 0.9)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', fontWeight: 'bold', color: '#6366f1', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
-                          {group.title} <span style={{ color: '#94a3b8' }}>({groupComponents.length})</span>
+                          {group.title} <span style={{ color: '#64748b' }}>({groupComponents.length})</span>
                         </div>
                         <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {groupComponents.map((comp, localIndex) => {
@@ -810,13 +819,13 @@ export function UILayoutEngineTab() {
           </div>
 
           {/* CENTER: ACTIVE CANVAS */}
-          <div style={{...styles.glassBox, backgroundColor: '#0a0f1c'}}>
+          <div style={{...styles.glassBox, backgroundColor: 'transparent'}}>
             <div style={styles.boxHeader}>
               <h3 style={styles.boxTitle}>مساحة العمل التشغيلية (Active Canvas)</h3>
               <p style={styles.boxSub}>{activeComponents.length} مكونات قيد التشغيل</p>
             </div>
             <div style={{flex: 1, padding: '24px', display: 'flex', justifyContent: 'center', overflowY: 'auto'}}>
-              <div style={{width: '100%', maxWidth: '500px', backgroundColor: 'rgba(12, 19, 34, 0.8)', border: '2px dashed #334155', borderRadius: '12px', padding: '16px'}}>
+              <div style={{width: '100%', maxWidth: '500px', backgroundColor: 'rgba(255, 255, 255, 0.8)', border: '2px dashed #334155', borderRadius: '12px', padding: '16px'}}>
                 <Droppable droppableId="active-canvas">
                   {(provided, snapshot) => (
                     <div 
@@ -847,7 +856,7 @@ export function UILayoutEngineTab() {
                                 }}
                               >
                                 <div><span style={{color: '#64748b', marginRight: '8px', cursor: 'grab'}}>☰</span> {comp.name}</div>
-                                <span style={{fontSize: '10px', color: '#94a3b8', background: '#000', padding: '2px 6px', borderRadius: '4px'}}>{comp.category.toUpperCase()}</span>
+                                <span style={{fontSize: '10px', color: '#64748b', background: '#000', padding: '2px 6px', borderRadius: '4px'}}>{comp.category.toUpperCase()}</span>
                               </div>
                             )}
                           </Draggable>
@@ -859,6 +868,8 @@ export function UILayoutEngineTab() {
                 </Droppable>
               </div>
             </div>
+          </div>
+
           </div>
 
           {/* LEFT: INSPECTOR PANEL */}
@@ -1050,7 +1061,7 @@ export function UILayoutEngineTab() {
                             
                             {tabCfg.active && (
                               <div style={{ paddingRight: '20px', marginTop: '8px' }}>
-                                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '6px' }}>الإجراءات المتاحة:</div>
+                                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>الإجراءات المتاحة:</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                   {tab.actions.map(action => {
                                     const currentActions = tabCfg.actions || [];
@@ -1671,7 +1682,7 @@ export function UILayoutEngineTab() {
                         <input type="range" min="0.1" max="1.0" step="0.1" style={{ width: '100%' }}
                           value={selectedComponent.properties.glassOpacity || 0.6}
                           onChange={e => handlePropertyChange(selectedComponent.id, 'glassOpacity', parseFloat(e.target.value))} />
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{selectedComponent.properties.glassOpacity || 0.6}</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>{selectedComponent.properties.glassOpacity || 0.6}</span>
                       </div>
                     </div>
                   )}
@@ -1862,7 +1873,7 @@ export function UILayoutEngineTab() {
                                       });
                                       setCorporateLocations(updated);
                                     }}
-                                    style={{ flex: 1, padding: '4px 8px', background: 'rgba(241,245,249,0.8)', border: '1px solid rgba(255,255,255,0.05)', color: '#94a3b8', borderRadius: '4px', fontSize: '11px', outline: 'none' }}
+                                    style={{ flex: 1, padding: '4px 8px', background: 'rgba(241,245,249,0.8)', border: '1px solid rgba(255,255,255,0.05)', color: '#64748b', borderRadius: '4px', fontSize: '11px', outline: 'none' }}
                                   />
                                   <button onClick={() => {
                                     const updated = corporateLocations.map(loc => {
@@ -1964,7 +1975,7 @@ export function UILayoutEngineTab() {
                             { role: 'TEAM_LEADER', label: 'رئيس فريق' },
                             { role: 'ENGINEER', label: 'مهندس / فني' }
                           ].map(r => (
-                            <label key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#94a3b8', cursor: 'pointer' }}>
+                            <label key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}>
                               <input 
                                 type="checkbox"
                                 checked={(selectedComponent.properties.allowedCrossEscalationRoles || []).includes(r.role)}
@@ -2042,7 +2053,7 @@ export function UILayoutEngineTab() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
                           <div>
                             <h6 style={{ fontSize: '13px', color: '#059669', margin: '0 0 5px 0' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
-                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>تمكين المدير من التحكم في الفلاتر المتاحة لرؤساء الأقسام</span>
+                            <span style={{ fontSize: '10px', color: '#64748b' }}>تمكين المدير من التحكم في الفلاتر المتاحة لرؤساء الأقسام</span>
                           </div>
                         </div>
 
@@ -2084,7 +2095,7 @@ export function UILayoutEngineTab() {
                       </div>
                       </>
                       ) : (
-                        <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', textAlign: 'center' }}>
+                        <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#64748b', fontSize: '12px', textAlign: 'center' }}>
                           🔒 هذه الإعدادات مخصصة لمدير النظام (IT_ADMIN) فقط.
                         </div>
                       )}
@@ -2118,7 +2129,7 @@ export function UILayoutEngineTab() {
                             const types = selectedComponent.properties.allowedComparisonTypes || [];
                             const isChecked = types.includes(t.type);
                             return (
-                              <label key={t.type} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#94a3b8', cursor: 'pointer' }}>
+                              <label key={t.type} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}>
                                 <input 
                                   type="checkbox"
                                   checked={isChecked}
@@ -2143,7 +2154,7 @@ export function UILayoutEngineTab() {
               ) : (
                 <div style={{textAlign: 'center', opacity: 0.5, marginTop: '80px'}}>
                   <div style={{fontSize: '32px', marginBottom: '16px'}}>🖱️</div>
-                  <div style={{fontSize: '12px', color: '#94a3b8'}}>حدد مكوناً من مساحة العمل<br/>لاستعراض وتخصيص الخصائص</div>
+                  <div style={{fontSize: '12px', color: '#64748b'}}>حدد مكوناً من مساحة العمل<br/>لاستعراض وتخصيص الخصائص</div>
                 </div>
               )}
             </div>
@@ -2154,11 +2165,11 @@ export function UILayoutEngineTab() {
         </div>
 
       {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#e8eef6', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
+      <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
         
         {/* Sandbox Toolbar */}
         <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#f1f5f9' }}>
+          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
             <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
           </div>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
@@ -2177,7 +2188,7 @@ export function UILayoutEngineTab() {
           {/* Top Navbar Zone */}
           <div style={{ height: '65px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'flex-end', gap: '15px' }}>
             {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#1e293b', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
               </div>
             ))}
@@ -2203,7 +2214,7 @@ export function UILayoutEngineTab() {
             <div style={{ flex: 1, background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '30px', overflowY: 'auto' }}>
               {previewActiveTab ? (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ margin: '0 0 25px 0', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h2 style={{ margin: '0 0 25px 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ width: '8px', height: '24px', background: '#0ea5e9', borderRadius: '4px' }}></span>
                     {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
                   </h2>
@@ -2295,7 +2306,7 @@ export function UILayoutEngineTab() {
                           <div style={{ marginBottom: '15px' }}>
                             <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#ef4444' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>0 / {maxDesc}</span>
+                              <span style={{ fontSize: '10px', color: '#64748b' }}>0 / {maxDesc}</span>
                             </label>
                             <textarea 
                               placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
@@ -2306,7 +2317,7 @@ export function UILayoutEngineTab() {
                           <div>
                             <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#ef4444' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
+                              <span style={{ fontSize: '10px', color: '#64748b' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
                             </label>
                             <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(203, 213, 225, 0.8)', borderRadius: '8px', background: 'rgba(248, 250, 252, 0.5)', textAlign: 'center', cursor: 'pointer', color: '#64748b', fontSize: '12px' }}>
                               + اسحب الملفات هنا أو اضغط للاستعراض
@@ -2344,7 +2355,7 @@ export function UILayoutEngineTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9' }}>تذكرة #10294</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>تذكرة #10294</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
             </div>
             {snatching && (
@@ -2353,7 +2364,7 @@ export function UILayoutEngineTab() {
           </div>
           <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f1f5f9' }}>تذكرة #10295</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>تذكرة #10295</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>تحديث النظام - جديدة</div>
             </div>
           </div>
@@ -2419,7 +2430,7 @@ export function UILayoutEngineTab() {
              </div>
            </div>
         ) : (
-           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#94a3b8', fontSize: '12px', padding: '20px' }}>
+           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#64748b', fontSize: '12px', padding: '20px' }}>
              قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من المفتش لرؤية النوافذ التفاعلية هنا.
            </div>
         )}
@@ -2441,7 +2452,7 @@ export function UILayoutEngineTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
       <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(16px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>لوحة التحليل المركزي (OLAP Engine)</span>
           {isOverride && <span style={{ fontSize: '10px', background: '#fca5a5', color: '#7f1d1d', padding: '4px 8px', borderRadius: '4px' }}>Admin Override Active</span>}
         </h4>
@@ -2454,7 +2465,7 @@ export function UILayoutEngineTab() {
               <option>فرع بنغازي</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
+            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
           )}
           
           {taxF ? (
@@ -2464,7 +2475,7 @@ export function UILayoutEngineTab() {
               <option>أعطال تشغيلية</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#94a3b8', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
+            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
           )}
         </div>
 
@@ -2610,7 +2621,7 @@ export function UILayoutEngineTab() {
 
                 </div>
               ) : (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '15px' }}>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', gap: '15px' }}>
                   <span style={{ fontSize: '48px', opacity: 0.5 }}>🖥️</span>
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#64748b' }}>الرجاء اختيار مكون من القائمة الجانبية للمعاينة</div>
                   <div style={{ fontSize: '13px' }}>المربع الوسطي (Main Viewport) جاهز للرندرة الديناميكية</div>
@@ -2624,7 +2635,7 @@ export function UILayoutEngineTab() {
 </div>
 
       {showNameModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(5px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', backdropFilter: 'blur(16px)', padding: '40px', borderRadius: '20px', width: '450px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             <h3 style={{ color: '#0f172a', marginBottom: '20px', fontSize: '20px' }}>تعريف الواجهة الجديدة والتصنيف</h3>
             
@@ -2772,7 +2783,7 @@ export function UILayoutEngineTab() {
             </button>
             <button 
               onClick={() => { setShowNameModal(false); if(!interfaceName.trim()) setIsManagerMode(true); }}
-              style={{ width: '100%', padding: '10px', background: 'transparent', color: '#94a3b8', border: 'none', fontSize: '13px', cursor: 'pointer', marginTop: '10px' }}
+              style={{ width: '100%', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontSize: '13px', cursor: 'pointer', marginTop: '10px' }}
             >
               إلغاء الرجوع
             </button>
@@ -2788,11 +2799,11 @@ export function UILayoutEngineTab() {
             
             <div style={{ background: 'rgba(241, 245, 249, 0.9)', borderRadius: '12px', padding: '20px', marginBottom: '25px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>اسم الواجهة:</span>
+                <span style={{ color: '#64748b', fontSize: '14px' }}>اسم الواجهة:</span>
                 <strong style={{ color: '#0f172a', fontSize: '15px' }}>{interfaceName}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>الدور الرئيسي (التصنيف):</span>
+                <span style={{ color: '#64748b', fontSize: '14px' }}>الدور الرئيسي (التصنيف):</span>
                 <strong style={{ color: '#6366f1', fontSize: '15px' }}>
                   {interfaceCategory === 'IT_ADMIN' && '🔴 مسؤول نظام'}
                   {interfaceCategory === 'OPERATIONAL_MANAGER' && '🟠 مسؤول تشغيلي'}
@@ -2801,7 +2812,7 @@ export function UILayoutEngineTab() {
                 </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>المكونات المفعلة:</span>
+                <span style={{ color: '#64748b', fontSize: '14px' }}>المكونات المفعلة:</span>
                 <strong style={{ color: '#10b981', fontSize: '15px' }}>{activeComponents.length} مكونات</strong>
               </div>
             </div>
