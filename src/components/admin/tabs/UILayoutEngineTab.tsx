@@ -94,11 +94,17 @@ const styles = {
     fontSize: '14px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
   },
-  grid: {
+  masterGrid: {
     display: 'grid',
-    gridTemplateColumns: '1.2fr 2fr 1fr',
+    gridTemplateColumns: '7fr 5fr',
     gap: '24px',
     height: 'calc(100vh - 120px)'
+  },
+  controlsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1.5fr 1fr',
+    gap: '12px',
+    height: '100%'
   },
   glassBox: {
     backgroundColor: '#0f172a',
@@ -736,8 +742,10 @@ export function UILayoutEngineTab() {
         </div>
       </div>
 
+      <div style={styles.masterGrid}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <DragDropContext onDragEnd={onDragEnd}>
-        <div style={styles.grid}>
+        <div style={styles.controlsGrid}>
           
           {/* RIGHT: INACTIVE REPOSITORY */}
           <div style={styles.glassBox}>
@@ -2143,6 +2151,7 @@ export function UILayoutEngineTab() {
 
         </div>
       </DragDropContext>
+        </div>
 
       {/* ═══ INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
       <div className="scrollbar-thin" style={{ marginTop: '40px', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#e8eef6', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
@@ -2611,7 +2620,8 @@ export function UILayoutEngineTab() {
           </div>
         </div>
       </div>
-    </div>
+          </div>
+</div>
 
       {showNameModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)' }}>
