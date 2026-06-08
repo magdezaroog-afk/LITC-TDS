@@ -95,8 +95,8 @@ const styles = {
     boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
   },
   masterGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 3fr',
+    display: 'flex',
+    flexDirection: 'column',
     gap: '24px',
     height: 'calc(100vh - 120px)'
   },
@@ -739,6 +739,7 @@ export function UILayoutEngineTab() {
 
             <DragDropContext onDragEnd={onDragEnd}>
         <div style={styles.masterGrid}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flex: '1', minHeight: '300px' }}>
           {/* RIGHT: INACTIVE REPOSITORY */}
           <div style={styles.glassBox}>
             <div style={styles.boxHeader}>
@@ -801,9 +802,7 @@ export function UILayoutEngineTab() {
             </Droppable>
           </div>
 
-                    {/* LEFT COLUMN: STACKED INSPECTOR & SANDBOX */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', overflow: 'hidden' }}>
-          {/* LEFT: INSPECTOR PANEL */}
+                    {/* LEFT: INSPECTOR PANEL */}
           <div style={{...styles.glassBox, flex: '1', minHeight: '300px'}}>
             <div style={styles.boxHeader}>
               <h3 style={{...styles.boxTitle, color: '#c084fc'}}>⚙️ خصائص المكون (Inspector)</h3>
@@ -2090,9 +2089,10 @@ export function UILayoutEngineTab() {
               )}
             </div>
           </div>
-
+          </div>
+          <div style={{ flex: '1.2', minHeight: '0', display: 'flex', flexDirection: 'column' }}>
       {/* INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ flex: '2', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
+      <div className="scrollbar-thin" style={{ flex: '1', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
         
         {/* Sandbox Toolbar */}
         <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
