@@ -111,8 +111,6 @@ const Navigation: React.FC = () => {
       <Link to="/" style={linkStyle('/')}>الرئيسية</Link>
       {user && (user.role === 'IT_Admin' || user.role === 'admin') && (
         <>
-          <Link to="/admin" style={linkStyle('/admin')}>الحوكمة</Link>
-          <Link to="/admin/operational" style={linkStyle('/admin/operational')}>إدارة الكيانات</Link>
           <Link to="/admin/policies" style={linkStyle('/admin/policies')}>سياسات الإشعارات</Link>
         </>
       )}
