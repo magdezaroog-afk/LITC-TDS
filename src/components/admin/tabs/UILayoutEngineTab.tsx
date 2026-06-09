@@ -56,43 +56,47 @@ const styles = {
   container: {
     width: '100%',
     minHeight: '100vh',
-    backgroundColor: '#0f172a',
-    color: '#0f172a',
+    backgroundColor: 'transparent',
+    color: '#f8fafc',
     padding: '24px',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    fontFamily: "'Inter', 'Segoe UI', sans-serif",
     direction: 'rtl' as const,
     boxSizing: 'border-box' as const,
   },
   header: {
-    marginBottom: '24px',
-    borderBottom: '1px solid rgba(6, 182, 212, 0.2)',
-    paddingBottom: '16px',
+    marginBottom: '32px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+    paddingBottom: '20px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end'
   },
   title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#6366f1',
+    fontSize: '28px',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
     margin: 0,
-    marginBottom: '8px'
+    marginBottom: '8px',
+    letterSpacing: '-0.5px'
   },
   subtitle: {
-    fontSize: '12px',
-    color: '#64748b',
+    fontSize: '13px',
+    color: '#94a3b8',
     margin: 0
   },
   saveBtn: {
-    backgroundColor: '#059669',
-    color: '#0f172a',
-    border: 'none',
-    padding: '10px 24px',
-    borderRadius: '6px',
-    fontWeight: 'bold',
+    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+    color: '#ffffff',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    padding: '12px 32px',
+    borderRadius: '12px',
+    fontWeight: '600',
     cursor: 'pointer',
     fontSize: '14px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+    boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
   },
   masterGrid: {
     display: 'flex',
@@ -101,98 +105,111 @@ const styles = {
     height: 'calc(100vh - 120px)'
   },
   glassBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid rgba(99, 102, 241, 0.2)',
-    borderRadius: '16px',
+    backgroundColor: 'rgba(10, 12, 22, 0.5)',
+    backdropFilter: 'blur(24px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(150%)',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    borderRadius: '20px',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
+    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
   },
   boxHeader: {
-    backgroundColor: '#f1f5f9',
-    padding: '16px',
-    borderBottom: '1px solid rgba(6, 182, 212, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    padding: '20px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
     textAlign: 'center' as const
   },
   boxTitle: {
     margin: 0,
-    fontSize: '14px',
-    fontWeight: 'bold',
-    color: '#059669'
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#e2e8f0',
+    letterSpacing: '0.5px'
   },
   boxSub: {
-    margin: '4px 0 0 0',
-    fontSize: '10px',
+    margin: '6px 0 0 0',
+    fontSize: '11px',
     color: '#64748b'
   },
   scrollArea: {
     flex: 1,
     overflowY: 'auto' as const,
     maxHeight: 'calc(100vh - 120px)',
-    padding: '0 8px',
+    padding: '8px',
   },
   item: {
-    backgroundColor: '#e8eef6',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    padding: '12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    borderRadius: '12px',
+    padding: '14px',
     marginBottom: '12px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    color: '#334155',
-    transition: 'background-color 0.2s, box-shadow 0.2s, border-color 0.2s',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#cbd5e1',
+    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    cursor: 'grab'
+    cursor: 'grab',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
   },
   itemActive: {
-    border: '1px solid #22d3ee',
-    backgroundColor: '#e0f2fe'
+    border: '1px solid rgba(129, 140, 248, 0.5)',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    boxShadow: '0 0 20px rgba(99, 102, 241, 0.15), inset 0 0 0 1px rgba(129, 140, 248, 0.2)'
   },
   propBox: {
-    backgroundColor: '#000000',
-    padding: '12px',
-    borderRadius: '6px',
-    border: '1px solid #1e293b',
-    marginBottom: '12px'
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    marginBottom: '16px',
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
   },
   input: {
     width: '100%',
-    backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0',
-    borderRadius: '4px',
-    color: '#6366f1',
-    padding: '8px',
-    fontSize: '12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    color: '#e2e8f0',
+    padding: '10px 12px',
+    fontSize: '13px',
     boxSizing: 'border-box' as const,
-    marginTop: '8px'
+    marginTop: '8px',
+    transition: 'all 0.3s ease',
+    outline: 'none'
   },
   switchTrue: {
-    width: '36px',
-    height: '20px',
-    backgroundColor: '#06b6d4',
-    borderRadius: '10px',
+    width: '40px',
+    height: '22px',
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    borderRadius: '11px',
     position: 'relative' as const,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)'
   },
   switchFalse: {
-    width: '36px',
-    height: '20px',
-    backgroundColor: '#475569',
-    borderRadius: '10px',
+    width: '40px',
+    height: '22px',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '11px',
     position: 'relative' as const,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
   },
   knobTrue: {
-    width: '14px', height: '14px', backgroundColor: 'white', borderRadius: '50%',
-    position: 'absolute' as const, top: '3px', right: '19px', transition: 'right 0.2s'
+    width: '16px', height: '16px', backgroundColor: '#ffffff', borderRadius: '50%',
+    position: 'absolute' as const, top: '2px', right: '21px', transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
   },
   knobFalse: {
-    width: '14px', height: '14px', backgroundColor: 'white', borderRadius: '50%',
-    position: 'absolute' as const, top: '3px', right: '3px', transition: 'right 0.2s'
+    width: '16px', height: '16px', backgroundColor: '#94a3b8', borderRadius: '50%',
+    position: 'absolute' as const, top: '2px', right: '3px', transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
   }
 };
 
@@ -2092,7 +2109,7 @@ export function UILayoutEngineTab() {
           </div>
           <div style={{ flex: '1.2', minHeight: '0', display: 'flex', flexDirection: 'column' }}>
       {/* INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ flex: '1', background: 'linear-gradient(135deg, #f8fafc 0%, #f3f4f6 50%, rgba(239, 246, 255, 0.8) 100%)', border: '1px solid rgba(255, 255, 255, 0.6)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(148, 163, 184, 0.2)', color: '#1e293b', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px' }}>
+      <div className="scrollbar-thin" style={{ flex: '1', background: 'rgba(10, 12, 22, 0.5)', backdropFilter: 'blur(24px) saturate(150%)', border: '1px solid rgba(255, 255, 255, 0.07)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)', color: '#f8fafc', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px', transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
         
         {/* Sandbox Toolbar */}
         <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
@@ -2142,7 +2159,7 @@ export function UILayoutEngineTab() {
                             onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
                             style={{
                               padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                              background: previewActiveTab === c.id ? 'rgba(56, 189, 248, 0.15)' : snapshot.isDragging ? 'rgba(255,255,255,0.9)' : 'transparent',
+                              background: previewActiveTab === c.id ? 'rgba(129, 140, 248, 0.15)' : snapshot.isDragging ? 'rgba(255,255,255,0.1)' : 'transparent',
                               color: previewActiveTab === c.id ? '#0284c7' : '#1e293b',
                               border: previewActiveTab === c.id ? '1px solid rgba(56, 189, 248, 0.3)' : snapshot.isDragging ? '1px solid #38bdf8' : '1px solid transparent',
                               boxShadow: previewActiveTab === c.id ? '0 4px 6px rgba(56, 189, 248, 0.1)' : snapshot.isDragging ? '0 10px 15px -3px rgba(0,0,0,0.1)' : 'none',
@@ -2415,7 +2432,7 @@ export function UILayoutEngineTab() {
               <option>فرع بنغازي</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
+            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
           )}
           
           {taxF ? (
@@ -2425,7 +2442,7 @@ export function UILayoutEngineTab() {
               <option>أعطال تشغيلية</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
+            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
           )}
         </div>
 
