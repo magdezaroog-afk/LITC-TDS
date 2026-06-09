@@ -155,6 +155,7 @@ export const AdminDashboardShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies'>('ui');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => { injectKeyframes(); }, []);
 
@@ -248,18 +249,62 @@ export const AdminDashboardShell: React.FC = () => {
       }}>
         {/* ── Sidebar ── */}
         <div style={{
-          width: '320px',
+          width: isSidebarOpen ? '280px' : '90px',
           flexShrink: 0,
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(24px)',
-          borderRadius: '24px',
+          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)',
+          backdropFilter: 'blur(30px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+          borderRadius: '28px',
           border: '1px solid rgba(255, 255, 255, 0.9)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)',
-          padding: '24px',
-          animation: dir === 'rtl' ? 'adminShellSlideLeft 0.6s ease-out' : 'adminShellSlideRight 0.6s ease-out'
+          borderRight: '1px solid rgba(255, 255, 255, 0.4)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.3)',
+          padding: isSidebarOpen ? '24px' : '24px 16px',
+          transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: dir === 'rtl' ? 'adminShellSlideLeft 0.6s ease-out' : 'adminShellSlideRight 0.6s ease-out',
+          zIndex: 50
         }}>
+          {/* Toggle Button */}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={{
+              position: 'absolute',
+              top: '32px',
+              [dir === 'rtl' ? 'left' : 'right']: isSidebarOpen ? '16px' : '50%',
+              transform: isSidebarOpen ? 'none' : 'translateX(50%)',
+              background: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.8)',
+              borderRadius: '50%',
+              width: '28px', height: '28px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              zIndex: 100,
+              color: '#6366f1',
+              fontSize: '12px'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = isSidebarOpen ? 'scale(1.1)' : 'translateX(50%) scale(1.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; e.currentTarget.style.transform = isSidebarOpen ? 'none' : 'translateX(50%)'; }}
+            title={isSidebarOpen ? "Collapse" : "Expand"}
+          >
+            {isSidebarOpen ? (dir === 'rtl' ? '▶' : '◀') : (dir === 'rtl' ? '◀' : '▶')}
+          </button>
           {/* Sidebar Header */}
-          <div style={{ marginBottom: '32px', textAlign: dir === 'rtl' ? 'right' : 'left' }}>
+          <div style={{ 
+            marginBottom: '32px', 
+            textAlign: dir === 'rtl' ? 'right' : 'left',
+            opacity: isSidebarOpen ? 1 : 0,
+            transform: isSidebarOpen ? 'translateX(0)' : (dir === 'rtl' ? 'translateX(20px)' : 'translateX(-20px)'),
+            pointerEvents: isSidebarOpen ? 'auto' : 'none',
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            whiteSpace: 'nowrap',
+            paddingTop: '4px'
+          }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08))',
@@ -330,7 +375,15 @@ export const AdminDashboardShell: React.FC = () => {
                   </div>
 
                   {/* Text Container */}
-                  <div style={{ flex: 1, textAlign: dir === 'rtl' ? 'right' : 'left' }}>
+                  <div style={{ 
+                    flex: 1, textAlign: dir === 'rtl' ? 'right' : 'left',
+                    opacity: isSidebarOpen ? 1 : 0,
+                    transform: isSidebarOpen ? 'translateX(0)' : (dir === 'rtl' ? 'translateX(15px)' : 'translateX(-15px)'),
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    whiteSpace: 'nowrap',
+                    width: isSidebarOpen ? 'auto' : '0px',
+                    overflow: 'hidden'
+                  }}>
                     <div style={{ fontSize: '14px', fontWeight: '700', color: isActive ? '#0f172a' : '#475569', marginBottom: '2px' }}>
                       {tab.label}
                     </div>
