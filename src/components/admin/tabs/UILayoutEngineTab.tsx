@@ -2139,7 +2139,7 @@ export function UILayoutEngineTab() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            onClick={() => setPreviewActiveTab(c.id)}
+                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
                             style={{
                               padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                               background: previewActiveTab === c.id ? 'rgba(56, 189, 248, 0.15)' : snapshot.isDragging ? 'rgba(255,255,255,0.9)' : 'transparent',
