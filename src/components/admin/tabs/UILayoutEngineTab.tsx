@@ -166,8 +166,9 @@ const styles = {
     padding: '16px',
     borderRadius: '12px',
     border: '1px solid rgba(255, 255, 255, 0.05)',
-    marginBottom: '16px',
-    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+    minWidth: '220px',
+    flex: '0 0 auto'
   },
   input: {
     width: '100%',
@@ -758,17 +759,16 @@ export function UILayoutEngineTab() {
         <div style={styles.masterGrid}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flex: '1', minHeight: '300px' }}>
           {/* RIGHT: INACTIVE REPOSITORY */}
-          <div style={styles.glassBox}>
-            <div style={styles.boxHeader}>
-              <h3 style={{...styles.boxTitle, color: '#6366f1'}}>📦 مستودع المكونات المعطلة</h3>
-              <p style={styles.boxSub}>اسحب المكون للوحة الفعالة لتركيبه</p>
+          <div style={{...styles.glassBox, flexShrink: 0}}>
+            <div style={{...styles.boxHeader, padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+              <h3 style={{...styles.boxTitle, color: "#6366f1"}}>📦 مستودع المكونات</h3>
             </div>
             <Droppable droppableId="inactive-repository">
               {(provided, snapshot) => (
                 <div 
                   ref={provided.innerRef} 
                   {...provided.droppableProps}
-                  style={{...styles.scrollArea, backgroundColor: snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.05)' : 'transparent'}}
+                  style={{...styles.scrollArea, display: "flex", flexDirection: "row", gap: "16px", overflowX: "auto", backgroundColor: snapshot.isDraggingOver ? "rgba(56, 189, 248, 0.05)" : "transparent"}} className="hyper-glass-scrollbar"
                 >
                   {[
                     { key: 'submission', title: '📤 مكونات الإرسال وبلاغات المستخدم' },
@@ -779,8 +779,8 @@ export function UILayoutEngineTab() {
                     const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                     if (groupComponents.length === 0) return null;
                     return (
-                      <div key={group.key} style={{ marginBottom: '15px', background: 'rgba(241, 245, 249, 0.5)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
-                        <div style={{ padding: '12px', background: 'rgba(241, 245, 249, 0.9)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', fontWeight: 'bold', color: '#6366f1', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
+                      <div key={group.key} style={{ flex: "1 1 250px", minWidth: "250px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.08)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                        <div style={{ padding: "12px", background: "rgba(0, 0, 0, 0.2)", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: "13px", fontWeight: "bold", color: "#818cf8", display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
                           {group.title} <span style={{ color: '#64748b' }}>({groupComponents.length})</span>
                         </div>
                         <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
