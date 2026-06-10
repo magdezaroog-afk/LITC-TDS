@@ -757,12 +757,10 @@ export function UILayoutEngineTab() {
 
             <DragDropContext onDragEnd={onDragEnd}>
         <div style={styles.masterGrid}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flex: '1', minHeight: '300px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: '1', minHeight: '300px' }}>
           {/* RIGHT: INACTIVE REPOSITORY */}
-          <div style={{...styles.glassBox, flexShrink: 0}}>
-            <div style={{...styles.boxHeader, padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-              <h3 style={{...styles.boxTitle, color: "#6366f1"}}>📦 مستودع المكونات</h3>
-            </div>
+          <div style={{ flexShrink: 0 }}>
+            {/* Removed the boxHeader to eliminate the single container look */}
             <Droppable droppableId="inactive-repository">
               {(provided, snapshot) => (
                 <div 
@@ -820,12 +818,12 @@ export function UILayoutEngineTab() {
           </div>
 
                     {/* LEFT: INSPECTOR PANEL */}
-          <div style={{...styles.glassBox, flex: '1', minHeight: '300px'}}>
+          <div style={{...styles.glassBox, flexShrink: 0, minHeight: '200px'}}>
             <div style={styles.boxHeader}>
               <h3 style={{...styles.boxTitle, color: '#c084fc'}}>⚙️ خصائص المكون (Inspector)</h3>
               <p style={styles.boxSub}>حدد مكوناً للتعديل</p>
             </div>
-            <div style={styles.scrollArea}>
+            <div style={{...styles.scrollArea, display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', overflowX: 'auto', gap: '16px', padding: '20px'}} className="hyper-glass-scrollbar">
               {selectedComponent ? (
                 <div>
                   <div style={{backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '8px', marginBottom: '20px'}}>
