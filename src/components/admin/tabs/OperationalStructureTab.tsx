@@ -556,74 +556,82 @@ export const OperationalStructureTab: React.FC = () => {
     });
   };
 
+  const OA = {
+    text: '#1D1D1F', textSub: '#6E6E73', textTer: '#AEAEB2',
+    surface: '#FFFFFF', bg: '#F5F5F7', sep: 'rgba(0,0,0,0.08)', sepStr: 'rgba(0,0,0,0.12)',
+    radius: '14px', radiusSm: '10px', shadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
+    blue: '#007AFF', green: '#34C759', red: '#FF3B30', amber: '#FF9500', indigo: '#5856D6', purple: '#AF52DE',
+    font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', textAlign: 'start' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', textAlign: 'start', fontFamily: OA.font, color: OA.text }}>
       
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(99, 102, 241, 0.04)', padding: '15px 30px', borderRadius: '16px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)'}}>
-        <div>
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: '#0f172a', marginBottom: '5px' }}>🏢 الإدارة الشاملة للهيكل التشغيلي</h2>
-          <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>المصفوفة التنظيمية المتقدمة لتعيين وتوزيع المهندسين والموظفين التشغيليين.</p>
-        </div>
+      {/* Page Header */}
+      <div style={{ marginBottom: '4px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: '800', color: OA.text, margin: '0 0 6px', letterSpacing: '-0.4px' }}>الهيكل التشغيلي</h2>
+        <p style={{ color: OA.textSub, fontSize: '14px', margin: 0 }}>المصفوفة التنظيمية المتقدمة لتعيين وتوزيع المهندسين والموظفين التشغيليين.</p>
       </div>
 
-      {/* Main Content Area: Split Top/Bottom */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1, overflow: 'hidden' }}>
+      {/* Main Content Area */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflow: 'hidden' }}>
         
-        {/* TOP PANEL: Hierarchical Tree View */}
-        <div style={{ flex: '1.2', background: 'rgba(0, 0, 0, 0.02)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '15px' }}>
-            <h3 style={{ color: '#0f172a', fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-              <span style={{ background: '#3b82f6', color: '#0f172a', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '16px' }}>🌳</span>
+        {/* Org Tree Panel */}
+        <div style={{ flex: '1.2', background: OA.surface, border: `1px solid ${OA.sep}`, borderRadius: OA.radius, padding: '20px', display: 'flex', flexDirection: 'column', boxShadow: OA.shadow }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: `1px solid ${OA.sep}`, paddingBottom: '14px' }}>
+            <h3 style={{ color: OA.text, fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <span style={{ background: `${OA.blue}15`, color: OA.blue, width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '15px' }}>⬡</span>
               شجرة الإدارات التشغيلية
             </h3>
-            <button style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)' }}>➕ إضافة إدارة جديدة</button>
+            <button style={{ background: OA.blue, color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: `0 2px 8px ${OA.blue}40`, fontFamily: OA.font }}>+ إضافة إدارة جديدة</button>
           </div>
           
-          <div style={{ flex: 1, overflowY: 'auto', paddingRight: '15px' }} className="scrollbar-thin">
+          <div style={{ flex: 1, overflowY: 'auto' }} className="admin-scroll">
             {departments.map(dept => (
-              <div key={dept.id} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(99, 102, 241, 0.04)', padding: '15px 20px', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }} onClick={() => {
+              <div key={dept.id} style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: OA.bg, padding: '12px 16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${OA.sep}` }} onClick={() => {
                   setDepartments(prev => prev.map(d => d.id === dept.id ? { ...d, expanded: !d.expanded } : d));
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <span style={{ fontSize: '18px', transform: dept.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#3b82f6' }}>▶</span>
-                    <span style={{ fontWeight: '900', fontSize: '16px', color: '#0f172a' }}>{dept.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '12px', transform: dept.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: OA.blue, display: 'inline-block' }}>▶</span>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${OA.blue}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🏢</div>
+                    <span style={{ fontWeight: '700', fontSize: '15px', color: OA.text }}>{dept.name}</span>
                     {dept.managerId && (
-                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === dept.managerId) || null); }} style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', border: '1px solid rgba(59,130,246,0.3)' }}>
-                        مدير الإدارة: {operationalUsers.find(u => u.id === dept.managerId)?.name}
+                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === dept.managerId) || null); }} style={{ fontSize: '11px', background: `${OA.blue}12`, color: OA.blue, padding: '3px 8px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${OA.blue}20` }}>
+                        {operationalUsers.find(u => u.id === dept.managerId)?.name}
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '10px' }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEditModal('DEPARTMENT', dept)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>✏️ تعديل</button>
-                    <button onClick={() => handleDeleteEntity('DEPARTMENT', dept.id, dept.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ حذف</button>
+                  <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleOpenEditModal('DEPARTMENT', dept)} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '5px 10px', borderRadius: '7px', fontSize: '11px', cursor: 'pointer', fontWeight: '600', fontFamily: OA.font }}>تعديل</button>
+                    <button onClick={() => handleDeleteEntity('DEPARTMENT', dept.id, dept.name)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '5px 10px', borderRadius: '7px', fontSize: '11px', cursor: 'pointer', fontWeight: '600', fontFamily: OA.font }}>حذف</button>
                   </div>
                 </div>
                 
                 {dept.expanded && (
-                  <div style={{ paddingRight: '25px', marginTop: '12px', borderRight: '2px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ paddingInlineStart: '24px', marginTop: '8px', borderInlineStart: `2px solid ${OA.sep}`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {dept.divisions.map(div => (
                       <div key={div.id}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.02)', padding: '12px 18px', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }} onClick={() => {
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: OA.surface, padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', border: `1px solid ${OA.sep}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }} onClick={() => {
                           setDepartments(prev => prev.map(d => d.id === dept.id ? {
                             ...d, divisions: d.divisions.map(dv => dv.id === div.id ? { ...dv, expanded: !dv.expanded } : dv)
                           } : d));
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '14px', transform: div.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#475569' }}>▶</span>
-                            <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#475569' }}>{div.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '10px', transform: div.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: OA.indigo, display: 'inline-block' }}>▶</span>
+                            <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: `${OA.indigo}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>📂</div>
+                            <span style={{ fontWeight: '600', fontSize: '13px', color: OA.text }}>{div.name}</span>
                             {div.headId && (
-                              <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === div.headId) || null); }} style={{ fontSize: '10px', background: 'rgba(99, 102, 241, 0.2)', color: '#c7d2fe', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                رئيس القسم: {operationalUsers.find(u => u.id === div.headId)?.name}
+                              <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === div.headId) || null); }} style={{ fontSize: '11px', background: `${OA.indigo}10`, color: OA.indigo, padding: '2px 7px', borderRadius: '5px', cursor: 'pointer', border: `1px solid ${OA.indigo}18` }}>
+                                {operationalUsers.find(u => u.id === div.headId)?.name}
                               </span>
                             )}
-                            {div.isIndependent && <span style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.2)', color: '#fcd34d', padding: '3px 6px', borderRadius: '4px', border: '1px solid rgba(245,158,11,0.3)' }}>مستقل</span>}
+                            {div.isIndependent && <span style={{ fontSize: '10px', background: `${OA.amber}12`, color: OA.amber, padding: '2px 6px', borderRadius: '4px', border: `1px solid ${OA.amber}20`, fontWeight: '600' }}>مستقل</span>}
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
-                             <button onClick={() => handleOpenEditModal('DIVISION', div)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>✏️ تعديل</button>
-                             <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>➕ إضافة فريق</button>
-                             <button onClick={() => handleDeleteEntity('DIVISION', div.id, div.name)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>🗑️ حذف</button>
+                          <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
+                             <button onClick={() => handleOpenEditModal('DIVISION', div)} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
+                             <button style={{ background: `${OA.green}10`, border: `1px solid ${OA.green}20`, color: OA.green, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>+ فريق</button>
+                             <button onClick={() => handleDeleteEntity('DIVISION', div.id, div.name)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>حذف</button>
                           </div>
                         </div>
                         
@@ -631,64 +639,64 @@ export const OperationalStructureTab: React.FC = () => {
                           <div style={{ paddingRight: '30px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {div.teams.map(team => (
                               <div key={team.id}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.01)', padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }} onClick={() => {
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: OA.bg, padding: '9px 12px', borderRadius: '8px', border: `1px solid ${OA.sep}`, cursor: 'pointer' }} onClick={() => {
                                   setDepartments(prev => prev.map(d => d.id === dept.id ? {
                                     ...d, divisions: d.divisions.map(dv => dv.id === div.id ? {
                                       ...dv, teams: dv.teams.map(t => t.id === team.id ? { ...t, expanded: !t.expanded } : t)
                                     } : dv)
                                   } : d));
                                 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '12px', transform: team.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#475569' }}>▶</span>
-                                    <span style={{ fontSize: '14px' }}>🛡️</span>
-                                    <span style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold' }}>{team.name}</span>
-                                    <span style={{ fontSize: '11px', color: '#475569' }}>({team.users.length} أعضاء)</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '9px', transform: team.expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: OA.purple, display: 'inline-block' }}>▶</span>
+                                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: `${OA.purple}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>👥</div>
+                                    <span style={{ fontSize: '13px', color: OA.text, fontWeight: '600' }}>{team.name}</span>
+                                    <span style={{ fontSize: '11px', color: OA.textTer, background: OA.bg, padding: '1px 6px', borderRadius: '5px', border: `1px solid ${OA.sep}` }}>{team.users.length} أعضاء</span>
                                     {team.leaderId && (
-                                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '10px', background: 'rgba(236, 72, 153, 0.2)', color: '#fbcfe8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid rgba(236,72,153,0.3)' }}>
-                                        قائد الفريق: {operationalUsers.find(u => u.id === team.leaderId)?.name}
+                                      <span onClick={(e) => { e.stopPropagation(); handleOpenProfile(operationalUsers.find(u => u.id === team.leaderId) || null); }} style={{ fontSize: '11px', background: `${OA.purple}10`, color: OA.purple, padding: '2px 7px', borderRadius: '5px', cursor: 'pointer', border: `1px solid ${OA.purple}18` }}>
+                                        {operationalUsers.find(u => u.id === team.leaderId)?.name}
                                       </span>
                                     )}
                                   </div>
-                                  <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
-                                     <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>✏️ تعديل</button>
-                                     <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>🗑️ حذف</button>
+                                  <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                     <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: OA.surface, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
+                                     <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '4px 8px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>حذف</button>
                                   </div>
                                 </div>
                                 {team.expanded && (
-                                  <div style={{ paddingRight: '25px', marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '5px', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <div style={{ paddingInlineStart: '20px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', borderInlineStart: `1px solid ${OA.sep}` }}>
                                     {team.users.map(u => (
-                                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.01)', padding: '6px 15px', borderRadius: '6px', border: '1px dotted rgba(255,255,255,0.05)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                           <span style={{ fontSize: '12px' }}>👤</span>
-                                           <span style={{ fontSize: '12px', color: '#475569', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
-                                           <span style={{ fontSize: '10px', color: '#475569' }}>({u.employeeId})</span>
+                                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: OA.surface, padding: '7px 12px', borderRadius: '7px', border: `1px solid ${OA.sep}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                           <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${OA.blue}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: OA.blue, fontWeight: '700' }}>{u.name[0]}</div>
+                                           <span style={{ fontSize: '12px', color: OA.text, cursor: 'pointer', fontWeight: '500' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
+                                           <span style={{ fontSize: '10px', color: OA.textTer }}>{u.employeeId}</span>
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
+                                        <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '3px 7px', borderRadius: '5px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>إدارة</button>
                                       </div>
                                     ))}
-                                    {team.users.length === 0 && <div style={{ fontSize: '11px', color: '#475569', padding: '5px 10px' }}>لا يوجد أعضاء في هذا الفريق.</div>}
+                                    {team.users.length === 0 && <div style={{ fontSize: '11px', color: OA.textTer, padding: '5px 10px' }}>لا يوجد أعضاء في هذا الفريق.</div>}
                                   </div>
                                 )}
                               </div>
                             ))}
                             
                             {div.unassignedUsers.map(u => (
-                              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.02)', padding: '8px 15px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                   <span style={{ fontSize: '14px' }}>👤</span>
-                                   <span style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
-                                   <span style={{ fontSize: '10px', color: '#475569' }}>({u.employeeId})</span>
+                              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: OA.surface, padding: '7px 12px', borderRadius: '7px', border: `1px dashed ${OA.sep}` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${OA.amber}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: OA.amber, fontWeight: '700' }}>{u.name[0]}</div>
+                                   <span style={{ fontSize: '12px', color: OA.text, fontWeight: '500', cursor: 'pointer' }} onClick={() => handleOpenProfile(u)}>{u.name}</span>
+                                   <span style={{ fontSize: '10px', color: OA.textTer }}>{u.employeeId}</span>
                                 </div>
-                                <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>⚙️ إدارة</button>
+                                <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(u); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '3px 7px', borderRadius: '5px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>إدارة</button>
                               </div>
                             ))}
 
-                            {div.teams.length === 0 && div.unassignedUsers.length === 0 && <div style={{ fontSize: '12px', color: '#475569', padding: '5px 10px' }}>لا توجد بيانات تابعة.</div>}
+                            {div.teams.length === 0 && div.unassignedUsers.length === 0 && <div style={{ fontSize: '12px', color: OA.textTer, padding: '5px 10px' }}>لا توجد بيانات تابعة.</div>}
                           </div>
                         )}
                       </div>
                     ))}
-                    <button style={{ alignSelf: 'flex-start', background: 'transparent', border: '1px dashed #3b82f6', color: '#3b82f6', padding: '10px 16px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>➕ إضافة قسم فرعي هنا</button>
+                    <button style={{ alignSelf: 'flex-start', background: `${OA.blue}10`, border: `1px dashed ${OA.blue}40`, color: OA.blue, padding: '8px 14px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: '600', fontFamily: OA.font }}>+ إضافة قسم فرعي</button>
                   </div>
                 )}
               </div>
@@ -696,45 +704,45 @@ export const OperationalStructureTab: React.FC = () => {
           </div>
         </div>
 
-        {/* BOTTOM PANEL: Advanced User Pool */}
-        <div style={{ flex: '1', background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(16px)', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(241,245,249,0.8)' }}>
-            <h3 style={{ color: '#6366f1', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-              <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#6366f1', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', fontSize: '14px' }}>👥</span>
-              دليل الكوادر التشغيلية (User Pool)
+        {/* User Pool Panel */}
+        <div style={{ flex: '1', background: OA.surface, border: `1px solid ${OA.sep}`, borderRadius: OA.radius, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: OA.shadow }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: `1px solid ${OA.sep}`, background: OA.surface, flexWrap: 'wrap', gap: '10px' }}>
+            <h3 style={{ color: OA.text, fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <span style={{ background: `${OA.blue}12`, color: OA.blue, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '7px', fontSize: '13px' }}>👥</span>
+              دليل الكوادر التشغيلية
             </h3>
             
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <input 
                 type="text" 
-                placeholder="بحث بالاسم، الرقم الوظيفي، الإيميل..." 
+                placeholder="بحث بالاسم أو الرقم الوظيفي..." 
                 value={poolSearchQuery}
                 onChange={e => setPoolSearchQuery(e.target.value)}
-                style={{ padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(241,245,249,0.9)', color: '#0f172a', fontSize: '13px', width: '250px', outline: 'none' }}
+                style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${OA.sepStr}`, background: OA.bg, color: OA.text, fontSize: '13px', width: '220px', outline: 'none', fontFamily: OA.font }}
               />
               <select 
                 value={poolFilterStatus}
                 onChange={e => setPoolFilterStatus(e.target.value as any)}
-                style={{ padding: '10px 15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(241,245,249,0.9)', color: '#475569', fontSize: '13px', outline: 'none', cursor: 'pointer' }}
+                style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${OA.sepStr}`, background: OA.bg, color: OA.text, fontSize: '13px', outline: 'none', cursor: 'pointer', fontFamily: OA.font }}
               >
-                <option value="ALL">كل الموظفين التشغيليين</option>
-                <option value="ASSIGNED">المنسبين للهيكل فقط</option>
-                <option value="UNASSIGNED">غير المنسبين (متاحين للتعيين)</option>
+                <option value="ALL">الكل</option>
+                <option value="ASSIGNED">المنسبون</option>
+                <option value="UNASSIGNED">غير المنسبين</option>
               </select>
               {poolFilterStatus === 'ASSIGNED' && (
                  <>
-                   <select value={filterAssignedDeptId} onChange={e => { setFilterAssignedDeptId(e.target.value); setFilterAssignedDivId(''); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                   <select value={filterAssignedDeptId} onChange={e => { setFilterAssignedDeptId(e.target.value); setFilterAssignedDivId(''); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, fontSize: '13px' }}>
                      <option value="">-- الفلترة بالإدارة --</option>
                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                    </select>
                    {filterAssignedDeptId && (
-                     <select value={filterAssignedDivId} onChange={e => { setFilterAssignedDivId(e.target.value); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                     <select value={filterAssignedDivId} onChange={e => { setFilterAssignedDivId(e.target.value); setFilterAssignedTeamId(''); }} style={{ padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, fontSize: '13px' }}>
                        <option value="">-- الفلترة بالقسم --</option>
                        {departments.find(d => d.id === filterAssignedDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
                      </select>
                    )}
                    {filterAssignedDivId && (
-                     <select value={filterAssignedTeamId} onChange={e => setFilterAssignedTeamId(e.target.value)} style={{ padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                     <select value={filterAssignedTeamId} onChange={e => setFilterAssignedTeamId(e.target.value)} style={{ padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, fontSize: '13px' }}>
                        <option value="">-- الفلترة بالفريق --</option>
                        {departments.find(d => d.id === filterAssignedDeptId)?.divisions.find(dv => dv.id === filterAssignedDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                      </select>
@@ -744,10 +752,10 @@ export const OperationalStructureTab: React.FC = () => {
               
               {selectedPoolUsers.length > 0 && (
                 <div style={{ display: 'flex', gap: '10px', marginLeft: '10px' }}>
-                  <button style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#0f172a', border: 'none', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }} onClick={handleBulkAssignClick}>
+                  <button style={{ background: OA.green, color: OA.text, border: 'none', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }} onClick={handleBulkAssignClick}>
                     تنسيب المحددين ({selectedPoolUsers.length})
                   </button>
-                  <button onClick={handleBulkUnassignClick} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <button onClick={handleBulkUnassignClick} style={{ background: `${OA.red}15`, color: OA.red, border: `1px solid ${OA.red}30`, padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                     إرجاع كمستخدمين عاديين
                   </button>
                 </div>
@@ -756,21 +764,21 @@ export const OperationalStructureTab: React.FC = () => {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }} className="scrollbar-thin">
-            <table style={{ width: '100%', borderCollapse: 'collapse', color: '#0f172a' }}>
-              <thead style={{ background: 'rgba(99,102,241,0.04)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', color: OA.text }}>
+              <thead style={{ background: OA.bg }}>
                 <tr>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', borderBottom: `1px solid ${OA.sep}` }}>
                     <input type="checkbox" onChange={e => {
                       if (e.target.checked) setSelectedPoolUsers(filteredPool.map(u => u.id));
                       else setSelectedPoolUsers([]);
                     }} checked={selectedPoolUsers.length === filteredPool.length && filteredPool.length > 0} />
                   </th>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الرقم الوظيفي</th>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الاسم</th>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>البريد الإلكتروني</th>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الرتبة والدور</th>
-                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>حالة التنسيب</th>
-                  <th style={{ padding: '12px 15px', textAlign: 'center', fontSize: '13px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>الإجراءات</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>الرقم الوظيفي</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>الاسم</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>البريد الإلكتروني</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>الرتبة والدور</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'right', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>حالة التنسيب</th>
+                  <th style={{ padding: '12px 15px', textAlign: 'center', fontSize: '13px', color: OA.textSub, borderBottom: `1px solid ${OA.sep}` }}>الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -788,16 +796,16 @@ export const OperationalStructureTab: React.FC = () => {
                   }
                   
                   return (
-                    <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: selectedPoolUsers.includes(user.id) ? 'rgba(56, 189, 248, 0.1)' : 'transparent', transition: 'background 0.2s' }}>
+                    <tr key={user.id} style={{ borderBottom: `1px solid ${OA.sep}`, background: selectedPoolUsers.includes(user.id) ? `${OA.blue}10` : 'transparent', transition: 'background 0.2s' }}>
                       <td style={{ padding: '12px 15px' }}>
                         <input type="checkbox" checked={selectedPoolUsers.includes(user.id)} onChange={e => {
                           if (e.target.checked) setSelectedPoolUsers(prev => [...prev, user.id]);
                           else setSelectedPoolUsers(prev => prev.filter(id => id !== user.id));
                         }} />
                       </td>
-                      <td style={{ padding: '12px 15px', fontSize: '13px', color: '#475569' }}>{user.employeeId}</td>
-                      <td style={{ padding: '12px 15px', fontSize: '14px', fontWeight: 'bold', color: '#0f172a', cursor: 'pointer' }} onClick={() => handleOpenProfile(user)}>{user.name}</td>
-                      <td style={{ padding: '12px 15px', fontSize: '13px', color: '#475569' }}>{user.email}</td>
+                      <td style={{ padding: '12px 15px', fontSize: '13px', color: OA.textSub }}>{user.employeeId}</td>
+                      <td style={{ padding: '12px 15px', fontSize: '14px', fontWeight: 'bold', color: OA.text, cursor: 'pointer' }} onClick={() => handleOpenProfile(user)}>{user.name}</td>
+                      <td style={{ padding: '12px 15px', fontSize: '13px', color: OA.textSub }}>{user.email}</td>
                       <td style={{ padding: '12px 15px', fontSize: '12px' }}>
                         <span style={{ background: user.role === 'OPERATIONAL_MANAGER' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(2, 132, 199, 0.2)', color: user.role === 'OPERATIONAL_MANAGER' ? '#c4b5fd' : '#bae6fd', padding: '4px 8px', borderRadius: '4px', border: user.role === 'OPERATIONAL_MANAGER' ? '1px solid #8b5cf6' : '1px solid #0284c7' }}>
                           {user.role === 'OPERATIONAL_MANAGER' ? 'مسؤول تشغيلي' : 'مستخدم تشغيلي'}
@@ -805,15 +813,15 @@ export const OperationalStructureTab: React.FC = () => {
                       </td>
                       <td style={{ padding: '12px 15px', fontSize: '12px' }}>
                         {isAssigned ? (
-                          <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px' }}>✓ {assignmentText}</span>
+                          <span style={{ color: OA.green, display: 'flex', alignItems: 'center', gap: '5px' }}>✓ {assignmentText}</span>
                         ) : (
-                          <span style={{ color: '#475569' }}>- غير منسب -</span>
+                          <span style={{ color: OA.textSub }}>- غير منسب -</span>
                         )}
                       </td>
                       <td style={{ padding: '12px 15px' }}>
                           <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                            <button onClick={(e) => { e.stopPropagation(); handleOpenProfile(user); }} style={{ background: 'transparent', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#7dd3fc', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🪪 بطاقة المستخدم</button>
-                            <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(user); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>🔄 نقل</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleOpenProfile(user); }} style={{ background: 'transparent', border: `1px solid ${OA.blue}30`, color: OA.blue, padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🪪 بطاقة المستخدم</button>
+                            <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(user); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>🔄 نقل</button>
                           </div>
                       </td>
                     </tr>
@@ -821,7 +829,7 @@ export const OperationalStructureTab: React.FC = () => {
                 })}
               </tbody>
             </table>
-            {filteredPool.length === 0 && <div style={{ textAlign: 'center', color: '#475569', fontSize: '14px', padding: '40px' }}>لا يوجد مستخدمين يطابقون شروط البحث الحالية.</div>}
+            {filteredPool.length === 0 && <div style={{ textAlign: 'center', color: OA.textSub, fontSize: '14px', padding: '40px' }}>لا يوجد مستخدمين يطابقون شروط البحث الحالية.</div>}
           </div>
         </div>
       </div>
@@ -829,11 +837,11 @@ export const OperationalStructureTab: React.FC = () => {
       {/* --- MODALS --- */}
       {/* 🪪 Killer Super Profile Modal */}
       {profileModalUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.98)', padding: '30px', borderRadius: '16px', width: '500px', border: profileEditData.status === 'BLOCKED' ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: OA.surface, padding: '30px', borderRadius: '16px', width: '500px', border: profileEditData.status === 'BLOCKED' ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
             
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', paddingBottom: '20px', borderBottom: '1px dashed rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', paddingBottom: '20px', borderBottom: `1px dashed ${OA.sep}` }}>
               <div style={{ position: 'relative' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #0284c7, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '35px', border: '3px solid rgba(255,255,255,0.1)' }}>
                   👤
@@ -843,10 +851,10 @@ export const OperationalStructureTab: React.FC = () => {
                 )}
               </div>
               <div style={{ flex: 1 }}>
-                <h3 style={{ color: '#0f172a', fontSize: '22px', margin: '0 0 5px 0' }}>{profileModalUser.name}</h3>
+                <h3 style={{ color: OA.text, fontSize: '22px', margin: '0 0 5px 0' }}>{profileModalUser.name}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                   <span style={{ color: '#475569', fontSize: '13px', background: 'rgba(99,102,241,0.04)', padding: '3px 8px', borderRadius: '4px' }}>{profileModalUser.employeeId}</span>
-                   {profileModalUser.departmentId && <span style={{ color: '#10b981', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }}>منسب للهيكل</span>}
+                   <span style={{ color: OA.textSub, fontSize: '13px', background: OA.bg, padding: '3px 8px', borderRadius: '4px' }}>{profileModalUser.employeeId}</span>
+                   {profileModalUser.departmentId && <span style={{ color: OA.green, fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }}>منسب للهيكل</span>}
                 </div>
               </div>
             </div>
@@ -854,22 +862,22 @@ export const OperationalStructureTab: React.FC = () => {
             {/* Editable Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
                <div>
-                  <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>الاسم الكامل</label>
-                  <input type="text" value={profileEditData.name} onChange={e => setProfileEditData({...profileEditData, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: '1px solid rgba(255,255,255,0.1)', color: '#0f172a', fontSize: '14px' }} />
+                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>الاسم الكامل</label>
+                  <input type="text" value={profileEditData.name} onChange={e => setProfileEditData({...profileEditData, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }} />
                </div>
                <div style={{ display: 'flex', gap: '15px' }}>
                   <div style={{ flex: 1 }}>
-                     <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>البريد الإلكتروني</label>
-                     <input type="email" value={profileEditData.email} onChange={e => setProfileEditData({...profileEditData, email: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: '1px solid rgba(255,255,255,0.1)', color: '#0f172a', fontSize: '14px' }} />
+                     <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>البريد الإلكتروني</label>
+                     <input type="email" value={profileEditData.email} onChange={e => setProfileEditData({...profileEditData, email: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                     <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>رقم الهاتف</label>
-                     <input type="text" value={profileEditData.phone} onChange={e => setProfileEditData({...profileEditData, phone: e.target.value})} placeholder="09X XXX XXXX" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: '1px solid rgba(255,255,255,0.1)', color: '#0f172a', fontSize: '14px' }} />
+                     <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>رقم الهاتف</label>
+                     <input type="text" value={profileEditData.phone} onChange={e => setProfileEditData({...profileEditData, phone: e.target.value})} placeholder="09X XXX XXXX" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }} />
                   </div>
                </div>
                <div>
-                  <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>واجهة النظام الافتراضية</label>
-                  <select value={profileEditData.activeUI} onChange={e => setProfileEditData({...profileEditData, activeUI: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: '1px solid rgba(255,255,255,0.1)', color: '#0f172a', fontSize: '14px' }}>
+                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>واجهة النظام الافتراضية</label>
+                  <select value={profileEditData.activeUI} onChange={e => setProfileEditData({...profileEditData, activeUI: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }}>
                      <option value="ticket_create">Ticket Create (إنشاء تذاكر)</option>
                      <option value="inbound_tickets">Inbound Hub (استقبال التذاكر)</option>
                      <option value="analytics_dashboard">Analytics Dashboard (لوحة التحليلات)</option>
@@ -888,17 +896,17 @@ export const OperationalStructureTab: React.FC = () => {
                  <button onClick={() => {
                     setProfileModalUser(null);
                     setSingleMoveUser(profileModalUser); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true);
-                 }} style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#475569', padding: '10px 15px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                 }} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '10px 15px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
                    🔄 نقل وإدارة
                  </button>
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                 <button onClick={() => setProfileModalUser(null)} style={{ background: 'transparent', border: 'none', color: '#475569', padding: '10px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+                 <button onClick={() => setProfileModalUser(null)} style={{ background: 'transparent', border: 'none', color: OA.textSub, padding: '10px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
                  <button onClick={() => {
                     setOperationalUsers(prev => prev.map(u => u.id === profileModalUser.id ? { ...u, ...profileEditData } : u));
                     setProfileModalUser(null);
-                 }} style={{ background: '#6366f1', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
+                 }} style={{ background: '#6366f1', color: OA.text, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
                     💾 حفظ التعديلات
                  </button>
               </div>
@@ -911,25 +919,25 @@ export const OperationalStructureTab: React.FC = () => {
       {editModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(241, 245, 249, 0.9)', backdropFilter: 'blur(8px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#0f172a', fontSize: '20px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+            <h3 style={{ color: OA.text, fontSize: '20px', marginBottom: '20px', borderBottom: `1px solid ${OA.sep}`, paddingBottom: '10px' }}>
               ✏️ تعديل {editEntityType === 'DEPARTMENT' ? 'إدارة' : editEntityType === 'DIVISION' ? 'قسم' : 'فريق'}
             </h3>
             
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', color: '#475569', fontSize: '13px', marginBottom: '8px' }}>الاسم والمسمى</label>
+              <label style={{ display: 'block', color: OA.textSub, fontSize: '13px', marginBottom: '8px' }}>الاسم والمسمى</label>
               <input 
                 type="text" 
                 value={editEntityName}
                 onChange={e => setEditEntityName(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(241,245,249,0.9)', color: '#0f172a', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${OA.sep}`, background: 'rgba(241,245,249,0.9)', color: OA.text, fontSize: '14px', outline: 'none' }}
               />
             </div>
 
             <div style={{ marginBottom: '20px', position: 'relative' }}>
-              <label style={{ display: 'block', color: '#475569', fontSize: '13px', marginBottom: '8px' }}>الكوادر التشغيلية (تحديد المسؤول)</label>
+              <label style={{ display: 'block', color: OA.textSub, fontSize: '13px', marginBottom: '8px' }}>الكوادر التشغيلية (تحديد المسؤول)</label>
               
               <div 
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(241,245,249,0.9)', color: '#0f172a', fontSize: '14px', cursor: 'text', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${OA.sep}`, background: 'rgba(241,245,249,0.9)', color: OA.text, fontSize: '14px', cursor: 'text', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 onClick={() => setDropdownOpen(true)}
               >
                 <input 
@@ -941,15 +949,15 @@ export const OperationalStructureTab: React.FC = () => {
                     if (e.target.value === '') setEditEntityLeaderId('');
                   }}
                   placeholder="ابحث عن مسؤول (بالاسم أو الرقم)..."
-                  style={{ background: 'transparent', border: 'none', color: '#0f172a', width: '100%', outline: 'none', fontSize: '14px' }}
+                  style={{ background: 'transparent', border: 'none', color: OA.text, width: '100%', outline: 'none', fontSize: '14px' }}
                 />
-                <span style={{ fontSize: '12px', color: '#475569' }}>▼</span>
+                <span style={{ fontSize: '12px', color: OA.textSub }}>▼</span>
               </div>
               
               {dropdownOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#e8eef6', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', marginTop: '5px', maxHeight: '200px', overflowY: 'auto', zIndex: 10 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#e8eef6', border: `1px solid ${OA.sep}`, borderRadius: '8px', marginTop: '5px', maxHeight: '200px', overflowY: 'auto', zIndex: 10 }}>
                   <div 
-                    style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#475569', fontSize: '13px' }}
+                    style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: `1px solid ${OA.sep}`, color: OA.textSub, fontSize: '13px' }}
                     onClick={() => {
                       setEditEntityLeaderId('');
                       setEditEntityLeaderSearchTerm('');
@@ -964,7 +972,7 @@ export const OperationalStructureTab: React.FC = () => {
                     .map(u => (
                       <div 
                         key={u.id} 
-                        style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: editEntityLeaderId === u.id ? '#6366f1' : '#334155', background: editEntityLeaderId === u.id ? 'rgba(56,189,248,0.1)' : 'transparent' }}
+                        style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: `1px solid ${OA.sep}`, color: editEntityLeaderId === u.id ? '#6366f1' : '#334155', background: editEntityLeaderId === u.id ? 'rgba(56,189,248,0.1)' : 'transparent' }}
                         onClick={() => {
                           setEditEntityLeaderId(u.id);
                           setEditEntityLeaderSearchTerm(u.name);
@@ -979,29 +987,29 @@ export const OperationalStructureTab: React.FC = () => {
             </div>
 
             <div style={{ marginBottom: '30px', background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '10px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <label style={{ display: 'block', color: '#475569', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>تخصيص الواجهة المخصصة لهذا المنصب</label>
-              <p style={{ fontSize: '11px', color: '#475569', marginBottom: '10px' }}>الواجهة التي سيتم عرضها لهذا المسؤول بمجرد تسجيل دخوله</p>
+              <label style={{ display: 'block', color: OA.textSub, fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>تخصيص الواجهة المخصصة لهذا المنصب</label>
+              <p style={{ fontSize: '11px', color: OA.textSub, marginBottom: '10px' }}>الواجهة التي سيتم عرضها لهذا المسؤول بمجرد تسجيل دخوله</p>
               
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <select 
                   value={editEntityUiId}
                   onChange={e => setEditEntityUiId(e.target.value)}
-                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(241,245,249,0.95)', color: '#6366f1', fontSize: '13px', outline: 'none', fontWeight: 'bold' }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${OA.sep}`, background: OA.bg, color: '#6366f1', fontSize: '13px', outline: 'none', fontWeight: 'bold' }}
                 >
                   <option value="">-- الواجهة الافتراضية --</option>
                   {availableUIs.map(ui => (
                     <option key={ui.id} value={ui.id}>🖥️ {ui.name}</option>
                   ))}
                 </select>
-                <button onClick={handleCreateNewUI} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#6366f1', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <button onClick={handleCreateNewUI} style={{ background: `${OA.blue}15`, color: '#6366f1', border: `1px solid ${OA.blue}30`, padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   ➕ إنشاء واجهة جديدة
                 </button>
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#475569', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>إلغاء</button>
-              <button onClick={handleSaveEntity} style={{ background: '#3b82f6', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.3)' }}>حفظ التعديلات</button>
+              <button onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '10px 20px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>إلغاء</button>
+              <button onClick={handleSaveEntity} style={{ background: '#3b82f6', color: OA.text, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.3)' }}>حفظ التعديلات</button>
             </div>
           </div>
         </div>
@@ -1009,12 +1017,12 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Warning Modal for Reassignment */}
       {pendingReassignment && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.5)', boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)' }}>
-            <h3 style={{ color: '#fca5a5', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h3 style={{ color: OA.red, fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: شاغر تشغيلي محتمل!
             </h3>
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '25px' }}>
+            <p style={{ color: OA.textSub, fontSize: '14px', lineHeight: '1.6', marginBottom: '25px' }}>
               المستخدم المحدد يشغل حالياً صفة <strong>{pendingReassignment.oldRoleName}</strong>. 
               <br/><br/>
               هل أنت متأكد أنك ستقوم بنقل هذا الاسم لصفة <strong>{pendingReassignment.newRoleName}</strong> داخل الهيكل التشغيلي؟
@@ -1024,8 +1032,8 @@ export const OperationalStructureTab: React.FC = () => {
               هل أنت متأكد من رغبتك في إتمام النقل؟
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button onClick={() => setPendingReassignment(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء التعيين</button>
-              <button onClick={() => executeSaveEntity(pendingReassignment.userId)} style={{ background: '#ef4444', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>نعم، أتمم النقل وأفرغ المنصب القديم</button>
+              <button onClick={() => setPendingReassignment(null)} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء التعيين</button>
+              <button onClick={() => executeSaveEntity(pendingReassignment.userId)} style={{ background: '#ef4444', color: OA.text, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>نعم، أتمم النقل وأفرغ المنصب القديم</button>
             </div>
           </div>
         </div>
@@ -1034,12 +1042,12 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Delete Team Advanced Modal */}
       {deleteTeamModalOpen && teamToDelete && divisionOfTeamToDelete && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(239, 68, 68, 0.5)', boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)' }}>
-            <h3 style={{ color: '#fca5a5', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h3 style={{ color: OA.red, fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> خيارات حذف فريق ({teamToDelete.name})
             </h3>
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+            <p style={{ color: OA.textSub, fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
               يحتوي هذا الفريق على <strong>{teamToDelete.users.length + (teamToDelete.leaderId ? 1 : 0)}</strong> مستخدمين (بما في ذلك قائد الفريق). يرجى تحديد مصير هؤلاء الكوادر التشغيلية قبل إتمام عملية الحذف.
             </p>
             
@@ -1047,21 +1055,21 @@ export const OperationalStructureTab: React.FC = () => {
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'MOVE_TO_DIVISION' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'MOVE_TO_DIVISION' ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
                 <input type="radio" name="deleteAction" checked={deleteTeamAction === 'MOVE_TO_DIVISION'} onChange={() => setDeleteTeamAction('MOVE_TO_DIVISION')} />
                 <div>
-                  <div style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '14px' }}>إرجاعهم تحت القسم بدون فريق</div>
-                  <div style={{ color: '#475569', fontSize: '12px' }}>سيصبحون أفراداً عاديين متاحين للتعيين تحت "{divisionOfTeamToDelete.name}"</div>
+                  <div style={{ color: OA.text, fontWeight: 'bold', fontSize: '14px' }}>إرجاعهم تحت القسم بدون فريق</div>
+                  <div style={{ color: OA.textSub, fontSize: '12px' }}>سيصبحون أفراداً عاديين متاحين للتعيين تحت "{divisionOfTeamToDelete.name}"</div>
                 </div>
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'MERGE' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'MERGE' ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
                 <input type="radio" name="deleteAction" checked={deleteTeamAction === 'MERGE'} onChange={() => setDeleteTeamAction('MERGE')} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '14px' }}>نقلهم ودمجهم مع فريق آخر داخل القسم</div>
-                  <div style={{ color: '#475569', fontSize: '12px' }}>سيتم نقلهم جميعاً كأعضاء عاديين للفريق المختار</div>
+                  <div style={{ color: OA.text, fontWeight: 'bold', fontSize: '14px' }}>نقلهم ودمجهم مع فريق آخر داخل القسم</div>
+                  <div style={{ color: OA.textSub, fontSize: '12px' }}>سيتم نقلهم جميعاً كأعضاء عاديين للفريق المختار</div>
                   {deleteTeamAction === 'MERGE' && (
                      <select 
                        value={deleteTeamTargetId} 
                        onChange={e => setDeleteTeamTargetId(e.target.value)} 
-                       style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}
+                       style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}` }}
                      >
                         <option value="">-- اختر الفريق الوجهة --</option>
                         {divisionOfTeamToDelete.teams.filter((t: any) => t.id !== teamToDelete.id).map((t: any) => (
@@ -1075,16 +1083,16 @@ export const OperationalStructureTab: React.FC = () => {
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: deleteTeamAction === 'UNASSIGN' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '10px', cursor: 'pointer', border: deleteTeamAction === 'UNASSIGN' ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255,255,255,0.05)' }}>
                 <input type="radio" name="deleteAction" checked={deleteTeamAction === 'UNASSIGN'} onChange={() => setDeleteTeamAction('UNASSIGN')} />
                 <div>
-                  <div style={{ color: '#fca5a5', fontWeight: 'bold', fontSize: '14px' }}>تسريح إلى دليل الكوادر (خارج الهيكل)</div>
-                  <div style={{ color: '#475569', fontSize: '12px' }}>سيتم تجريدهم من انتمائهم بالكامل ونقلهم لحوض الموظفين غير المنسبين</div>
+                  <div style={{ color: OA.red, fontWeight: 'bold', fontSize: '14px' }}>تسريح إلى دليل الكوادر (خارج الهيكل)</div>
+                  <div style={{ color: OA.textSub, fontSize: '12px' }}>سيتم تجريدهم من انتمائهم بالكامل ونقلهم لحوض الموظفين غير المنسبين</div>
                 </div>
               </label>
 
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button onClick={() => setDeleteTeamModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
-              <button disabled={deleteTeamAction === 'MERGE' && !deleteTeamTargetId} onClick={executeAdvancedDeleteTeam} style={{ background: '#ef4444', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 'not-allowed' : 'pointer', opacity: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 0.5 : 1, boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>
+              <button onClick={() => setDeleteTeamModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+              <button disabled={deleteTeamAction === 'MERGE' && !deleteTeamTargetId} onClick={executeAdvancedDeleteTeam} style={{ background: '#ef4444', color: OA.text, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 'not-allowed' : 'pointer', opacity: deleteTeamAction === 'MERGE' && !deleteTeamTargetId ? 0.5 : 1, boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>
                  تنفيذ الإجراء والحذف
               </button>
             </div>
@@ -1097,12 +1105,12 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Conflict Modal */}
       {conflictModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '550px', border: '1px solid rgba(245, 158, 11, 0.5)', boxShadow: '0 25px 50px -12px rgba(245, 158, 11, 0.3)' }}>
             <h3 style={{ color: '#fcd34d', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: ارتباطات تشغيلية متعارضة
             </h3>
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '15px' }}>
+            <p style={{ color: OA.textSub, fontSize: '14px', lineHeight: '1.6', marginBottom: '15px' }}>
               بعض الأسماء المحددة تشغل بالفعل وظائف وتنسيبات داخل الهيكل التشغيلي:
             </p>
             <div style={{ background: 'rgba(241,245,249,0.9)', padding: '10px', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)' }} className="scrollbar-thin">
@@ -1112,16 +1120,16 @@ export const OperationalStructureTab: React.FC = () => {
                   if (u.divisionId) loc += ` / ` + departments.find(d => d.id === u.departmentId)?.divisions.find(dv => dv.id === u.divisionId)?.name;
                   if (u.teamId) loc += ` / ` + departments.find(d => d.id === u.departmentId)?.divisions.find(dv => dv.id === u.divisionId)?.teams.find(t => t.id === u.teamId)?.name;
                   return (
-                     <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <span style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>{u.name}</span>
-                        <span style={{ color: '#475569', fontSize: '12px' }}>{roleDesc} في ({loc})</span>
+                     <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: `1px solid ${OA.sep}` }}>
+                        <span style={{ color: OA.text, fontWeight: 'bold', fontSize: '13px' }}>{u.name}</span>
+                        <span style={{ color: OA.textSub, fontSize: '12px' }}>{roleDesc} في ({loc})</span>
                      </div>
                   )
                })}
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-              <button onClick={() => setConflictModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء الإجراء</button>
+              <button onClick={() => setConflictModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء الإجراء</button>
               
               <div style={{ display: 'flex', gap: '10px' }}>
                  <button onClick={() => {
@@ -1143,7 +1151,7 @@ export const OperationalStructureTab: React.FC = () => {
                     setTargetDeptId(''); setTargetDivId(''); setTargetTeamId('');
                     setConflictModalOpen(false);
                     setBulkAssignModalOpen(true);
-                 }} style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)' }}>
+                 }} style={{ background: '#f59e0b', color: OA.text, border: 'none', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)' }}>
                     تجاوز وإفراغ ونقل الجميع
                  </button>
               </div>
@@ -1154,7 +1162,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Bulk Assign Destination Modal */}
       {bulkAssignModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 25px 50px -12px rgba(56, 189, 248, 0.3)' }}>
             <h3 style={{ color: '#6366f1', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>🎯</span> تحديد وجهة النقل لـ ({bulkAssignUsers.length}) مستخدم
@@ -1162,8 +1170,8 @@ export const OperationalStructureTab: React.FC = () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
                <div>
-                  <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>الإدارة الوجهة</label>
-                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>الإدارة الوجهة</label>
+                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}` }}>
                      <option value="">-- اختر الإدارة --</option>
                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
@@ -1171,8 +1179,8 @@ export const OperationalStructureTab: React.FC = () => {
                
                {targetDeptId && (
                   <div>
-                     <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>القسم الوجهة</label>
-                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                     <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>القسم الوجهة</label>
+                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}` }}>
                         <option value="">-- اختر القسم --</option>
                         {departments.find(d => d.id === targetDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
                      </select>
@@ -1181,8 +1189,8 @@ export const OperationalStructureTab: React.FC = () => {
 
                {targetDivId && (
                   <div>
-                     <label style={{ display: 'block', color: '#475569', fontSize: '12px', marginBottom: '5px' }}>الفريق الوجهة (اختياري)</label>
-                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                     <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>الفريق الوجهة (اختياري)</label>
+                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}` }}>
                         <option value="">-- تنسيب كعضو قسم بدون فريق --</option>
                         {departments.find(d => d.id === targetDeptId)?.divisions.find(dv => dv.id === targetDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                      </select>
@@ -1191,12 +1199,12 @@ export const OperationalStructureTab: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button onClick={() => setBulkAssignModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+              <button onClick={() => setBulkAssignModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
               <button disabled={!targetDeptId || !targetDivId} onClick={() => {
                  executeUniversalMove(bulkAssignUsers, 'ASSIGN', targetDeptId, targetDivId, targetTeamId);
                  setBulkAssignModalOpen(false);
                  setSelectedPoolUsers([]);
-              }} style={{ background: '#6366f1', color: '#0f172a', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1, boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
+              }} style={{ background: '#6366f1', color: OA.text, border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1, boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)' }}>
                  تأكيد وتنسيب الجميع كأعضاء عاديين
               </button>
             </div>
@@ -1206,9 +1214,9 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Single Move / Manage Modal for Division Unassigned */}
       {singleMoveModalOpen && singleMoveUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(241, 245, 249, 0.95)', backdropFilter: 'blur(10px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            <h3 style={{ color: '#0f172a', fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: `1px solid ${OA.sep}`, boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
+            <h3 style={{ color: OA.text, fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚙️</span> خيارات العضو ({singleMoveUser.name})
             </h3>
 
@@ -1216,24 +1224,24 @@ export const OperationalStructureTab: React.FC = () => {
                <button onClick={() => {
                   executeUniversalMove([singleMoveUser.id], 'UNASSIGN');
                   setSingleMoveModalOpen(false);
-               }} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '12px', borderRadius: '8px', cursor: 'pointer', textAlign: 'right', fontWeight: 'bold' }}>
+               }} style={{ background: 'rgba(239, 68, 68, 0.1)', border: `1px solid ${OA.red}30`, color: OA.red, padding: '12px', borderRadius: '8px', cursor: 'pointer', textAlign: 'right', fontWeight: 'bold' }}>
                   تسريح وإرجاع لحوض الكوادر كمستخدم عادي
                </button>
                
                <div style={{ marginTop: '10px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '15px' }}>
-                  <div style={{ color: '#475569', fontSize: '13px', marginBottom: '10px', fontWeight: 'bold' }}>أو نقله إلى مكان آخر:</div>
-                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '10px' }}>
+                  <div style={{ color: OA.textSub, fontSize: '13px', marginBottom: '10px', fontWeight: 'bold' }}>أو نقله إلى مكان آخر:</div>
+                  <select value={targetDeptId} onChange={e => { setTargetDeptId(e.target.value); setTargetDivId(''); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, marginBottom: '10px' }}>
                      <option value="">-- اختر الإدارة --</option>
                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                   {targetDeptId && (
-                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '10px' }}>
+                     <select value={targetDivId} onChange={e => { setTargetDivId(e.target.value); setTargetTeamId(''); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, marginBottom: '10px' }}>
                         <option value="">-- اختر القسم --</option>
                         {departments.find(d => d.id === targetDeptId)?.divisions.map(dv => <option key={dv.id} value={dv.id}>{dv.name}</option>)}
                      </select>
                   )}
                   {targetDivId && (
-                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.95)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '15px' }}>
+                     <select value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: OA.bg, color: OA.text, border: `1px solid ${OA.sep}`, marginBottom: '15px' }}>
                         <option value="">-- تنسيب كعضو قسم بدون فريق --</option>
                         {departments.find(d => d.id === targetDeptId)?.divisions.find(dv => dv.id === targetDivId)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                      </select>
@@ -1241,14 +1249,14 @@ export const OperationalStructureTab: React.FC = () => {
                   <button disabled={!targetDeptId || !targetDivId} onClick={() => {
                      executeUniversalMove([singleMoveUser.id], 'ASSIGN', targetDeptId, targetDivId, targetTeamId);
                      setSingleMoveModalOpen(false);
-                  }} style={{ width: '100%', background: '#6366f1', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1 }}>
+                  }} style={{ width: '100%', background: '#6366f1', color: OA.text, border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: (!targetDeptId || !targetDivId) ? 'not-allowed' : 'pointer', opacity: (!targetDeptId || !targetDivId) ? 0.5 : 1 }}>
                      تنفيذ النقل
                   </button>
                </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-               <button onClick={() => setSingleMoveModalOpen(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#475569', padding: '8px 15px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إغلاق</button>
+               <button onClick={() => setSingleMoveModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '8px 15px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>إغلاق</button>
             </div>
           </div>
         </div>

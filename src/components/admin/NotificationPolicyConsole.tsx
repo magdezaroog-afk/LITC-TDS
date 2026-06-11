@@ -1,12 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 
+/* ── Apple Design Tokens ── */
+const A = {
+  text: '#1D1D1F',
+  textSub: '#6E6E73',
+  textTer: '#AEAEB2',
+  surface: '#FFFFFF',
+  bg: '#F5F5F7',
+  sep: 'rgba(0,0,0,0.08)',
+  sepStr: 'rgba(0,0,0,0.12)',
+  radius: '14px',
+  radiusSm: '10px',
+  shadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
+  blue: '#007AFF',
+  green: '#34C759',
+  red: '#FF3B30',
+  amber: '#FF9500',
+  purple: '#AF52DE',
+  font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
+};
+
+const EVENT_META: Record<string, { label: string; description: string; color: string; icon: string }> = {
+  SLA_BREACH: {
+    label: 'خرق مستوى الخدمة',
+    description: 'تجاوز وقت الاستجابة المتفق عليه (SLA)',
+    color: A.red,
+    icon: '⚡',
+  },
+  NEW_TICKET: {
+    label: 'تذكرة جديدة',
+    description: 'عند إنشاء تذكرة دعم جديدة',
+    color: A.blue,
+    icon: '📩',
+  },
+  TICKET_ESCALATED: {
+    label: 'تصعيد التذكرة',
+    description: 'رفع التذكرة لمستوى أعلى',
+    color: A.amber,
+    icon: '🔼',
+  },
+  SYSTEM_DANGER: {
+    label: 'خطر النظام',
+    description: 'تنبيهات الأمان والأحداث الحرجة',
+    color: '#FF453A',
+    icon: '🚨',
+  },
+};
+
+/* ── Toggle Switch Component ── */
+const AppleToggle: React.FC<{
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  color?: string;
+}> = ({ checked, onChange, color = A.green }) => (
+  <div
+    onClick={() => onChange(!checked)}
+    style={{
+      width: '44px',
+      height: '26px',
+      borderRadius: '13px',
+      background: checked ? color : '#E5E5EA',
+      position: 'relative',
+      cursor: 'pointer',
+      transition: 'background 0.25s ease',
+      flexShrink: 0,
+      boxShadow: checked ? `0 0 8px ${color}40` : 'none',
+    }}
+  >
+    <div style={{
+      position: 'absolute',
+      top: '3px',
+      left: checked ? '21px' : '3px',
+      width: '20px',
+      height: '20px',
+      borderRadius: '50%',
+      background: '#FFFFFF',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+      transition: 'left 0.25s cubic-bezier(0.28, 0.11, 0.32, 1)',
+    }} />
+  </div>
+);
+
+/* ── Main Component ── */
 export const NotificationPolicyConsole: React.FC = () => {
-  const theme = useTheme();
   const [policies, setPolicies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
 
-  // Default event types for the system
   const systemEventTypes = ['SLA_BREACH', 'NEW_TICKET', 'TICKET_ESCALATED', 'SYSTEM_DANGER'];
 
   useEffect(() => {
@@ -14,14 +94,12 @@ export const NotificationPolicyConsole: React.FC = () => {
   }, []);
 
   const fetchPolicies = async () => {
-    // In a real implementation, we would fetch from the backend via an API
-    // For now, let's mock it or initialize defaults
     setPolicies(systemEventTypes.map(type => ({
       eventType: type,
       soundEnabled: true,
       flashEnabled: type.includes('DANGER') || type.includes('BREACH'),
       toastEnabled: true,
-      repeatInterval: type.includes('DANGER') ? 5 : 0 // repeat every 5 mins for danger
+      repeatInterval: type.includes('DANGER') ? 5 : 0,
     })));
     setLoading(false);
   };
@@ -31,84 +109,191 @@ export const NotificationPolicyConsole: React.FC = () => {
   };
 
   const handleSave = async () => {
-    // Here we would normally make a PUT/POST request to save to backend DB
     console.log('Saving Notification Policies', policies);
-    alert('تم حفظ سياسات التنبيهات بنجاح!');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
-  if (loading) return <div style={{ color: '#0f172a', padding: '20px' }}>جاري التحميل...</div>;
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px', color: A.textTer, fontFamily: A.font }}>
+      <div>جاري التحميل...</div>
+    </div>
+  );
 
   return (
-    <div style={{ padding: '20px', color: '#0f172a', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{
-        background: 'rgba(99, 102, 241, 0.04)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '16px',
-        padding: '25px',
-        border: `1px solid ${theme.colors.primary}44`,
-        boxShadow: `0 0 20px ${theme.colors.primary}22`
-      }}>
-        <h2 style={{ color: theme.colors.primary, marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-          مركز سياسات التنبيهات (Notification Policy Center)
+    <div style={{ fontFamily: A.font, color: A.text, maxWidth: '800px' }}>
+      {/* Page Header */}
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={{ margin: '0 0 6px', fontSize: '22px', fontWeight: '800', color: A.text, letterSpacing: '-0.4px' }}>
+          سياسات التنبيهات
         </h2>
+        <p style={{ margin: 0, fontSize: '14px', color: A.textSub }}>
+          Notification Policy Center — تحكم كامل في كيفية وتكرار التنبيهات لكل حدث
+        </p>
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {policies.map(policy => (
-            <div key={policy.eventType} style={{
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '15px',
-              background: 'rgba(241,245,249,0.9)',
-              borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.05)'
-            }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', width: '25%' }}>{policy.eventType}</div>
-              
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={policy.soundEnabled} onChange={(e) => updatePolicy(policy.eventType, 'soundEnabled', e.target.checked)} />
-                  صوت
-                </label>
+      {/* Policy Cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+        {policies.map(policy => {
+          const meta = EVENT_META[policy.eventType] || {
+            label: policy.eventType,
+            description: '',
+            color: A.blue,
+            icon: '🔔',
+          };
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={policy.flashEnabled} onChange={(e) => updatePolicy(policy.eventType, 'flashEnabled', e.target.checked)} />
-                  وميض الشاشة
-                </label>
+          return (
+            <div
+              key={policy.eventType}
+              style={{
+                background: A.surface,
+                borderRadius: A.radius,
+                border: `1px solid ${A.sep}`,
+                boxShadow: A.shadow,
+                padding: '20px 24px',
+              }}
+            >
+              {/* Card Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '10px',
+                  background: `${meta.color}15`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '18px', flexShrink: 0,
+                }}>
+                  {meta.icon}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: A.text }}>
+                    {meta.label}
+                  </div>
+                  <div style={{ fontSize: '12px', color: A.textSub, marginTop: '2px' }}>
+                    {meta.description}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '11px', fontWeight: '700', color: meta.color,
+                  background: `${meta.color}12`, padding: '3px 10px',
+                  borderRadius: '20px', fontFamily: 'monospace',
+                }}>
+                  {policy.eventType}
+                </div>
+              </div>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={policy.toastEnabled} onChange={(e) => updatePolicy(policy.eventType, 'toastEnabled', e.target.checked)} />
-                  إشعار نيوني (Toast)
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  تكرار (دقائق):
-                  <input 
-                    type="number" 
-                    value={policy.repeatInterval} 
-                    onChange={(e) => updatePolicy(policy.eventType, 'repeatInterval', parseInt(e.target.value) || 0)}
-                    style={{ width: '60px', padding: '4px', background: '#f8fafc', color: '#0f172a', border: '1px solid #444', borderRadius: '4px' }}
+              {/* Toggle Controls */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '12px',
+              }}>
+                {/* Sound */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: A.bg, borderRadius: '10px', padding: '10px 14px',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: A.text }}>🔊 صوت</div>
+                    <div style={{ fontSize: '11px', color: A.textTer }}>تنبيه صوتي</div>
+                  </div>
+                  <AppleToggle
+                    checked={policy.soundEnabled}
+                    onChange={v => updatePolicy(policy.eventType, 'soundEnabled', v)}
+                    color={meta.color}
                   />
-                </label>
+                </div>
+
+                {/* Flash */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: A.bg, borderRadius: '10px', padding: '10px 14px',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: A.text }}>✨ وميض</div>
+                    <div style={{ fontSize: '11px', color: A.textTer }}>إضاءة الشاشة</div>
+                  </div>
+                  <AppleToggle
+                    checked={policy.flashEnabled}
+                    onChange={v => updatePolicy(policy.eventType, 'flashEnabled', v)}
+                    color={meta.color}
+                  />
+                </div>
+
+                {/* Toast */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: A.bg, borderRadius: '10px', padding: '10px 14px',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: A.text }}>💬 Toast</div>
+                    <div style={{ fontSize: '11px', color: A.textTer }}>إشعار منبثق</div>
+                  </div>
+                  <AppleToggle
+                    checked={policy.toastEnabled}
+                    onChange={v => updatePolicy(policy.eventType, 'toastEnabled', v)}
+                    color={meta.color}
+                  />
+                </div>
+
+                {/* Repeat Interval */}
+                <div style={{
+                  background: A.bg, borderRadius: '10px', padding: '10px 14px',
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: A.text, marginBottom: '6px' }}>
+                    🔁 تكرار كل
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      value={policy.repeatInterval}
+                      onChange={e => updatePolicy(policy.eventType, 'repeatInterval', parseInt(e.target.value) || 0)}
+                      min={0}
+                      style={{
+                        width: '64px',
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: `1px solid ${A.sepStr}`,
+                        background: A.surface,
+                        color: A.text,
+                        fontSize: '14px',
+                        fontFamily: A.font,
+                        outline: 'none',
+                        textAlign: 'center',
+                      }}
+                    />
+                    <span style={{ fontSize: '12px', color: A.textSub }}>دقيقة</span>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
-        <div style={{ marginTop: '25px', textAlign: 'right' }}>
-          <button onClick={handleSave} style={{
-            background: theme.colors.primary,
-            color: '#0f172a',
+      {/* Save Button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={handleSave}
+          style={{
+            padding: '12px 32px',
+            background: saved ? A.green : A.purple,
+            color: '#fff',
             border: 'none',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
+            borderRadius: '12px',
+            fontSize: '15px',
+            fontWeight: '700',
             cursor: 'pointer',
-            boxShadow: `0 0 10px ${theme.colors.primary}`
-          }}>
-            حفظ وتفعيل السياسات
-          </button>
-        </div>
+            fontFamily: A.font,
+            transition: 'all 0.3s ease',
+            boxShadow: `0 4px 14px ${saved ? A.green : A.purple}40`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+        >
+          {saved ? '✓ تم الحفظ بنجاح' : 'حفظ وتفعيل السياسات'}
+        </button>
       </div>
     </div>
   );

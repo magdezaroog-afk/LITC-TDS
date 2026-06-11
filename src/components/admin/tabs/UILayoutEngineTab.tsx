@@ -57,162 +57,161 @@ const styles = {
     width: '100%',
     minHeight: '100vh',
     backgroundColor: 'transparent',
-    color: '#f8fafc',
-    padding: '24px',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    color: '#1D1D1F',
+    padding: '0',
+    fontFamily: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
     direction: 'rtl' as const,
     boxSizing: 'border-box' as const,
   },
   header: {
-    marginBottom: '32px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-    paddingBottom: '20px',
+    marginBottom: '24px',
+    borderBottom: '1px solid rgba(0,0,0,0.08)',
+    paddingBottom: '18px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end'
   },
   title: {
-    fontSize: '28px',
+    fontSize: '22px',
     fontWeight: '800',
-    background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: '#1D1D1F',
     margin: 0,
-    marginBottom: '8px',
-    letterSpacing: '-0.5px'
+    marginBottom: '4px',
+    letterSpacing: '-0.4px'
   },
   subtitle: {
     fontSize: '13px',
-    color: '#94a3b8',
+    color: '#6E6E73',
     margin: 0
   },
   saveBtn: {
-    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+    background: '#5856D6',
     color: '#ffffff',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    padding: '12px 32px',
-    borderRadius: '12px',
+    border: 'none',
+    padding: '10px 24px',
+    borderRadius: '10px',
     fontWeight: '600',
     cursor: 'pointer',
     fontSize: '14px',
-    boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxShadow: '0 2px 8px rgba(88, 86, 214, 0.35)',
+    transition: 'all 0.2s ease',
+    fontFamily: "-apple-system, 'SF Pro Display', 'Inter', sans-serif",
   },
   masterGrid: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
+    flexDirection: 'column' as const,
+    gap: '16px',
     height: 'calc(100vh - 120px)'
   },
   glassBox: {
-    backgroundColor: 'rgba(10, 12, 22, 0.5)',
-    backdropFilter: 'blur(24px) saturate(150%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(150%)',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
-    borderRadius: '20px',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(0,0,0,0.08)',
+    borderRadius: '14px',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
+    transition: 'all 0.25s ease'
   },
   boxHeader: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    padding: '20px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-    textAlign: 'center' as const
+    backgroundColor: '#F5F5F7',
+    padding: '14px 18px',
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
+    textAlign: 'start' as const
   },
   boxTitle: {
     margin: 0,
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: '700',
-    color: '#e2e8f0',
-    letterSpacing: '0.5px'
+    color: '#1D1D1F',
+    letterSpacing: '-0.1px'
   },
   boxSub: {
-    margin: '6px 0 0 0',
+    margin: '3px 0 0 0',
     fontSize: '11px',
-    color: '#64748b'
+    color: '#6E6E73'
   },
   scrollArea: {
     flex: 1,
     overflowY: 'auto' as const,
     maxHeight: 'calc(100vh - 120px)',
-    padding: '8px',
+    padding: '10px',
   },
   item: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
-    borderRadius: '12px',
-    padding: '14px',
-    marginBottom: '12px',
+    backgroundColor: '#F5F5F7',
+    border: '1px solid rgba(0,0,0,0.07)',
+    borderRadius: '10px',
+    padding: '12px 14px',
+    marginBottom: '8px',
     fontSize: '13px',
-    fontWeight: '600',
-    color: '#cbd5e1',
-    transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+    fontWeight: '500',
+    color: '#1D1D1F',
+    transition: 'all 0.2s ease',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     cursor: 'grab',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
   },
   itemActive: {
-    border: '1px solid rgba(129, 140, 248, 0.5)',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    boxShadow: '0 0 20px rgba(99, 102, 241, 0.15), inset 0 0 0 1px rgba(129, 140, 248, 0.2)'
+    border: '1px solid rgba(88, 86, 214, 0.35)',
+    backgroundColor: 'rgba(88, 86, 214, 0.06)',
+    boxShadow: '0 0 0 3px rgba(88, 86, 214, 0.08)'
   },
   propBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    padding: '16px',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
-    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-    minWidth: '220px',
+    backgroundColor: '#F5F5F7',
+    padding: '14px',
+    borderRadius: '10px',
+    border: '1px solid rgba(0,0,0,0.07)',
+    minWidth: '200px',
     flex: '0 0 auto'
   },
   input: {
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(0,0,0,0.12)',
     borderRadius: '8px',
-    color: '#e2e8f0',
-    padding: '10px 12px',
+    color: '#1D1D1F',
+    padding: '9px 12px',
     fontSize: '13px',
     boxSizing: 'border-box' as const,
-    marginTop: '8px',
-    transition: 'all 0.3s ease',
-    outline: 'none'
+    marginTop: '6px',
+    transition: 'border-color 0.2s ease',
+    outline: 'none',
+    fontFamily: "-apple-system, 'SF Pro Display', 'Inter', sans-serif",
   },
   switchTrue: {
-    width: '40px',
-    height: '22px',
-    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    borderRadius: '11px',
+    width: '44px',
+    height: '26px',
+    background: '#34C759',
+    borderRadius: '13px',
     position: 'relative' as const,
     cursor: 'pointer',
-    boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)'
+    boxShadow: '0 0 8px rgba(52, 199, 89, 0.35)',
+    transition: 'background 0.25s ease'
   },
   switchFalse: {
-    width: '40px',
-    height: '22px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '11px',
+    width: '44px',
+    height: '26px',
+    backgroundColor: '#E5E5EA',
+    borderRadius: '13px',
     position: 'relative' as const,
     cursor: 'pointer',
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+    border: 'none',
+    transition: 'background 0.25s ease'
   },
   knobTrue: {
-    width: '16px', height: '16px', backgroundColor: '#ffffff', borderRadius: '50%',
-    position: 'absolute' as const, top: '2px', right: '21px', transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+    width: '20px', height: '20px', backgroundColor: '#ffffff', borderRadius: '50%',
+    position: 'absolute' as const, top: '3px', right: '21px', transition: 'right 0.25s cubic-bezier(0.28, 0.11, 0.32, 1)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.2)'
   },
   knobFalse: {
-    width: '16px', height: '16px', backgroundColor: '#94a3b8', borderRadius: '50%',
-    position: 'absolute' as const, top: '2px', right: '3px', transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+    width: '20px', height: '20px', backgroundColor: '#ffffff', borderRadius: '50%',
+    position: 'absolute' as const, top: '3px', right: '3px', transition: 'right 0.25s cubic-bezier(0.28, 0.11, 0.32, 1)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.15)'
   }
 };
+
 
 const propertyLabelsAr: Record<string, string> = {
   isEscalated: 'تم التصعيد',
@@ -583,83 +582,76 @@ export function UILayoutEngineTab() {
 
   if (isManagerMode) {
     return (
-      <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #f8fafc, #eef2ff)'}}>
-        <div style={{ background: 'rgba(241, 245, 249, 0.5)', backdropFilter: 'blur(16px)', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '24px', padding: '50px', textAlign: 'center', maxWidth: showSavedList ? '800px' : '600px', width: '100%', transition: 'max-width 0.3s ease', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-          
+      <div style={{ fontFamily: "-apple-system, 'SF Pro Display', 'Inter', sans-serif", color: '#1D1D1F', display: 'flex', flexDirection: 'column', minHeight: '85vh', background: 'transparent' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '40px 20px' }}>
+
           {!showSavedList ? (
-            <>
-              <div style={{ fontSize: '64px', marginBottom: '20px' }}>🔮</div>
-              <h1 style={{ fontSize: '28px', color: '#0f172a', marginBottom: '15px', fontWeight: 'bold' }}>مدير حوكمة وتخصيص واجهات النظام - LITC</h1>
-              <p style={{ fontSize: '15px', color: '#64748b', marginBottom: '40px', lineHeight: '1.6' }}>مرحباً بك في المحرك السيادي لتخصيص الواجهات. يمكنك إنشاء واجهات جديدة من الصفر بمرونة فائقة، أو تعديل الواجهات المحفوظة مسبقاً لدعم عمليات النظام.</p>
-              
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '20px', padding: '48px 40px', textAlign: 'center', maxWidth: '540px', width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+              <div style={{ width: '72px', height: '72px', borderRadius: '18px', background: 'linear-gradient(135deg, #5856D6, #AF52DE)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', boxShadow: '0 8px 24px rgba(88,86,214,0.3)' }}>⚡</div>
+              <h1 style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '10px', fontWeight: '800', letterSpacing: '-0.4px' }}>محرك هندسة الواجهات</h1>
+              <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '36px', lineHeight: '1.7' }}>أنشئ وخصّص واجهات النظام لكل دور بمرونة كاملة دون أي قيود تقنية.</p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-
-                <button 
-                  onClick={() => {
-                    setIsManagerMode(false);
-                    setShowNameModal(true);
-                  }}
-                  style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(59, 130, 246, 0.7)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)'; }}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  onClick={() => { setIsManagerMode(false); setShowNameModal(true); }}
+                  style={{ width: '100%', padding: '14px', background: '#5856D6', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(88,86,214,0.35)', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(88,86,214,0.45)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(88,86,214,0.35)'; }}
                 >
-                  <span>➕</span> إنشاء واجهة جديدة
+                  <span style={{ fontSize: '18px' }}>+</span> إنشاء واجهة جديدة
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setShowSavedList(true)}
-                  style={{ width: '100%', padding: '16px', background: 'rgba(99, 102, 241, 0.04)', color: '#334155', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.04)'}
+                  style={{ width: '100%', padding: '14px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(88,86,214,0.06)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
                 >
-                  <span>📁</span> الواجهات الجاهزة والمحفوظة
+                  <span>📁</span> الواجهات المحفوظة
                 </button>
               </div>
-            </>
+            </div>
           ) : (
-            <div style={{ background: 'rgba(241, 245, 249, 0.9)', borderRadius: '16px', padding: '20px', textAlign: 'right', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: '#6366f1', margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span>📁</span> الواجهات الجاهزة والمحفوظة
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '800px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                <h3 style={{ color: '#1D1D1F', margin: 0, fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ background: 'rgba(88,86,214,0.1)', color: '#5856D6', padding: '6px', borderRadius: '8px', fontSize: '14px' }}>📁</span>
+                  الواجهات المحفوظة
                 </h3>
-                <button 
-                  onClick={() => setShowSavedList(false)} 
-                  style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#0f172a', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.12)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                <button
+                  onClick={() => setShowSavedList(false)}
+                  style={{ background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', color: '#1D1D1F', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', fontFamily: "inherit" }}
                 >
-                  العودة للقائمة
+                  رجوع
                 </button>
               </div>
               {savedInterfaces.length === 0 ? (
-                <div style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', padding: '20px' }}>لا توجد واجهات محفوظة حالياً.</div>
+                <div style={{ color: '#AEAEB2', fontSize: '14px', textAlign: 'center', padding: '40px' }}>لا توجد واجهات محفوظة حالياً.</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {[
-                    { key: 'IT_ADMIN', label: 'مسؤول نظام (IT Admin)', color: '#ef4444' },
-                    { key: 'OPERATIONAL_MANAGER', label: 'مسؤول تشغيلي (Operational Manager)', color: '#f59e0b' },
-                    { key: 'OPERATIONAL_USER', label: 'مستخدم تشغيلي (Operational User)', color: '#3b82f6' },
-                    { key: 'END_USER', label: 'مستخدم عادي / مرسل (End User)', color: '#10b981' }
+                    { key: 'IT_ADMIN', label: 'مسؤول النظام', color: '#FF3B30', icon: '🔴' },
+                    { key: 'OPERATIONAL_MANAGER', label: 'المسؤول التشغيلي', color: '#FF9500', icon: '🟠' },
+                    { key: 'OPERATIONAL_USER', label: 'المستخدم التشغيلي', color: '#007AFF', icon: '🔵' },
+                    { key: 'END_USER', label: 'المستخدم العادي', color: '#34C759', icon: '🟢' }
                   ].map(category => {
                     const categoryInterfaces = savedInterfaces.filter(ui => ui.roleType === category.key);
                     if (categoryInterfaces.length === 0) return null;
                     return (
-                      <div key={category.key} style={{ background: 'rgba(241, 245, 249, 0.5)', borderRadius: '12px', padding: '15px', border: `1px solid ${category.color}40` }}>
-                        <h4 style={{ color: category.color, margin: '0 0 15px 0', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: category.color, display: 'inline-block' }}></span>
-                          {category.label} ({categoryInterfaces.length})
+                      <div key={category.key} style={{ background: '#F5F5F7', borderRadius: '12px', padding: '16px', border: `1px solid ${category.color}20` }}>
+                        <h4 style={{ color: category.color, margin: '0 0 14px 0', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{category.icon}</span> {category.label} ({categoryInterfaces.length})
                         </h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
                           {categoryInterfaces.map(ui => (
-                            <div key={ui.id} style={{ background: 'rgba(241, 245, 249, 0.95)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(0, 0, 0, 0.06)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.2s' }}
-                                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = `${category.color}80`; }}
-                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.04)'; }}>
-                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>{ui.name}</div>
-                              <div style={{ fontSize: '10px', color: '#64748b' }}>آخر تعديل: {ui.lastUpdated}</div>
-                              <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-                                <button onClick={() => handleLoadInterface(ui)} style={{ flex: 1, padding: '5px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.4)', color: '#60a5fa', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>تعديل ⚙️</button>
-                                <button style={{ flex: 1, padding: '5px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>حذف 🗑️</button>
+                            <div key={ui.id} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '14px', border: '1px solid rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.2s ease', cursor: 'default', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+                                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = `${category.color}50`; e.currentTarget.style.boxShadow = `0 4px 12px ${category.color}15`; }}
+                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.07)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; }}>
+                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{ui.name}</div>
+                              <div style={{ fontSize: '11px', color: '#AEAEB2' }}>آخر تعديل: {ui.lastUpdated}</div>
+                              <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                <button onClick={() => handleLoadInterface(ui)} style={{ flex: 1, padding: '6px', background: `${category.color}12`, border: `1px solid ${category.color}30`, color: category.color, borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>تعديل</button>
+                                <button style={{ flex: 1, padding: '6px', background: '#FFF1F0', border: '1px solid #FECACA', color: '#FF3B30', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>حذف</button>
                               </div>
                             </div>
                           ))}
@@ -720,118 +712,141 @@ export function UILayoutEngineTab() {
 
   return (
     <>
-      <div style={{...styles.container, filter: showNameModal ? 'blur(10px)' : 'none', pointerEvents: showNameModal ? 'none' : 'auto', transition: 'filter 0.3s ease' }}>
-        <div style={{...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ fontFamily: "-apple-system, 'SF Pro Display', 'Inter', sans-serif", color: '#1D1D1F', filter: showNameModal ? 'blur(8px)' : 'none', pointerEvents: showNameModal ? 'none' : 'auto', transition: 'filter 0.3s ease' }}>
+
+        {/* ── Page Header ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.08)', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #5856D6, #AF52DE)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 4px 12px rgba(88,86,214,0.3)' }}>⚡</div>
             <div>
-              <h2 style={{...styles.title, display: 'flex', alignItems: 'center', gap: '10px'}}>
-                {interfaceName || 'واجهة جديدة بدون اسم'}
-                {interfaceCategory === 'IT_ADMIN' && <span style={{fontSize: '16px'}}>🔴 مسؤول نظام</span>}
-                {interfaceCategory === 'OPERATIONAL_MANAGER' && <span style={{fontSize: '16px'}}>🟠 مسؤول تشغيلي</span>}
-                {interfaceCategory === 'OPERATIONAL_USER' && <span style={{fontSize: '16px'}}>🔵 مستخدم تشغيلي</span>}
-                {interfaceCategory === 'END_USER' && <span style={{fontSize: '16px'}}>🟢 مستخدم عادي</span>}
-              </h2>
-              <p style={styles.subtitle}>مسرح تخصيص الخصائص والمكونات للواجهة المحددة.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#1D1D1F', margin: 0, letterSpacing: '-0.3px' }}>
+                  {interfaceName || 'واجهة جديدة'}
+                </h2>
+                {interfaceCategory === 'IT_ADMIN' && <span style={{ fontSize: '11px', fontWeight: '700', background: '#FFF1F0', color: '#FF3B30', padding: '2px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>مسؤول النظام</span>}
+                {interfaceCategory === 'OPERATIONAL_MANAGER' && <span style={{ fontSize: '11px', fontWeight: '700', background: '#FFFBEB', color: '#FF9500', padding: '2px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }}>مسؤول تشغيلي</span>}
+                {interfaceCategory === 'OPERATIONAL_USER' && <span style={{ fontSize: '11px', fontWeight: '700', background: '#EFF6FF', color: '#007AFF', padding: '2px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>مستخدم تشغيلي</span>}
+                {interfaceCategory === 'END_USER' && <span style={{ fontSize: '11px', fontWeight: '700', background: '#F0FDF4', color: '#34C759', padding: '2px 8px', borderRadius: '6px', border: '1px solid #BBF7D0' }}>مستخدم عادي</span>}
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#6E6E73', marginTop: '2px' }}>مسرح تخصيص مكونات الواجهة وخصائصها</p>
             </div>
-            <button 
+            <button
               onClick={() => setShowNameModal(true)}
-              style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', transition: 'all 0.2s' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+              style={{ background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', color: '#1D1D1F', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', transition: 'all 0.2s', fontFamily: 'inherit' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(88,86,214,0.07)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
             >
-              تعديل الاسم/الدور ✏️
+              ✏️ تعديل الاسم
             </button>
           </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            onClick={() => { setIsManagerMode(true); setShowSavedList(true); }}
-            style={{ background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#334155', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.04)'}
-          >
-            ⬅️ العودة لمدير الواجهات
-          </button>
-          <button onClick={() => setShowSaveReportModal(true)} style={styles.saveBtn}>حفظ التوزيع النهائي</button>
-        </div>
-      </div>
-
-            <DragDropContext onDragEnd={onDragEnd}>
-        <div style={styles.masterGrid}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: '1', minHeight: '300px' }}>
-          {/* RIGHT: INACTIVE REPOSITORY */}
-          <div style={{ flexShrink: 0 }}>
-            {/* Removed the boxHeader to eliminate the single container look */}
-            <Droppable droppableId="inactive-repository">
-              {(provided, snapshot) => (
-                <div 
-                  ref={provided.innerRef} 
-                  {...provided.droppableProps}
-                  style={{...styles.scrollArea, display: "flex", flexDirection: "row", gap: "16px", overflowX: "auto", backgroundColor: snapshot.isDraggingOver ? "rgba(56, 189, 248, 0.05)" : "transparent"}} className="hyper-glass-scrollbar"
-                >
-                  {[
-                    { key: 'submission', title: '📤 مكونات الإرسال وبلاغات المستخدم' },
-                    { key: 'operations', title: '⚙️ مكونات الاستقبال والمعالجة الميدانية' },
-                    { key: 'intelligence', title: '🧠 مكونات الإشراف والذكاء التنظيمي' },
-                    { key: 'admin', title: '👑 مكونات الإدارة والسيادة الكبرى' }
-                  ].map(group => {
-                    const groupComponents = inactiveComponents.filter(c => c.category === group.key);
-                    if (groupComponents.length === 0) return null;
-                    return (
-                      <div key={group.key} style={{ flex: "1 1 250px", minWidth: "250px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.08)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                        <div style={{ padding: "12px", background: "rgba(0, 0, 0, 0.2)", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: "13px", fontWeight: "bold", color: "#818cf8", display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
-                          {group.title} <span style={{ color: '#64748b' }}>({groupComponents.length})</span>
-                        </div>
-                        <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {groupComponents.map((comp, localIndex) => {
-                            const globalIndex = inactiveComponents.findIndex(c => c.id === comp.id);
-                            return (
-                              <Draggable key={comp.id} draggableId={comp.id} index={globalIndex}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    style={{
-                                      ...styles.item,
-                                      ...provided.draggableProps.style,
-                                      marginBottom: 0,
-                                      backgroundColor: snapshot.isDragging ? '#ede9fe' : 'rgba(15, 23, 42, 0.6)',
-                                      border: snapshot.isDragging ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)',
-                                      backdropFilter: snapshot.isDragging ? 'none' : 'blur(10px)',
-                                      boxShadow: snapshot.isDragging ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)' : 'none'
-                                    }}
-                                  >
-                                    <div><span style={{color: '#64748b', marginRight: '8px'}}>⋮⋮</span> {comp.name}</div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => { setIsManagerMode(true); setShowSavedList(true); }}
+              style={{ background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', color: '#1D1D1F', padding: '9px 16px', borderRadius: '9px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', fontFamily: 'inherit' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#EBEBEB'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
+            >
+              ← مدير الواجهات
+            </button>
+            <button onClick={() => setShowSaveReportModal(true)} style={{ ...styles.saveBtn, fontFamily: 'inherit' }}>حفظ التوزيع</button>
           </div>
+        </div>
 
-                    {/* LEFT: INSPECTOR PANEL */}
-          <div style={{...styles.glassBox, flexShrink: 0, minHeight: '200px'}}>
-            <div style={styles.boxHeader}>
-              <h3 style={{...styles.boxTitle, color: '#c084fc'}}>⚙️ خصائص المكون (Inspector)</h3>
-              <p style={styles.boxSub}>حدد مكوناً للتعديل</p>
-            </div>
-            <div style={{...styles.scrollArea, display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', overflowX: 'auto', gap: '16px', padding: '20px'}} className="hyper-glass-scrollbar">
-              {selectedComponent ? (
-                <div>
-                  <div style={{backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '8px', marginBottom: '20px'}}>
-                    <div style={{fontSize: '10px', color: '#64748b', marginBottom: '4px'}}>المعرف (ID)</div>
-                    <div style={{fontFamily: 'monospace', fontSize: '11px', color: '#c084fc'}}>{selectedComponent.id}</div>
-                    <div style={{fontSize: '10px', color: '#64748b', marginTop: '12px', marginBottom: '4px'}}>الاسم</div>
-                    <div style={{fontSize: '12px', fontWeight: 'bold'}}>{selectedComponent.name}</div>
-                  </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '16px', height: 'calc(100vh - 160px)', width: '100%', position: 'relative' }}>
+
+            {/* ── LEFT PANEL: Repository + Inspector ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
+
+              {/* Component Repository */}
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%' }}>
+                <div style={{ padding: '12px 16px', background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5856D6' }}></div>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>مستودع المكونات</span>
+                  <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto' }}>اسحب للتفعيل ←</span>
+                </div>
+                <Droppable droppableId="inactive-repository">
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'thin' }}
+                    >
+                      {[
+                        { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
+                        { key: 'operations', label: 'الاستقبال', color: '#007AFF', icon: '⚙️' },
+                        { key: 'intelligence', label: 'الذكاء', color: '#FF9500', icon: '🧠' },
+                        { key: 'admin', label: 'الإدارة', color: '#FF3B30', icon: '👑' }
+                      ].map(group => {
+                        const groupComponents = inactiveComponents.filter(c => c.category === group.key);
+                        if (groupComponents.length === 0) return null;
+                        return (
+                          <div key={group.key} style={{ flex: '0 0 180px', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '8px 10px', background: `${group.color}10`, borderBottom: `1px solid ${group.color}18`, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '13px' }}>{group.icon}</span>
+                              <span style={{ fontSize: '12px', fontWeight: '700', color: group.color }}>{group.label}</span>
+                              <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto', background: '#FFFFFF', borderRadius: '10px', padding: '1px 6px', border: `1px solid ${group.color}20` }}>{groupComponents.length}</span>
+                            </div>
+                            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto', flex: 1 }}>
+                              {groupComponents.map((comp) => {
+                                const globalIndex = inactiveComponents.findIndex(c => c.id === comp.id);
+                                return (
+                                  <Draggable key={comp.id} draggableId={comp.id} index={globalIndex}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        style={{
+                                          background: snapshot.isDragging ? '#FFFFFF' : '#FFFFFF',
+                                          border: snapshot.isDragging ? `1px solid ${group.color}60` : '1px solid rgba(0,0,0,0.07)',
+                                          borderRadius: '8px',
+                                          padding: '8px 10px',
+                                          fontSize: '12px',
+                                          fontWeight: '500',
+                                          color: '#1D1D1F',
+                                          cursor: 'grab',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          boxShadow: snapshot.isDragging ? `0 8px 24px rgba(0,0,0,0.12), 0 0 0 2px ${group.color}30` : '0 1px 2px rgba(0,0,0,0.04)',
+                                          transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+                                          ...provided.draggableProps.style,
+                                        }}
+                                      >
+                                        <span style={{ color: group.color, fontSize: '10px', flexShrink: 0 }}>⋮⋮</span>
+                                        <span style={{ lineHeight: 1.3 }}>{comp.name}</span>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+
+              {/* ── Inspector Panel ── */}
+              <div style={{ ...styles.glassBox, flex: 1, overflow: 'hidden' }}>
+                <div style={{ ...styles.boxHeader, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#AF52DE' }}></div>
+                  <h3 style={{ ...styles.boxTitle, color: '#5856D6' }}>خصائص المكون (Inspector)</h3>
+                  <p style={{ ...styles.boxSub, marginTop: 0, marginInlineStart: 'auto' }}>حدد مكوناً للتعديل</p>
+                </div>
+                <div style={{ ...styles.scrollArea, padding: '16px' }} className="admin-scroll">
+                  {selectedComponent ? (
+                    <div>
+                      <div style={{ background: 'linear-gradient(135deg, rgba(88,86,214,0.06), rgba(175,82,222,0.06))', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid rgba(88,86,214,0.12)' }}>
+                        <div style={{ fontSize: '10px', color: '#AEAEB2', marginBottom: '3px', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المعرف</div>
+                        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#5856D6', marginBottom: '10px' }}>{selectedComponent.id}</div>
+                        <div style={{ fontSize: '10px', color: '#AEAEB2', marginBottom: '3px', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase' }}>الاسم</div>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{selectedComponent.name}</div>
+                      </div>
 
                   {/* CUSTOM PANELS */}
                   {selectedComponent.id === 'admin_sovereign_custody_ledger_v10' && (
@@ -2104,19 +2119,20 @@ export function UILayoutEngineTab() {
               )}
             </div>
           </div>
-          </div>
-          <div style={{ flex: '1.2', minHeight: '0', display: 'flex', flexDirection: 'column' }}>
-      {/* INTERACTIVE LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-      <div className="scrollbar-thin" style={{ flex: '1', background: 'rgba(10, 12, 22, 0.5)', backdropFilter: 'blur(24px) saturate(150%)', border: '1px solid rgba(255, 255, 255, 0.07)', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)', color: '#f8fafc', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', paddingRight: '8px', transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+          </div> {/* End col-span-4 */}
+
+          {/* LEFT SIDE (col-span-8): LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
+          <div className="col-span-8 flex flex-col h-full overflow-hidden">
+            <div className="admin-scroll" style={{ flex: '1', backgroundColor: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)', color: '#1D1D1F', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', transition: 'all 0.25s ease' }}>
         
         {/* Sandbox Toolbar */}
-        <div style={{ position: 'sticky', top: 0, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.8)', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-          <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: '#1e293b' }}>
+        <div style={{ position: 'sticky', top: 0, background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
+          <div style={{ fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', color: '#1D1D1F', fontSize: '14px' }}>
             <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
           </div>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
-            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: 'rgba(255,255,255,0.9)', fontSize: '12px', color: '#475569', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
+            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#FFFFFF', fontSize: '12px', color: '#1D1D1F', fontWeight: '600', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
               <option value="Super_Admin">مدير نظام (Super Admin)</option>
               <option value="Dept_Head">رئيس قسم (Dept Head)</option>
               <option value="Field_Engineer">مهندس ميداني (Field Engineer)</option>
@@ -2128,9 +2144,9 @@ export function UILayoutEngineTab() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: 'rtl', padding: '20px', gap: '20px' }}>
           
           {/* Top Navbar Zone */}
-          <div style={{ height: '65px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'flex-end', gap: '15px' }}>
+          <div style={{ height: '56px', background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'flex-end', gap: '10px' }}>
             {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-              <div key={c.id} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.9)', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#1e293b', boxShadow: '0 4px 6px rgba(148, 163, 184, 0.1)', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div key={c.id} style={{ padding: '6px 12px', background: '#FFFFFF', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1D1D1F', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
               </div>
             ))}
@@ -2138,14 +2154,14 @@ export function UILayoutEngineTab() {
 
           <div style={{ flex: 1, display: 'flex', gap: '20px' }}>
             {/* Dynamic Sidebar Zone */}
-            <div style={{ width: '260px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '25px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px', fontWeight: '800', letterSpacing: '0.5px' }}>القائمة الملاحية (DYNAMIC SIDEBAR)</div>
+            <div style={{ width: '220px', padding: '18px', background: '#F5F5F7', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', color: '#6E6E73', marginBottom: '8px', fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>القائمة الملاحية</div>
               <Droppable droppableId="active-canvas">
                 {(provided, snapshot) => (
                   <div 
                     ref={provided.innerRef} 
                     {...provided.droppableProps}
-                    style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.1)' : 'transparent', borderRadius: '12px', padding: '5px', transition: 'all 0.3s' }}
+                    style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.06)' : 'transparent', borderRadius: '12px', padding: '5px', transition: 'all 0.3s' }}
                   >
                     {activeComponents.map((c, index) => (
                       <Draggable key={c.id} draggableId={c.id} index={index}>
@@ -2157,10 +2173,10 @@ export function UILayoutEngineTab() {
                             onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
                             style={{
                               padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                              background: previewActiveTab === c.id ? 'rgba(129, 140, 248, 0.15)' : snapshot.isDragging ? 'rgba(255,255,255,0.1)' : 'transparent',
-                              color: previewActiveTab === c.id ? '#0284c7' : '#1e293b',
-                              border: previewActiveTab === c.id ? '1px solid rgba(56, 189, 248, 0.3)' : snapshot.isDragging ? '1px solid #38bdf8' : '1px solid transparent',
-                              boxShadow: previewActiveTab === c.id ? '0 4px 6px rgba(56, 189, 248, 0.1)' : snapshot.isDragging ? '0 10px 15px -3px rgba(0,0,0,0.1)' : 'none',
+                              background: previewActiveTab === c.id ? 'rgba(88, 86, 214, 0.10)' : snapshot.isDragging ? '#F5F5F7' : 'transparent',
+                              color: previewActiveTab === c.id ? '#5856D6' : '#1D1D1F',
+                              border: previewActiveTab === c.id ? '1px solid rgba(88, 86, 214, 0.25)' : snapshot.isDragging ? '1px solid #5856D6' : '1px solid transparent',
+                              boxShadow: previewActiveTab === c.id ? '0 2px 6px rgba(88, 86, 214, 0.12)' : snapshot.isDragging ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
                               ...provided.draggableProps.style
                             }}
                           >
@@ -2176,11 +2192,11 @@ export function UILayoutEngineTab() {
             </div>
 
             {/* Main Viewport Zone */}
-            <div style={{ flex: 1, background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(226, 232, 240, 0.4)', padding: '30px', overflowY: 'auto' }}>
+            <div style={{ flex: 1, background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: '24px', overflowY: 'auto' }}>
               {previewActiveTab ? (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ margin: '0 0 25px 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ width: '8px', height: '24px', background: '#0ea5e9', borderRadius: '4px' }}></span>
+                  <h2 style={{ margin: '0 0 20px 0', color: '#1D1D1F', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
+                    <span style={{ width: '4px', height: '20px', background: '#5856D6', borderRadius: '2px' }}></span>
                     {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
                   </h2>
                   
@@ -2200,10 +2216,10 @@ export function UILayoutEngineTab() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         
                         {!isInstantRouting && (
-                          <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                            <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#0369a1', fontWeight: 'bold' }}>توجيه التذكرة (Routing)</h4>
-                            <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#ef4444' }}>*</span></label>
-                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
+                          <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                            <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>توجيه التذكرة (Routing)</h4>
+                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#FF3B30' }}>*</span></label>
+                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
                               <option value="">-- اختر الإدارة المستقبلة --</option>
                               {targets.map((deptId: string) => {
                                 const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
@@ -2213,15 +2229,15 @@ export function UILayoutEngineTab() {
                           </div>
                         )}
 
-                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>الموقع الفعلي (Physical Location)</h4>
+                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>الموقع الفعلي (Physical Location)</h4>
                           <div style={{ display: 'flex', gap: '15px' }}>
                             <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#ef4444' }}>*</span></label>
+                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#FF3B30' }}>*</span></label>
                               <select 
                                 value={selectedBuildingForPreview}
                                 onChange={e => setSelectedBuildingForPreview(e.target.value)}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
                               >
                                 <option value="">-- المبنى --</option>
                                 {corporateLocations.map(loc => (
@@ -2230,10 +2246,10 @@ export function UILayoutEngineTab() {
                               </select>
                             </div>
                             <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#ef4444' }}>*</span></label>
+                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#FF3B30' }}>*</span></label>
                               <select 
                                 disabled={!selectedBuildingForPreview}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: !selectedBuildingForPreview ? '#f1f5f9' : '#0f172a', outline: 'none', color: '#475569' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: !selectedBuildingForPreview ? '#EBEBEB' : '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit', opacity: !selectedBuildingForPreview ? 0.6 : 1 }}
                               >
                                 <option value="">-- الإدارة أو المكتب --</option>
                                 {selectedBuildingForPreview && corporateLocations.find(l => l.id === selectedBuildingForPreview)?.offices.map(off => (
@@ -2244,53 +2260,56 @@ export function UILayoutEngineTab() {
                           </div>
                         </div>
 
-                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
+                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
                           <div style={{ display: 'flex', gap: '15px' }}>
                             <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#ef4444' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
+                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#FF3B30' }}>*</span></label>
+                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
                                 <option value="">-- اختر المشكلة الرئيسية --</option>
                                 {taxonomyList.map((t: any, i: number) => <option key={i}>{t.main}</option>)}
                               </select>
                             </div>
                             <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#ef4444' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', color: '#475569' }}>
+                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#FF3B30' }}>*</span></label>
+                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
                                 <option value="">-- اختر المشكلة الفرعية --</option>
                               </select>
                             </div>
                           </div>
                         </div>
 
-                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>تفاصيل التذكرة والمرفقات</h4>
+                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تفاصيل التذكرة والمرفقات</h4>
                           
-                          <input type="text" placeholder="عنوان التذكرة (اختياري، يولد تلقائياً إن ترك فارغاً)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', marginBottom: '15px', outline: 'none' }} />
+                          <input type="text" placeholder="عنوان التذكرة (اختياري، يولد تلقائياً إن ترك فارغاً)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', marginBottom: '15px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }} />
                           
                           <div style={{ marginBottom: '15px' }}>
-                            <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#ef4444' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#64748b' }}>0 / {maxDesc}</span>
+                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#FF3B30' }}>*</span>}</span>
+                              <span style={{ fontSize: '10px', color: '#AEAEB2' }}>0 / {maxDesc}</span>
                             </label>
                             <textarea 
                               placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
-                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(203, 213, 225, 0.8)', background: '#0f172a', outline: 'none', resize: 'vertical' }}
+                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#1D1D1F' }}
                             />
                           </div>
 
                           <div>
-                            <label style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#ef4444' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#64748b' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
+                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#FF3B30' }}>*</span>}</span>
+                              <span style={{ fontSize: '10px', color: '#AEAEB2' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
                             </label>
-                            <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(203, 213, 225, 0.8)', borderRadius: '8px', background: 'rgba(248, 250, 252, 0.5)', textAlign: 'center', cursor: 'pointer', color: '#64748b', fontSize: '12px' }}>
+                            <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(0,0,0,0.15)', borderRadius: '8px', background: '#F9F9FB', textAlign: 'center', cursor: 'pointer', color: '#6E6E73', fontSize: '13px', fontWeight: '500' }}>
                               + اسحب الملفات هنا أو اضغط للاستعراض
                             </div>
                           </div>
                         </div>
 
-                        <button style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(14, 165, 233, 0.3)' }}>
+                        <button style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
                           إرسال التذكرة 🚀
                         </button>
                       </div>
@@ -2304,13 +2323,13 @@ export function UILayoutEngineTab() {
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>لوحة التذاكر الواردة</h4>
+      <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>لوحة التذاكر الواردة</h4>
         
         {/* Context-Aware Tabs Mock */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '10px' }}>
-          {['NEW', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map((tab, i) => (
-             <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? 'rgba(56, 189, 248, 0.2)' : 'transparent', color: i===0 ? '#0284c7' : '#64748b', fontSize: '12px', fontWeight: i===0 ? 'bold' : 'normal', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
+          {['الجديدة', 'قيد المعالجة', 'معلقة', 'مغلقة'].map((tab, i) => (
+             <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? '#E5F1FF' : 'transparent', color: i===0 ? '#007AFF' : '#6E6E73', fontSize: '13px', fontWeight: i===0 ? '700' : '500', cursor: 'pointer' }}>
                 {tab}
              </div>
           ))}
@@ -2318,19 +2337,19 @@ export function UILayoutEngineTab() {
 
         {/* Data Filtering Mock */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>تذكرة #10294</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10294</div>
+              <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
             </div>
             {snatching && (
-              <button style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px dashed rgba(239, 68, 68, 0.3)', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>سحب التذكرة ✋</button>
+              <button style={{ padding: '8px 14px', background: '#FFF1F0', color: '#FF3B30', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>سحب التذكرة ✋</button>
             )}
           </div>
-          <div style={{ padding: '15px', background: '#0f172a', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>تذكرة #10295</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>تحديث النظام - جديدة</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10295</div>
+              <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>تحديث النظام - جديدة</div>
             </div>
           </div>
         </div>
@@ -2346,57 +2365,54 @@ export function UILayoutEngineTab() {
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-      <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#475569', fontWeight: 'bold' }}>الإجراءات السريعة (Quick Actions)</h4>
+      <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+        <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>الإجراءات السريعة (Quick Actions)</h4>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          <button style={{ padding: '10px 15px', background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(2, 132, 199, 0.2)' }}>
+          <button style={{ padding: '12px 18px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,122,255,0.2)' }}>
             إسناد لنفسي 🙋‍♂️
           </button>
           
-          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#475569', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
-            تحويل التذكرة {handshake && <span style={{ color: '#f59e0b', fontSize: '10px', marginLeft: '5px' }}>(مشروط 🤝)</span>}
+          <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+            تحويل التذكرة {handshake && <span style={{ color: '#FF9500', fontSize: '11px', marginInlineStart: '5px' }}>(مشروط 🤝)</span>}
           </button>
 
-          <button style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.9)', color: '#475569', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
-            إنشاء تذكرة فرعية {depLock && <span style={{ color: '#ef4444', fontSize: '10px', marginLeft: '5px' }}>(قفل الاعتماد 🔒)</span>}
+          <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+            إنشاء تذكرة فرعية {depLock && <span style={{ color: '#FF3B30', fontSize: '11px', marginInlineStart: '5px' }}>(قفل الاعتماد 🔒)</span>}
           </button>
         </div>
       </div>
 
       {/* Visual Mock for Handshake / Sub-ticket Popup Animation */}
-      <div style={{ marginTop: '10px', padding: '20px', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.9)', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', animation: 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
-        {/* Decorative glass glare */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)', pointerEvents: 'none' }}></div>
-        
+      <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.06)', animation: 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
         {handshake ? (
            <div style={{ position: 'relative', zIndex: 1 }}>
-             <h5 style={{ margin: '0 0 10px 0', color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                <span style={{ fontSize: '16px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
+             <h5 style={{ margin: '0 0 10px 0', color: '#FF9500', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                <span style={{ fontSize: '18px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
              </h5>
-             <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#64748b', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة (Pending Acceptance).</p>
+             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة معلقة.</p>
              <div style={{ display: 'flex', gap: '10px' }}>
-               <select style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', fontSize: '12px', outline: 'none' }}>
+               <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }}>
                  <option>اختر الزميل...</option>
                  <option>م. خليل (فريق الشبكات)</option>
                </select>
-               <button style={{ padding: '10px 20px', background: '#f59e0b', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}>إرسال طلب التحويل</button>
+               <button style={{ padding: '12px 24px', background: '#FF9500', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)' }}>إرسال طلب التحويل</button>
              </div>
            </div>
         ) : depLock ? (
            <div style={{ position: 'relative', zIndex: 1 }}>
-             <h5 style={{ margin: '0 0 10px 0', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                <span style={{ fontSize: '16px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي (Dependency Locked Sub-Ticket)
+             <h5 style={{ margin: '0 0 10px 0', color: '#007AFF', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                <span style={{ fontSize: '18px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي
              </h5>
-             <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#64748b', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#ef4444' }}>(معلقة Blocked)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-               <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', fontSize: '12px', outline: 'none' }} />
-               <button style={{ alignSelf: 'flex-end', padding: '10px 20px', background: '#0284c7', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
+             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#FF3B30' }}>(معلقة)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+               <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }} />
+               <button style={{ alignSelf: 'flex-end', padding: '12px 24px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 122, 255, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
              </div>
            </div>
         ) : (
-           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#64748b', fontSize: '12px', padding: '20px' }}>
-             قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من المفتش لرؤية النوافذ التفاعلية هنا.
+           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#AEAEB2', fontSize: '13px', padding: '20px' }}>
+             قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من خصائص المكون لرؤية النوافذ التفاعلية.
            </div>
         )}
       </div>
@@ -2416,52 +2432,52 @@ export function UILayoutEngineTab() {
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
-      <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(16px)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '24px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1D1D1F', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
           <span>لوحة التحليل المركزي (OLAP Engine)</span>
-          {isOverride && <span style={{ fontSize: '10px', background: '#fca5a5', color: '#7f1d1d', padding: '4px 8px', borderRadius: '4px' }}>Admin Override Active</span>}
+          {isOverride && <span style={{ fontSize: '11px', background: '#FFF1F0', color: '#FF3B30', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>تجاوز المشرف النشط</span>}
         </h4>
         
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '15px', marginBottom: '24px' }}>
           {locationF ? (
-            <select style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}>
+            <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
               <option>📍 تصفية حسب المبنى</option>
               <option>المبنى الرئيسي (طرابلس)</option>
               <option>فرع بنغازي</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية المباني مقفلة</div>
+            <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>
           )}
           
           {taxF ? (
-            <select style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}>
+            <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
               <option>🗂️ تصفية حسب التصنيف</option>
               <option>أعطال تقنية</option>
               <option>أعطال تشغيلية</option>
             </select>
           ) : (
-            <div style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔒 تصفية التصنيفات مقفلة</div>
+            <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية التصنيفات مقفلة</div>
           )}
         </div>
 
         <div style={{ display: 'flex', gap: '20px' }}>
-          <div style={{ flex: 2, height: '220px', background: 'rgba(255,255,255,0.8)', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <div style={{ flex: 2, height: '220px', background: '#F9F9FB', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
             <span style={{ fontSize: '32px' }}>📊</span>
-            <span style={{ fontWeight: 'bold', color: '#475569' }}>مؤشرات الأداء الزمنية</span>
+            <span style={{ fontWeight: '600', color: '#6E6E73' }}>مؤشرات الأداء الزمنية</span>
           </div>
           
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {drilldown ? (
-              <div style={{ flex: 1, background: '#0f172a', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '15px', display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '10px' }}>🏆 أفضل المهندسين أداءً</span>
-                <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}><span>م. أحمد سالم</span><span>120 تذكرة</span></div>
-                <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}><span>م. سارة علي</span><span>115 تذكرة</span></div>
+              <div style={{ flex: 1, background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px' }}>🏆 أفضل المهندسين أداءً</span>
+                <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
+                <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
               </div>
             ) : (
-              <div style={{ flex: 1, background: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ef4444', textAlign: 'center' }}>
-                <span style={{ fontSize: '24px', marginBottom: '5px' }}>🔒</span>
-                <span style={{ fontSize: '11px', fontWeight: 'bold' }}>تفاصيل المهندسين محجوبة</span>
-                <span style={{ fontSize: '9px' }}>بناءً على قيود الصلاحية</span>
+              <div style={{ flex: 1, background: '#FFF1F0', borderRadius: '12px', border: '1px solid #FECACA', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FF3B30', textAlign: 'center' }}>
+                <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
+                <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
+                <span style={{ fontSize: '10px', marginTop: '4px' }}>بناءً على قيود الصلاحية</span>
               </div>
             )}
           </div>
@@ -2481,29 +2497,29 @@ export function UILayoutEngineTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
       <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
         {types.map((t: string) => (
-          <div key={t} style={{ padding: '8px 16px', background: t === activeType ? '#8b5cf6' : 'rgba(255,255,255,0.6)', color: t === activeType ? '#0f172a' : '#64748b', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', border: `1px solid ${t === activeType ? '#8b5cf6' : 'rgba(203, 213, 225, 0.8)'}`, transition: 'all 0.3s' }}>
+          <div key={t} style={{ padding: '8px 18px', background: t === activeType ? '#5856D6' : '#F5F5F7', color: t === activeType ? '#FFFFFF' : '#6E6E73', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${t === activeType ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, transition: 'all 0.2s' }}>
             {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
           </div>
         ))}
-        {types.length === 0 && <span style={{ fontSize: '12px', color: '#ef4444' }}>لا توجد أنواع مقارنات مسموحة</span>}
+        {types.length === 0 && <span style={{ fontSize: '13px', color: '#FF3B30' }}>لا توجد أنواع مقارنات مسموحة</span>}
       </div>
 
-      <div style={{ height: '300px', padding: '20px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(20px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)', display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'flex-end' }}>
-        <div style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'أسماء المهندسين' : activeType === 'LOCATIONS' ? 'أسماء المباني' : 'أنواع المشاكل'})</div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid #cbd5e1' }}>
+      <div style={{ height: '300px', padding: '24px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'flex-end', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+        <div style={{ fontSize: '13px', color: '#1D1D1F', fontWeight: '700' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'أسماء المهندسين' : activeType === 'LOCATIONS' ? 'أسماء المباني' : 'أنواع المشاكل'})</div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
            {['يناير', 'فبراير', 'مارس'].map((month, idx) => (
-             <div key={month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-               <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
+             <div key={month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
+               <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: '100%' }}>
                   {Array.from({ length: maxElements }).map((_, barIdx) => {
-                     const colors = [['#8b5cf6', '#6d28d9'], ['#ec4899', '#be185d'], ['#3b82f6', '#1d4ed8'], ['#10b981', '#047857']];
+                     const colors = [['#5856D6', '#AF52DE'], ['#007AFF', '#34C759'], ['#FF9500', '#FF3B30']];
                      const color = colors[barIdx % colors.length];
                      const h = 40 + Math.random() * 50;
                      return (
-                       <div key={barIdx} style={{ width: maxElements > 5 ? '10px' : '20px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '4px 4px 0 0', opacity: 0.9, transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }} title={`عنصر ${barIdx + 1}`}></div>
+                       <div key={barIdx} style={{ width: maxElements > 5 ? '12px' : '24px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '6px 6px 0 0', opacity: 0.9, transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} title={`عنصر ${barIdx + 1}`}></div>
                      );
                   })}
                </div>
-               <span style={{ fontSize: '11px', color: '#64748b' }}>{month}</span>
+               <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>{month}</span>
              </div>
            ))}
         </div>
@@ -2518,12 +2534,12 @@ export function UILayoutEngineTab() {
                         if (previewRole === 'Field_Engineer') return false; // Role-based filtering simulation
                         return true;
                       }).map((chart, idx) => (
-                        <div key={idx} style={{ flex: 1, height: '180px', background: 'rgba(255, 255, 255, 0.9)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                        <div key={idx} style={{ flex: 1, height: '180px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1D1D1F', fontWeight: '700', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
                           {chart}
                         </div>
                       ))}
                       {previewRole === 'Field_Engineer' && (
-                        <div style={{ padding: '30px', background: 'rgba(254, 226, 226, 0.5)', border: '1px solid rgba(252, 165, 165, 0.5)', borderRadius: '16px', color: '#b91c1c', fontSize: '14px', width: '100%', textAlign: 'center', fontWeight: 'bold', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ padding: '30px', background: '#FFF1F0', border: '1px solid #FECACA', borderRadius: '16px', color: '#FF3B30', fontSize: '14px', width: '100%', textAlign: 'center', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
                           <span style={{ fontSize: '32px' }}>🔒</span>
                           ليس لديك صلاحية عرض التحليلات المتقدمة بصلاحية (مهندس ميداني).
                         </div>
@@ -2534,50 +2550,52 @@ export function UILayoutEngineTab() {
                   {/* 6th Component: admin_archive */}
                   {previewActiveTab === 'admin_archive' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.6)', padding: '15px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.8)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
                           {activeComponents.find(c => c.id === 'admin_archive')?.properties.enabledUIFilters?.map((filter: string, idx: number) => (
-                            <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#0f172a', fontSize: '12px', outline: 'none' }}>
+                            <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }}>
                               <option>تصفية: {filter}</option>
                             </select>
                           ))}
                         </div>
                         {activeComponents.find(c => c.id === 'admin_archive')?.properties.enableHistoricalExport && (
-                          <button style={{ padding: '8px 16px', background: '#10b981', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)' }}>
+                          <button style={{ padding: '10px 18px', background: '#34C759', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(52, 199, 89, 0.3)' }}>
                             تصدير التقرير 📥
                           </button>
                         )}
                       </div>
                       
-                      <table style={{ width: '100%', borderCollapse: 'collapse', background: 'rgba(255,255,255,0.8)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                        <thead style={{ background: 'rgba(241, 245, 249, 0.8)', textAlign: 'right', fontSize: '12px', color: '#475569' }}>
-                          <tr>
-                            <th style={{ padding: '12px 15px' }}>رقم التذكرة</th>
-                            <th style={{ padding: '12px 15px' }}>التصنيف</th>
-                            <th style={{ padding: '12px 15px' }}>القسم</th>
-                            <th style={{ padding: '12px 15px' }}>الحالة التاريخية</th>
-                          </tr>
-                        </thead>
-                        <tbody style={{ fontSize: '13px', color: '#475569' }}>
-                          {[1, 2, 3].map(row => (
-                            <tr key={row} style={{ borderTop: '1px solid rgba(226, 232, 240, 0.5)' }}>
-                              <td style={{ padding: '15px' }}>#TKT-2026-00{row}</td>
-                              <td style={{ padding: '15px' }}>عطل تقني متقدم</td>
-                              <td style={{ padding: '15px' }}>العمليات المركزية</td>
-                              <td style={{ padding: '15px' }}>
-                                <span style={{ padding: '4px 8px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>مغلقة نهائياً</span>
-                              </td>
+                      <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead style={{ background: '#F5F5F7', textAlign: 'right', fontSize: '13px', color: '#6E6E73' }}>
+                            <tr>
+                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>رقم التذكرة</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>التصنيف</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>القسم</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>الحالة التاريخية</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody style={{ fontSize: '14px', color: '#1D1D1F' }}>
+                            {[1, 2, 3].map(row => (
+                              <tr key={row} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                <td style={{ padding: '16px 20px', fontWeight: '500' }}>#TKT-2026-00{row}</td>
+                                <td style={{ padding: '16px 20px' }}>عطل تقني متقدم</td>
+                                <td style={{ padding: '16px 20px' }}>العمليات المركزية</td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span style={{ padding: '4px 10px', background: '#E8F5E9', color: '#34C759', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>مغلقة نهائياً</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
 
                       {activeComponents.find(c => c.id === 'admin_archive')?.properties.enableTimelineAuditLog && (
-                        <div style={{ marginTop: '10px', padding: '15px', background: 'rgba(255, 255, 255, 0.6)', borderRadius: '12px', border: '1px solid rgba(226, 232, 240, 0.8)', borderLeft: '4px solid #3b82f6' }}>
-                          <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#1e40af' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
-                          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div>• 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
-                            <div>• 2026-05-28 09:30 - تم تحويل التذكرة للقسم الفني (مهندس ميداني)</div>
+                        <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRight: '4px solid #007AFF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                          <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
+                          <div style={{ fontSize: '13px', color: '#6E6E73', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#007AFF' }}/> 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF9500' }}/> 2026-05-28 09:30 - تم تحويل التذكرة للقسم الفني (مهندس ميداني)</div>
                           </div>
                         </div>
                       )}
@@ -2586,34 +2604,35 @@ export function UILayoutEngineTab() {
 
                 </div>
               ) : (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', gap: '15px' }}>
-                  <span style={{ fontSize: '48px', opacity: 0.5 }}>🖥️</span>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#64748b' }}>الرجاء اختيار مكون من القائمة الجانبية للمعاينة</div>
-                  <div style={{ fontSize: '13px' }}>المربع الوسطي (Main Viewport) جاهز للرندرة الديناميكية</div>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#AEAEB2', gap: '16px' }}>
+                  <div style={{ width: '64px', height: '64px', background: '#F5F5F7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🖱️</div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#1D1D1F' }}>حدد مكوناً من مساحة العمل</div>
+                  <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>سيتم عرض المعاينة الحية للمكون المختار هنا ليتسنى لك رؤية التعديلات بشكل تفاعلي.</div>
                 </div>
               )}
             </div>
+            </div>
           </div>
+          </div> {/* End col-span-8 */}
         </div>
+
         </div>
-      </div>
-          </div>
       </DragDropContext>
       </div>
 
       {showNameModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(5px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.97)', backdropFilter: 'blur(16px)', padding: '40px', borderRadius: '20px', width: '450px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#0f172a', marginBottom: '20px', fontSize: '20px' }}>تعريف الواجهة الجديدة والتصنيف</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '24px', width: '500px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
+            <h3 style={{ color: '#1D1D1F', marginBottom: '24px', fontSize: '22px', fontWeight: '800' }}>تعريف الواجهة والتصنيف (Configuration)</h3>
             
             <div style={{ textAlign: 'right', marginBottom: '25px', marginTop: '20px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#6366f1', marginBottom: '12px', display: 'block' }}>1. أولاً: اختر التصنيف المعماري (الدور):</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px', display: 'block' }}>1. أولاً: اختر التصنيف المعماري (Role / Persona):</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {[
-                  { id: 'IT_ADMIN', label: 'مسؤول نظام', icon: '🔴' },
-                  { id: 'OPERATIONAL_MANAGER', label: 'مسؤول تشغيلي', icon: '🟠' },
-                  { id: 'OPERATIONAL_USER', label: 'مستخدم تشغيلي', icon: '🔵' },
-                  { id: 'END_USER', label: 'مستخدم عادي', icon: '🟢' }
+                  { id: 'IT_ADMIN', label: 'مسؤول نظام', icon: '💻' },
+                  { id: 'OPERATIONAL_MANAGER', label: 'مسؤول تشغيلي', icon: '📊' },
+                  { id: 'OPERATIONAL_USER', label: 'مستخدم تشغيلي', icon: '🛠️' },
+                  { id: 'END_USER', label: 'مستخدم عادي', icon: '👤' }
                 ].map(role => (
                   <div 
                     key={role.id}
@@ -2625,231 +2644,177 @@ export function UILayoutEngineTab() {
                       }, 50);
                     }}
                     style={{ 
-                      padding: '12px', 
-                      borderRadius: '10px', 
-                      border: `1px solid ${interfaceCategory === role.id ? '#3b82f6' : 'rgba(99,102,241,0.08)'}`, 
-                      background: interfaceCategory === role.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(241,245,249,0.9)',
+                      padding: '16px', 
+                      borderRadius: '12px', 
+                      border: `1px solid ${interfaceCategory === role.id ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, 
+                      background: interfaceCategory === role.id ? 'rgba(88,86,214,0.06)' : '#FFFFFF',
                       cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: interfaceCategory === role.id ? 'bold' : 'normal',
-                      color: interfaceCategory === role.id ? '#0f172a' : '#94a3b8',
-                      transition: 'background-color 0.2s, box-shadow 0.2s, border-color 0.2s',
+                      fontSize: '14px',
+                      fontWeight: interfaceCategory === role.id ? '700' : '600',
+                      color: interfaceCategory === role.id ? '#5856D6' : '#1D1D1F',
+                      textAlign: 'center',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '8px',
+                      boxShadow: interfaceCategory === role.id ? '0 4px 12px rgba(88,86,214,0.1)' : '0 2px 4px rgba(0,0,0,0.02)',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <span>{role.icon}</span>
-                    <span>{role.label}</span>
+                    <span style={{ fontSize: '24px' }}>{role.icon}</span>
+                    {role.label}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ textAlign: 'right', marginBottom: '20px', opacity: interfaceCategory ? 1 : 0.4, transition: 'opacity 0.3s' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: interfaceCategory ? '#6366f1' : '#64748b', marginBottom: '8px', display: 'block' }}>2. ثانياً: أدخل اسم الواجهة:</label>
-              <input 
+            <div style={{ marginBottom: '25px', textAlign: 'right' }}>
+              <label style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px', display: 'block' }}>2. ثانياً: اختر نطاق الإدارة والتبعية التنظيمية:</label>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <select 
+                  value={managementLevel}
+                  onChange={e => { setManagementLevel(e.target.value); setSelectedDept(''); setSelectedSection(''); setSelectedTeam(''); }}
+                  style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '14px', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
+                >
+                  <option value="">-- مستوى الإدارة (Management Level) --</option>
+                  <option value="GENERAL">الإدارة العامة</option>
+                  <option value="DEPARTMENT">الإدارة التخصصية</option>
+                  <option value="SECTION">قسم تنفيذي</option>
+                  <option value="TEAM">وحدة / فريق ميداني</option>
+                </select>
+
+                {(managementLevel === 'DEPARTMENT' || managementLevel === 'SECTION' || managementLevel === 'TEAM') && (
+                  <select 
+                    value={selectedDept}
+                    onChange={e => { setSelectedDept(e.target.value); setSelectedSection(''); setSelectedTeam(''); }}
+                    style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '14px', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
+                  >
+                    <option value="">-- اختر الإدارة التخصصية --</option>
+                    {mockOrgStructure.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                )}
+
+                {(managementLevel === 'SECTION' || managementLevel === 'TEAM') && selectedDept && (
+                  <select 
+                    value={selectedSection}
+                    onChange={e => { setSelectedSection(e.target.value); setSelectedTeam(''); }}
+                    style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '14px', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
+                  >
+                    <option value="">-- اختر القسم التنفيذي --</option>
+                    {mockOrgStructure.find(d => d.id === selectedDept)?.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
+
+                {managementLevel === 'TEAM' && selectedSection && (
+                  <select 
+                    value={selectedTeam}
+                    onChange={e => setSelectedTeam(e.target.value)}
+                    style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '14px', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
+                  >
+                    <option value="">-- اختر الفريق الميداني --</option>
+                    {mockOrgStructure.find(d => d.id === selectedDept)?.sections.find(s => s.id === selectedSection)?.teams?.map((t:any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'right', marginBottom: '24px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px', display: 'block' }}>3. ثالثاً: أطلق اسماً تعريفياً للواجهة:</label>
+              <input
                 id="interface_name_input"
-                type="text" 
-                placeholder={interfaceCategory ? "مثال: واجهة الدعم الفني الخاصة" : "الرجاء اختيار التصنيف أولاً..."}
+                type="text"
+                placeholder={`مثال: لوحة مدير ${mockOrgStructure.find(d=>d.id===selectedDept)?.name || 'العمليات'}`}
                 value={interfaceName}
-                disabled={!interfaceCategory}
-                onChange={e => setInterfaceName(e.target.value)}
-                style={{ width: '100%', padding: '14px 16px', boxSizing: 'border-box', borderRadius: '10px', border: `1px solid ${interfaceCategory ? 'rgba(255, 255, 255, 0.3)' : 'rgba(99, 102, 241, 0.08)'}`, background: interfaceCategory ? 'rgba(241, 245, 249, 0.95)' : 'rgba(0, 0, 0, 0.1)', color: '#0f172a', fontSize: '15px', outline: 'none', transition: 'all 0.3s', cursor: interfaceCategory ? 'text' : 'not-allowed' }}
-                onFocus={e => { if(interfaceCategory) e.target.style.borderColor = '#3b82f6'; }}
-                onBlur={e => { if(interfaceCategory) e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)'; }}
+                onChange={(e) => setInterfaceName(e.target.value)}
+                onKeyDown={(e) => {
+                  if(e.key === 'Enter' && interfaceName.trim() !== '' && interfaceCategory && managementLevel) {
+                    setShowNameModal(false);
+                  }
+                }}
+                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.12)', background: '#FFFFFF', color: '#1D1D1F', fontSize: '15px', outline: 'none', fontFamily: 'inherit', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }}
               />
             </div>
-
-            {/* 3. Cascading Dropdowns for Operational Context */}
-            {(interfaceCategory === 'OPERATIONAL_USER' || interfaceCategory === 'OPERATIONAL_MANAGER') && (
-              <div style={{ textAlign: 'right', marginBottom: '25px', padding: '20px', background: 'rgba(99, 102, 241, 0.04)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
-                <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#6366f1', marginBottom: '15px', display: 'block' }}>3. ثالثاً: السياق التشغيلي للواجهة:</label>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  
-                  {interfaceCategory === 'OPERATIONAL_MANAGER' && (
-                    <div style={{ marginBottom: '10px', background: 'rgba(241,245,249,0.9)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-                      <label style={{ fontSize: '12px', color: '#6366f1', marginBottom: '10px', display: 'block', fontWeight: 'bold' }}>تحديد مستوى الإدارة للمسؤول <span style={{color: '#ef4444'}}>*</span></label>
-                      <div style={{ display: 'flex', gap: '15px' }}>
-                        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="DEPT_HEAD" checked={managementLevel === 'DEPT_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ accentColor: '#6366f1' }} /> مدير إدارة
-                        </label>
-                        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="SECTION_HEAD" checked={managementLevel === 'SECTION_HEAD'} onChange={e => { setManagementLevel(e.target.value); setSelectedTeam(''); }} style={{ accentColor: '#6366f1' }} /> رئيس قسم
-                        </label>
-                        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                          <input type="radio" name="mgmt_level" value="TEAM_LEADER" checked={managementLevel === 'TEAM_LEADER'} onChange={e => setManagementLevel(e.target.value)} style={{ accentColor: '#6366f1' }} /> رئيس فريق
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {((interfaceCategory === 'OPERATIONAL_USER') || (interfaceCategory === 'OPERATIONAL_MANAGER' && managementLevel)) && (
-                    <>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'block' }}>الإدارة التشغيلية <span style={{color: '#ef4444'}}>*</span></label>
-                        <select value={selectedDept} onChange={(e) => { setSelectedDept(e.target.value); setSelectedSection(''); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-                          <option value="">-- اختر الإدارة --</option>
-                          {interfaceCategory === 'OPERATIONAL_MANAGER' && managementLevel === 'DEPT_HEAD' && <option value="NEW_DEPARTMENT_PLACEHOLDER" style={{ color: '#fbbf24' }}>+ إضافة مسودة إدارة جديدة قيد الإنشاء</option>}
-                          {mockOrgStructure.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                      </div>
-                      
-                      {((interfaceCategory === 'OPERATIONAL_USER') || (managementLevel === 'SECTION_HEAD' || managementLevel === 'TEAM_LEADER')) && selectedDept && selectedDept !== 'NEW_DEPARTMENT_PLACEHOLDER' && (
-                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                          <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'block' }}>القسم التشغيلي <span style={{color: '#ef4444'}}>*</span></label>
-                          <select value={selectedSection} onChange={(e) => { setSelectedSection(e.target.value); setSelectedTeam(''); }} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-                            <option value="">-- اختر القسم --</option>
-                            {mockOrgStructure.find(d => d.id === selectedDept)?.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                          </select>
-                        </div>
-                      )}
-
-                      {((interfaceCategory === 'OPERATIONAL_USER') || (managementLevel === 'TEAM_LEADER')) && selectedSection && (
-                        <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                          <label style={{ fontSize: '12px', color: '#475569', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>الفريق التشغيلي</span>
-                            <span style={{ fontSize: '10px', background: 'rgba(99,102,241,0.08)', padding: '2px 6px', borderRadius: '4px', color: interfaceCategory === 'OPERATIONAL_USER' ? '#94a3b8' : '#ef4444' }}>
-                              {interfaceCategory === 'OPERATIONAL_USER' ? 'اختياري' : 'إجباري *'}
-                            </span>
-                          </label>
-                          <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(241,245,249,0.95)', color: '#0f172a', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-                            <option value="">{interfaceCategory === 'OPERATIONAL_USER' ? '-- بدون فريق محدد (تابعية مباشرة للقسم) --' : '-- اختر الفريق --'}</option>
-                            {mockOrgStructure.find(d => d.id === selectedDept)?.sections.find(s => s.id === selectedSection)?.teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                          </select>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
+            
             <button 
-              disabled={(() => {
-                if (!interfaceName.trim() || !interfaceCategory) return true;
-                if (interfaceCategory === 'END_USER' || interfaceCategory === 'IT_ADMIN') return false;
-                if (interfaceCategory === 'OPERATIONAL_USER') return !selectedDept || !selectedSection;
-                if (interfaceCategory === 'OPERATIONAL_MANAGER') {
-                  if (!managementLevel) return true;
-                  if (managementLevel === 'DEPT_HEAD') return !selectedDept;
-                  if (managementLevel === 'SECTION_HEAD') return !selectedDept || !selectedSection;
-                  if (managementLevel === 'TEAM_LEADER') return !selectedDept || !selectedSection || !selectedTeam;
-                }
-                return true;
-              })()}
               onClick={() => {
-                if(interfaceName.trim() && interfaceCategory) {
-                  setShowNameModal(false);
-                }
+                if (interfaceName.trim() === '') setInterfaceName('واجهة مخصصة جديدة');
+                setShowNameModal(false);
               }}
-              style={{ width: '100%', padding: '14px', background: (interfaceName.trim() === '' || !interfaceCategory) ? '#475569' : 'linear-gradient(135deg, #10b981, #059669)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: (interfaceName.trim() === '' || !interfaceCategory) ? 'not-allowed' : 'pointer', transition: 'all 0.3s' }}
+              disabled={!interfaceCategory || !managementLevel}
+              style={{ 
+                width: '100%', padding: '16px', background: (!interfaceCategory || !managementLevel) ? '#EBEBEB' : '#5856D6', color: (!interfaceCategory || !managementLevel) ? '#AEAEB2' : '#FFFFFF', border: 'none', borderRadius: '12px', cursor: (!interfaceCategory || !managementLevel) ? 'not-allowed' : 'pointer', fontSize: '15px', fontWeight: '700', boxShadow: (!interfaceCategory || !managementLevel) ? 'none' : '0 4px 14px rgba(88,86,214,0.35)', transition: 'all 0.2s', fontFamily: 'inherit'
+              }}
             >
-              البدء بتصميم الواجهة 🚀
+              بدء التصميم والبناء 🚀
             </button>
-            <button 
-              onClick={() => { setShowNameModal(false); if(!interfaceName.trim()) setIsManagerMode(true); }}
-              style={{ width: '100%', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontSize: '13px', cursor: 'pointer', marginTop: '10px' }}
+            <button
+              onClick={() => { setShowNameModal(false); setIsManagerMode(true); }}
+              style={{ width: '100%', padding: '16px', background: 'transparent', color: '#6E6E73', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', marginTop: '10px', transition: 'all 0.2s', fontFamily: 'inherit' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#1D1D1F'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#6E6E73'}
             >
-              إلغاء الرجوع
+              إلغاء والعودة
             </button>
           </div>
         </div>
       )}
 
-      {/* ─── Save Confirmation Report Modal ─── */}
+      {/* Save Success Modal */}
       {showSaveReportModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '40px', borderRadius: '20px', width: '500px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#059669', marginBottom: '20px', fontSize: '22px', textAlign: 'center' }}>✨ تقرير اعتماد الواجهة التشغيلية</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '24px', width: '500px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
+            <div style={{ width: '80px', height: '80px', background: '#34C759', borderRadius: '50%', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '40px', boxShadow: '0 8px 24px rgba(52,199,89,0.3)' }}>✓</div>
+            <h3 style={{ color: '#1D1D1F', marginBottom: '16px', fontSize: '22px', fontWeight: '800' }}>تم الحفظ والاعتماد بنجاح!</h3>
             
-            <div style={{ background: 'rgba(241, 245, 249, 0.9)', borderRadius: '12px', padding: '20px', marginBottom: '25px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>اسم الواجهة:</span>
-                <strong style={{ color: '#0f172a', fontSize: '15px' }}>{interfaceName}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px dashed rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>الدور الرئيسي (التصنيف):</span>
-                <strong style={{ color: '#6366f1', fontSize: '15px' }}>
-                  {interfaceCategory === 'IT_ADMIN' && '🔴 مسؤول نظام'}
-                  {interfaceCategory === 'OPERATIONAL_MANAGER' && '🟠 مسؤول تشغيلي'}
-                  {interfaceCategory === 'OPERATIONAL_USER' && '🔵 مستخدم تشغيلي'}
-                  {interfaceCategory === 'END_USER' && '🟢 مستخدم عادي'}
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b', fontSize: '14px' }}>المكونات المفعلة:</span>
-                <strong style={{ color: '#10b981', fontSize: '15px' }}>{activeComponents.length} مكونات</strong>
-              </div>
+            <div style={{ background: '#F5F5F7', padding: '20px', borderRadius: '12px', textAlign: 'right', marginBottom: '24px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '13px', color: '#6E6E73', marginBottom: '8px' }}>تفاصيل النسخة المحفوظة:</div>
+              <div style={{ fontWeight: '700', color: '#1D1D1F', marginBottom: '4px', fontSize: '15px' }}>📌 الاسم: {interfaceName || 'واجهة جديدة'}</div>
+              <div style={{ fontWeight: '600', color: '#5856D6', marginBottom: '4px', fontSize: '14px' }}>👤 التصنيف: {interfaceCategory}</div>
+              <div style={{ fontWeight: '600', color: '#AF52DE', marginBottom: '4px', fontSize: '14px' }}>🏢 مستوى الإدارة: {managementLevel}</div>
+              <div style={{ fontWeight: '600', color: '#007AFF', marginBottom: '12px', fontSize: '14px' }}>📦 المكونات النشطة: {activeComponents.length} مكونات</div>
+              <div style={{ fontSize: '12px', color: '#AEAEB2', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>💡 الواجهة جاهزة الآن للعمل بشكل مباشر مع المستخدمين أصحاب هذا الدور وهذه الإدارة.</div>
             </div>
 
-            <p style={{ color: '#475569', fontSize: '14px', textAlign: 'center', marginBottom: '30px', lineHeight: '1.6' }}>
-              أنت على وشك اعتماد هذه الواجهة وإدراجها ضمن المنظومة التشغيلية لتكون متاحة للتخصيص والاستخدام. هل أنت متأكد من حفظ هذا التوزيع؟
-            </p>
-
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button 
-                onClick={() => {
-                  if(interfaceName.trim() && interfaceCategory) {
-                    setSavedInterfaces(prev => [...prev, {
-                      id: 'ui_final_' + Date.now(),
-                      name: interfaceName,
-                      roleType: interfaceCategory,
-                      lastUpdated: new Date().toISOString().split('T')[0],
-                      associated_dept: selectedDept || undefined,
-                      associated_section: selectedSection || undefined,
-                      associated_team: selectedTeam || null
-                    }]);
-                    setShowSaveReportModal(false);
-                    setInterfaceName('');
-                    setInterfaceCategory(null);
-                    setSelectedDept('');
-                    setSelectedSection('');
-                    setSelectedTeam('');
-                    setIsManagerMode(true);
-                  }
-                }}
-                style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#0f172a', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
-              >
-                اعتماد وحفظ نهائي ✅
-              </button>
-              <button 
-                onClick={() => setShowSaveReportModal(false)}
-                style={{ flex: 1, padding: '14px', background: 'rgba(99, 102, 241, 0.04)', color: '#334155', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
-              >
-                الرجوع للتعديل ↩️
-              </button>
-            </div>
+            <button 
+              onClick={handleConfirmSave}
+              style={{ width: '100%', padding: '16px', background: '#1D1D1F', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'all 0.2s ease', fontFamily: 'inherit' }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              العودة إلى مدير الواجهات
+            </button>
           </div>
         </div>
       )}
 
       {/* ─── Data Loss Warning Modal ─── */}
       {showWarningModal && interfaceToLoad && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#f87171', margin: '0 0 15px 0', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span>⚠️</span> تحذير: فقدان العمل غير المحفوظ
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: '#FFFFFF', padding: '30px', borderRadius: '24px', width: '450px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+            <div style={{ width: '60px', height: '60px', background: '#FF3B30', borderRadius: '50%', margin: '0 auto 15px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '30px', boxShadow: '0 8px 24px rgba(255,59,48,0.3)' }}>!</div>
+            <h3 style={{ color: '#1D1D1F', margin: '0 0 15px 0', fontSize: '20px', fontWeight: '800' }}>
+              تحذير: فقدان العمل غير المحفوظ
             </h3>
             
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#6366f1' }}>({interfaceName})</strong>.
+            <p style={{ color: '#6E6E73', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
+              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#1D1D1F' }}>({interfaceName})</strong>.
               <br/><br/>
-              محاولة فتح واجهة <strong style={{ color: '#f59e0b' }}>({interfaceToLoad.name})</strong> ستؤدي إلى إزالة كل التعديلات الحالية غير المحفوظة والمكونات الموزعة وإعادة تحميل مساحة العمل بالواجهة المطلوبة.
+              محاولة فتح واجهة <strong style={{ color: '#1D1D1F' }}>({interfaceToLoad.name})</strong> ستؤدي إلى إزالة كل التعديلات الحالية غير المحفوظة والمكونات الموزعة وإعادة تحميل مساحة العمل بالواجهة المطلوبة.
             </p>
 
             <div style={{ display: 'flex', gap: '15px' }}>
               <button 
                 onClick={() => {
-                  // Confirm and Overwrite
                   setInterfaceName(interfaceToLoad.name);
                   setInterfaceCategory(interfaceToLoad.roleType);
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                   setIsManagerMode(false);
                 }}
-                style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '14px', background: '#FF3B30', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(255,59,48,0.3)' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 موافق، افتح الواجهة
               </button>
@@ -2858,7 +2823,9 @@ export function UILayoutEngineTab() {
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                 }}
-                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
+                style={{ flex: 1, padding: '14px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#EBEBEB'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
               >
                 إلغاء والعودة
               </button>

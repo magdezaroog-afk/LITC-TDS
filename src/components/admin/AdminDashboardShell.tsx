@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { useLanguage } from '../../engine/ui-loader/LanguageContext';
 import { UILayoutEngineTab } from './tabs/UILayoutEngineTab';
@@ -8,438 +7,425 @@ import { DynamicFieldsTab } from './tabs/DynamicFieldsTab';
 import { SecurityControlTab } from './tabs/SecurityControlTab';
 import { NotificationPolicyConsole } from './NotificationPolicyConsole';
 
-/* ─────────────────────────────────────────────
-   Animated Tech Background - Canvas Component
-   ───────────────────────────────────────────── */
-const TechBackground: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationId: number;
-    let particles: { x: number; y: number; vx: number; vy: number; size: number; opacity: number }[] = [];
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    };
-
-    const initParticles = () => {
-      particles = [];
-      const w = canvas.offsetWidth;
-      const h = canvas.offsetHeight;
-      for (let i = 0; i < 50; i++) {
-        particles.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: (Math.random() - 0.5) * 0.4,
-          size: Math.random() * 2 + 0.5,
-          opacity: Math.random() * 0.15 + 0.05
-        });
-      }
-    };
-
-    const draw = () => {
-      const w = canvas.offsetWidth;
-      const h = canvas.offsetHeight;
-      ctx.clearRect(0, 0, w, h);
-
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(99, 102, 241, ${0.06 * (1 - dist / 150)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(99, 102, 241, ${p.opacity})`;
-        ctx.fill();
-
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > w) p.vx *= -1;
-        if (p.y < 0 || p.y > h) p.vy *= -1;
-      });
-
-      animationId = requestAnimationFrame(draw);
-    };
-
-    resize();
-    initParticles();
-    draw();
-    window.addEventListener('resize', () => { resize(); initParticles(); });
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 0
-      }}
-    />
-  );
+/* ─────────────────────────────────────────────────────────────
+   Apple-Inspired Design System Tokens
+   ───────────────────────────────────────────────────────────── */
+const APPLE = {
+  bg: '#F5F5F7',
+  surface: '#FFFFFF',
+  surfaceElevated: 'rgba(255, 255, 255, 0.8)',
+  text: '#1D1D1F',
+  textSecondary: '#6E6E73',
+  textTertiary: '#AEAEB2',
+  separator: 'rgba(0,0,0,0.08)',
+  separatorStrong: 'rgba(0,0,0,0.14)',
+  shadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
+  shadowHover: '0 4px 20px rgba(0,0,0,0.1)',
+  shadowCard: '0 2px 8px rgba(0,0,0,0.06)',
+  radius: '14px',
+  radiusLg: '20px',
+  radiusXl: '28px',
+  font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
+  spring: 'cubic-bezier(0.28, 0.11, 0.32, 1)',
+  tabs: {
+    ui: { color: '#5856D6', bg: '#F0F0FF', label: 'هندسة الواجهات', sublabel: 'UI Layout Engine', icon: '✦' },
+    operations: { color: '#007AFF', bg: '#EBF5FF', label: 'الهيكل التشغيلي', sublabel: 'Operations & Structure', icon: '⬡' },
+    dynamic_fields: { color: '#FF9500', bg: '#FFF7EB', label: 'المستدلات الديناميكية', sublabel: 'Dynamic Fields Builder', icon: '⬟' },
+    security: { color: '#FF3B30', bg: '#FFF0EF', label: 'الأمان والحوكمة', sublabel: 'Security Control Core', icon: '⬢' },
+    policies: { color: '#AF52DE', bg: '#F7F0FF', label: 'سياسات التنبيهات', sublabel: 'Notification Policies', icon: '◈' },
+  }
 };
 
-/* ─────────────────────────────────────────────
-   Inject Global Keyframes (once)
-   ───────────────────────────────────────────── */
-const KEYFRAMES_ID = 'admin-shell-keyframes-2026-v2';
-const injectKeyframes = () => {
-  if (document.getElementById(KEYFRAMES_ID)) return;
+/* ─────────────────────────────────────────────────────────────
+   Inject Global Styles (once)
+   ───────────────────────────────────────────────────────────── */
+const STYLES_ID = 'admin-apple-styles-v3';
+const injectStyles = () => {
+  if (document.getElementById(STYLES_ID)) return;
   const style = document.createElement('style');
-  style.id = KEYFRAMES_ID;
+  style.id = STYLES_ID;
   style.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    @keyframes adminShellFadeIn {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+    * { box-sizing: border-box; }
+
+    @keyframes appleReveal {
+      from { opacity: 0; transform: translateY(8px) scale(0.995); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
     }
-    @keyframes adminShellSlideRight {
-      from { opacity: 0; transform: translateX(-30px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes adminShellSlideLeft {
-      from { opacity: 0; transform: translateX(30px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes adminPulseGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-      50%      { box-shadow: 0 0 20px 4px rgba(99, 102, 241, 0.12); }
-    }
-    @keyframes adminGradientShift {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    @keyframes adminContentReveal {
-      from { opacity: 0; transform: translateY(12px) scale(0.99); }
+    @keyframes startMenuReveal {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
+    @keyframes appleFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes applePulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    .admin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .admin-scroll::-webkit-scrollbar-track { background: transparent; }
+    .admin-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    .admin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+    .apple-tab-item {
+      transition: all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1);
+      cursor: pointer;
+      position: relative;
+      border-radius: 12px;
+      user-select: none;
+    }
+    .apple-tab-item:hover { transform: none; }
+    .apple-tab-item:active { transform: scale(0.98); }
+
+    .apple-btn {
+      transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+      cursor: pointer;
+    }
+    .apple-btn:hover { opacity: 0.85; }
+    .apple-btn:active { transform: scale(0.97); opacity: 0.7; }
   `;
   document.head.appendChild(style);
 };
 
+/* ─────────────────────────────────────────────────────────────
+   Main Component
+   ───────────────────────────────────────────────────────────── */
 export const AdminDashboardShell: React.FC = () => {
   const { user } = useAuth();
   const { t, dir } = useLanguage();
-  
+
   const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies'>('ui');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
+  const startMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { injectKeyframes(); }, []);
+  useEffect(() => { injectStyles(); }, []);
+
+  // Close Start Menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (startMenuRef.current && !startMenuRef.current.contains(event.target as Node)) {
+        setIsStartMenuOpen(false);
+      }
+    };
+    if (isStartMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isStartMenuOpen]);
 
   const isAdmin = user && user.role === 'IT_Admin';
 
   if (!isAdmin) {
     return (
       <div style={{
-        padding: '48px',
-        borderRadius: '24px',
-        background: 'linear-gradient(135deg, #fef2f2, #fee2e2)',
-        border: '1px solid rgba(239, 68, 68, 0.2)',
-        boxShadow: '0 8px 32px rgba(239, 68, 68, 0.08)',
-        color: '#991b1b',
-        fontFamily: "'Inter', sans-serif",
-        maxWidth: '700px',
-        margin: '60px auto',
-        textAlign: 'center',
-        boxSizing: 'border-box',
-        direction: dir
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '60vh', padding: '24px', fontFamily: APPLE.font
       }}>
-        <div style={{ fontSize: '50px', marginBottom: '16px' }}>🛑</div>
-        <h2 style={{ fontSize: '20px', fontWeight: '700', margin: '0 0 10px 0' }}>{t('access.denied.title')}</h2>
-        <p style={{ fontSize: '14px', margin: 0, color: '#b91c1c' }}>
-          {t('access.denied.msg')}
-        </p>
+        <div style={{
+          background: APPLE.surface, borderRadius: APPLE.radiusXl,
+          border: `1px solid ${APPLE.separator}`, boxShadow: APPLE.shadow,
+          padding: '48px', textAlign: 'center', maxWidth: '480px', width: '100%'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: APPLE.text, margin: '0 0 8px' }}>
+            {t('access.denied.title')}
+          </h2>
+          <p style={{ fontSize: '14px', color: APPLE.textSecondary, margin: 0, lineHeight: '1.6' }}>
+            {t('access.denied.msg')}
+          </p>
+        </div>
       </div>
     );
   }
 
-  const TAB_CONFIG = [
-    {
-      id: 'ui' as const, icon: '🎨', label: t('sidebar.ui_engine'), sublabel: t('sidebar.ui_engine.sub'),
-      gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)', lightBg: 'rgba(99, 102, 241, 0.06)', accentColor: '#6366f1'
-    },
-    {
-      id: 'operations' as const, icon: '🏢', label: t('sidebar.operations'), sublabel: t('sidebar.operations.sub'),
-      gradient: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', lightBg: 'rgba(14, 165, 233, 0.06)', accentColor: '#0ea5e9'
-    },
-    {
-      id: 'dynamic_fields' as const, icon: '✨', label: t('sidebar.dynamic_fields'), sublabel: t('sidebar.dynamic_fields.sub'),
-      gradient: 'linear-gradient(135deg, #f59e0b, #f97316)', lightBg: 'rgba(245, 158, 11, 0.06)', accentColor: '#f59e0b'
-    },
-    {
-      id: 'security' as const, icon: '🛡️', label: t('sidebar.security'), sublabel: t('sidebar.security.sub'),
-      gradient: 'linear-gradient(135deg, #ef4444, #f43f5e)', lightBg: 'rgba(239, 68, 68, 0.06)', accentColor: '#ef4444'
-    },
-    {
-      id: 'policies' as const, icon: '🔔', label: t('sidebar.policies'), sublabel: t('sidebar.policies.sub'),
-      gradient: 'linear-gradient(135deg, #8b5cf6, #d946ef)', lightBg: 'rgba(139, 92, 246, 0.06)', accentColor: '#8b5cf6'
-    }
+  const TAB_KEYS: Array<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies'> = [
+    'ui', 'operations', 'dynamic_fields', 'security', 'policies'
   ];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
-    if (tabId === activeTab) return;
+    if (tabId === activeTab) {
+      setIsStartMenuOpen(false);
+      return;
+    }
     setIsTransitioning(true);
+    setIsStartMenuOpen(false);
     setTimeout(() => {
       setActiveTab(tabId);
       setIsTransitioning(false);
-    }, 250);
+    }, 200);
   };
 
-  const activeConfig = TAB_CONFIG.find(t => t.id === activeTab)!;
+  const activeConfig = APPLE.tabs[activeTab];
 
   return (
     <div style={{
+      background: APPLE.bg,
+      minHeight: '100vh',
+      fontFamily: APPLE.font,
+      direction: dir,
       position: 'relative',
-      minHeight: 'calc(100vh - 80px)',
-      background: 'linear-gradient(160deg, #f8faff 0%, #eef2ff 25%, #f0f4ff 50%, #faf5ff 75%, #f8faff 100%)',
-      backgroundSize: '400% 400%',
-      animation: 'adminGradientShift 20s ease infinite',
-      fontFamily: "'Inter', sans-serif",
-      overflow: 'hidden',
-      direction: dir
+      overflow: 'hidden'
     }}>
-      <TechBackground />
-
-      {/* Decorative Orbs */}
-      <div style={{ position: 'absolute', top: '-120px', right: '-80px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '-100px', left: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
+      {/* ── Main Layout ── */}
       <div style={{
-        position: 'relative',
-        zIndex: 1,
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '32px 24px',
         display: 'flex',
-        gap: '24px',
-        alignItems: 'flex-start'
+        flexDirection: 'column',
+        minHeight: '100vh',
+        padding: '0',
       }}>
-        {/* ── Sidebar ── */}
-        <div style={{
-          width: isSidebarOpen ? '280px' : '90px',
-          flexShrink: 0,
-          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)',
-          backdropFilter: 'blur(30px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(150%)',
-          borderRadius: '28px',
-          border: '1px solid rgba(255, 255, 255, 0.9)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.4)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.3)',
-          padding: isSidebarOpen ? '24px' : '24px 16px',
-          transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          animation: dir === 'rtl' ? 'adminShellSlideLeft 0.6s ease-out' : 'adminShellSlideRight 0.6s ease-out',
-          zIndex: 50
-        }}>
-          {/* Toggle Button */}
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{
-              position: 'absolute',
-              top: '32px',
-              [dir === 'rtl' ? 'left' : 'right']: isSidebarOpen ? '16px' : '50%',
-              transform: isSidebarOpen ? 'none' : 'translateX(50%)',
-              background: 'rgba(255,255,255,0.85)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.8)',
-              borderRadius: '50%',
-              width: '28px', height: '28px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              zIndex: 100,
-              color: '#6366f1',
-              fontSize: '12px'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = isSidebarOpen ? 'scale(1.1)' : 'translateX(50%) scale(1.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; e.currentTarget.style.transform = isSidebarOpen ? 'none' : 'translateX(50%)'; }}
-            title={isSidebarOpen ? "Collapse" : "Expand"}
-          >
-            {isSidebarOpen ? (dir === 'rtl' ? '▶' : '◀') : (dir === 'rtl' ? '◀' : '▶')}
-          </button>
-          {/* Sidebar Header */}
-          <div style={{ 
-            marginBottom: '32px', 
-            textAlign: dir === 'rtl' ? 'right' : 'left',
-            opacity: isSidebarOpen ? 1 : 0,
-            transform: isSidebarOpen ? 'translateX(0)' : (dir === 'rtl' ? 'translateX(20px)' : 'translateX(-20px)'),
-            pointerEvents: isSidebarOpen ? 'auto' : 'none',
-            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            whiteSpace: 'nowrap',
-            paddingTop: '4px'
-          }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08))',
-              padding: '6px 16px', borderRadius: '20px', marginBottom: '16px',
-              fontSize: '12px', fontWeight: '600', color: '#6366f1'
-            }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'adminPulseGlow 2s infinite' }} />
-              {t('admin.status')} • {user?.name || t('admin.role')}
-            </div>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 8px 0', color: '#0f172a', lineHeight: '1.2' }}>
-              {t('admin.console')}
-            </h1>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.6' }}>
-              {t('admin.console.sub')}
-            </p>
-          </div>
 
-          {/* Sidebar Navigation */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {TAB_CONFIG.map((tab) => {
-              const isActive = activeTab === tab.id;
-              const isHovered = hoveredTab === tab.id;
-
-              return (
-                <div
-                  key={tab.id}
-                  onClick={() => handleTabSwitch(tab.id)}
-                  onMouseEnter={() => setHoveredTab(tab.id)}
-                  onMouseLeave={() => setHoveredTab(null)}
-                  style={{
-                    position: 'relative',
-                    padding: '16px',
-                    borderRadius: '16px',
-                    background: isActive ? '#ffffff' : isHovered ? 'rgba(255,255,255,0.5)' : 'transparent',
-                    border: isActive ? `1px solid ${tab.accentColor}30` : '1px solid transparent',
-                    boxShadow: isActive ? `0 4px 16px ${tab.accentColor}15` : 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {/* Active Indicator Bar */}
-                  {isActive && (
-                    <div style={{
-                      position: 'absolute',
-                      [dir === 'rtl' ? 'right' : 'left']: 0,
-                      top: '10%',
-                      height: '80%',
-                      width: '4px',
-                      background: tab.gradient,
-                      borderRadius: dir === 'rtl' ? '4px 0 0 4px' : '0 4px 4px 0'
-                    }} />
-                  )}
-
-                  {/* Icon */}
-                  <div style={{
-                    width: '40px', height: '40px', borderRadius: '12px',
-                    background: isActive ? tab.gradient : tab.lightBg,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '18px', color: isActive ? '#fff' : tab.accentColor,
-                    boxShadow: isActive ? `0 4px 12px ${tab.accentColor}30` : 'none',
-                    transition: 'all 0.3s ease'
-                  }}>
-                    {tab.icon}
-                  </div>
-
-                  {/* Text Container */}
-                  <div style={{ 
-                    flex: 1, textAlign: dir === 'rtl' ? 'right' : 'left',
-                    opacity: isSidebarOpen ? 1 : 0,
-                    transform: isSidebarOpen ? 'translateX(0)' : (dir === 'rtl' ? 'translateX(15px)' : 'translateX(-15px)'),
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    whiteSpace: 'nowrap',
-                    width: isSidebarOpen ? 'auto' : '0px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: isActive ? '#0f172a' : '#475569', marginBottom: '2px' }}>
-                      {tab.label}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      {tab.sublabel}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Main Content Area ── */}
-        <div style={{
+        {/* ── Main Content ── */}
+        <main style={{
           flex: 1,
-          background: 'rgba(255, 255, 255, 0.75)',
-          backdropFilter: 'blur(24px)',
-          borderRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.9)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)',
           display: 'flex',
           flexDirection: 'column',
-          animation: 'adminShellFadeIn 0.8s ease-out',
-          minHeight: 'calc(100vh - 140px)',
-          overflow: 'hidden'
+          minWidth: 0,
+          background: APPLE.bg,
+          paddingBottom: '80px', // Space for taskbar
         }}>
-          {/* Header Strip */}
-          <div style={{
-            display: 'flex', alignItems: 'center', padding: '20px 32px',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.04)',
-            background: 'linear-gradient(to right, rgba(255,255,255,0.8), rgba(255,255,255,0.4))'
+          {/* Top Bar */}
+          <header style={{
+            background: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: `1px solid ${APPLE.separator}`,
+            padding: '16px 28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
           }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: activeConfig.gradient, marginRight: dir === 'rtl' ? '0' : '12px', marginLeft: dir === 'rtl' ? '12px' : '0' }} />
-            <div>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>{activeConfig.label}</h2>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>{activeConfig.sublabel}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Color dot */}
+              <div style={{
+                width: '10px', height: '10px', borderRadius: '50%',
+                background: activeConfig.color,
+                boxShadow: `0 0 8px ${activeConfig.color}60`,
+                transition: 'background 0.3s ease, box-shadow 0.3s ease'
+              }} />
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: APPLE.text }}>
+                  {activeConfig.label}
+                </div>
+                <div style={{ fontSize: '12px', color: APPLE.textTertiary, marginTop: '1px' }}>
+                  {activeConfig.sublabel}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Content Viewport */}
-          <div style={{
-            flex: 1, padding: '24px', overflowY: 'auto',
-            opacity: isTransitioning ? 0 : 1,
-            transform: isTransitioning ? 'translateY(10px) scale(0.99)' : 'translateY(0) scale(1)',
-            transition: 'all 0.25s ease-out',
-            animation: !isTransitioning ? 'adminContentReveal 0.35s ease-out' : 'none'
-          }}>
+            {/* User Badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: APPLE.surface, borderRadius: '20px',
+              padding: '6px 14px 6px 8px',
+              border: `1px solid ${APPLE.separator}`,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <div style={{
+                width: '26px', height: '26px', borderRadius: '50%',
+                background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.policies.color})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', color: '#fff', fontWeight: '700',
+              }}>
+                {user?.name?.[0]?.toUpperCase() || 'A'}
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: APPLE.text }}>
+                {user?.name || 'Admin'}
+              </span>
+            </div>
+          </header>
+
+          {/* Content Area */}
+          <div
+            className="admin-main-content admin-scroll"
+            style={{
+              flex: 1,
+              padding: '28px',
+              overflowY: 'auto',
+              opacity: isTransitioning ? 0 : 1,
+              transform: isTransitioning ? 'translateY(6px)' : 'translateY(0)',
+              transition: 'opacity 0.2s ease, transform 0.2s ease',
+              animation: !isTransitioning ? 'appleReveal 0.3s cubic-bezier(0.28, 0.11, 0.32, 1)' : 'none',
+              maxWidth: '1440px',
+              margin: '0 auto',
+              width: '100%'
+            }}
+          >
             {activeTab === 'ui' && <UILayoutEngineTab />}
             {activeTab === 'operations' && <OperationalStructureTab />}
             {activeTab === 'dynamic_fields' && <DynamicFieldsTab />}
             {activeTab === 'security' && <SecurityControlTab />}
             {activeTab === 'policies' && <NotificationPolicyConsole />}
           </div>
-        </div>
+        </main>
       </div>
+
+      {/* ── Elegant Glassmorphic Start Menu ── */}
+      <div ref={startMenuRef} style={{
+        position: 'fixed',
+        bottom: '100px',
+        right: '24px',
+        width: '380px',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%)',
+        backdropFilter: 'blur(40px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+        borderRadius: '28px',
+        border: '1px solid rgba(255,255,255,0.6)',
+        boxShadow: '0 16px 50px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.8)',
+        padding: '24px',
+        zIndex: 1000,
+        transformOrigin: 'bottom right',
+        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        opacity: isStartMenuOpen ? 1 : 0,
+        transform: isStartMenuOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)',
+        pointerEvents: isStartMenuOpen ? 'auto' : 'none',
+      }}>
+          {/* Menu Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${APPLE.separator}` }}>
+             <div style={{
+                width: '40px', height: '40px', borderRadius: '12px',
+                background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.policies.color})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', color: '#fff', flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>⚡</div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: APPLE.text, lineHeight: '1.2' }}>
+                  {t('admin.console')}
+                </div>
+                <div style={{ fontSize: '12px', color: APPLE.textSecondary, marginTop: '2px' }}>
+                  جميع أدوات التحكم التشغيلية
+                </div>
+              </div>
+          </div>
+
+          {/* Navigation Items */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+            {TAB_KEYS.map((tabId) => {
+              const cfg = APPLE.tabs[tabId];
+              const isActive = activeTab === tabId;
+
+              return (
+                <div
+                  key={tabId}
+                  className="apple-tab-item"
+                  onClick={() => handleTabSwitch(tabId)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    padding: '12px 14px',
+                    borderRadius: '16px',
+                    background: isActive ? cfg.bg : 'transparent',
+                    border: `1px solid ${isActive ? cfg.color + '30' : 'transparent'}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <div style={{
+                    width: '38px', height: '38px', flexShrink: 0,
+                    borderRadius: '10px',
+                    background: isActive ? cfg.color : `${cfg.color}15`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '16px',
+                    color: isActive ? '#fff' : cfg.color,
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isActive ? `0 4px 12px ${cfg.color}40` : 'none',
+                  }}>
+                    {cfg.icon}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: isActive ? '700' : '600',
+                      color: isActive ? cfg.color : APPLE.text,
+                      lineHeight: '1.2',
+                    }}>
+                      {cfg.label}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: APPLE.textTertiary,
+                      marginTop: '2px',
+                    }}>
+                      {cfg.sublabel}
+                    </div>
+                  </div>
+                  
+                  {isActive && (
+                    <div style={{
+                      width: '6px', height: '6px', borderRadius: '50%',
+                      background: cfg.color, flexShrink: 0,
+                    }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+      {/* ── Unified Floating Menu Button ── */}
+      <nav style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        height: '64px',
+        width: '64px',
+        background: 'rgba(255,255,255,0.75)',
+        backdropFilter: 'blur(25px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(25px) saturate(180%)',
+        border: '1px solid rgba(255,255,255,0.5)',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)',
+      }}>
+        {/* Start Button */}
+        <button
+          className="apple-btn"
+          onClick={(e) => { e.stopPropagation(); setIsStartMenuOpen(!isStartMenuOpen); }}
+          style={{
+            width: '100%', height: '100%',
+            borderRadius: '50%',
+            background: isStartMenuOpen ? 'rgba(0,0,0,0.05)' : 'transparent',
+            border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '22px',
+            transition: 'all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1)',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseLeave={(e) => { if (!isStartMenuOpen) e.currentTarget.style.background = 'transparent'; }}
+        >
+           <div style={{
+              width: '36px', height: '36px', borderRadius: '12px',
+              background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.operations.color})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '18px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              transform: isStartMenuOpen ? 'scale(0.95)' : 'scale(1)',
+              transition: 'transform 0.2s ease'
+           }}>⚡</div>
+        </button>
+      </nav>
+
     </div>
   );
 };
