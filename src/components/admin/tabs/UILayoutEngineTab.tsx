@@ -2143,56 +2143,20 @@ export function UILayoutEngineTab() {
         {/* Sandbox Shell Areas */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: 'rtl', padding: '20px', gap: '20px' }}>
           
-          {/* Top Navbar Zone */}
-          <div style={{ height: '56px', background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'flex-end', gap: '10px' }}>
-            {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-              <div key={c.id} style={{ padding: '6px 12px', background: '#FFFFFF', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1D1D1F', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', gap: '20px' }}>
-            {/* Dynamic Sidebar Zone */}
-            <div style={{ width: '220px', padding: '18px', background: '#F5F5F7', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '10px', color: '#6E6E73', marginBottom: '8px', fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>القائمة الملاحية</div>
-              <Droppable droppableId="active-canvas">
-                {(provided, snapshot) => (
-                  <div 
-                    ref={provided.innerRef} 
-                    {...provided.droppableProps}
-                    style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.06)' : 'transparent', borderRadius: '12px', padding: '5px', transition: 'all 0.3s' }}
-                  >
-                    {activeComponents.map((c, index) => (
-                      <Draggable key={c.id} draggableId={c.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
-                            style={{
-                              padding: '12px 18px', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                              background: previewActiveTab === c.id ? 'rgba(88, 86, 214, 0.10)' : snapshot.isDragging ? '#F5F5F7' : 'transparent',
-                              color: previewActiveTab === c.id ? '#5856D6' : '#1D1D1F',
-                              border: previewActiveTab === c.id ? '1px solid rgba(88, 86, 214, 0.25)' : snapshot.isDragging ? '1px solid #5856D6' : '1px solid transparent',
-                              boxShadow: previewActiveTab === c.id ? '0 2px 6px rgba(88, 86, 214, 0.12)' : snapshot.isDragging ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
-                              ...provided.draggableProps.style
-                            }}
-                          >
-                            {c.name}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
+          {/* iOS Style Main Canvas */}
+          <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', background: '#F2F2F7', borderRadius: '32px', border: '8px solid #1D1D1F', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+            
+            {/* Top Navbar Zone (Simulated iOS Status Bar Area) */}
+            <div style={{ height: '56px', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'flex-end', gap: '10px', zIndex: 10 }}>
+              {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
+                <div key={c.id} style={{ padding: '6px 12px', background: '#F5F5F7', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1D1D1F', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
+                </div>
+              ))}
             </div>
 
             {/* Main Viewport Zone */}
-            <div style={{ flex: 1, background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: '24px', overflowY: 'auto' }}>
+            <div style={{ flex: 1, background: '#FFFFFF', padding: '24px', overflowY: 'auto', paddingBottom: '120px' }} className="scrollbar-thin">
               {previewActiveTab ? (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   <h2 style={{ margin: '0 0 20px 0', color: '#1D1D1F', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
@@ -2610,13 +2574,54 @@ export function UILayoutEngineTab() {
                   <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>سيتم عرض المعاينة الحية للمكون المختار هنا ليتسنى لك رؤية التعديلات بشكل تفاعلي.</div>
                 </div>
               )}
+            {/* macOS / iOS Style Dock */}
+            <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', borderRadius: '32px', border: '1px solid rgba(255, 255, 255, 0.4)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', display: 'flex', gap: '14px', zIndex: 100 }}>
+              <Droppable droppableId="active-canvas" direction="horizontal">
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps}
+                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '14px', minWidth: '60px', minHeight: '60px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.06)' : 'transparent', borderRadius: '18px', transition: 'all 0.3s' }}
+                  >
+                    {activeComponents.map((c, index) => (
+                      <Draggable key={c.id} draggableId={c.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
+                            title={c.name}
+                            style={{
+                              width: '56px', height: '56px', borderRadius: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px',
+                              background: previewActiveTab === c.id ? 'linear-gradient(135deg, rgba(88,86,214,0.2), rgba(175,82,222,0.2))' : '#FFFFFF',
+                              color: previewActiveTab === c.id ? '#5856D6' : '#1D1D1F',
+                              border: previewActiveTab === c.id ? '2px solid #5856D6' : '1px solid rgba(0,0,0,0.05)',
+                              boxShadow: snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.08)',
+                              transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                              transform: snapshot.isDragging ? 'scale(1.15) translateY(-10px)' : (previewActiveTab === c.id ? 'scale(1.05)' : 'scale(1)'),
+                              ...provided.draggableProps.style
+                            }}
+                          >
+                            {/* Icons map for dock */}
+                            {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
             </div>
+            
             </div>
           </div>
-          </div> {/* End col-span-8 */}
+          </div>
+        </div>
+        </div>
         </div>
 
-        </div>
       </DragDropContext>
       </div>
 
