@@ -2155,8 +2155,74 @@ export function UILayoutEngineTab() {
               ))}
             </div>
 
-            {/* Main Viewport Zone */}
-            <div style={{ flex: 1, background: '#FFFFFF', padding: '24px', overflowY: 'auto', paddingBottom: '120px' }} className="scrollbar-thin">
+            {/* Viewport and Dynamic Sidebar Wrapper */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+              
+              {/* Modern Dynamic Navigation Panel */}
+              <div style={{ width: '250px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderLeft: '1px solid rgba(0,0,0,0.08)', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المكونات النشطة</span>
+                  <span style={{ fontSize: '10px', background: '#E5E5EA', color: '#6E6E73', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>{activeComponents.length}</span>
+                </div>
+                
+                <Droppable droppableId="active-canvas">
+                  {(provided, snapshot) => (
+                    <div 
+                      ref={provided.innerRef} 
+                      {...provided.droppableProps}
+                      style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.04)' : 'transparent', borderRadius: '16px', transition: 'all 0.3s', overflowY: 'auto' }}
+                      className="scrollbar-thin"
+                    >
+                      {activeComponents.map((c, index) => (
+                        <Draggable key={c.id} draggableId={c.id} index={index}>
+                          {(provided, snapshot) => {
+                            const isActive = previewActiveTab === c.id;
+                            return (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
+                                style={{
+                                  padding: '12px 14px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
+                                  background: isActive ? '#FFFFFF' : snapshot.isDragging ? '#FFFFFF' : 'transparent',
+                                  color: isActive ? '#1D1D1F' : '#6E6E73',
+                                  border: isActive ? '1px solid rgba(0,0,0,0.04)' : '1px solid transparent',
+                                  boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.05)' : snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.1)' : 'none',
+                                  transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                                  transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
+                                  fontWeight: isActive ? '700' : '600',
+                                  fontSize: '13px',
+                                  ...provided.draggableProps.style
+                                }}
+                                onMouseEnter={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.6)' }}
+                                onMouseLeave={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent' }}
+                              >
+                                <div style={{ 
+                                  width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
+                                  background: isActive ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : '#F5F5F7',
+                                  color: isActive ? '#FFF' : '#8E8E93',
+                                  boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
+                                  transition: 'all 0.3s'
+                                }}>
+                                  {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
+                                </div>
+                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                                {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
+                              </div>
+                            );
+                          }}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+
+              {/* Main Viewport Zone */}
+              <div style={{ flex: 1, background: '#FFFFFF', padding: '24px', overflowY: 'auto', paddingBottom: '120px' }} className="scrollbar-thin">
+
               {previewActiveTab ? (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   <h2 style={{ margin: '0 0 20px 0', color: '#1D1D1F', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
@@ -2574,46 +2640,7 @@ export function UILayoutEngineTab() {
                   <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>سيتم عرض المعاينة الحية للمكون المختار هنا ليتسنى لك رؤية التعديلات بشكل تفاعلي.</div>
                 </div>
               )}
-            {/* macOS / iOS Style Dock */}
-            <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', borderRadius: '32px', border: '1px solid rgba(255, 255, 255, 0.4)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', display: 'flex', gap: '14px', zIndex: 100 }}>
-              <Droppable droppableId="active-canvas" direction="horizontal">
-                {(provided, snapshot) => (
-                  <div 
-                    ref={provided.innerRef} 
-                    {...provided.droppableProps}
-                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '14px', minWidth: '60px', minHeight: '60px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.06)' : 'transparent', borderRadius: '18px', transition: 'all 0.3s' }}
-                  >
-                    {activeComponents.map((c, index) => (
-                      <Draggable key={c.id} draggableId={c.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
-                            title={c.name}
-                            style={{
-                              width: '56px', height: '56px', borderRadius: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px',
-                              background: previewActiveTab === c.id ? 'linear-gradient(135deg, rgba(88,86,214,0.2), rgba(175,82,222,0.2))' : '#FFFFFF',
-                              color: previewActiveTab === c.id ? '#5856D6' : '#1D1D1F',
-                              border: previewActiveTab === c.id ? '2px solid #5856D6' : '1px solid rgba(0,0,0,0.05)',
-                              boxShadow: snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.08)',
-                              transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                              transform: snapshot.isDragging ? 'scale(1.15) translateY(-10px)' : (previewActiveTab === c.id ? 'scale(1.05)' : 'scale(1)'),
-                              ...provided.draggableProps.style
-                            }}
-                          >
-                            {/* Icons map for dock */}
-                            {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
+                        </div> {/* End flex wrapper */}
             
             </div>
           </div>
