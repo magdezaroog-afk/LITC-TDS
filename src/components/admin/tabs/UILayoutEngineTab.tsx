@@ -832,7 +832,7 @@ export function UILayoutEngineTab() {
                       {...provided.droppableProps}
                       onScroll={handleRepoScroll}
                       className="inactive-repo-scrollbar"
-                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'auto', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', flex: 1 }}
+                      style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '10px', overflowX: 'auto', overflowY: 'auto', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', flex: 1 }}
                     >
                       {[
                         { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
