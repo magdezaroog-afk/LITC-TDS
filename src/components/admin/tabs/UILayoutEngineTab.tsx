@@ -798,6 +798,24 @@ export function UILayoutEngineTab() {
 
               {/* Component Repository */}
               <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '50%', minHeight: '260px', display: 'flex', flexDirection: 'column' }}>
+                <style>{`
+                  .inactive-repo-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                  }
+                  .inactive-repo-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.02);
+                    border-radius: 3px;
+                  }
+                  .inactive-repo-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(88, 86, 214, 0.25);
+                    border-radius: 3px;
+                    transition: background 0.2s;
+                  }
+                  .inactive-repo-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(88, 86, 214, 0.45);
+                  }
+                `}</style>
                 <div style={{ padding: '12px 16px', background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5856D6' }}></div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>مستودع المكونات</span>
@@ -813,7 +831,8 @@ export function UILayoutEngineTab() {
                       }}
                       {...provided.droppableProps}
                       onScroll={handleRepoScroll}
-                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', height: '160px', scrollbarWidth: 'none' }}
+                      className="inactive-repo-scrollbar"
+                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'auto', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', flex: 1 }}
                     >
                       {[
                         { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
@@ -824,13 +843,13 @@ export function UILayoutEngineTab() {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                         if (groupComponents.length === 0) return null;
                         return (
-                           <div key={group.key} style={{ flex: '0 0 180px', height: '100%', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                           <div key={group.key} style={{ flex: '0 0 180px', minHeight: '100%', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ padding: '8px 10px', background: `${group.color}10`, borderBottom: `1px solid ${group.color}18`, display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '13px' }}>{group.icon}</span>
                               <span style={{ fontSize: '12px', fontWeight: '700', color: group.color }}>{group.label}</span>
                               <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto', background: '#FFFFFF', borderRadius: '10px', padding: '1px 6px', border: `1px solid ${group.color}20` }}>{groupComponents.length}</span>
                             </div>
-                            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto', flex: 1 }} className="admin-scroll">
+                            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                               {groupComponents.map((comp) => {
                                 const globalIndex = inactiveComponents.findIndex(c => c.id === comp.id);
                                 return (
@@ -872,93 +891,6 @@ export function UILayoutEngineTab() {
                     </div>
                   )}
                 </Droppable>
-
-                {/* Bottom Control Console */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 16px',
-                  background: '#F5F5F7',
-                  borderTop: '1px solid rgba(0,0,0,0.06)',
-                  direction: 'rtl'
-                }}>
-                  {/* Right: Scroll progress indicator */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '120px',
-                      height: '4px',
-                      background: 'rgba(0, 0, 0, 0.08)',
-                      borderRadius: '2px',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}>
-                      <div style={{
-                        position: 'absolute',
-                        right: 0,
-                        top: 0,
-                        height: '100%',
-                        width: `${scrollPercent}%`,
-                        background: '#5856D6',
-                        borderRadius: '2px',
-                        transition: 'width 0.15s ease-out'
-                      }} />
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#8E8E93', fontWeight: '600', width: '32px', textAlign: 'left', fontFamily: 'monospace' }}>
-                      {Math.round(scrollPercent)}%
-                    </span>
-                  </div>
-
-                  {/* Left: Premium scroll navigation buttons */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      onClick={() => handleScrollRepo('left')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        background: 'rgba(88, 86, 214, 0.08)',
-                        border: '1px solid rgba(88, 86, 214, 0.15)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        color: '#5856D6',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'all 0.2s',
-                        outline: 'none'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.15)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.08)'; }}
-                    >
-                      <span>→</span>
-                      <span>السابق</span>
-                    </button>
-                    <button
-                      onClick={() => handleScrollRepo('right')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        background: 'rgba(88, 86, 214, 0.08)',
-                        border: '1px solid rgba(88, 86, 214, 0.15)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        color: '#5856D6',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'all 0.2s',
-                        outline: 'none'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.15)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.08)'; }}
-                    >
-                      <span>التالي</span>
-                      <span>←</span>
-                    </button>
-                  </div>
-                </div>
               </div>
 
               {/* ── Inspector Panel ── */}
