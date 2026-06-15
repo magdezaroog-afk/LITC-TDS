@@ -797,7 +797,7 @@ export function UILayoutEngineTab() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
 
               {/* Component Repository */}
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '50%', minHeight: '260px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '12px 16px', background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5856D6' }}></div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>مستودع المكونات</span>
@@ -813,7 +813,7 @@ export function UILayoutEngineTab() {
                       }}
                       {...provided.droppableProps}
                       onScroll={handleRepoScroll}
-                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'none' }}
+                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', height: '160px', scrollbarWidth: 'none' }}
                     >
                       {[
                         { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
@@ -824,13 +824,13 @@ export function UILayoutEngineTab() {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                         if (groupComponents.length === 0) return null;
                         return (
-                           <div key={group.key} style={{ flex: '0 0 180px', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                           <div key={group.key} style={{ flex: '0 0 180px', height: '100%', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ padding: '8px 10px', background: `${group.color}10`, borderBottom: `1px solid ${group.color}18`, display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '13px' }}>{group.icon}</span>
                               <span style={{ fontSize: '12px', fontWeight: '700', color: group.color }}>{group.label}</span>
                               <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto', background: '#FFFFFF', borderRadius: '10px', padding: '1px 6px', border: `1px solid ${group.color}20` }}>{groupComponents.length}</span>
                             </div>
-                            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto', flex: 1 }}>
+                            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto', flex: 1 }} className="admin-scroll">
                               {groupComponents.map((comp) => {
                                 const globalIndex = inactiveComponents.findIndex(c => c.id === comp.id);
                                 return (
