@@ -429,6 +429,7 @@ export function UILayoutEngineTab() {
 
   // --- Repository Scroll Helper ---
   const repositoryRef = React.useRef<HTMLDivElement>(null);
+  const [scrollPercent, setScrollPercent] = useState(0);
 
   React.useEffect(() => {
     const repo = repositoryRef.current;
@@ -451,6 +452,16 @@ export function UILayoutEngineTab() {
     if (repositoryRef.current) {
       const amount = direction === 'left' ? -250 : 250;
       repositoryRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  const handleRepoScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const total = target.scrollWidth - target.clientWidth;
+    if (total > 0) {
+      // Handle RTL scrollLeft values (which can be negative in some environments)
+      const percent = (Math.abs(target.scrollLeft) / total) * 100;
+      setScrollPercent(Math.min(100, Math.max(0, percent)));
     }
   };
 
@@ -786,72 +797,12 @@ export function UILayoutEngineTab() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
 
               {/* Component Repository */}
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%', position: 'relative' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%' }}>
                 <div style={{ padding: '12px 16px', background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5856D6' }}></div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>مستودع المكونات</span>
                   <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto' }}>اسحب للتفعيل ←</span>
                 </div>
-
-                {/* Right Scroll Button */}
-                <button
-                  onClick={() => handleScrollRepo('right')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '55%',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid rgba(0,0,0,0.12)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 10,
-                    fontSize: '12px',
-                    color: '#1D1D1F',
-                    transition: 'all 0.2s',
-                    outline: 'none'
-                  }}
-                  title="تحريك لليمين"
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#FFFFFF'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)'; }}
-                >
-                  ▶
-                </button>
-
-                {/* Left Scroll Button */}
-                <button
-                  onClick={() => handleScrollRepo('left')}
-                  style={{
-                    position: 'absolute',
-                    left: '8px',
-                    top: '55%',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid rgba(0,0,0,0.12)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 10,
-                    fontSize: '12px',
-                    color: '#1D1D1F',
-                    transition: 'all 0.2s',
-                    outline: 'none'
-                  }}
-                  title="تحريك ليسار"
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#FFFFFF'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)'; }}
-                >
-                  ◀
-                </button>
 
                 <Droppable droppableId="inactive-repository">
                   {(provided, snapshot) => (
@@ -861,7 +812,8 @@ export function UILayoutEngineTab() {
                         (repositoryRef as any).current = el;
                       }}
                       {...provided.droppableProps}
-                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 48px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'thin' }}
+                      onScroll={handleRepoScroll}
+                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'none' }}
                     >
                       {[
                         { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
@@ -920,6 +872,93 @@ export function UILayoutEngineTab() {
                     </div>
                   )}
                 </Droppable>
+
+                {/* Bottom Control Console */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 16px',
+                  background: '#F5F5F7',
+                  borderTop: '1px solid rgba(0,0,0,0.06)',
+                  direction: 'rtl'
+                }}>
+                  {/* Right: Scroll progress indicator */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '120px',
+                      height: '4px',
+                      background: 'rgba(0, 0, 0, 0.08)',
+                      borderRadius: '2px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        height: '100%',
+                        width: `${scrollPercent}%`,
+                        background: '#5856D6',
+                        borderRadius: '2px',
+                        transition: 'width 0.15s ease-out'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#8E8E93', fontWeight: '600', width: '32px', textAlign: 'left', fontFamily: 'monospace' }}>
+                      {Math.round(scrollPercent)}%
+                    </span>
+                  </div>
+
+                  {/* Left: Premium scroll navigation buttons */}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => handleScrollRepo('left')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        background: 'rgba(88, 86, 214, 0.08)',
+                        border: '1px solid rgba(88, 86, 214, 0.15)',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#5856D6',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.2s',
+                        outline: 'none'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.15)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.08)'; }}
+                    >
+                      <span>→</span>
+                      <span>السابق</span>
+                    </button>
+                    <button
+                      onClick={() => handleScrollRepo('right')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        background: 'rgba(88, 86, 214, 0.08)',
+                        border: '1px solid rgba(88, 86, 214, 0.15)',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#5856D6',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.2s',
+                        outline: 'none'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.15)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(88, 86, 214, 0.08)'; }}
+                    >
+                      <span>التالي</span>
+                      <span>←</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* ── Inspector Panel ── */}
