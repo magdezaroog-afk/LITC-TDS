@@ -27,23 +27,23 @@ export interface UIComponentDefinition {
 const initialComponents: UIComponentDefinition[] = [
   // ─── Submission Modules ───
   { id: 'ticket_create', name: 'إنشاء التذكرة وتوجيهها الأولي', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { targetDestinations: [], maxAttachmentSize: 5, descriptionLimit: 1000, authorizedPathManager: '', enforceAttachments: false, enforceDescription: true, singleTicketRestriction: false, issueTaxonomy: {} } },
-  { id: 'user_tickets_view', name: 'لوحة استعراض التذاكر المرسلة', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
-  { id: 'user_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'submission', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true } },
+  { id: 'ticket_inbox', name: 'لوحة استعراض التذاكر المرسلة', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
+  { id: 'admin_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'submission', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true, identityProvider: 'Microsoft_SSO', twoFactorEnforced: false } },
   { id: 'knowledge_base_user', name: 'الأدلة المعرفية ومكتبة المساعدة', category: 'submission', isActive: false, target_zone: 'Main_Viewport', properties: { enableSearch: true, autoSuggest: true } },
 
   // ─── Operations Modules ───
-  { id: 'inbound_tickets_hub', name: 'لوحة التذاكر الواردة متعددة التبويبات', category: 'operations', isActive: true, target_zone: 'Main_Viewport', properties: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true }, routingScope: 'INTERNAL_TEAM', allowedCrossEscalationRoles: ['OPERATIONAL_MANAGER', 'SECTION_HEAD'], snatchingGovernance: true } },
+  { id: 'admin_operational_console', name: 'لوحة التذاكر الواردة متعددة التبويبات', category: 'operations', isActive: true, target_zone: 'Main_Viewport', properties: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true }, routingScope: 'INTERNAL_TEAM', allowedCrossEscalationRoles: ['OPERATIONAL_MANAGER', 'SECTION_HEAD'], snatchingGovernance: true, activeConsoleTabs: ['NEW', 'IN_PROGRESS'], autoEscalationTimeMinutes: 30 } },
   { id: 'audit_timeline', name: 'شريط الزمن التدقيقي لمسار التذكرة', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { showInternalNotes: false, detailedTimestamps: true } },
-  { id: 'notifications_hub', name: 'مركز الإشعارات والتنبيهات', category: 'operations', isActive: false, target_zone: 'Top_Navbar', properties: { inApp: true, office365Email: true, pushNotifications: true } },
+  { id: 'admin_notifications', name: 'مركز الإشعارات والتنبيهات', category: 'operations', isActive: false, target_zone: 'Top_Navbar', properties: { inApp: true, office365Email: true, pushNotifications: true, forceWhatsappChannel: false, autoEscalateSLA: true } },
   { id: 'engineer_live_status', name: 'لوحة الحالة الحية للمهندسين', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { mapIntegration: false, autoRefreshSeconds: 30 } },
   { id: 'quick_actions_panel', name: 'لوحة الإجراءات السريعة', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { enableOneClickClose: false, escalateToManager: true, enableHandshakeTransfer: true, enableDependencyLock: true } },
 
   // ─── Intelligence & Governance ───
-  { id: 'analytics_dashboard', name: 'التحليل المركزي للمؤشرات', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { activeCharts: ['kpi_cards', 'bar_chart'], dateRangeEnabled: true, managerAnalyticsControl: { allowEngineerDrilldown: true, allowLocationFilter: true, allowTaxonomyFilter: true }, adminOverride: false, enabledDimensions: ['GEO', 'STRUCT', 'TAXONOMY', 'TIME'] } },
-  { id: 'cross_comparison', name: 'المقارنات التقاطعية للفرق', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowedMetrics: ['VOLUME', 'SPEED', 'SLA'], maxComparisonElements: 3, allowedComparisonTypes: ['ENGINEERS', 'LOCATIONS', 'PROBLEMS'] } },
+  { id: 'admin_analytics', name: 'التحليل المركزي للمؤشرات', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { activeCharts: ['kpi_cards', 'bar_chart'], dateRangeEnabled: true, managerAnalyticsControl: { allowEngineerDrilldown: true, allowLocationFilter: true, allowTaxonomyFilter: true }, adminOverride: false, enabledDimensions: ['GEO', 'STRUCT', 'TAXONOMY', 'TIME'], dataScope: 'TEAM', filterDestDept: 'IT' } },
+  { id: 'admin_leaderboard', name: 'المقارنات التقاطعية للفرق', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowedMetrics: ['VOLUME', 'SPEED', 'SLA'], maxComparisonElements: 3, allowedComparisonTypes: ['ENGINEERS', 'LOCATIONS', 'PROBLEMS'], allowedDimensions: ['ENGINEERS', 'LOCATIONS', 'PROBLEMS'] } },
   { id: 'advanced_reports', name: 'لوحة التقارير المتقدمة', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { exportFormats: ['PDF', 'EXCEL'], autoSchedule: false } },
-  { id: 'inventory_assets', name: 'إدارة العهد والمخازن الفنية', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowManagerToEnforceRules: true, flexibleApprovalChain: 'DEPT_HEAD_ONLY' } },
-  { id: 'historical_archive', name: 'الأرشيف التاريخي', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { archiveScope: 'Department_Only', enableHistoricalExport: true } },
+  { id: 'admin_sovereign_custody_ledger_v10', name: 'منظومة العُهد والمخازن السيادية الشاملة V10', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowedReportFilters: ['BY_ITEM_TYPE', 'BY_DATE_RANGE'], allowedReportColumns: ['SHOW_RECEIVER_IDENTITY', 'SHOW_VERIFICATION_STATUS'], allowManagerToEnforceRules: true, flexibleApprovalChain: 'DEPT_HEAD_ONLY' } },
+  { id: 'admin_archive', name: 'الأرشيف التاريخي', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { archiveScope: 'Department_Only', enableHistoricalExport: true, enableTimelineAuditLog: true } },
   { id: 'sla_monitor', name: 'شاشة مراقبة الـ SLA', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { warningThreshold: 15, autoEscalate: true } },
 
   // ─── System Admin Modules ───
@@ -424,7 +424,14 @@ export function UILayoutEngineTab() {
     }
   ]);
   const [selectedBuildingForPreview, setSelectedBuildingForPreview] = useState<string>('');
-  const [components, setComponents] = useState<UIComponentDefinition[]>(initialComponents);
+  const [components, setComponents] = useState<UIComponentDefinition[]>(() => {
+    const saved = localStorage.getItem('litc_layout_components');
+    try {
+      return saved ? JSON.parse(saved) : initialComponents;
+    } catch (e) {
+      return initialComponents;
+    }
+  });
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
 
   // --- Repository Scroll Helper ---
@@ -475,6 +482,11 @@ export function UILayoutEngineTab() {
   const [previewActiveTab, setPreviewActiveTab] = useState<string>('');
   const [previewDynamicFields, setPreviewDynamicFields] = useState<any[]>([]);
   const [previewDesc, setPreviewDesc] = useState<string>('');
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [simulatorViewMode, setSimulatorViewMode] = useState<'stack' | 'tabs'>('stack');
+  const [simulatorActiveTab, setSimulatorActiveTab] = useState<string>('');
 
 
   // --- Landing Manager State ---
@@ -509,6 +521,13 @@ export function UILayoutEngineTab() {
   const [managementLevel, setManagementLevel] = useState<string>('');
   const [showSaveReportModal, setShowSaveReportModal] = useState<boolean>(false);
   const [interfaceToLoad, setInterfaceToLoad] = useState<SavedInterface | null>(null);
+
+  // --- Confirm Save Handler ---
+  const handleConfirmSave = () => {
+    localStorage.setItem('litc_layout_components', JSON.stringify(components));
+    setShowSaveReportModal(false);
+    setIsManagerMode(true);
+  };
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
   const [savedInterfaces, setSavedInterfaces] = useState<SavedInterface[]>([
     { id: 'ui_1', name: 'الواجهة الرئيسية للجمهور', roleType: 'END_USER', lastUpdated: '2023-10-01' },
@@ -555,12 +574,24 @@ export function UILayoutEngineTab() {
     if (!destination) return;
 
     if (source.droppableId !== destination.droppableId) {
+      const isActivating = destination.droppableId === 'active-canvas';
       setComponents(prev => prev.map(c => {
         if (c.id === result.draggableId) {
-          return { ...c, isActive: destination.droppableId === 'active-canvas' };
+          return { ...c, isActive: isActivating };
         }
         return c;
       }));
+      if (isActivating) {
+        setPreviewActiveTab(result.draggableId);
+        setSelectedComponentId(result.draggableId);
+      } else {
+        if (selectedComponentId === result.draggableId) {
+          setSelectedComponentId(null);
+        }
+        if (previewActiveTab === result.draggableId) {
+          setPreviewActiveTab('');
+        }
+      }
       return;
     }
 
@@ -577,7 +608,7 @@ export function UILayoutEngineTab() {
     }
   };
 
-  const handlePropertyChange = (compId: string, key: string, value: any) => {
+    const handlePropertyChange = (compId: string, key: string, value: any) => {
     setComponents(prev => prev.map(c => {
       if (c.id === compId) {
         return { ...c, properties: { ...c.properties, [key]: value } };
@@ -1386,68 +1417,63 @@ export function UILayoutEngineTab() {
                   {/* ═══ admin_analytics Inspector ═══ */}
                   {selectedComponent.id === 'admin_analytics' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>نطاق الاستعلام (Data Scope):</h5>
-<>{isPropertyAllowed("dataScope", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {['PERSONAL', 'TEAM', 'SPECIFIC_EMPLOYEE'].map(scope => (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={scope} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                            <input 
-                              type="radio" 
-                              name="dataScope" 
-                              checked={selectedComponent.properties.dataScope === scope}
-                              onChange={() => handlePropertyChange(selectedComponent.id, 'dataScope', scope)}
-                            />
-                            {scope === 'PERSONAL' ? 'شخصي (Personal)' : scope === 'TEAM' ? 'الفريق (Team)' : 'موظف محدد (Specific)'}
-                          </label>
-<DelegationToggle propKey="dataScope" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['dataScope']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="dataScope" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["dataScope"]} onChange={handleCeilingChange} />
-</div>
-                        ))}
-                      </div>
-)}</>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>📈 إعدادات التحليل المركزي (Analytics)</h5>
+                      
+                      {/* Data Query Scope */}
+                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>نطاق الاستعلام (Data Scope):</h6>
+                      {isPropertyAllowed("dataScope", selectedComponent.strict_ceiling_props) && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                          {['PERSONAL', 'TEAM', 'SPECIFIC_EMPLOYEE'].map(scope => (
+                            <div key={scope} style={{ display: 'flex', flexDirection: 'column' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                                <input 
+                                  type="radio" 
+                                  name="dataScope" 
+                                  checked={selectedComponent.properties.dataScope === scope}
+                                  onChange={() => handlePropertyChange(selectedComponent.id, 'dataScope', scope)}
+                                />
+                                {scope === 'PERSONAL' ? 'شخصي (Personal)' : scope === 'TEAM' ? 'الفريق (Team)' : 'موظف محدد (Specific)'}
+                              </label>
+                              <DelegationToggle propKey="dataScope" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['dataScope']?.allow_override || false} onChange={handleDelegationChange} />
+                              <HardCeilingToggle propKey="dataScope" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["dataScope"]} onChange={handleCeilingChange} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>الفلاتر الديناميكية المتاحة:</h5>
+                      {/* Filters */}
+                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>الفلاتر المتاحة في الواجهة:</h6>
                       <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'BUILDING', label: 'فلتر حسب المبنى' },
                           { id: 'ISSUE_TYPE', label: 'فلتر حسب نوع المشكلة' },
-                          { id: 'DEPARTMENT', label: 'فلتر حسب القسم' },
-                          { id: 'DATE_RANGE', label: 'فلتر النطاق الزمني' }
+                          { id: 'DEPARTMENT', label: 'فلتر حسب القسم' }
                         ].map(f => {
-                          const filters = selectedComponent.properties.allowedFilters || [];
+                          const filters = selectedComponent.properties.enabledUIFilters || [];
                           return (
-<>{isPropertyAllowed("allowedFilters", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={filters.includes(f.id)} onChange={e => {
-                                let nf = [...filters];
-                                if (e.target.checked) nf.push(f.id); else nf = nf.filter((x: string) => x !== f.id);
-                                handlePropertyChange(selectedComponent.id, 'allowedFilters', nf);
-                              }} />
-                              {f.label}
-                            </label>
-<DelegationToggle propKey="allowedFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedFilters']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowedFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedFilters"]} onChange={handleCeilingChange} />
-</div>
-)}</>
+                            <div key={f.id}>
+                              {isPropertyAllowed("enabledUIFilters", selectedComponent.strict_ceiling_props) && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={filters.includes(f.id)} onChange={e => {
+                                      let nf = [...filters];
+                                      if (e.target.checked) nf.push(f.id); else nf = nf.filter((x: string) => x !== f.id);
+                                      handlePropertyChange(selectedComponent.id, 'enabledUIFilters', nf);
+                                    }} />
+                                    {f.label}
+                                  </label>
+                                  <DelegationToggle propKey="enabledUIFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enabledUIFilters']?.allow_override || false} onChange={handleDelegationChange} />
+                                  <HardCeilingToggle propKey="enabledUIFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enabledUIFilters"]} onChange={handleCeilingChange} />
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
 
-<>{isPropertyAllowed("filterDestDept", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-                        <input type="checkbox" checked={selectedComponent.properties.filterDestDept || false} onChange={e => handlePropertyChange(selectedComponent.id, 'filterDestDept', e.target.checked)} />
-                        تفعيل فلتر التوجيه (القسم الوجهة)
-                      </label>
-<DelegationToggle propKey="filterDestDept" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['filterDestDept']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="filterDestDept" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["filterDestDept"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px', marginTop: '15px' }}>الرسوم البيانية المفعلة:</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* Active Charts */}
+                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>الرسوم البيانية المفعلة:</h6>
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
                           { id: 'kpi_cards', label: 'بطاقات KPI' },
                           { id: 'line_chart', label: 'رسم خطي (Line)' },
@@ -1456,57 +1482,118 @@ export function UILayoutEngineTab() {
                         ].map(c => {
                           const charts = selectedComponent.properties.activeCharts || [];
                           return (
-<>{isPropertyAllowed("activeCharts", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={charts.includes(c.id)} onChange={e => {
-                                let nc = [...charts];
-                                if (e.target.checked) nc.push(c.id); else nc = nc.filter((x: string) => x !== c.id);
-                                handlePropertyChange(selectedComponent.id, 'activeCharts', nc);
-                              }} />
-                              {c.label}
-                            </label>
-<DelegationToggle propKey="activeCharts" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['activeCharts']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="activeCharts" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["activeCharts"]} onChange={handleCeilingChange} />
-</div>
-)}</>
+                            <div key={c.id}>
+                              {isPropertyAllowed("activeCharts", selectedComponent.strict_ceiling_props) && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={charts.includes(c.id)} onChange={e => {
+                                      let nc = [...charts];
+                                      if (e.target.checked) nc.push(c.id); else nc = nc.filter((x: string) => x !== c.id);
+                                      handlePropertyChange(selectedComponent.id, 'activeCharts', nc);
+                                    }} />
+                                    {c.label}
+                                  </label>
+                                  <DelegationToggle propKey="activeCharts" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['activeCharts']?.allow_override || false} onChange={handleDelegationChange} />
+                                  <HardCeilingToggle propKey="activeCharts" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["activeCharts"]} onChange={handleCeilingChange} />
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
+
+                      {/* Manager Controls (IT_ADMIN only) */}
+                      {currentBuilderRole === 'IT_ADMIN' && (
+                        <div style={{ padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px solid rgba(88,86,214,0.15)', marginTop: '15px' }}>
+                          <h6 style={{ fontSize: '12px', color: '#5856D6', margin: '0 0 10px 0', fontWeight: 'bold' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
+                          {[
+                            { key: 'allowEngineerDrilldown', label: 'السماح برؤية أداء المهندسين بالاسم (Drilldown)' },
+                            { key: 'allowLocationFilter', label: 'السماح بمقارنة وفلترة المباني والمكاتب' },
+                            { key: 'allowTaxonomyFilter', label: 'السماح بفلترة تصنيفات المشاكل' }
+                          ].map(ctrl => {
+                            const val = selectedComponent.properties.managerAnalyticsControl?.[ctrl.key] ?? false;
+                            return (
+                              <div key={ctrl.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '11px', color: '#475569' }}>{ctrl.label}</span>
+                                <div
+                                  style={val ? styles.switchTrue : styles.switchFalse}
+                                  onClick={() => {
+                                    const mac = { ...(selectedComponent.properties.managerAnalyticsControl || {}) };
+                                    mac[ctrl.key] = !val;
+                                    handlePropertyChange(selectedComponent.id, 'managerAnalyticsControl', mac);
+                                  }}
+                                >
+                                  <div style={val ? styles.knobTrue : styles.knobFalse}></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '10px' }}>
+                            <div>
+                              <span style={{ fontSize: '11px', color: '#D32F2F', display: 'block', fontWeight: 'bold' }}>تجاوز الأدمين (Admin Absolute Override)</span>
+                            </div>
+                            <div
+                              style={selectedComponent.properties.adminOverride ? styles.switchTrue : styles.switchFalse}
+                              onClick={() => handlePropertyChange(selectedComponent.id, 'adminOverride', !selectedComponent.properties.adminOverride)}
+                            >
+                              <div style={selectedComponent.properties.adminOverride ? styles.knobTrue : styles.knobFalse}></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-
+                  
                   {/* ═══ admin_leaderboard Inspector ═══ */}
                   {selectedComponent.id === 'admin_leaderboard' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>⚖️ المقارنات واللوحات القيادية (Leaderboard & Comparison)</h5>
+                      
+                      {/* Max comparison elements */}
+                      <div style={{ marginBottom: '15px' }}>
+                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '5px' }}>الحد الأقصى لعناصر المقارنة (N-Elements):</label>
+                        <input 
+                          type="number" 
+                          min={2} max={10}
+                          value={selectedComponent.properties.maxComparisonElements || 3}
+                          onChange={e => handlePropertyChange(selectedComponent.id, 'maxComparisonElements', parseInt(e.target.value))}
+                          style={{ ...styles.input, width: '80px', padding: '6px' }}
+                        />
+                      </div>
+
+                      {/* Dimensions */}
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>محاور المقارنة المتاحة (Dimensions):</h5>
                       <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
-                          { id: 'EMP_VS_EMP', label: 'موظف مقابل موظف' },
-                          { id: 'DEPT_VS_DEPT', label: 'قسم مقابل قسم' },
-                          { id: 'TIME_VS_TIME', label: 'فترة زمنية مقابل فترة' },
-                          { id: 'FIELD_VS_FIELD', label: 'مستدلة حرة مقابل مستدلة' }
+                          { id: 'ENGINEERS', label: 'مقارنة الكوادر (أداء المهندسين)' },
+                          { id: 'LOCATIONS', label: 'مقارنة المواقع والمباني' },
+                          { id: 'PROBLEMS', label: 'مقارنة أنواع المشاكل والتصنيفات' }
                         ].map(d => {
                           const dims = selectedComponent.properties.allowedDimensions || [];
                           return (
-<>{isPropertyAllowed("allowedDimensions", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={dims.includes(d.id)} onChange={e => {
-                                let nd = [...dims];
-                                if (e.target.checked) nd.push(d.id); else nd = nd.filter((x: string) => x !== d.id);
-                                handlePropertyChange(selectedComponent.id, 'allowedDimensions', nd);
-                              }} />
-                              {d.label}
-                            </label>
-<DelegationToggle propKey="allowedDimensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedDimensions']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowedDimensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedDimensions"]} onChange={handleCeilingChange} />
-</div>
-)}</>
+                            <div key={d.id}>
+                              {isPropertyAllowed("allowedDimensions", selectedComponent.strict_ceiling_props) && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={dims.includes(d.id)} onChange={e => {
+                                      let nd = [...dims];
+                                      if (e.target.checked) nd.push(d.id); else nd = nd.filter((x: string) => x !== d.id);
+                                      handlePropertyChange(selectedComponent.id, 'allowedDimensions', nd);
+                                      handlePropertyChange(selectedComponent.id, 'allowedComparisonTypes', nd);
+                                    }} />
+                                    {d.label}
+                                  </label>
+                                  <DelegationToggle propKey="allowedDimensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedDimensions']?.allow_override || false} onChange={handleDelegationChange} />
+                                  <HardCeilingToggle propKey="allowedDimensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedDimensions"]} onChange={handleCeilingChange} />
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
 
+                      {/* Metrics */}
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>مقاييس الأداء (Metrics):</h5>
                       <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[
@@ -1516,52 +1603,28 @@ export function UILayoutEngineTab() {
                         ].map(m => {
                           const metrics = selectedComponent.properties.allowedMetrics || [];
                           return (
-<>{isPropertyAllowed("allowedMetrics", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={metrics.includes(m.id)} onChange={e => {
-                                let nm = [...metrics];
-                                if (e.target.checked) nm.push(m.id); else nm = nm.filter((x: string) => x !== m.id);
-                                handlePropertyChange(selectedComponent.id, 'allowedMetrics', nm);
-                              }} />
-                              {m.label}
-                            </label>
-<DelegationToggle propKey="allowedMetrics" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedMetrics']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowedMetrics" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedMetrics"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-                          );
-                        })}
-                      </div>
-
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>أوضاع العرض (Display Modes):</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {[
-                          { id: 'SIDE_BAR', label: 'رسم عمودي مزدوج (Side-by-Side Bar)' },
-                          { id: 'VARIANCE_TABLE', label: 'جدول نسبة التغيير (Variance %)' }
-                        ].map(dm => {
-                          const modes = selectedComponent.properties.displayModes || [];
-                          return (
-<>{isPropertyAllowed("displayModes", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={dm.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={modes.includes(dm.id)} onChange={e => {
-                                let nmodes = [...modes];
-                                if (e.target.checked) nmodes.push(dm.id); else nmodes = nmodes.filter((x: string) => x !== dm.id);
-                                handlePropertyChange(selectedComponent.id, 'displayModes', nmodes);
-                              }} />
-                              {dm.label}
-                            </label>
-<DelegationToggle propKey="displayModes" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['displayModes']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="displayModes" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["displayModes"]} onChange={handleCeilingChange} />
-</div>
-)}</>
+                            <div key={m.id}>
+                              {isPropertyAllowed("allowedMetrics", selectedComponent.strict_ceiling_props) && (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={metrics.includes(m.id)} onChange={e => {
+                                      let nm = [...metrics];
+                                      if (e.target.checked) nm.push(m.id); else nm = nm.filter((x: string) => x !== m.id);
+                                      handlePropertyChange(selectedComponent.id, 'allowedMetrics', nm);
+                                    }} />
+                                    {m.label}
+                                  </label>
+                                  <DelegationToggle propKey="allowedMetrics" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedMetrics']?.allow_override || false} onChange={handleDelegationChange} />
+                                  <HardCeilingToggle propKey="allowedMetrics" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedMetrics"]} onChange={handleCeilingChange} />
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
                     </div>
                   )}
-
+                  
                   {/* ═══ admin_archive Inspector ═══ */}
                   {selectedComponent.id === 'admin_archive' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
@@ -1809,7 +1872,9 @@ export function UILayoutEngineTab() {
                   {/* ═══ admin_operational_console Inspector ═══ */}
                   {selectedComponent.id === 'admin_operational_console' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>طرق العرض المتاحة:</h5>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>⚡ كونسول الاستقبال والتشغيل (Operational Console)</h5>
+                      
+                      {/* Views */}
                       <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                         {[{ id: 'TREE', label: 'شجري (Tree View)' }, { id: 'FLAT', label: 'مسطح (Flat View)' }].map(v => {
                           const views = selectedComponent.properties.allowedViews || [];
@@ -1833,11 +1898,53 @@ export function UILayoutEngineTab() {
                           );
                         })}
                       </div>
-                      
-                      <React.Fragment>
+
+                      {/* allowed cross escalation roles */}
+                      <div style={{ marginBottom: '15px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>مصفوفة التصعيد الخارجي (Cross-Escalation):</h6>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {[
+                            { role: 'OPERATIONAL_MANAGER', label: 'مدير إدارة' },
+                            { role: 'SECTION_HEAD', label: 'رئيس قسم' },
+                            { role: 'TEAM_LEADER', label: 'رئيس فريق' },
+                            { role: 'ENGINEER', label: 'مهندس / فني' }
+                          ].map(r => (
+                            <label key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox"
+                                checked={(selectedComponent.properties.allowedCrossEscalationRoles || []).includes(r.role)}
+                                onChange={e => {
+                                    const currentRoles = selectedComponent.properties.allowedCrossEscalationRoles || [];
+                                    if (e.target.checked) {
+                                      handlePropertyChange(selectedComponent.id, 'allowedCrossEscalationRoles', [...currentRoles, r.role]);
+                                    } else {
+                                      handlePropertyChange(selectedComponent.id, 'allowedCrossEscalationRoles', currentRoles.filter((x: string) => x !== r.role));
+                                    }
+                                }}
+                              />
+                              {r.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* snatching power and drag-and-drop */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>سحب التذاكر الجبري (Snatching Power)</span>
+                          </div>
+                          <div
+                            style={selectedComponent.properties.snatchingGovernance ? styles.switchTrue : styles.switchFalse}
+                            onClick={() => handlePropertyChange(selectedComponent.id, 'snatchingGovernance', !selectedComponent.properties.snatchingGovernance)}
+                          >
+                            <div style={selectedComponent.properties.snatchingGovernance ? styles.knobTrue : styles.knobFalse}></div>
+                          </div>
+                        </div>
+
                         {isPropertyAllowed("enableDragAndDrop", selectedComponent.strict_ceiling_props) && (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', marginTop: '5px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
                               <input type="checkbox" checked={selectedComponent.properties.enableDragAndDrop || false}
                                 onChange={e => handlePropertyChange(selectedComponent.id, 'enableDragAndDrop', e.target.checked)} />
                               تفعيل السحب والإفلات (Drag & Drop)
@@ -1846,17 +1953,10 @@ export function UILayoutEngineTab() {
                             <HardCeilingToggle propKey="enableDragAndDrop" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enableDragAndDrop"]} onChange={handleCeilingChange} />
                           </div>
                         )}
-                      </React.Fragment>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', opacity: 0.8, marginBottom: '5px' }}>العمق الأقصى للشجرة (Max Depth):</label>
-                        <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }}
-                          value={selectedComponent.properties.maxDepth || 5}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'maxDepth', parseInt(e.target.value))} />
                       </div>
                     </div>
                   )}
-
+                  
                   {/* ═══ global_settings Inspector ═══ */}
                   {selectedComponent.id === 'global_settings' && currentBuilderRole === 'IT_ADMIN' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
@@ -1982,194 +2082,6 @@ export function UILayoutEngineTab() {
                           </div>
                         );
                       })}
-
-                  {/* ═══ inbound_tickets_hub Inspector ═══ */}
-                  {selectedComponent.id === 'inbound_tickets_hub' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '15px' }}>⚡ إعدادات محرك الاستقبال (Inbound Hub)</h5>
-                      
-                      <div style={{ marginBottom: '15px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>مصفوفة التصعيد الخارجي (Cross-Escalation):</h6>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {[
-                            { role: 'OPERATIONAL_MANAGER', label: 'مدير إدارة' },
-                            { role: 'SECTION_HEAD', label: 'رئيس قسم' },
-                            { role: 'TEAM_LEADER', label: 'رئيس فريق' },
-                            { role: 'ENGINEER', label: 'مهندس / فني' }
-                          ].map(r => (
-                            <label key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}>
-                              <input 
-                                type="checkbox"
-                                checked={(selectedComponent.properties.allowedCrossEscalationRoles || []).includes(r.role)}
-                                onChange={e => {
-                                  const currentRoles = selectedComponent.properties.allowedCrossEscalationRoles || [];
-                                  if (e.target.checked) {
-                                    handlePropertyChange(selectedComponent.id, 'allowedCrossEscalationRoles', [...currentRoles, r.role]);
-                                  } else {
-                                    handlePropertyChange(selectedComponent.id, 'allowedCrossEscalationRoles', currentRoles.filter((x: string) => x !== r.role));
-                                  }
-                                }}
-                              />
-                              {r.label}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>سحب التذاكر الجبري (Snatching Power)</span>
-                          <span style={{ fontSize: '10px', color: '#64748b' }}>السماح للقادة بسحب التذاكر وإعادة توزيعها حسب نطاقهم</span>
-                        </div>
-                        <div
-                          style={selectedComponent.properties.snatchingGovernance ? styles.switchTrue : styles.switchFalse}
-                          onClick={() => handlePropertyChange(selectedComponent.id, 'snatchingGovernance', !selectedComponent.properties.snatchingGovernance)}
-                        >
-                          <div style={selectedComponent.properties.snatchingGovernance ? styles.knobTrue : styles.knobFalse}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ quick_actions_panel Inspector ═══ */}
-                  {selectedComponent.id === 'quick_actions_panel' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#f59e0b', marginBottom: '15px' }}>🚀 إعدادات الإجراءات السريعة (Quick Actions)</h5>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', marginBottom: '10px' }}>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>التحويل المشروط (Handshake Transfer)</span>
-                          <span style={{ fontSize: '10px', color: '#64748b' }}>عدم انتقال الملكية إلا بعد قبول الطرف المستلم</span>
-                        </div>
-                        <div
-                          style={selectedComponent.properties.enableHandshakeTransfer ? styles.switchTrue : styles.switchFalse}
-                          onClick={() => handlePropertyChange(selectedComponent.id, 'enableHandshakeTransfer', !selectedComponent.properties.enableHandshakeTransfer)}
-                        >
-                          <div style={selectedComponent.properties.enableHandshakeTransfer ? styles.knobTrue : styles.knobFalse}></div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#475569', display: 'block' }}>القفل الاعتمادي (Dependency Lock)</span>
-                          <span style={{ fontSize: '10px', color: '#64748b' }}>إمكانية قفل التذكرة الأم تلقائياً عند إنشاء تذكرة فرعية</span>
-                        </div>
-                        <div
-                          style={selectedComponent.properties.enableDependencyLock ? styles.switchTrue : styles.switchFalse}
-                          onClick={() => handlePropertyChange(selectedComponent.id, 'enableDependencyLock', !selectedComponent.properties.enableDependencyLock)}
-                        >
-                          <div style={selectedComponent.properties.enableDependencyLock ? styles.knobTrue : styles.knobFalse}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ analytics_dashboard Inspector ═══ */}
-                  {selectedComponent.id === 'analytics_dashboard' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#10b981', marginBottom: '15px' }}>📈 إعدادات التحليل المركزي (Analytics)</h5>
-                      
-                      {currentBuilderRole === 'IT_ADMIN' ? (
-                        <>
-                      <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', marginBottom: '15px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
-                          <div>
-                            <h6 style={{ fontSize: '13px', color: '#059669', margin: '0 0 5px 0' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
-                            <span style={{ fontSize: '10px', color: '#64748b' }}>تمكين المدير من التحكم في الفلاتر المتاحة لرؤساء الأقسام</span>
-                          </div>
-                        </div>
-
-                        {[
-                          { key: 'allowEngineerDrilldown', label: 'السماح برؤية أداء المهندسين بالاسم (Drilldown)' },
-                          { key: 'allowLocationFilter', label: 'السماح بمقارنة وفلترة المباني والمكاتب' },
-                          { key: 'allowTaxonomyFilter', label: 'السماح بفلترة تصنيفات المشاكل' }
-                        ].map(ctrl => {
-                          const val = selectedComponent.properties.managerAnalyticsControl?.[ctrl.key] ?? false;
-                          return (
-                            <div key={ctrl.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                              <span style={{ fontSize: '12px', color: '#475569' }}>{ctrl.label}</span>
-                              <div
-                                style={val ? styles.switchTrue : styles.switchFalse}
-                                onClick={() => {
-                                  const mac = { ...(selectedComponent.properties.managerAnalyticsControl || {}) };
-                                  mac[ctrl.key] = !val;
-                                  handlePropertyChange(selectedComponent.id, 'managerAnalyticsControl', mac);
-                                }}
-                              >
-                                <div style={val ? styles.knobTrue : styles.knobFalse}></div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#fca5a5', display: 'block', fontWeight: 'bold' }}>تجاوز الأدمين (Admin Absolute Override)</span>
-                          <span style={{ fontSize: '10px', color: '#475569' }}>فتح كافة الفلاتر إجبارياً متجاهلاً قيود المدراء (تجاوز صامت)</span>
-                        </div>
-                        <div
-                          style={selectedComponent.properties.adminOverride ? styles.switchTrue : styles.switchFalse}
-                          onClick={() => handlePropertyChange(selectedComponent.id, 'adminOverride', !selectedComponent.properties.adminOverride)}
-                        >
-                          <div style={selectedComponent.properties.adminOverride ? styles.knobTrue : styles.knobFalse}></div>
-                        </div>
-                      </div>
-                      </>
-                      ) : (
-                        <div style={{ padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', color: '#64748b', fontSize: '12px', textAlign: 'center' }}>
-                          🔒 هذه الإعدادات مخصصة لمدير النظام (IT_ADMIN) فقط.
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ═══ cross_comparison Inspector ═══ */}
-                  {selectedComponent.id === 'cross_comparison' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#8b5cf6', marginBottom: '15px' }}>⚖️ المقارنات التقاطعية (N-Elements Comparison)</h5>
-                      
-                      <div style={{ marginBottom: '15px' }}>
-                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '5px' }}>الحد الأقصى لعناصر المقارنة المتزامنة (N-Elements):</label>
-                        <input 
-                          type="number" 
-                          min={2} max={10}
-                          value={selectedComponent.properties.maxComparisonElements || 3}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'maxComparisonElements', parseInt(e.target.value))}
-                          style={{ ...styles.input, width: '100px', padding: '6px' }}
-                        />
-                      </div>
-
-                      <div style={{ padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>أنواع المقارنات المسموحة:</h6>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {[
-                            { type: 'ENGINEERS', label: 'مقارنة الكوادر (أداء المهندسين)' },
-                            { type: 'LOCATIONS', label: 'مقارنة المواقع والمباني' },
-                            { type: 'PROBLEMS', label: 'مقارنة أنواع المشاكل والتصنيفات' }
-                          ].map(t => {
-                            const types = selectedComponent.properties.allowedComparisonTypes || [];
-                            const isChecked = types.includes(t.type);
-                            return (
-                              <label key={t.type} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}>
-                                <input 
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={e => {
-                                    let newTypes = [...types];
-                                    if (e.target.checked) newTypes.push(t.type);
-                                    else newTypes = newTypes.filter((x: string) => x !== t.type);
-                                    handlePropertyChange(selectedComponent.id, 'allowedComparisonTypes', newTypes);
-                                  }}
-                                />
-                                {t.label}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                     </div>
                   )}
                 </div>
@@ -2185,13 +2097,47 @@ export function UILayoutEngineTab() {
 
           {/* LEFT SIDE (col-span-8): LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
           <div className="col-span-8 flex flex-col h-full overflow-hidden">
-            <div className="admin-scroll" style={{ flex: '1', backgroundColor: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)', color: '#1D1D1F', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'auto', transition: 'all 0.25s ease' }}>
+            <div className="admin-scroll" style={{ flex: '1', backgroundColor: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)', color: '#1D1D1F', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'hidden', transition: 'all 0.25s ease' }}>
         
         {/* Sandbox Toolbar */}
         <div style={{ position: 'sticky', top: 0, background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
           <div style={{ fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', color: '#1D1D1F', fontSize: '14px' }}>
             <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
           </div>
+
+          {/* Segmented Device Viewport Switcher */}
+          <div style={{ display: 'flex', background: 'rgba(118, 118, 128, 0.12)', borderRadius: '10px', padding: '2px', gap: '2px', alignItems: 'center', direction: 'rtl' }}>
+            {(['desktop', 'tablet', 'mobile'] as const).map(d => {
+              const isActive = previewDevice === d;
+              const label = d === 'desktop' ? 'كمبيوتر' : d === 'tablet' ? 'تابلت' : 'جوال';
+              const icon = d === 'desktop' ? '🖥️' : d === 'tablet' ? '📟' : '📱';
+              return (
+                <button
+                  key={d}
+                  onClick={() => setPreviewDevice(d)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    background: isActive ? '#FFFFFF' : 'transparent',
+                    color: isActive ? '#1D1D1F' : '#6E6E73',
+                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                >
+                  <span style={{ fontSize: '14px' }}>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
             <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#FFFFFF', fontSize: '12px', color: '#1D1D1F', fontWeight: '600', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
@@ -2203,516 +2149,992 @@ export function UILayoutEngineTab() {
         </div>
 
         {/* Sandbox Shell Areas */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: 'rtl', padding: '20px', gap: '20px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', direction: 'rtl', padding: '20px', gap: '20px', overflow: 'hidden' }}>
           
-          {/* iOS Style Main Canvas */}
-          <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', background: '#F2F2F7', borderRadius: '32px', border: '8px solid #1D1D1F', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-            
-            {/* Top Navbar Zone (Simulated iOS Status Bar Area) */}
-            <div style={{ height: '56px', background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'flex-end', gap: '10px', zIndex: 10 }}>
-              {activeComponents.filter(c => c.target_zone === 'Top_Navbar').map(c => (
-                <div key={c.id} style={{ padding: '6px 12px', background: '#F5F5F7', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1D1D1F', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '16px' }}>{c.id === 'admin_profile' ? '👤' : c.id === 'admin_notifications' ? '🔔' : '🌐'}</span> {c.name}
-                </div>
-              ))}
+          {/* Modern Dynamic Navigation Panel (Active Components Sidebar) - Outside device frame */}
+          <div style={{ width: '250px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '8px' }}>
+              <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المكونات النشطة</span>
+              <span style={{ fontSize: '10px', background: '#E5E5EA', color: '#6E6E73', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>{activeComponents.length}</span>
             </div>
-
-            {/* Viewport and Dynamic Sidebar Wrapper */}
-            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-              
-              {/* Modern Dynamic Navigation Panel */}
-              <div style={{ width: '250px', background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderLeft: '1px solid rgba(0,0,0,0.08)', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 5 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '8px' }}>
-                  <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المكونات النشطة</span>
-                  <span style={{ fontSize: '10px', background: '#E5E5EA', color: '#6E6E73', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>{activeComponents.length}</span>
+            
+            <Droppable droppableId="active-canvas">
+              {(provided, snapshot) => (
+                <div 
+                  ref={provided.innerRef} 
+                  {...provided.droppableProps}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.04)' : 'transparent', borderRadius: '16px', transition: 'all 0.3s', overflowY: 'auto' }}
+                  className="scrollbar-thin"
+                >
+                  {activeComponents.map((c, index) => (
+                    <Draggable key={c.id} draggableId={c.id} index={index}>
+                      {(provided, snapshot) => {
+                        const isActive = previewActiveTab === c.id;
+                        return (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
+                            style={{
+                              padding: '12px 14px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
+                              background: isActive ? '#FFFFFF' : snapshot.isDragging ? '#FFFFFF' : 'transparent',
+                              color: isActive ? '#1D1D1F' : '#6E6E73',
+                              border: isActive ? '1px solid rgba(88,86,214,0.15)' : '1px solid transparent',
+                              boxShadow: isActive ? '0 4px 14px rgba(88,86,214,0.08)' : snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.1)' : 'none',
+                              transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                              transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
+                              fontWeight: isActive ? '700' : '600',
+                              fontSize: '13px',
+                              ...provided.draggableProps.style
+                            }}
+                            onMouseEnter={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.6)' }}
+                            onMouseLeave={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent' }}
+                          >
+                            <div style={{ 
+                              width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
+                              background: isActive ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : '#F5F5F7',
+                              color: isActive ? '#FFF' : '#8E8E93',
+                              boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
+                              transition: 'all 0.3s'
+                            }}>
+                              {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
+                            </div>
+                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                            {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
+                          </div>
+                        );
+                      }}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
+              )}
+            </Droppable>
+          </div>
+
+          {/* Device Simulator Workspace */}
+          <div style={{ 
+            flex: 1, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            background: 'radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%)', 
+            borderRadius: '16px', 
+            border: '1px solid rgba(0,0,0,0.06)',
+            padding: '24px', 
+            overflow: 'auto',
+            position: 'relative',
+            height: '100%',
+            minHeight: '600px'
+          }}>
+            {/* Device Container Frame */}
+            <div style={{
+              width: previewDevice === 'mobile' ? '360px' : previewDevice === 'tablet' ? '580px' : '100%',
+              maxWidth: previewDevice === 'desktop' ? '950px' : 'none',
+              height: previewDevice === 'mobile' ? '680px' : previewDevice === 'tablet' ? '730px' : '580px',
+              borderRadius: previewDevice === 'mobile' ? '40px' : previewDevice === 'tablet' ? '28px' : '12px',
+              border: previewDevice === 'mobile' ? '12px solid #1D1D1F' : previewDevice === 'tablet' ? '14px solid #1D1D1F' : '4px solid #1D1D1F',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 8px rgba(0,0,0,0.8)',
+              backgroundColor: '#FFFFFF',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              
+              {/* Device Top Decoration (Notch/Camera/macOS title bar) */}
+              {previewDevice === 'mobile' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '120px',
+                  height: '22px',
+                  background: '#1D1D1F',
+                  borderRadius: '0 0 14px 14px',
+                  zIndex: 100,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}>
+                  {/* Speaker Grill */}
+                  <div style={{ width: '45px', height: '3px', background: '#3A3A3C', borderRadius: '1.5px' }}></div>
+                  {/* Camera lens */}
+                  <div style={{ width: '6px', height: '6px', background: '#0D0D11', border: '1px solid #2C2C2E', borderRadius: '50%' }}></div>
+                </div>
+              )}
+
+              {previewDevice === 'tablet' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '4px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '8px',
+                  height: '8px',
+                  background: '#1D1D1F',
+                  borderRadius: '50%',
+                  zIndex: 100,
+                  border: '1px solid #334155'
+                }}></div>
+              )}
+
+              {previewDevice === 'desktop' && (
+                <div style={{ 
+                  height: '36px', 
+                  background: '#E8E8ED', 
+                  borderBottom: '1px solid rgba(0,0,0,0.08)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  padding: '0 12px', 
+                  gap: '8px',
+                  userSelect: 'none',
+                  position: 'relative',
+                  flexShrink: 0
+                }}>
+                  {/* Window Controls */}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FF5F56', border: '0.5px solid #E0443E' }}></div>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FFBD2E', border: '0.5px solid #DEA123' }}></div>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27C93F', border: '0.5px solid #1AAB2F' }}></div>
+                  </div>
+                  {/* Window Title */}
+                  <div style={{ 
+                    position: 'absolute',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '11px', 
+                    fontWeight: 'bold', 
+                    color: '#6E6E73',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    🖥️ معاينة شاشة الكمبيوتر
+                  </div>
+                </div>
+              )}
+
+              {/* Viewport Content Container */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%', position: 'relative' }}>
                 
-                <Droppable droppableId="active-canvas">
-                  {(provided, snapshot) => (
-                    <div 
-                      ref={provided.innerRef} 
-                      {...provided.droppableProps}
-                      style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.04)' : 'transparent', borderRadius: '16px', transition: 'all 0.3s', overflowY: 'auto' }}
-                      className="scrollbar-thin"
-                    >
-                      {activeComponents.map((c, index) => (
-                        <Draggable key={c.id} draggableId={c.id} index={index}>
-                          {(provided, snapshot) => {
-                            const isActive = previewActiveTab === c.id;
-                            return (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
-                                style={{
-                                  padding: '12px 14px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
-                                  background: isActive ? '#FFFFFF' : snapshot.isDragging ? '#FFFFFF' : 'transparent',
-                                  color: isActive ? '#1D1D1F' : '#6E6E73',
-                                  border: isActive ? '1px solid rgba(0,0,0,0.04)' : '1px solid transparent',
-                                  boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.05)' : snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.1)' : 'none',
-                                  transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                                  transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
-                                  fontWeight: isActive ? '700' : '600',
-                                  fontSize: '13px',
-                                  ...provided.draggableProps.style
-                                }}
-                                onMouseEnter={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.6)' }}
-                                onMouseLeave={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent' }}
-                              >
-                                <div style={{ 
-                                  width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
-                                  background: isActive ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : '#F5F5F7',
-                                  color: isActive ? '#FFF' : '#8E8E93',
-                                  boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
-                                  transition: 'all 0.3s'
-                                }}>
-                                  {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
-                                </div>
-                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                                {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
-                              </div>
-                            );
+                {/* Simulated App Top Navbar */}
+                <div style={{ 
+                  height: '52px', 
+                  background: 'rgba(255, 255, 255, 0.8)', 
+                  backdropFilter: 'blur(20px)', 
+                  WebkitBackdropFilter: 'blur(20px)', 
+                  borderBottom: '1px solid rgba(0,0,0,0.05)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  padding: previewDevice === 'mobile' ? '0 16px' : '0 24px', 
+                  justifyContent: 'space-between', 
+                  gap: '10px', 
+                  zIndex: 200,
+                  flexShrink: 0,
+                  position: 'relative'
+                }}>
+                  {/* Brand logo/title */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #007AFF, #5856D6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '12px', fontWeight: '800' }}>L</div>
+                    <span style={{ fontSize: '13px', fontWeight: '800', color: '#1D1D1F' }}>قمرة التشغيل</span>
+                  </div>
+
+                  {/* Top Navbar items */}
+                  <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                    
+                    {/* Bell Notification Icon */}
+                    {activeComponents.some(c => c.id === 'admin_notifications') && (
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => {
+                            setShowNotificationsDropdown(!showNotificationsDropdown);
+                            setShowProfileDropdown(false);
                           }}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showNotificationsDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
+                          }}
+                          title="الإشعارات والتنبيهات"
+                        >
+                          🔔
+                          <span style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#FF3B30', border: '1.5px solid #FFF' }}></span>
+                        </button>
 
-              {/* Main Viewport Zone */}
-              <div style={{ flex: 1, background: '#FFFFFF', padding: '24px', overflowY: 'auto', paddingBottom: '120px' }} className="scrollbar-thin">
+                        {/* Glassmorphic Notifications Dropdown */}
+                        {showNotificationsDropdown && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '44px',
+                            left: '0',
+                            width: '280px',
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '14px',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                            padding: '12px',
+                            zIndex: 1000,
+                            textAlign: 'right',
+                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '8px', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>مركز التنبيهات الحية</span>
+                              <span style={{ fontSize: '10px', color: '#007AFF', cursor: 'pointer' }} onClick={() => setShowNotificationsDropdown(false)}>إغلاق</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {[
+                                { title: 'تذكرة جديدة واردة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT', time: 'منذ دقيقة', unread: true },
+                                { title: 'تنبيه SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية', time: 'منذ 5 دقائق', unread: true },
+                                { title: 'تمت الموافقة على التحويل المشروط', desc: 'وافق م. خليل على إدارة تذكرة التخزين', time: 'منذ ساعتين', unread: false }
+                              ].map((item, idx) => (
+                                <div key={idx} style={{ padding: '8px', borderRadius: '8px', background: item.unread ? 'rgba(0,122,255,0.05)' : 'transparent', borderBottom: '0.5px solid rgba(0,0,0,0.03)', cursor: 'pointer' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: item.unread ? '#007AFF' : '#1D1D1F' }}>{item.title}</span>
+                                    <span style={{ fontSize: '9px', color: '#8E8E93' }}>{item.time}</span>
+                                  </div>
+                                  <div style={{ fontSize: '10px', color: '#6E6E73', marginTop: '2px' }}>{item.desc}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-              {previewActiveTab ? (
-                <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ margin: '0 0 20px 0', color: '#1D1D1F', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700' }}>
-                    <span style={{ width: '4px', height: '20px', background: '#5856D6', borderRadius: '2px' }}></span>
-                    {activeComponents.find(c => c.id === previewActiveTab)?.name || 'غير معروف'}
-                  </h2>
+                    {/* Profile Icon */}
+                    {activeComponents.some(c => c.id === 'admin_profile') && (
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => {
+                            setShowProfileDropdown(!showProfileDropdown);
+                            setShowNotificationsDropdown(false);
+                          }}
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showProfileDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
+                          }}
+                          title="الملف الشخصي"
+                        >
+                          👤
+                        </button>
+
+                        {/* Glassmorphic Profile Dropdown */}
+                        {showProfileDropdown && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '44px',
+                            left: '0',
+                            width: '220px',
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '14px',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                            padding: '12px',
+                            zIndex: 1000,
+                            textAlign: 'right',
+                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: '8px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#5856D6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', fontSize: '14px' }}>M</div>
+                              <div>
+                                <div style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>majdi.alzarrouk</div>
+                                <div style={{ fontSize: '10px', color: '#8E8E93' }}>{previewRole}</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {['الملف الشخصي', 'إعدادات الحساب', 'تسجيل الخروج'].map((opt, i) => (
+                                <div key={opt} style={{ padding: '8px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: i === 2 ? '#FF3B30' : '#1D1D1F', cursor: 'pointer', background: 'transparent', transition: 'background 0.2s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  onClick={() => setShowProfileDropdown(false)}
+                                >
+                                  {opt}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* Viewport Scrollable Screen Content */}
+                <div 
+                  style={{ 
+                    flex: 1, 
+                    background: '#F9FAFB', 
+                    padding: previewDevice === 'mobile' ? '16px' : '24px', 
+                    overflowY: 'auto', 
+                    paddingBottom: '80px',
+                    position: 'relative'
+                  }} 
+                  className="admin-scroll"
+                  onClick={() => {
+                    // Close dropdowns when clicking outside
+                    setShowNotificationsDropdown(false);
+                    setShowProfileDropdown(false);
+                  }}
+                >
                   
-                  {previewActiveTab === 'ticket_create' && (() => {
-                    const tProps = activeComponents.find(c => c.id === 'ticket_create')?.properties || {};
-                    const targets = tProps.targetDestinations || [];
-                    const isInstantRouting = targets.length === 1;
-                    const maxDesc = tProps.descriptionLimit || 1000;
-                    const taxRaw = tProps.issueTaxonomyRaw || '';
-                    const taxonomyLines = taxRaw.split('\n').filter((l: string) => l.trim() !== '');
-                    const taxonomyList = taxonomyLines.map((line: string) => {
-                      const [main, sub] = line.split('|');
-                      return { main: main?.trim() || '', sub: sub ? sub.split(',').map((s: string) => s.trim()) : [] };
-                    }).filter((t: any) => t.main !== '');
+                  {(() => {
+                    const mainComponents = activeComponents.filter(c => c.target_zone === 'Main_Viewport' || !c.target_zone);
+
+                    if (mainComponents.length === 0) {
+                      return (
+                        <div style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#AEAEB2', gap: '16px' }}>
+                          <div style={{ width: '64px', height: '64px', background: '#F5F5F7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>⚙️</div>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1D1D1F' }}>لا توجد مكونات نشطة بمساحة العرض</div>
+                          <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>قم بتفعيل المكونات في قائمة "المكونات النشطة" لتظهر فوراً في المعاينة.</div>
+                        </div>
+                      );
+                    }
+
+                    // Render component preview block helper
+                    const renderComponent = (c: UIComponentDefinition) => {
+                      switch (c.id) {
+                        case 'ticket_create': {
+                          const tProps = c.properties || {};
+                          const targets = tProps.targetDestinations || [];
+                          const isInstantRouting = targets.length === 1;
+                          const maxDesc = tProps.descriptionLimit || 1000;
+                          const taxRaw = tProps.issueTaxonomyRaw || '';
+                          const taxonomyLines = taxRaw.split('\n').filter((l: string) => l.trim() !== '');
+                          const taxonomyList = taxonomyLines.map((line: string) => {
+                            const [main, sub] = line.split('|');
+                            return { main: main?.trim() || '', sub: sub ? sub.split(',').map((s: string) => s.trim()) : [] };
+                          }).filter((t: any) => t.main !== '');
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              {!isInstantRouting && (
+                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                  <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>توجيه التذكرة (Routing)</h4>
+                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#FF3B30' }}>*</span></label>
+                                  <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
+                                    <option value="">-- اختر الإدارة المستقبلة --</option>
+                                    {targets.map((deptId: string) => {
+                                      const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
+                                      return <option key={deptId} value={deptId}>{deptName}</option>;
+                                    })}
+                                  </select>
+                                </div>
+                              )}
+
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>الموقع الفعلي (Physical Location)</h4>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#FF3B30' }}>*</span></label>
+                                    <select 
+                                      value={selectedBuildingForPreview}
+                                      onChange={e => setSelectedBuildingForPreview(e.target.value)}
+                                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
+                                    >
+                                      <option value="">-- المبنى --</option>
+                                      {corporateLocations.map(loc => (
+                                        <option key={loc.id} value={loc.id}>{loc.buildingName}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#FF3B30' }}>*</span></label>
+                                    <select 
+                                      disabled={!selectedBuildingForPreview}
+                                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: !selectedBuildingForPreview ? '#EBEBEB' : '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit', opacity: !selectedBuildingForPreview ? 0.6 : 1 }}
+                                    >
+                                      <option value="">-- الإدارة أو المكتب --</option>
+                                      {selectedBuildingForPreview && corporateLocations.find(l => l.id === selectedBuildingForPreview)?.offices.map(off => (
+                                        <option key={off.id} value={off.id}>{off.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#FF3B30' }}>*</span></label>
+                                    <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
+                                      <option value="">-- اختر المشكلة الرئيسية --</option>
+                                      {taxonomyList.map((t: any, i: number) => <option key={i}>{t.main}</option>)}
+                                    </select>
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#FF3B30' }}>*</span></label>
+                                    <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
+                                      <option value="">-- اختر المشكلة الفرعية --</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تفاصيل التذكرة والمرفقات</h4>
+                                
+                                <input type="text" placeholder="عنوان التذكرة (عنوان اختياري)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', marginBottom: '15px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }} />
+                                
+                                <div style={{ marginBottom: '15px' }}>
+                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#FF3B30' }}>*</span>}</span>
+                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>0 / {maxDesc}</span>
+                                  </label>
+                                  <textarea 
+                                    placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
+                                    style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#1D1D1F' }}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#FF3B30' }}>*</span>}</span>
+                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
+                                  </label>
+                                  <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(0,0,0,0.15)', borderRadius: '8px', background: '#F9F9FB', textAlign: 'center', cursor: 'pointer', color: '#6E6E73', fontSize: '13px', fontWeight: '500' }}>
+                                    + اسحب الملفات هنا أو اضغط للاستعراض
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                              >
+                                إرسال التذكرة 🚀
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        case 'ticket_inbox': {
+                          const p = c.properties || {};
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>قائمة التذاكر المرسلة</h4>
+                                {p.allowCancellation && (
+                                  <span style={{ fontSize: '11px', color: '#FF3B30', background: '#FFF1F0', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>إمكانية الإلغاء مفعلة</span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {[
+                                  { id: 'TKT-1002', title: 'شاشة حاسوب معطلة', date: 'منذ ساعتين', status: 'مفتوحة' },
+                                  { id: 'TKT-0994', title: 'طلب صلاحية للشبكة', date: 'أمس', status: 'محلولة' }
+                                ].map(t => (
+                                  <div key={t.id} style={{ padding: '14px', background: '#F5F5F7', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
+                                    <div>
+                                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{t.title}</div>
+                                      <div style={{ fontSize: '11px', color: '#8E8E93', marginTop: '4px' }}>{t.id} • {t.date}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <span style={{ 
+                                        padding: '4px 8px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '11px', 
+                                        fontWeight: '700',
+                                        background: t.status === 'مفتوحة' ? '#E5F1FF' : '#E8F5E9',
+                                        color: t.status === 'مفتوحة' ? '#007AFF' : '#34C759'
+                                      }}>
+                                        {t.status}
+                                      </span>
+                                      {p.allowCancellation && t.status === 'مفتوحة' && (
+                                        <button style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: '#FF3B30', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>إلغاء ❌</button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_operational_console': {
+                          const p = c.properties || {};
+                          const snatching = p.snatchingGovernance || false;
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>لوحة التذاكر الواردة</h4>
+                                
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
+                                  {['الجديدة', 'قيد المعالجة', 'معلقة', 'مغلقة'].map((tab, i) => (
+                                     <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? '#E5F1FF' : 'transparent', color: i===0 ? '#007AFF' : '#6E6E73', fontSize: '13px', fontWeight: i===0 ? '700' : '500', cursor: 'pointer' }}>
+                                        {tab}
+                                     </div>
+                                  ))}
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10294</div>
+                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
+                                    </div>
+                                    {snatching && (
+                                      <button style={{ padding: '8px 14px', background: '#FFF1F0', color: '#FF3B30', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>سحب التذكرة ✋</button>
+                                    )}
+                                  </div>
+                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10295</div>
+                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>تحديث النظام - جديدة</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'quick_actions_panel': {
+                          const p = c.properties || {};
+                          const handshake = p.enableHandshakeTransfer || false;
+                          const depLock = p.enableDependencyLock || false;
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>الإجراءات السريعة (Quick Actions)</h4>
+                                
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                  <button style={{ padding: '12px 18px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,122,255,0.2)' }}>
+                                    إسناد لنفسي 🙋‍♂️
+                                  </button>
+                                  
+                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                                    تحويل التذكرة {handshake && <span style={{ color: '#FF9500', fontSize: '11px', marginInlineStart: '5px' }}>(مشروط 🤝)</span>}
+                                  </button>
+
+                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                                    إنشاء تذكرة فرعية {depLock && <span style={{ color: '#FF3B30', fontSize: '11px', marginInlineStart: '5px' }}>(قفل الاعتماد 🔒)</span>}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                                {handshake ? (
+                                   <div style={{ position: 'relative', zIndex: 1 }}>
+                                     <h5 style={{ margin: '0 0 10px 0', color: '#FF9500', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                                        <span style={{ fontSize: '18px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
+                                     </h5>
+                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة معلقة.</p>
+                                     <div style={{ display: 'flex', gap: '10px' }}>
+                                       <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }}>
+                                         <option>اختر الزميل...</option>
+                                         <option>م. خليل (فريق الشبكات)</option>
+                                       </select>
+                                       <button style={{ padding: '12px 24px', background: '#FF9500', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)' }}>إرسال طلب التحويل</button>
+                                     </div>
+                                   </div>
+                                ) : depLock ? (
+                                   <div style={{ position: 'relative', zIndex: 1 }}>
+                                     <h5 style={{ margin: '0 0 10px 0', color: '#007AFF', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                                        <span style={{ fontSize: '18px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي
+                                     </h5>
+                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#FF3B30' }}>(معلقة)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
+                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                       <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }} />
+                                       <button style={{ alignSelf: 'flex-end', padding: '12px 24px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 122, 255, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
+                                     </div>
+                                   </div>
+                                ) : (
+                                   <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#AEAEB2', fontSize: '13px', padding: '20px' }}>
+                                     قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من خصائص المكون لرؤية النوافذ التفاعلية.
+                                   </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_analytics': {
+                          const p = c.properties || {};
+                          const isOverride = p.adminOverride || false;
+                          const isSectionHead = previewRole === 'Dept_Head';
+                          const drilldown = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowEngineerDrilldown);
+                          const locationF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowLocationFilter);
+                          const taxF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowTaxonomyFilter);
+                          const activeCharts = p.activeCharts || ['kpi_cards', 'bar_chart'];
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ padding: '24px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+                                <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1D1D1F', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
+                                  <span>لوحة التحليل المركزي (OLAP Engine)</span>
+                                  {isOverride && <span style={{ fontSize: '11px', background: '#FFF1F0', color: '#FF3B30', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>تجاوز المشرف النشط</span>}
+                                </h4>
+                                
+                                <div style={{ display: 'flex', gap: '15px', marginBottom: '24px' }}>
+                                  {locationF ? (
+                                    <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>📍 تصفية حسب المبنى</option>
+                                      <option>المبنى الرئيسي (طرابلس)</option>
+                                      <option>فرع بنغازي</option>
+                                    </select>
+                                  ) : (
+                                    <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>
+                                  )}
+                                  
+                                  {taxF ? (
+                                    <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>🗂️ تصفية حسب التصنيف</option>
+                                      <option>أعطال تقنية</option>
+                                      <option>أعطال تشغيلية</option>
+                                    </select>
+                                  ) : (
+                                    <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية التصنيفات مقفلة</div>
+                                  )}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                  <div style={{ flex: 2, minWidth: '280px', height: '220px', background: '#F9F9FB', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '32px' }}>📊</span>
+                                    <span style={{ fontWeight: '600', color: '#6E6E73' }}>مؤشرات الأداء الزمنية</span>
+                                  </div>
+                                  
+                                  <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    {drilldown ? (
+                                      <div style={{ flex: 1, background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px' }}>🏆 أفضل المهندسين أداءً</span>
+                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
+                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
+                                      </div>
+                                    ) : (
+                                      <div style={{ flex: 1, background: '#FFF1F0', borderRadius: '12px', border: '1px solid #FECACA', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FF3B30', textAlign: 'center' }}>
+                                        <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
+                                        <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
+                                        <span style={{ fontSize: '10px', marginTop: '4px' }}>بناءً على قيود الصلاحية</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                {activeCharts.includes('kpi_cards') && (
+                                  <div style={{ flex: 1, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>إجمالي التذاكر (المحلولة)</span>
+                                    <strong style={{ fontSize: '20px', color: '#1D1D1F', marginTop: '4px' }}>243</strong>
+                                  </div>
+                                )}
+                                {activeCharts.includes('line_chart') && (
+                                  <div style={{ flex: 1, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>معدّل سرعة الاستجابة</span>
+                                    <strong style={{ fontSize: '20px', color: '#007AFF', marginTop: '4px' }}>18 دقيقة</strong>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_leaderboard': {
+                          const p = c.properties || {};
+                          const maxElements = p.maxComparisonElements || 3;
+                          const types = p.allowedComparisonTypes || ['ENGINEERS'];
+                          const activeType = types[0] || 'ENGINEERS';
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
+                                {types.map((t: string) => (
+                                  <div key={t} style={{ padding: '8px 18px', background: t === activeType ? '#5856D6' : '#F5F5F7', color: t === activeType ? '#FFFFFF' : '#6E6E73', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${t === activeType ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, transition: 'all 0.2s' }}>
+                                    {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
+                                  </div>
+                                ))}
+                                {types.length === 0 && <span style={{ fontSize: '13px', color: '#FF3B30' }}>لا توجد مقارنات مسموحة</span>}
+                              </div>
+
+                              <div style={{ height: '240px', padding: '20px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '15px', justifyContent: 'flex-end', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+                                <div style={{ fontSize: '13px', color: '#1D1D1F', fontWeight: '700' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'المهندسين' : activeType === 'LOCATIONS' ? 'المباني' : 'المشاكل'})</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
+                                   {['أحمد', 'محمد', 'علي'].map((name, idx) => (
+                                     <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
+                                       <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
+                                          {Array.from({ length: Math.min(3, maxElements) }).map((_, barIdx) => {
+                                             const colors = [['#5856D6', '#AF52DE'], ['#007AFF', '#34C759'], ['#FF9500', '#FF3B30']];
+                                             const color = colors[barIdx % colors.length];
+                                             const h = 30 + Math.random() * 60;
+                                             return (
+                                               <div key={barIdx} style={{ width: '14px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '4px 4px 0 0', opacity: 0.9, transition: 'all 0.5s' }}></div>
+                                             );
+                                          })}
+                                       </div>
+                                       <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '600' }}>{name}</span>
+                                     </div>
+                                   ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_archive': {
+                          const p = c.properties || {};
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  {(p.enabledUIFilters || ['التاريخ', 'الحالة']).map((filter: string, idx: number) => (
+                                    <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>تصفية: {filter}</option>
+                                    </select>
+                                  ))}
+                                </div>
+                                {p.enableHistoricalExport && (
+                                  <button style={{ padding: '10px 18px', background: '#34C759', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(52, 199, 89, 0.3)' }}>
+                                    تصدير التقرير 📥
+                                  </button>
+                                )}
+                              </div>
+                              
+                              <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                  <thead style={{ background: '#F5F5F7', textAlign: 'right', fontSize: '13px', color: '#6E6E73' }}>
+                                    <tr>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>رقم التذكرة</th>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>التصنيف</th>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>الحالة التاريخية</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody style={{ fontSize: '14px', color: '#1D1D1F' }}>
+                                    {[1, 2].map(row => (
+                                      <tr key={row} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                        <td style={{ padding: '16px 20px', fontWeight: '500' }}>#TKT-2026-00{row}</td>
+                                        <td style={{ padding: '16px 20px' }}>عطل تقني متقدم</td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                          <span style={{ padding: '4px 10px', background: '#E8F5E9', color: '#34C759', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>مغلقة نهائياً</span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {p.enableTimelineAuditLog && (
+                                <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRight: '4px solid #007AFF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
+                                  <div style={{ fontSize: '13px', color: '#6E6E73', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#007AFF' }}/> 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        default:
+                          return (
+                            <div style={{ padding: '20px', background: '#F5F5F7', borderRadius: '12px', border: '1px dashed rgba(0,0,0,0.1)', textAlign: 'center', color: '#8E8E93', fontSize: '13px' }}>
+                              ⚙️ مكون "{c.name}" - جاهز للعمل.
+                            </div>
+                          );
+                      }
+                    };
 
                     return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s ease' }}>
                         
-                        {!isInstantRouting && (
-                          <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                            <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>توجيه التذكرة (Routing)</h4>
-                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#FF3B30' }}>*</span></label>
-                            <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                              <option value="">-- اختر الإدارة المستقبلة --</option>
-                              {targets.map((deptId: string) => {
-                                const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
-                                return <option key={deptId} value={deptId}>{deptName}</option>;
+                        {/* Segmented View Mode Controller (Stack vs Tabs) */}
+                        <div style={{ 
+                          display: 'flex', 
+                          background: 'rgba(118, 118, 128, 0.12)', 
+                          borderRadius: '10px', 
+                          padding: '2px', 
+                          gap: '2px', 
+                          alignItems: 'center', 
+                          width: '100%',
+                          maxWidth: '280px',
+                          alignSelf: 'center',
+                          direction: 'rtl'
+                        }}>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('stack'); }}
+                            style={{ 
+                              flex: 1, 
+                              padding: '6px 12px', 
+                              border: 'none', 
+                              borderRadius: '8px', 
+                              fontSize: '11px', 
+                              fontWeight: '700', 
+                              cursor: 'pointer', 
+                              background: simulatorViewMode === 'stack' ? '#FFFFFF' : 'transparent',
+                              color: simulatorViewMode === 'stack' ? '#1D1D1F' : '#6E6E73',
+                              boxShadow: simulatorViewMode === 'stack' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            📑 عرض متتالي
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('tabs'); }}
+                            style={{ 
+                              flex: 1, 
+                              padding: '6px 12px', 
+                              border: 'none', 
+                              borderRadius: '8px', 
+                              fontSize: '11px', 
+                              fontWeight: '700', 
+                              cursor: 'pointer', 
+                              background: simulatorViewMode === 'tabs' ? '#FFFFFF' : 'transparent',
+                              color: simulatorViewMode === 'tabs' ? '#1D1D1F' : '#6E6E73',
+                              boxShadow: simulatorViewMode === 'tabs' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            🗂️ عرض تبويبي
+                          </button>
+                        </div>
+
+                        {/* Rendering Viewport Contents based on mode */}
+                        {simulatorViewMode === 'stack' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {mainComponents.map(c => {
+                              const isSelected = selectedComponentId === c.id;
+                              return (
+                                <div 
+                                  key={c.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedComponentId(c.id);
+                                    setPreviewActiveTab(c.id);
+                                  }}
+                                  style={{
+                                    border: isSelected ? '2px solid #5856D6' : '1px solid rgba(0,0,0,0.08)',
+                                    borderRadius: '16px',
+                                    padding: '20px',
+                                    background: '#FFFFFF',
+                                    boxShadow: isSelected ? '0 8px 24px rgba(88,86,214,0.1)' : '0 2px 8px rgba(0,0,0,0.03)',
+                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    position: 'relative'
+                                  }}
+                                >
+                                  {/* Component Header badge */}
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid rgba(0,0,0,0.06)',
+                                    paddingBottom: '8px',
+                                    marginBottom: '16px'
+                                  }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '800', color: isSelected ? '#5856D6' : '#1D1D1F', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#5856D6' : '#8E8E93' }}/>
+                                      {c.name}
+                                    </span>
+                                    <span style={{ fontSize: '9px', background: isSelected ? 'rgba(88,86,214,0.08)' : '#F5F5F7', color: isSelected ? '#5856D6' : '#8E8E93', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                      {c.category === 'submission' ? 'تقديم الطلبات' : c.category === 'operations' ? 'التشغيل والدعم' : c.category === 'intelligence' ? 'التحليل والحوكمة' : 'إدارة النظام'}
+                                    </span>
+                                  </div>
+
+                                  {renderComponent(c)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Horizontal scrollable tab row */}
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '6px', 
+                              overflowX: 'auto', 
+                              paddingBottom: '8px',
+                              borderBottom: '1px solid rgba(0,0,0,0.05)',
+                              direction: 'rtl'
+                            }} className="scrollbar-thin">
+                              {mainComponents.map(c => {
+                                const isSelected = selectedComponentId === c.id;
+                                return (
+                                  <button
+                                    key={c.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComponentId(c.id);
+                                      setPreviewActiveTab(c.id);
+                                    }}
+                                    style={{
+                                      padding: '6px 14px',
+                                      border: 'none',
+                                      borderRadius: '16px',
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      background: isSelected ? '#5856D6' : '#F5F5F7',
+                                      color: isSelected ? '#FFFFFF' : '#6E6E73',
+                                      boxShadow: isSelected ? '0 2px 8px rgba(88,86,214,0.2)' : 'none',
+                                      whiteSpace: 'nowrap',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    {c.name}
+                                  </button>
+                                );
                               })}
-                            </select>
+                            </div>
+
+                            {/* Render active tab component */}
+                            {(() => {
+                              const activeTabComp = mainComponents.find(c => c.id === selectedComponentId) || mainComponents[0];
+                              if (!activeTabComp) return null;
+                              return (
+                                <div style={{ animation: 'fadeIn 0.25s ease' }}>
+                                  {renderComponent(activeTabComp)}
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
 
-                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>الموقع الفعلي (Physical Location)</h4>
-                          <div style={{ display: 'flex', gap: '15px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#FF3B30' }}>*</span></label>
-                              <select 
-                                value={selectedBuildingForPreview}
-                                onChange={e => setSelectedBuildingForPreview(e.target.value)}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
-                              >
-                                <option value="">-- المبنى --</option>
-                                {corporateLocations.map(loc => (
-                                  <option key={loc.id} value={loc.id}>{loc.buildingName}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#FF3B30' }}>*</span></label>
-                              <select 
-                                disabled={!selectedBuildingForPreview}
-                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: !selectedBuildingForPreview ? '#EBEBEB' : '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit', opacity: !selectedBuildingForPreview ? 0.6 : 1 }}
-                              >
-                                <option value="">-- الإدارة أو المكتب --</option>
-                                {selectedBuildingForPreview && corporateLocations.find(l => l.id === selectedBuildingForPreview)?.offices.map(off => (
-                                  <option key={off.id} value={off.id}>{off.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
-                          <div style={{ display: 'flex', gap: '15px' }}>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#FF3B30' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                                <option value="">-- اختر المشكلة الرئيسية --</option>
-                                {taxonomyList.map((t: any, i: number) => <option key={i}>{t.main}</option>)}
-                              </select>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#FF3B30' }}>*</span></label>
-                              <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                                <option value="">-- اختر المشكلة الفرعية --</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تفاصيل التذكرة والمرفقات</h4>
-                          
-                          <input type="text" placeholder="عنوان التذكرة (اختياري، يولد تلقائياً إن ترك فارغاً)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', marginBottom: '15px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }} />
-                          
-                          <div style={{ marginBottom: '15px' }}>
-                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#FF3B30' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#AEAEB2' }}>0 / {maxDesc}</span>
-                            </label>
-                            <textarea 
-                              placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
-                              style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#1D1D1F' }}
-                            />
-                          </div>
-
-                          <div>
-                            <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#FF3B30' }}>*</span>}</span>
-                              <span style={{ fontSize: '10px', color: '#AEAEB2' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
-                            </label>
-                            <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(0,0,0,0.15)', borderRadius: '8px', background: '#F9F9FB', textAlign: 'center', cursor: 'pointer', color: '#6E6E73', fontSize: '13px', fontWeight: '500' }}>
-                              + اسحب الملفات هنا أو اضغط للاستعراض
-                            </div>
-                          </div>
-                        </div>
-
-                        <button style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                          إرسال التذكرة 🚀
-                        </button>
                       </div>
                     );
                   })()}
 
-                  
-{previewActiveTab === 'inbound_tickets_hub' && (() => {
-  const p = activeComponents.find(c => c.id === 'inbound_tickets_hub')?.properties || {};
-  const snatching = p.snatchingGovernance || false;
-  
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>لوحة التذاكر الواردة</h4>
-        
-        {/* Context-Aware Tabs Mock */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
-          {['الجديدة', 'قيد المعالجة', 'معلقة', 'مغلقة'].map((tab, i) => (
-             <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? '#E5F1FF' : 'transparent', color: i===0 ? '#007AFF' : '#6E6E73', fontSize: '13px', fontWeight: i===0 ? '700' : '500', cursor: 'pointer' }}>
-                {tab}
-             </div>
-          ))}
-        </div>
-
-        {/* Data Filtering Mock */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10294</div>
-              <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
-            </div>
-            {snatching && (
-              <button style={{ padding: '8px 14px', background: '#FFF1F0', color: '#FF3B30', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>سحب التذكرة ✋</button>
-            )}
-          </div>
-          <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10295</div>
-              <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>تحديث النظام - جديدة</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})()}
-
-{previewActiveTab === 'quick_actions_panel' && (() => {
-  const p = activeComponents.find(c => c.id === 'quick_actions_panel')?.properties || {};
-  const handshake = p.enableHandshakeTransfer || false;
-  const depLock = p.enableDependencyLock || false;
-  
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-      <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-        <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>الإجراءات السريعة (Quick Actions)</h4>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          <button style={{ padding: '12px 18px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,122,255,0.2)' }}>
-            إسناد لنفسي 🙋‍♂️
-          </button>
-          
-          <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-            تحويل التذكرة {handshake && <span style={{ color: '#FF9500', fontSize: '11px', marginInlineStart: '5px' }}>(مشروط 🤝)</span>}
-          </button>
-
-          <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-            إنشاء تذكرة فرعية {depLock && <span style={{ color: '#FF3B30', fontSize: '11px', marginInlineStart: '5px' }}>(قفل الاعتماد 🔒)</span>}
-          </button>
-        </div>
-      </div>
-
-      {/* Visual Mock for Handshake / Sub-ticket Popup Animation */}
-      <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.06)', animation: 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
-        {handshake ? (
-           <div style={{ position: 'relative', zIndex: 1 }}>
-             <h5 style={{ margin: '0 0 10px 0', color: '#FF9500', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
-                <span style={{ fontSize: '18px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
-             </h5>
-             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة معلقة.</p>
-             <div style={{ display: 'flex', gap: '10px' }}>
-               <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }}>
-                 <option>اختر الزميل...</option>
-                 <option>م. خليل (فريق الشبكات)</option>
-               </select>
-               <button style={{ padding: '12px 24px', background: '#FF9500', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)' }}>إرسال طلب التحويل</button>
-             </div>
-           </div>
-        ) : depLock ? (
-           <div style={{ position: 'relative', zIndex: 1 }}>
-             <h5 style={{ margin: '0 0 10px 0', color: '#007AFF', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
-                <span style={{ fontSize: '18px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي
-             </h5>
-             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#FF3B30' }}>(معلقة)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-               <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }} />
-               <button style={{ alignSelf: 'flex-end', padding: '12px 24px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 122, 255, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
-             </div>
-           </div>
-        ) : (
-           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#AEAEB2', fontSize: '13px', padding: '20px' }}>
-             قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من خصائص المكون لرؤية النوافذ التفاعلية.
-           </div>
-        )}
-      </div>
-    </div>
-  );
-})()}
-
-
-{previewActiveTab === 'analytics_dashboard' && (() => {
-  const p = activeComponents.find(c => c.id === 'analytics_dashboard')?.properties || {};
-  const isOverride = p.adminOverride || false;
-  // NOTE: In the sandbox, 'previewRole' is used to simulate the role viewing the UI
-  const isSectionHead = previewRole === 'Dept_Head'; // Adjusted to match the actual roles dropdown value
-  const drilldown = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowEngineerDrilldown);
-  const locationF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowLocationFilter);
-  const taxF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowTaxonomyFilter);
-  
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
-      <div style={{ padding: '24px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1D1D1F', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
-          <span>لوحة التحليل المركزي (OLAP Engine)</span>
-          {isOverride && <span style={{ fontSize: '11px', background: '#FFF1F0', color: '#FF3B30', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>تجاوز المشرف النشط</span>}
-        </h4>
-        
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '24px' }}>
-          {locationF ? (
-            <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
-              <option>📍 تصفية حسب المبنى</option>
-              <option>المبنى الرئيسي (طرابلس)</option>
-              <option>فرع بنغازي</option>
-            </select>
-          ) : (
-            <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>
-          )}
-          
-          {taxF ? (
-            <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
-              <option>🗂️ تصفية حسب التصنيف</option>
-              <option>أعطال تقنية</option>
-              <option>أعطال تشغيلية</option>
-            </select>
-          ) : (
-            <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية التصنيفات مقفلة</div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <div style={{ flex: 2, height: '220px', background: '#F9F9FB', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '32px' }}>📊</span>
-            <span style={{ fontWeight: '600', color: '#6E6E73' }}>مؤشرات الأداء الزمنية</span>
-          </div>
-          
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {drilldown ? (
-              <div style={{ flex: 1, background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px' }}>🏆 أفضل المهندسين أداءً</span>
-                <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
-                <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
-              </div>
-            ) : (
-              <div style={{ flex: 1, background: '#FFF1F0', borderRadius: '12px', border: '1px solid #FECACA', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FF3B30', textAlign: 'center' }}>
-                <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
-                <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
-                <span style={{ fontSize: '10px', marginTop: '4px' }}>بناءً على قيود الصلاحية</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})()}
-
-{previewActiveTab === 'cross_comparison' && (() => {
-  const p = activeComponents.find(c => c.id === 'cross_comparison')?.properties || {};
-  const maxElements = p.maxComparisonElements || 3;
-  const types = p.allowedComparisonTypes || ['ENGINEERS'];
-  const activeType = types[0] || 'ENGINEERS';
-  
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.4s ease' }}>
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
-        {types.map((t: string) => (
-          <div key={t} style={{ padding: '8px 18px', background: t === activeType ? '#5856D6' : '#F5F5F7', color: t === activeType ? '#FFFFFF' : '#6E6E73', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${t === activeType ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, transition: 'all 0.2s' }}>
-            {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
-          </div>
-        ))}
-        {types.length === 0 && <span style={{ fontSize: '13px', color: '#FF3B30' }}>لا توجد أنواع مقارنات مسموحة</span>}
-      </div>
-
-      <div style={{ height: '300px', padding: '24px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'flex-end', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-        <div style={{ fontSize: '13px', color: '#1D1D1F', fontWeight: '700' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'أسماء المهندسين' : activeType === 'LOCATIONS' ? 'أسماء المباني' : 'أنواع المشاكل'})</div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
-           {['يناير', 'فبراير', 'مارس'].map((month, idx) => (
-             <div key={month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-               <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: '100%' }}>
-                  {Array.from({ length: maxElements }).map((_, barIdx) => {
-                     const colors = [['#5856D6', '#AF52DE'], ['#007AFF', '#34C759'], ['#FF9500', '#FF3B30']];
-                     const color = colors[barIdx % colors.length];
-                     const h = 40 + Math.random() * 50;
-                     return (
-                       <div key={barIdx} style={{ width: maxElements > 5 ? '12px' : '24px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '6px 6px 0 0', opacity: 0.9, transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} title={`عنصر ${barIdx + 1}`}></div>
-                     );
-                  })}
-               </div>
-               <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>{month}</span>
-             </div>
-           ))}
-        </div>
-      </div>
-    </div>
-  );
-})()}
-
-{previewActiveTab === 'admin_analytics' && (
-                    <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-                      {['📈 مؤشرات الأداء الحية', '📊 التوزيع الجغرافي للتذاكر'].filter(chart => {
-                        if (previewRole === 'Field_Engineer') return false; // Role-based filtering simulation
-                        return true;
-                      }).map((chart, idx) => (
-                        <div key={idx} style={{ flex: 1, height: '180px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1D1D1F', fontWeight: '700', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
-                          {chart}
-                        </div>
-                      ))}
-                      {previewRole === 'Field_Engineer' && (
-                        <div style={{ padding: '30px', background: '#FFF1F0', border: '1px solid #FECACA', borderRadius: '16px', color: '#FF3B30', fontSize: '14px', width: '100%', textAlign: 'center', fontWeight: '700', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '32px' }}>🔒</span>
-                          ليس لديك صلاحية عرض التحليلات المتقدمة بصلاحية (مهندس ميداني).
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 6th Component: admin_archive */}
-                  {previewActiveTab === 'admin_archive' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          {activeComponents.find(c => c.id === 'admin_archive')?.properties.enabledUIFilters?.map((filter: string, idx: number) => (
-                            <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }}>
-                              <option>تصفية: {filter}</option>
-                            </select>
-                          ))}
-                        </div>
-                        {activeComponents.find(c => c.id === 'admin_archive')?.properties.enableHistoricalExport && (
-                          <button style={{ padding: '10px 18px', background: '#34C759', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(52, 199, 89, 0.3)' }}>
-                            تصدير التقرير 📥
-                          </button>
-                        )}
-                      </div>
-                      
-                      <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                          <thead style={{ background: '#F5F5F7', textAlign: 'right', fontSize: '13px', color: '#6E6E73' }}>
-                            <tr>
-                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>رقم التذكرة</th>
-                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>التصنيف</th>
-                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>القسم</th>
-                              <th style={{ padding: '14px 20px', fontWeight: '600' }}>الحالة التاريخية</th>
-                            </tr>
-                          </thead>
-                          <tbody style={{ fontSize: '14px', color: '#1D1D1F' }}>
-                            {[1, 2, 3].map(row => (
-                              <tr key={row} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                <td style={{ padding: '16px 20px', fontWeight: '500' }}>#TKT-2026-00{row}</td>
-                                <td style={{ padding: '16px 20px' }}>عطل تقني متقدم</td>
-                                <td style={{ padding: '16px 20px' }}>العمليات المركزية</td>
-                                <td style={{ padding: '16px 20px' }}>
-                                  <span style={{ padding: '4px 10px', background: '#E8F5E9', color: '#34C759', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>مغلقة نهائياً</span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {activeComponents.find(c => c.id === 'admin_archive')?.properties.enableTimelineAuditLog && (
-                        <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRight: '4px solid #007AFF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                          <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
-                          <div style={{ fontSize: '13px', color: '#6E6E73', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#007AFF' }}/> 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF9500' }}/> 2026-05-28 09:30 - تم تحويل التذكرة للقسم الفني (مهندس ميداني)</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                 </div>
-              ) : (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#AEAEB2', gap: '16px' }}>
-                  <div style={{ width: '64px', height: '64px', background: '#F5F5F7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🖱️</div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#1D1D1F' }}>حدد مكوناً من مساحة العمل</div>
-                  <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>سيتم عرض المعاينة الحية للمكون المختار هنا ليتسنى لك رؤية التعديلات بشكل تفاعلي.</div>
-                </div>
+              </div>
+              {/* Bottom iOS Indicator line */}
+              {(previewDevice === 'mobile' || previewDevice === 'tablet') && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '6px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '120px',
+                  height: '4px',
+                  background: '#1D1D1F',
+                  borderRadius: '2px',
+                  zIndex: 100,
+                  opacity: 0.8
+                }}></div>
               )}
-                        </div> {/* End flex wrapper */}
-            
+
             </div>
           </div>
-          </div>
-        </div>
-        </div>
-        </div>
 
-      </DragDropContext>
+        </div>
       </div>
+    </div>
+  </div>
+</DragDropContext>
+</div>
 
       {showNameModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
