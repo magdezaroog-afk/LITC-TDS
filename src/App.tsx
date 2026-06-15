@@ -20,6 +20,7 @@ import { SecurityControlTab } from './components/admin/tabs/SecurityControlTab';
 import { FloatingAIBot } from './components/bot/FloatingAIBot';
 import { EmployeeWorkspace } from './components/dashboard/EmployeeWorkspace';
 import { DepartmentHeadWorkspace } from './components/dashboard/DepartmentHeadWorkspace';
+import { SystemModeToggle } from './components/molecules/SystemModeToggle';
 
 // Route Guard Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({ children, allowedRoles }) => {
@@ -30,6 +31,42 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
   
   if (!allowedRoles.includes(user.role) && !allowedRoles.includes('ANY')) {
     // Redirect if they have insufficient permissions
+    if (user.role === 'IT_Admin' || user.role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    } else if (user.role === 'Department_Head' || user.role === 'HEAD_DEPT') {
+      return <Navigate to="/head" replace />;
+    } else {
+      return <Navigate to="/employee" replace />;
+    }
+  }
+
+  return <>{children}</>;
+};
+
+// Workspace Wrapper Component (incorporates ProtectedRoute & Mode Isolation)
+const WorkspaceWrapper: React.FC<{ children: React.ReactNode; allowedRoles: string[]; isEmployeeRoute?: boolean }> = ({ children, allowedRoles, isEmployeeRoute }) => {
+  const { user, loading, systemMode } = useAuth();
+
+  if (loading) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '50px' }}>جاري التحقق من الهوية...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+
+  // 1. If we are in Employee Mode:
+  if (systemMode === 'employee') {
+    return <EmployeeWorkspace />;
+  }
+
+  // 2. If we are in Work Mode and this is the employee route:
+  if (isEmployeeRoute) {
+    // Technicians or operational users see their OperationalDashboard in Work Mode
+    if (user.role === 'Technician' || user.role === 'editor') {
+      return <OperationalDashboard />;
+    }
+    // Admin and Department Head see the Employee Workspace when they explicitly visit `/employee` in Work Mode
+    return <>{children}</>;
+  }
+
+  // 3. Normal Role Guard checks in Work Mode
+  if (!allowedRoles.includes(user.role) && !allowedRoles.includes('ANY')) {
     if (user.role === 'IT_Admin' || user.role === 'admin') {
       return <Navigate to="/admin" replace />;
     } else if (user.role === 'Department_Head' || user.role === 'HEAD_DEPT') {
@@ -150,7 +187,7 @@ const Navigation: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const isMobile = useMobileViewport();
-  const { user } = useAuth();
+  const { user, systemMode } = useAuth();
 
   if (isMobile) {
     return (
@@ -167,32 +204,36 @@ const AppContent: React.FC = () => {
       <Navigation />
       <NeonSignalToast />
       <FloatingAIBot />
+      <SystemModeToggle />
       
       <div style={{ flex: 1, padding: user && user.role !== 'IT_Admin' && user.role !== 'admin' ? '0' : '0 20px' }}>
         <Routes>
-          {/* Default Route: Redirect based on role */}
+          {/* Default Route: Redirect based on role and systemMode */}
           <Route path="/" element={
             <ProtectedRoute allowedRoles={['ANY']}>
-              {user?.role === 'IT_Admin' || user?.role === 'admin' ? 
-                <Navigate to="/admin" replace /> : 
-               user?.role === 'Department_Head' || user?.role === 'HEAD_DEPT' ? 
-                <Navigate to="/head" replace /> :
+              {systemMode === 'employee' ? (
                 <Navigate to="/employee" replace />
-              }
+              ) : (
+                user?.role === 'IT_Admin' || user?.role === 'admin' ? 
+                  <Navigate to="/admin" replace /> : 
+                 user?.role === 'Department_Head' || user?.role === 'HEAD_DEPT' ? 
+                  <Navigate to="/head" replace /> :
+                  <Navigate to="/employee" replace />
+              )}
             </ProtectedRoute>
           } />
 
           {/* Admin Routes */}
-          <Route path="/admin" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><AdminGovernanceConsole /></ProtectedRoute>} />
-          <Route path="/admin/operational" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><OperationalEntitiesConsole /></ProtectedRoute>} />
-          <Route path="/admin/policies" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><NotificationPolicyConsole /></ProtectedRoute>} />
-          <Route path="/admin/security" element={<ProtectedRoute allowedRoles={['IT_Admin', 'admin']}><SecurityControlTab /></ProtectedRoute>} />
+          <Route path="/admin" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><AdminGovernanceConsole /></WorkspaceWrapper>} />
+          <Route path="/admin/operational" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><OperationalEntitiesConsole /></WorkspaceWrapper>} />
+          <Route path="/admin/policies" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><NotificationPolicyConsole /></WorkspaceWrapper>} />
+          <Route path="/admin/security" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><SecurityControlTab /></WorkspaceWrapper>} />
           
           {/* Department Head Route */}
-          <Route path="/head" element={<ProtectedRoute allowedRoles={['Department_Head', 'HEAD_DEPT', 'IT_Admin', 'admin']}><DepartmentHeadWorkspace /></ProtectedRoute>} />
+          <Route path="/head" element={<WorkspaceWrapper allowedRoles={['Department_Head', 'HEAD_DEPT', 'IT_Admin', 'admin']}><DepartmentHeadWorkspace /></WorkspaceWrapper>} />
 
           {/* Employee Routes */}
-          <Route path="/employee" element={<ProtectedRoute allowedRoles={['Technician', 'Employee', 'viewer', 'IT_Admin', 'admin']}><EmployeeWorkspace /></ProtectedRoute>} />
+          <Route path="/employee" element={<WorkspaceWrapper allowedRoles={['Technician', 'Employee', 'viewer', 'IT_Admin', 'admin']} isEmployeeRoute={true}><EmployeeWorkspace /></WorkspaceWrapper>} />
           
           {/* Shared Routes */}
           <Route path="/profile" element={<ProtectedRoute allowedRoles={['ANY']}><UserProfileConsole /></ProtectedRoute>} />

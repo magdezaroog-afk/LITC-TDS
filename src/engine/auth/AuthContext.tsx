@@ -18,6 +18,8 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
+  systemMode: 'employee' | 'work';
+  setSystemMode: (mode: 'employee' | 'work') => void;
   hasPermission: (permission: string) => boolean;
   login: (mockUser: User) => void;
   logout: () => void;
@@ -26,6 +28,7 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [systemMode, setSystemMode] = useState<'employee' | 'work'>('employee');
   // تهيئة مستخدم افتراضي بصلاحيات عليا للاختبار
   const [user, setUser] = useState<User | null>({
     id: 'usr-999',
@@ -55,14 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (mockUser: User) => {
     setUser(mockUser);
+    setSystemMode('employee'); // الدخول الافتراضي لوضع الموظف
   };
 
   const logout = () => {
     setUser(null);
+    setSystemMode('employee');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, hasPermission, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, systemMode, setSystemMode, hasPermission, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
