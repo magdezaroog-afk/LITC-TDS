@@ -427,6 +427,33 @@ export function UILayoutEngineTab() {
   const [components, setComponents] = useState<UIComponentDefinition[]>(initialComponents);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
 
+  // --- Repository Scroll Helper ---
+  const repositoryRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const repo = repositoryRef.current;
+    if (!repo) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        repo.scrollLeft += e.deltaY;
+      }
+    };
+
+    repo.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      repo.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  const handleScrollRepo = (direction: 'right' | 'left') => {
+    if (repositoryRef.current) {
+      const amount = direction === 'left' ? -250 : 250;
+      repositoryRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
   // --- Cascading Override State ---
   const [currentBuilderRole, setCurrentBuilderRole] = useState<CoreRole>('IT_ADMIN');
   const { isPropertyAllowed } = useCascadingCeilingValidator(currentBuilderRole);
@@ -759,18 +786,82 @@ export function UILayoutEngineTab() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
 
               {/* Component Repository */}
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '45%', position: 'relative' }}>
                 <div style={{ padding: '12px 16px', background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5856D6' }}></div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>مستودع المكونات</span>
                   <span style={{ fontSize: '11px', color: '#AEAEB2', marginInlineStart: 'auto' }}>اسحب للتفعيل ←</span>
                 </div>
+
+                {/* Right Scroll Button */}
+                <button
+                  onClick={() => handleScrollRepo('right')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '55%',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 10,
+                    fontSize: '12px',
+                    color: '#1D1D1F',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  title="تحريك لليمين"
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#FFFFFF'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)'; }}
+                >
+                  ▶
+                </button>
+
+                {/* Left Scroll Button */}
+                <button
+                  onClick={() => handleScrollRepo('left')}
+                  style={{
+                    position: 'absolute',
+                    left: '8px',
+                    top: '55%',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 10,
+                    fontSize: '12px',
+                    color: '#1D1D1F',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  title="تحريك ليسار"
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#FFFFFF'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)'; }}
+                >
+                  ◀
+                </button>
+
                 <Droppable droppableId="inactive-repository">
                   {(provided, snapshot) => (
                     <div
-                      ref={provided.innerRef}
+                      ref={(el) => {
+                        provided.innerRef(el);
+                        (repositoryRef as any).current = el;
+                      }}
                       {...provided.droppableProps}
-                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'thin' }}
+                      style={{ display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', overflowY: 'hidden', padding: '12px 48px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', minHeight: '120px', scrollbarWidth: 'thin' }}
                     >
                       {[
                         { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
@@ -781,7 +872,7 @@ export function UILayoutEngineTab() {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                         if (groupComponents.length === 0) return null;
                         return (
-                          <div key={group.key} style={{ flex: '0 0 180px', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                           <div key={group.key} style={{ flex: '0 0 180px', background: '#F5F5F7', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ padding: '8px 10px', background: `${group.color}10`, borderBottom: `1px solid ${group.color}18`, display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '13px' }}>{group.icon}</span>
                               <span style={{ fontSize: '12px', fontWeight: '700', color: group.color }}>{group.label}</span>
