@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { loadRoutes, TicketRouteDefinition } from './TicketRoutingTab';
 
 export type ComponentCategory = 'submission' | 'operations' | 'intelligence' | 'admin';
 
@@ -434,6 +435,14 @@ export function UILayoutEngineTab() {
   });
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
 
+  // --- Dynamic Ticket Routes (from TicketRoutingTab) ---
+  const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>(() => loadRoutes());
+  useEffect(() => {
+    const refreshRoutes = () => setSavedRoutes(loadRoutes());
+    window.addEventListener('storage', refreshRoutes);
+    return () => window.removeEventListener('storage', refreshRoutes);
+  }, []);
+
   // --- Repository Scroll Helper ---
   const repositoryRef = React.useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -524,6 +533,9 @@ export function UILayoutEngineTab() {
 
   // --- Confirm Save Handler ---
   const handleConfirmSave = () => {
+    const activeInterface = savedInterfaces.find(ui => ui.name === interfaceName) || { id: 'ui_' + (interfaceCategory || 'default'), roleType: interfaceCategory || 'IT_ADMIN' };
+    localStorage.setItem(`litc_layout_components_${activeInterface.id}`, JSON.stringify(components));
+    localStorage.setItem(`litc_layout_components_${activeInterface.roleType}`, JSON.stringify(components));
     localStorage.setItem('litc_layout_components', JSON.stringify(components));
     setShowSaveReportModal(false);
     setIsManagerMode(true);
@@ -540,15 +552,25 @@ export function UILayoutEngineTab() {
 
 
   const handleLoadInterface = (ui: SavedInterface) => {
+    const loadData = () => {
+      setInterfaceName(ui.name);
+      setInterfaceCategory(ui.roleType);
+      const key = `litc_layout_components_${ui.id}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setComponents(JSON.parse(saved));
+      } else {
+        const roleSaved = localStorage.getItem(`litc_layout_components_${ui.roleType}`);
+        setComponents(roleSaved ? JSON.parse(roleSaved) : initialComponents);
+      }
+      setIsManagerMode(false);
+    };
+
     if (interfaceName && interfaceName.trim() !== '' && interfaceName !== ui.name) {
       setInterfaceToLoad(ui);
       setShowWarningModal(true);
     } else {
-      setInterfaceName(ui.name);
-      setInterfaceCategory(ui.roleType);
-      // Reset active components back to default or load them if we had them (future)
-      // setComponents(initialComponents); 
-      setIsManagerMode(false);
+      loadData();
     }
   };
 
@@ -753,6 +775,14 @@ export function UILayoutEngineTab() {
                 onClick={() => {
                   setInterfaceName(interfaceToLoad.name);
                   setInterfaceCategory(interfaceToLoad.roleType);
+                  const key = `litc_layout_components_${interfaceToLoad.id}`;
+                  const saved = localStorage.getItem(key);
+                  if (saved) {
+                    setComponents(JSON.parse(saved));
+                  } else {
+                    const roleSaved = localStorage.getItem(`litc_layout_components_${interfaceToLoad.roleType}`);
+                    setComponents(roleSaved ? JSON.parse(roleSaved) : initialComponents);
+                  }
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                   setIsManagerMode(false);
@@ -807,6 +837,19 @@ export function UILayoutEngineTab() {
             >
               ✏️ تعديل الاسم
             </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(88,86,214,0.08)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(88,86,214,0.15)' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#5856D6', margin: 0 }}> دور الباني النشط (Builder Role):</label>
+              <select 
+                value={currentBuilderRole} 
+                onChange={(e) => setCurrentBuilderRole(e.target.value as CoreRole)} 
+                style={{ background: 'transparent', border: 'none', color: '#1D1D1F', fontSize: '12px', fontWeight: '700', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                <option value="IT_ADMIN">💻 IT Admin</option>
+                <option value="OPERATIONAL_MANAGER">📊 Operational Manager</option>
+                <option value="OPERATIONAL_USER">🛠️ Operational User</option>
+                <option value="END_USER">👤 End User</option>
+              </select>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
@@ -1401,10 +1444,20 @@ export function UILayoutEngineTab() {
                           e.target.value = ''; // reset
                         }}>
                           <option value="">إضافة مسار توجيه...</option>
-                          <option value="IT_SUPPORT">الدعم التقني</option>
-                          <option value="MAINTENANCE">الصيانة العامة</option>
-                          <option value="HR">الموارد البشرية</option>
-                          <option value="SECURITY">الأمن والسلامة</option>
+                          {savedRoutes.filter(r => r.isActive).length > 0
+                            ? savedRoutes.filter(r => r.isActive).map(r => (
+                                <option key={r.id} value={r.id}>{r.icon} {r.name} ← {r.targetDepartmentName}</option>
+                              ))
+                            : (
+                              <>
+                                <option disabled style={{ color: '#AEAEB2' }}>── مسارات افتراضية ──</option>
+                                <option value="IT_SUPPORT">الدعم التقني</option>
+                                <option value="MAINTENANCE">الصيانة العامة</option>
+                                <option value="HR">الموارد البشرية</option>
+                                <option value="SECURITY">الأمن والسلامة</option>
+                              </>
+                            )
+                          }
                         </select>
 <DelegationToggle propKey="destinationRoutes" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['destinationRoutes']?.allow_override || false} onChange={handleDelegationChange} />
 <HardCeilingToggle propKey="destinationRoutes" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["destinationRoutes"]} onChange={handleCeilingChange} />
@@ -2387,19 +2440,39 @@ export function UILayoutEngineTab() {
                               <span style={{ fontSize: '10px', color: '#007AFF', cursor: 'pointer' }} onClick={() => setShowNotificationsDropdown(false)}>إغلاق</span>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {[
-                                { title: 'تذكرة جديدة واردة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT', time: 'منذ دقيقة', unread: true },
-                                { title: 'تنبيه SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية', time: 'منذ 5 دقائق', unread: true },
-                                { title: 'تمت الموافقة على التحويل المشروط', desc: 'وافق م. خليل على إدارة تذكرة التخزين', time: 'منذ ساعتين', unread: false }
-                              ].map((item, idx) => (
-                                <div key={idx} style={{ padding: '8px', borderRadius: '8px', background: item.unread ? 'rgba(0,122,255,0.05)' : 'transparent', borderBottom: '0.5px solid rgba(0,0,0,0.03)', cursor: 'pointer' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '11px', fontWeight: '700', color: item.unread ? '#007AFF' : '#1D1D1F' }}>{item.title}</span>
-                                    <span style={{ fontSize: '9px', color: '#8E8E93' }}>{item.time}</span>
+                              {(() => {
+                                const getRoleNotifications = () => {
+                                  if (previewRole === 'Super_Admin') {
+                                    return [
+                                      { title: '🔒 تحديث أمني ناجح للنظام', desc: 'تم تطبيق الحزمة الأمنية v43.5.2 بنجاح.', time: 'منذ ساعة', unread: false },
+                                      { title: '⚠️ محاولة تسجيل دخول مريبة', desc: 'تم رصد محاولة دخول من عنوان IP غير معروف.', time: 'منذ ساعتين', unread: true },
+                                      { title: '⚙️ استقرار خادم قاعدة البيانات', desc: 'استهلاك الذاكرة الإجمالي مستقر عند 42%.', time: 'منذ 4 ساعات', unread: false }
+                                    ];
+                                  } else if (previewRole === 'Dept_Head') {
+                                    return [
+                                      { title: '📥 تذكرة جديدة غير مسندة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT في انتظار الإسناد.', time: 'منذ دقيقة', unread: true },
+                                      { title: '⏰ SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية لفريق الشبكات.', time: 'منذ 5 دقائق', unread: true },
+                                      { title: '🤝 تأكيد تحويل تذكرة #TKT-0883', desc: 'وافق م. خليل على إدارة التذكرة المحولة له.', time: 'منذ ساعتين', unread: false }
+                                    ];
+                                  } else {
+                                    // Field_Engineer or default
+                                    return [
+                                      { title: '🛠️ تم إسناد تذكرة جديدة لك #TKT-1029', desc: 'الرجاء فحص عطل شبكة HQ IT والتوجه للموقع.', time: 'منذ دقيقة', unread: true },
+                                      { title: '⚠️ أولوية التذكرة #TKT-0994 مرتفعة', desc: 'تحديث حالة المعالجة لتجنب خرق مؤشر SLA.', time: 'منذ 5 دقائق', unread: true },
+                                      { title: '📝 رسالة جديدة من العميل', desc: 'تم إضافة مرفق جديد لتفاصيل التذكرة #TKT-1029.', time: 'منذ ساعة', unread: false }
+                                    ];
+                                  }
+                                };
+                                return getRoleNotifications().map((item, idx) => (
+                                  <div key={idx} style={{ padding: '8px', borderRadius: '8px', background: item.unread ? 'rgba(0,122,255,0.05)' : 'transparent', borderBottom: '0.5px solid rgba(0,0,0,0.03)', cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: '700', color: item.unread ? '#007AFF' : '#1D1D1F' }}>{item.title}</span>
+                                      <span style={{ fontSize: '9px', color: '#8E8E93' }}>{item.time}</span>
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#6E6E73', marginTop: '2px' }}>{item.desc}</div>
                                   </div>
-                                  <div style={{ fontSize: '10px', color: '#6E6E73', marginTop: '2px' }}>{item.desc}</div>
-                                </div>
-                              ))}
+                                ));
+                              })()}
                             </div>
                           </div>
                         )}
@@ -3324,6 +3397,14 @@ export function UILayoutEngineTab() {
                 onClick={() => {
                   setInterfaceName(interfaceToLoad.name);
                   setInterfaceCategory(interfaceToLoad.roleType);
+                  const key = `litc_layout_components_${interfaceToLoad.id}`;
+                  const saved = localStorage.getItem(key);
+                  if (saved) {
+                    setComponents(JSON.parse(saved));
+                  } else {
+                    const roleSaved = localStorage.getItem(`litc_layout_components_${interfaceToLoad.roleType}`);
+                    setComponents(roleSaved ? JSON.parse(roleSaved) : initialComponents);
+                  }
                   setShowWarningModal(false);
                   setInterfaceToLoad(null);
                   setIsManagerMode(false);

@@ -414,6 +414,8 @@ model TicketVendorEscalation {
 }
 
 model Ticket {
+  routeId            String?   @relation(fields: [routeId], references: [id])
+  routingMetadata    Json?
   id               Int      @id @default(autoincrement())
   title            String
   description      String
@@ -464,6 +466,28 @@ model Ticket {
   @@index([parentId])
   @@index([stateId])
   @@index([createdAt])
+}
+
+model Route {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  createdById   Int
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isActive      Boolean  @default(true)
+  routingRules  Json
+  // Optional versioning/history can be added later
+}
+
+model TicketRoutesLog {
+  ticketId   Int
+  routeId    String
+  routedAt   DateTime @default(now())
+  routedById Int?
+  routedBy   User?    @relation(fields: [routedById], references: [id])
+  @@id([ticketId, routeId])
 }
 
 model TicketEvaluation { 

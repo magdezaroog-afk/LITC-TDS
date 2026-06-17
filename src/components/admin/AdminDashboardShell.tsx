@@ -6,6 +6,7 @@ import { OperationalStructureTab } from './tabs/OperationalStructureTab';
 import { DynamicFieldsTab } from './tabs/DynamicFieldsTab';
 import { SecurityControlTab } from './tabs/SecurityControlTab';
 import { NotificationPolicyConsole } from './NotificationPolicyConsole';
+import { TicketRoutingTab } from './tabs/TicketRoutingTab';
 
 /* ─────────────────────────────────────────────────────────────
    Apple-Inspired Design System Tokens
@@ -33,6 +34,7 @@ const APPLE = {
     dynamic_fields: { color: '#FF9500', bg: '#FFF7EB', label: 'المستدلات الديناميكية', sublabel: 'Dynamic Fields Builder', icon: '⬟' },
     security: { color: '#FF3B30', bg: '#FFF0EF', label: 'الأمان والحوكمة', sublabel: 'Security Control Core', icon: '⬢' },
     policies: { color: '#AF52DE', bg: '#F7F0FF', label: 'سياسات التنبيهات', sublabel: 'Notification Policies', icon: '◈' },
+    routing: { color: '#FF6B35', bg: '#FFF3ED', label: 'مسارات التذاكر', sublabel: 'Ticket Routing Engine', icon: '⟳' },
   }
 };
 
@@ -98,7 +100,7 @@ export const AdminDashboardShell: React.FC = () => {
   const { user } = useAuth();
   const { t, dir } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies'>('ui');
+  const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies' | 'routing'>('ui');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const startMenuRef = useRef<HTMLDivElement>(null);
@@ -145,8 +147,8 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies'> = [
-    'ui', 'operations', 'dynamic_fields', 'security', 'policies'
+  const TAB_KEYS: Array<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies' | 'routing'> = [
+    'ui', 'operations', 'dynamic_fields', 'security', 'policies', 'routing'
   ];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
@@ -265,6 +267,7 @@ export const AdminDashboardShell: React.FC = () => {
             {activeTab === 'dynamic_fields' && <DynamicFieldsTab />}
             {activeTab === 'security' && <SecurityControlTab />}
             {activeTab === 'policies' && <NotificationPolicyConsole />}
+            {activeTab === 'routing' && <TicketRoutingTab />}
           </div>
         </main>
       </div>

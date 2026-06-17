@@ -3,6 +3,7 @@ import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { DynamicCustomField } from '../admin/tabs/DynamicFieldsTab';
 import { ArchiveTable } from './ArchiveTable';
 import { DynamicUserProfile } from '../profile/DynamicUserProfile';
+import { loadRoutes, TicketRouteDefinition } from '../admin/tabs/TicketRoutingTab';
 
 interface SchemaComponent {
   componentId: string;
@@ -35,12 +36,46 @@ const MOCK_TICKETS: MockTicket[] = [
 
 const CURRENT_EMPLOYEE_DEPT = 'IT_SUPPORT'; // For Strict Data Isolation
 
+export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'OPERATIONAL_MANAGER' | 'IT_ADMIN';
+
+const getRoleNotifications = (role: CoreRole) => {
+  if (role === 'IT_ADMIN') {
+    return [
+      { title: '🔒 تحديث أمني ناجح للنظام', desc: 'تم تطبيق الحزمة الأمنية v43.5.2 بنجاح.', time: 'منذ ساعة', unread: false },
+      { title: '⚠️ محاولة تسجيل دخول مريبة', desc: 'تم رصد محاولة دخول من عنوان IP غير معروف.', time: 'منذ ساعتين', unread: true },
+      { title: '⚙️ استقرار خادم قاعدة البيانات', desc: 'استهلاك الذاكرة الإجمالي مستقر عند 42%.', time: 'منذ 4 ساعات', unread: false }
+    ];
+  } else if (role === 'OPERATIONAL_MANAGER') {
+    return [
+      { title: '📈 تنبيه الأداء الأسبوعي', desc: 'معدل إنجاز القسم انخفض بنسبة 4% عن الأسبوع الماضي.', time: 'منذ ساعة', unread: true },
+      { title: '📥 طلبات تصعيد معلقة', desc: 'هناك تذكرتان تم تصعيدهما تتطلبان تدخلاً فورياً.', time: 'منذ ساعتين', unread: true },
+      { title: '📊 تقرير الـ SLA الشهري جاهز', desc: 'تم توليد تقرير الالتزام باتفاقية الخدمة لشهر مايو.', time: 'منذ يوم', unread: false }
+    ];
+  } else if (role === 'OPERATIONAL_USER') {
+    return [
+      { title: '📥 تذكرة جديدة غير مسندة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT في انتظار الإسناد.', time: 'منذ دقيقة', unread: true },
+      { title: '⏰ SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية لفريق الشبكات.', time: 'منذ 5 دقائق', unread: true },
+      { title: '🤝 تأكيد تحويل تذكرة #TKT-0883', desc: 'وافق م. خليل على إدارة التذكرة المحولة له.', time: 'منذ ساعتين', unread: false }
+    ];
+  } else {
+    // END_USER / Field Engineer
+    return [
+      { title: '🛠️ تم إسناد تذكرة جديدة لك #TKT-1029', desc: 'الرجاء فحص عطل شبكة HQ IT والتوجه للموقع.', time: 'منذ دقيقة', unread: true },
+      { title: '⚠️ أولوية التذكرة #TKT-0994 مرتفعة', desc: 'تحديث حالة المعالجة لتجنب خرق مؤشر SLA.', time: 'منذ 5 دقائق', unread: true },
+      { title: '📝 رسالة جديدة من العميل', desc: 'تم إضافة مرفق جديد لتفاصيل التذكرة #TKT-1029.', time: 'منذ ساعة', unread: false }
+    ];
+  }
+};
+
 export const EmployeeWorkspace: React.FC = () => {
   const theme = useTheme();
 
   const [schema, setSchema] = useState<UiSchema | null>(null);
   const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<CoreRole>('OPERATIONAL_MANAGER');
+  const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
+  const [showBellDropdown, setShowBellDropdown] = useState(false);
 
   // Form State
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -48,6 +83,16 @@ export const EmployeeWorkspace: React.FC = () => {
   const [fileError, setFileError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeInboxTab, setActiveInboxTab] = useState<string>('NEW');
+
+  // Route Selection State
+  const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>([]);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [routeFieldValues, setRouteFieldValues] = useState<Record<string, string>>({});
+  const [routeSelectedTaxMain, setRouteSelectedTaxMain] = useState<string>('');
+  const [routeSelectedTaxSub, setRouteSelectedTaxSub] = useState<string>('');
+  const [routeDescription, setRouteDescription] = useState<string>('');
+  const [routeTicketTitle, setRouteTicketTitle] = useState<string>('');
+  const [routeSubmitSuccess, setRouteSubmitSuccess] = useState(false);
 
   // Analytics State
   const [analyticsDestDept, setAnalyticsDestDept] = useState<string>('ALL');
@@ -63,16 +108,34 @@ export const EmployeeWorkspace: React.FC = () => {
       // Fetch dynamic fields from local storage
       const savedFields = localStorage.getItem('litc_dynamic_fields');
       if (savedFields) {
-        try {
-          setCustomFields(JSON.parse(savedFields));
-        } catch (e) {}
+        try { setCustomFields(JSON.parse(savedFields)); } catch (e) {}
       }
+      // Load ticket routes
+      setSavedRoutes(loadRoutes());
 
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      // Fetch dynamic layout components from local storage if available
-      const savedLayout = localStorage.getItem('litc_layout_components');
-      let finalLayoutConfig = [
+      // 1. Load layouts from localStorage for each role level
+      const adminLayout = localStorage.getItem('litc_layout_components_IT_ADMIN') || localStorage.getItem('litc_layout_components');
+      const managerLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_MANAGER');
+      const userLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_USER');
+      const endUserLayout = localStorage.getItem('litc_layout_components_END_USER');
+
+      // 2. Parse layouts
+      let adminList: any[] = [];
+      try { adminList = adminLayout ? JSON.parse(adminLayout) : []; } catch (e) {}
+
+      let managerList: any[] = [];
+      try { managerList = managerLayout ? JSON.parse(managerLayout) : []; } catch (e) {}
+
+      let userList: any[] = [];
+      try { userList = userLayout ? JSON.parse(userLayout) : []; } catch (e) {}
+
+      let endUserList: any[] = [];
+      try { endUserList = endUserLayout ? JSON.parse(endUserLayout) : []; } catch (e) {}
+
+      // Default layout config if no configurations found
+      const defaultLayoutConfig = [
         { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
         { componentId: 'ticket_create', name: 'إنشاء تذكرة للمرسل', settings: { mandatoryAttachments: true, enableSLA: true, enableVoiceToText: true, showPriorityField: true, enableAttachments: true, maxAttachmentSizeMB: 5, allowedExtensions: 'pdf, jpg, png', injectedFields: customFields.map(f => f.id) } },
         { componentId: 'ticket_inbox', name: 'التذاكر الواردة', settings: {} },
@@ -87,47 +150,86 @@ export const EmployeeWorkspace: React.FC = () => {
         { componentId: 'admin_operational_console', name: 'قمرة إدارة الكيانات التشغيلية', settings: {} }
       ];
 
-      if (savedLayout) {
-        try {
-          const parsedLayout = JSON.parse(savedLayout) as any[];
-          // Filter only active components
-          const activeLayout = parsedLayout.filter(c => c.isActive);
-          if (activeLayout.length > 0) {
-            // Keep basic system utilities
-            const systemUtils = [
-              { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
-              { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
-              { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
-            ];
+      // Perform cascading merge
+      const baseList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
+      const activeLayout = baseList.filter((c: any) => c.isActive);
 
-            const userConfigured = activeLayout.map(c => ({
-              componentId: c.id,
-              name: c.name,
-              settings: c.properties || {}
-            }));
+      let finalLayoutConfig = activeLayout.map((c: any) => {
+        const mergedProps = { ...c.properties };
 
-            // Combine system utils with configured layout (ensuring no duplicates)
-            const combined: any[] = [...systemUtils];
-            userConfigured.forEach(item => {
-              if (!combined.some(s => s.componentId === item.componentId)) {
-                combined.push(item);
-              }
-            });
-            finalLayoutConfig = combined;
-          }
-        } catch (e) {
-          console.error("Error parsing saved layout components:", e);
+        // A. Apply Operational Manager overrides if role allows
+        const managerComp = managerList.find((mc: any) => mc.id === c.id);
+        if (managerComp && (currentUserRole === 'OPERATIONAL_MANAGER' || currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
+          Object.keys(managerComp.properties || {}).forEach(key => {
+            const rule = c.delegationConfig?.[key];
+            const ceiling = c.strict_ceiling_props?.[key];
+            const isAllowedByAdmin = (rule && rule.allow_override) || (ceiling && !ceiling.adminAbsoluteOverride && ceiling.allowedRoles?.includes('OPERATIONAL_MANAGER'));
+            if (isAllowedByAdmin) {
+              mergedProps[key] = managerComp.properties[key];
+            }
+          });
         }
-      }
+
+        // B. Apply Operational User (Section Head) overrides
+        const userComp = userList.find((uc: any) => uc.id === c.id);
+        if (userComp && (currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
+          Object.keys(userComp.properties || {}).forEach(key => {
+            const adminRule = c.delegationConfig?.[key];
+            const adminCeiling = c.strict_ceiling_props?.[key];
+            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && (adminCeiling.allowedRoles?.includes('OPERATIONAL_USER') || adminCeiling.allowedRoles?.includes('OPERATIONAL_MANAGER')));
+            
+            const managerCompObj = managerList.find((mc: any) => mc.id === c.id);
+            const managerRule = managerCompObj?.delegationConfig?.[key];
+            const isAllowedByManager = !managerCompObj || (managerRule && managerRule.allow_override);
+
+            if (isAllowedByAdmin && isAllowedByManager) {
+              mergedProps[key] = userComp.properties[key];
+            }
+          });
+        }
+
+        // C. Apply End User (Field Engineer) overrides
+        const endUserComp = endUserList.find((ec: any) => ec.id === c.id);
+        if (endUserComp && currentUserRole === 'END_USER') {
+          Object.keys(endUserComp.properties || {}).forEach(key => {
+            const adminRule = c.delegationConfig?.[key];
+            const adminCeiling = c.strict_ceiling_props?.[key];
+            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && adminCeiling.allowedRoles?.includes('END_USER'));
+            if (isAllowedByAdmin) {
+              mergedProps[key] = endUserComp.properties[key];
+            }
+          });
+        }
+
+        return {
+          componentId: c.id,
+          name: c.name,
+          settings: mergedProps
+        };
+      });
+
+      // Ensure basic system utilities are present
+      const systemUtils = [
+        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
+        { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
+        { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
+      ];
+      
+      const combined = [...systemUtils];
+      finalLayoutConfig.forEach((item: any) => {
+        if (!combined.some(s => s.componentId === item.componentId)) {
+          combined.push(item);
+        }
+      });
 
       setSchema({
         version: "v43.5",
-        layoutConfig: finalLayoutConfig
+        layoutConfig: combined
       });
       setLoading(false);
     };
     fetchSchema();
-  }, []);
+  }, [currentUserRole]);
 
   const getComponentSettings = (id: string) => {
     return schema?.layoutConfig.find(c => c.componentId === id)?.settings || null;
@@ -227,14 +329,76 @@ export const EmployeeWorkspace: React.FC = () => {
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0052cc 0%, #0747a6 100%)', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>م</div>
           <div>
             <h4 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>محمد الموظف</h4>
-            <span style={{ fontSize: '12px', color: '#5e6c84' }}>قسم الدعم الفني</span>
+            <span style={{ fontSize: '12px', color: '#5e6c84' }}>قسم الدعم الفني ({currentUserRole === 'IT_ADMIN' ? 'مسؤول النظام' : currentUserRole === 'OPERATIONAL_MANAGER' ? 'مدير إدارة تشغيلية' : currentUserRole === 'OPERATIONAL_USER' ? 'رئيس قسم تنفيذي' : 'مهندس ميداني'})</span>
+          </div>
+          {/* Simulated User Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(9, 30, 66, 0.04)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(9, 30, 66, 0.08)', marginInlineStart: '15px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '700', color: '#0052cc', margin: 0 }}>محاكاة موظف النظام:</label>
+            <select 
+              value={currentUserRole} 
+              onChange={(e) => {
+                const role = e.target.value as CoreRole;
+                setCurrentUserRole(role);
+                if (role === 'IT_ADMIN') {
+                  setCurrentUserDept('IT_SUPPORT');
+                } else if (role === 'OPERATIONAL_MANAGER') {
+                  setCurrentUserDept('IT_SUPPORT');
+                } else if (role === 'OPERATIONAL_USER') {
+                  setCurrentUserDept('IT_SUPPORT');
+                } else {
+                  setCurrentUserDept('MAINTENANCE');
+                }
+              }} 
+              style={{ background: 'transparent', border: 'none', color: '#172b4d', fontSize: '11px', fontWeight: '700', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              <option value="IT_ADMIN">💻 IT Admin</option>
+              <option value="OPERATIONAL_MANAGER">📊 Dept Head (Manager)</option>
+              <option value="OPERATIONAL_USER">🛠️ Section Head (User)</option>
+              <option value="END_USER">👤 Field Engineer (End User)</option>
+            </select>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ cursor: 'pointer', position: 'relative' }}>
+          <div style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setShowBellDropdown(!showBellDropdown)}>
             🔔
-            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ff5630', color: '#fff', fontSize: '10px', width: '15px', height: '15px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>3</span>
+            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ff5630', color: '#fff', fontSize: '10px', width: '15px', height: '15px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {getRoleNotifications(currentUserRole).length}
+            </span>
+
+            {/* Glassmorphic Bell Dropdown */}
+            {showBellDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '35px',
+                left: '0',
+                width: '300px',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                padding: '15px',
+                zIndex: 1000,
+                textAlign: 'right'
+              }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#172b4d' }}>تنبيهات الموظف النشطة</span>
+                  <span style={{ fontSize: '11px', color: '#0052cc', cursor: 'pointer' }} onClick={() => setShowBellDropdown(false)}>إغلاق</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {getRoleNotifications(currentUserRole).map((n, i) => (
+                    <div key={i} style={{ padding: '8px', borderRadius: '8px', background: n.unread ? 'rgba(0,82,204,0.05)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.02)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: n.unread ? '#0052cc' : '#172b4d' }}>{n.title}</span>
+                        <span style={{ fontSize: '10px', color: '#5e6c84' }}>{n.time}</span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#5e6c84', marginTop: '3px' }}>{n.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           {isComponentActive('tool_language_theme') && langSettings?.allowUserSwitch && (
@@ -252,83 +416,173 @@ export const EmployeeWorkspace: React.FC = () => {
         {/* Right Sidebar: Ticket Creator */}
         {isComponentActive('ticket_create') ? (
           <aside style={{ ...glassPanel, alignSelf: 'start' }}>
-            <h3 style={{ borderBottom: '2px solid #0052cc', display: 'inline-block', paddingBottom: '5px', marginBottom: '20px', color: '#0052cc', fontSize: '16px' }}>إنشاء بلاغ جديد</h3>
-            
-            <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>عنوان البلاغ</label>
-            <input type="text" style={inputStyle} placeholder="وصف موجز للمشكلة..." />
-            
-            <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل البلاغ</label>
-            <div style={{ position: 'relative' }}>
-              <textarea style={{ ...inputStyle, height: '100px', resize: 'none' }} placeholder="الرجاء وصف المشكلة بدقة..."></textarea>
-              {ticketCreateSettings?.enableVoiceToText && (
-                <button 
-                  onClick={() => setIsRecording(!isRecording)}
-                  style={{
-                    position: 'absolute', left: '10px', bottom: '25px', 
-                    background: isRecording ? '#ff5630' : 'rgba(0, 82, 204, 0.1)', 
-                    color: isRecording ? '#fff' : '#0052cc',
-                    border: 'none', borderRadius: '50%', width: '30px', height: '30px', 
-                    cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center'
-                  }}
-                  title="تفعيل الإدخال الصوتي"
-                >
-                  🎤
-                </button>
-              )}
-            </div>
-            
-            {ticketCreateSettings?.showPriorityField && (
-              <>
-                <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>أولوية التذكرة</label>
-                <select style={inputStyle}>
-                  <option value="LOW">عادية</option>
-                  <option value="MEDIUM">متوسطة</option>
-                  <option value="HIGH">عاجلة</option>
-                  <option value="CRITICAL">طوارئ (P1)</option>
-                </select>
-              </>
-            )}
+            {/* ═══ Route Selection Step ═══ */}
+            {!selectedRouteId ? (() => {
+              const activeRoutes = savedRoutes.filter(r => r.isActive);
+              const destinationRouteIds: string[] = ticketCreateSettings?.destinationRoutes || [];
+              // Show routes that admin has enabled on this interface, or all active if none specified
+              const visibleRoutes = destinationRouteIds.length > 0
+                ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
+                : activeRoutes;
 
-            {ticketCreateSettings?.injectedFields && customFields.filter(f => ticketCreateSettings.injectedFields.includes(f.id)).map(field => {
-              
-              // Determine options based on dependencies
-              let options = field.options || [];
-              if (field.dependsOn && field.dependencyMap) {
-                const parentValue = fieldValues[field.dependsOn];
-                if (parentValue && field.dependencyMap[parentValue]) {
-                  options = field.dependencyMap[parentValue];
-                }
+              if (visibleRoutes.length === 0) {
+                // Fallback: legacy plain form
+                return (
+                  <div>
+                    <h3 style={{ borderBottom: '2px solid #0052cc', display: 'inline-block', paddingBottom: '5px', marginBottom: '20px', color: '#0052cc', fontSize: '16px' }}>إنشاء بلاغ جديد</h3>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>عنوان البلاغ</label>
+                    <input type="text" style={inputStyle} placeholder="وصف موجز للمشكلة..." />
+                    <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل البلاغ</label>
+                    <textarea style={{ ...inputStyle, height: '100px', resize: 'none' }} placeholder="الرجاء وصف المشكلة بدقة..." />
+                    <button style={{ width: '100%', padding: '12px', background: 'linear-gradient(90deg, #0052cc 0%, #0065ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      إرسال البلاغ فوراً
+                    </button>
+                  </div>
+                );
               }
 
               return (
-                <div key={field.id} style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>{field.name}</label>
-                  <select 
-                    style={inputStyle} 
-                    value={fieldValues[field.id] || ''} 
-                    onChange={e => setFieldValues({ ...fieldValues, [field.id]: e.target.value })}
-                  >
-                    <option value="">-- اختر --</option>
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
+                <div>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
+                  <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {visibleRoutes.map(route => (
+                      <div key={route.id}
+                        onClick={() => { setSelectedRouteId(route.id); setRouteFieldValues({}); setRouteDescription(''); setRouteTicketTitle(''); setRouteSelectedTaxMain(''); setRouteSelectedTaxSub(''); setRouteSubmitSuccess(false); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: `${route.color}0A`, cursor: 'pointer', transition: 'all 0.2s' }}
+                        onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(-3px)')}
+                        onMouseLeave={e => (e.currentTarget.style.transform = 'translateX(0)')}
+                      >
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{route.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#172b4d' }}>{route.name}</div>
+                          {route.description && <div style={{ fontSize: 11, color: '#5e6c84', marginTop: 2 }}>{route.description}</div>}
+                          <div style={{ fontSize: 10, color: route.color, marginTop: 3, fontWeight: 600 }}>→ {route.targetDepartmentName}</div>
+                        </div>
+                        <div style={{ color: route.color, fontSize: 18 }}>›</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
-            })}
-            
-            {ticketCreateSettings?.enableAttachments && (
-              <>
-                <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>
-                  المرفقات {ticketCreateSettings?.mandatoryAttachments && <span style={{ color: '#ff5630' }}>* (إلزامي)</span>}
-                  <span style={{ fontSize: '10px', color: '#888', display: 'block' }}>الحجم المسموح: {ticketCreateSettings?.maxAttachmentSizeMB || 5}MB | الامتدادات: {ticketCreateSettings?.allowedExtensions || '*'}</span>
-                </label>
-                <input type="file" onChange={handleFileChange} style={{ ...inputStyle, padding: '6px', background: 'transparent', border: '1px dashed #b3bac5' }} />
-                {fileError && <div style={{ color: '#ff5630', fontSize: '12px', marginTop: '-10px', marginBottom: '10px', padding: '8px', background: '#ffebe6', borderRadius: '4px' }}>⚠️ {fileError}</div>}
-              </>
-            )}
+            })() : (() => {
+              const route = savedRoutes.find(r => r.id === selectedRouteId)!;
+              if (!route) return null;
+              const taxEntry = route.formConfig.taxonomy.find(t => t.main === routeSelectedTaxMain);
 
-            <button onClick={handleTicketSubmit} disabled={!!fileError} style={{ width: '100%', padding: '12px', background: fileError ? '#ebecf0' : 'linear-gradient(90deg, #0052cc 0%, #0065ff 100%)', color: fileError ? '#a5adba' : '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: fileError ? 'not-allowed' : 'pointer', boxShadow: fileError ? 'none' : '0 4px 15px rgba(0, 82, 204, 0.2)', transition: 'all 0.2s', marginTop: '10px' }}>
-              إرسال البلاغ فوراً
-            </button>
+              if (routeSubmitSuccess) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '30px 10px' }}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#172b4d', marginBottom: 6 }}>تم إرسال طلبك بنجاح!</div>
+                    <div style={{ fontSize: 12, color: '#5e6c84', marginBottom: 20 }}>تم توجيه طلبك إلى {route.targetDepartmentName}</div>
+                    <button onClick={() => { setSelectedRouteId(null); setRouteSubmitSuccess(false); }}
+                      style={{ padding: '10px 20px', borderRadius: 10, background: route.color, color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      إرسال طلب آخر
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  {/* Route Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                    <button onClick={() => setSelectedRouteId(null)}
+                      style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.05)', border: 'none', fontSize: 12, cursor: 'pointer', color: '#5e6c84' }}>← رجوع</button>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{route.icon}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: route.color }}>{route.name}</div>
+                      <div style={{ fontSize: 10, color: '#5e6c84' }}>→ {route.targetDepartmentName}{route.targetDivisionName ? ` › ${route.targetDivisionName}` : ''}</div>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>عنوان الطلب</label>
+                  <input type="text" style={inputStyle} placeholder={`مثال: ${route.name} - وصف موجز`} value={routeTicketTitle} onChange={e => setRouteTicketTitle(e.target.value)} />
+
+                  {/* Taxonomy */}
+                  {route.formConfig.taxonomy.length > 0 && (
+                    <>
+                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>نوع المشكلة <span style={{ color: '#ff5630' }}>*</span></label>
+                      <select style={inputStyle} value={routeSelectedTaxMain} onChange={e => { setRouteSelectedTaxMain(e.target.value); setRouteSelectedTaxSub(''); }}>
+                        <option value="">-- اختر نوع المشكلة --</option>
+                        {route.formConfig.taxonomy.map((t, i) => <option key={i} value={t.main}>{t.main}</option>)}
+                      </select>
+                      {taxEntry && taxEntry.sub.length > 0 && (
+                        <>
+                          <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>المشكلة الفرعية</label>
+                          <select style={inputStyle} value={routeSelectedTaxSub} onChange={e => setRouteSelectedTaxSub(e.target.value)}>
+                            <option value="">-- اختر المشكلة الفرعية --</option>
+                            {taxEntry.sub.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                          </select>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {/* Custom Fields */}
+                  {route.formConfig.customFieldIds.length > 0 && customFields
+                    .filter(f => route.formConfig.customFieldIds.includes(f.id))
+                    .map(field => {
+                      const opts = field.dependsOn && field.dependencyMap && fieldValues[field.dependsOn]
+                        ? field.dependencyMap[fieldValues[field.dependsOn]] || field.options
+                        : field.options;
+                      return (
+                        <div key={field.id} style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>{field.name}</label>
+                          <select style={inputStyle} value={routeFieldValues[field.id] || ''} onChange={e => setRouteFieldValues({ ...routeFieldValues, [field.id]: e.target.value })}>
+                            <option value="">-- اختر --</option>
+                            {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                      );
+                    })
+                  }
+
+                  {/* Description */}
+                  {route.formConfig.showDescription && (
+                    <>
+                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
+                        وصف المشكلة {route.formConfig.mandatoryDescription && <span style={{ color: '#ff5630' }}>*</span>}
+                      </label>
+                      <textarea style={{ ...inputStyle, height: '90px', resize: 'none' }}
+                        placeholder="اكتب تفاصيل المشكلة هنا..."
+                        value={routeDescription}
+                        onChange={e => setRouteDescription(e.target.value)} />
+                    </>
+                  )}
+
+                  {/* Attachments */}
+                  {route.formConfig.showAttachments && (
+                    <>
+                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
+                        المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ff5630' }}>* (إلزامي)</span>}
+                        <span style={{ fontSize: 10, color: '#888', display: 'block' }}>الحجم المسموح: {route.formConfig.maxAttachmentMB}MB | {route.formConfig.attachmentTypes.join(', ')}</span>
+                      </label>
+                      <input type="file" onChange={handleFileChange}
+                        style={{ ...inputStyle, padding: '6px', background: 'transparent', border: '1px dashed #b3bac5' }}
+                        accept={route.formConfig.attachmentTypes.map(t => `.${t.toLowerCase()}`).join(',')} />
+                      {fileError && <div style={{ color: '#ff5630', fontSize: '12px', marginBottom: '10px', padding: '8px', background: '#ffebe6', borderRadius: '4px' }}>⚠️ {fileError}</div>}
+                    </>
+                  )}
+
+                  {/* Submit */}
+                  <button
+                    onClick={() => {
+                      if (route.formConfig.mandatoryDescription && !routeDescription.trim()) { alert('وصف المشكلة إلزامي لهذا المسار.'); return; }
+                      if (route.formConfig.mandatoryAttachments && !selectedFile) { alert('المرفق إلزامي لهذا المسار.'); return; }
+                      if (route.formConfig.taxonomy.length > 0 && !routeSelectedTaxMain) { alert('يرجى اختيار نوع المشكلة.'); return; }
+                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: routeTicketTitle, taxonomy: { main: routeSelectedTaxMain, sub: routeSelectedTaxSub }, description: routeDescription, customFields: routeFieldValues });
+                      setRouteSubmitSuccess(true);
+                    }}
+                    style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 15px ${route.color}44`, fontSize: 14, marginTop: 4 }}
+                  >
+                    إرسال الطلب {route.icon}
+                  </button>
+                </div>
+              );
+            })()}
           </aside>
         ) : (
           <aside style={{ ...glassPanel, alignSelf: 'start', opacity: 0.5, textAlign: 'center' }}>
@@ -478,13 +732,34 @@ export const EmployeeWorkspace: React.FC = () => {
         const analyticsSettings = getComponentSettings('admin_analytics');
         const activeCharts = analyticsSettings?.activeCharts || [];
         const scope = analyticsSettings?.dataScope || 'PERSONAL';
+
+        const isOverride = analyticsSettings?.adminOverride || false;
+        const isSectionHead = currentUserRole === 'OPERATIONAL_USER';
+        const isFieldEngineer = currentUserRole === 'END_USER';
+        
+        // Dynamic controls derived from builder policies
+        const mac = analyticsSettings?.managerAnalyticsControl || {};
+        const drilldown = isOverride || currentUserRole === 'IT_ADMIN' || currentUserRole === 'OPERATIONAL_MANAGER' || mac.allowEngineerDrilldown;
+        const locationF = isOverride || currentUserRole === 'IT_ADMIN' || currentUserRole === 'OPERATIONAL_MANAGER' || mac.allowLocationFilter;
+        const taxF = isOverride || currentUserRole === 'IT_ADMIN' || currentUserRole === 'OPERATIONAL_MANAGER' || mac.allowTaxonomyFilter;
+        
+        // Scope isolation logic
+        let effectiveScope = scope;
+        if (isFieldEngineer) {
+          effectiveScope = 'PERSONAL';
+        } else if (isSectionHead) {
+          effectiveScope = 'SECTION';
+        }
         
         return (
           <div style={{ marginTop: '30px', ...glassPanel, padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ margin: 0, color: '#172b4d', fontSize: '20px' }}>التحليل المركزي وذكاء الأعمال (BI)</h2>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <span style={{ fontSize: '12px', padding: '6px 12px', background: 'rgba(0, 101, 255, 0.1)', color: '#0052cc', borderRadius: '20px', fontWeight: 'bold' }}>نطاق الاستعلام: {scope === 'PERSONAL' ? 'شخصي' : scope === 'TEAM' ? 'فريق' : 'شامل'}</span>
+                <span style={{ fontSize: '12px', padding: '6px 12px', background: 'rgba(0, 101, 255, 0.1)', color: '#0052cc', borderRadius: '20px', fontWeight: 'bold' }}>
+                  نطاق الاستعلام الفعلي: {effectiveScope === 'PERSONAL' ? 'شخصي (الموظف)' : effectiveScope === 'SECTION' ? 'قسم فرعي' : effectiveScope === 'TEAM' ? 'فريق العمل' : 'شامل'}
+                </span>
+                {isOverride && <span style={{ fontSize: '11px', background: '#ffebe6', color: '#ff5630', padding: '4px 8px', borderRadius: '6px' }}>👑 تجاوز الأدمين مفعل</span>}
               </div>
             </div>
 
@@ -500,11 +775,44 @@ export const EmployeeWorkspace: React.FC = () => {
                 </div>
               )}
               
+              {locationF ? (
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#5e6c84', marginBottom: '5px' }}>المبنى (Location)</label>
+                  <select style={{ width: '100%', padding: '8px', border: '1px solid rgba(9,30,66,0.1)', borderRadius: '6px', background: 'rgba(255,255,255,0.5)', color: '#172b4d' }}>
+                    <option>📍 جميع المباني</option>
+                    <option>المبنى الرئيسي (HQ)</option>
+                    <option>فرع مصراتة</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#ff5630', marginBottom: '5px' }}>المبنى (Location)</label>
+                  <div style={{ padding: '8px', borderRadius: '6px', background: 'rgba(255, 86, 48, 0.05)', color: '#ff5630', fontSize: '11px', textAlign: 'center', border: '1px dashed rgba(255,86,48,0.3)', fontWeight: 'bold' }}>🔒 فلتر الموقع محجوب</div>
+                </div>
+              )}
+              
+              {taxF ? (
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#5e6c84', marginBottom: '5px' }}>التصنيف (Taxonomy)</label>
+                  <select style={{ width: '100%', padding: '8px', border: '1px solid rgba(9,30,66,0.1)', borderRadius: '6px', background: 'rgba(255,255,255,0.5)', color: '#172b4d' }}>
+                    <option>🗂️ جميع التصنيفات</option>
+                    <option>أعطال تقنية</option>
+                    <option>أعطال شبكات</option>
+                    <option>صيانة عامة</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#ff5630', marginBottom: '5px' }}>التصنيف (Taxonomy)</label>
+                  <div style={{ padding: '8px', borderRadius: '6px', background: 'rgba(255, 86, 48, 0.05)', color: '#ff5630', fontSize: '11px', textAlign: 'center', border: '1px dashed rgba(255,86,48,0.3)', fontWeight: 'bold' }}>🔒 فلتر التصنيف محجوب</div>
+                </div>
+              )}
+
               {analyticsSettings?.filterDestDept && (
                 <div style={{ flex: 1, minWidth: '150px' }}>
                   <label style={{ display: 'block', fontSize: '11px', color: '#5e6c84', marginBottom: '5px' }}>الوجهة (Destination)</label>
                   <select 
-                    style={{ width: '100%', padding: '8px', border: '1px solid rgba(9,30,66,0.1)', borderRadius: '6px', background: 'rgba(255,255,255,0.5)' }}
+                    style={{ width: '100%', padding: '8px', border: '1px solid rgba(9,30,66,0.1)', borderRadius: '6px', background: 'rgba(255,255,255,0.5)', color: '#172b4d' }}
                     value={analyticsDestDept}
                     onChange={e => setAnalyticsDestDept(e.target.value)}
                   >
@@ -535,7 +843,7 @@ export const EmployeeWorkspace: React.FC = () => {
             )}
 
             {/* Charts Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
               {activeCharts.includes('bar_chart') && (
                 <div style={{ height: '250px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#5e6c84' }}>
                   <span style={{ fontSize: '40px', marginBottom: '10px' }}>📊</span>
@@ -555,6 +863,24 @@ export const EmployeeWorkspace: React.FC = () => {
                   <span style={{ fontWeight: 'bold' }}>توزيع التذاكر حسب الموظفين</span>
                 </div>
               )}
+              
+              {/* Drilldown panel */}
+              <div style={{ height: '250px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', padding: '20px', display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#172b4d', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 أفضل المهندسين أداءً</span>
+                {drilldown ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '12px', color: '#5e6c84', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '5px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
+                    <div style={{ fontSize: '12px', color: '#5e6c84', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '5px' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
+                    <div style={{ fontSize: '12px', color: '#5e6c84', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. خليل إبراهيم</span><span>98 تذكرة</span></div>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, background: 'rgba(255, 86, 48, 0.05)', borderRadius: '8px', border: '1px solid rgba(255, 86, 48, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ff5630', textAlign: 'center', padding: '10px' }}>
+                    <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
+                    <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
+                    <span style={{ fontSize: '10px', marginTop: '4px', opacity: 0.8 }}>بناءً على قيود الصلاحية المفروضة من المشرف</span>
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>
