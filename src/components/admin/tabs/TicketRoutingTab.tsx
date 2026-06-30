@@ -1,11 +1,30 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { OrgDepartment, OrgDivision } from './OperationalStructureTab';
 import type { DynamicCustomField } from './DynamicFieldsTab';
 
 // ═══════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════
-export interface TaxonomyEntry { main: string; sub: string[]; }
+export interface IndicatorOption {
+  id: string;
+  label: string;
+  isActive: boolean;
+}
+
+export interface SubIssueIndicator {
+  id: string;
+  parentMainIssueId: string;
+  label: string;
+  options: IndicatorOption[];
+  isActive: boolean;
+}
+
+export interface MainIssueIndicator {
+  id: string;
+  label: string;
+  subIssues: SubIssueIndicator[];
+  isActive: boolean;
+}
 
 export interface RouteFormConfig {
   showDescription: boolean;
@@ -14,8 +33,9 @@ export interface RouteFormConfig {
   mandatoryAttachments: boolean;
   attachmentTypes: string[];
   maxAttachmentMB: number;
-  taxonomy: TaxonomyEntry[];
+  taxonomy: MainIssueIndicator[]; // Updated to hierarchical schema
   customFieldIds: string[];
+  routeDynamicFields: { fieldId: string; isRequired: boolean }[];
 }
 
 export interface TicketRouteDefinition {
@@ -30,6 +50,7 @@ export interface TicketRouteDefinition {
   targetDivisionName: string;
   formConfig: RouteFormConfig;
   isActive: boolean;
+  captured_historical_data?: any; // Prepared for future snapshots
   createdAt: string;
   updatedAt: string;
 }
@@ -85,7 +106,7 @@ const defaultFormConfig = (): RouteFormConfig => ({
   showDescription: true, mandatoryDescription: true,
   showAttachments: true, mandatoryAttachments: false,
   attachmentTypes: ['PDF','PNG','JPG'], maxAttachmentMB: 5,
-  taxonomy: [], customFieldIds: [],
+  taxonomy: [], customFieldIds: [], routeDynamicFields: [],
 });
 
 const loadDepartments = (): OrgDepartment[] => {
@@ -95,7 +116,18 @@ const loadDynamicFields = (): DynamicCustomField[] => {
   try { const s = localStorage.getItem('litc_dynamic_fields'); return s ? JSON.parse(s) : []; } catch { return []; }
 };
 export const loadRoutes = (): TicketRouteDefinition[] => {
-  try { const s = localStorage.getItem(ROUTES_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
+  try { 
+    const s = localStorage.getItem(ROUTES_KEY); 
+    if (!s) return [];
+    const parsed = JSON.parse(s);
+    return parsed.map((r: any) => ({
+      ...r,
+      formConfig: {
+        ...r.formConfig,
+        routeDynamicFields: r.formConfig.routeDynamicFields || (r.formConfig.customFieldIds || []).map((id: string) => ({ fieldId: id, isRequired: true }))
+      }
+    }));
+  } catch { return []; }
 };
 const saveRoutes = (routes: TicketRouteDefinition[]) => {
   localStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
@@ -131,8 +163,6 @@ export const TicketRoutingTab: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [wizardStep, setWizardStep] = useState<WizardStep>(1);
   const [wizard, setWizard] = useState<WizardState>(defaultWizard());
-  const [newTaxMain, setNewTaxMain] = useState('');
-  const [newTaxSub, setNewTaxSub] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -147,7 +177,7 @@ export const TicketRoutingTab: React.FC = () => {
   const openCreate = () => { setEditingId(null); setWizard(defaultWizard()); setWizardStep(1); setView('wizard'); };
   const openEdit = (route: TicketRouteDefinition) => {
     setEditingId(route.id);
-    setWizard({ name:route.name, description:route.description, icon:route.icon, color:route.color, targetDepartmentId:route.targetDepartmentId, targetDepartmentName:route.targetDepartmentName, targetDivisionId:route.targetDivisionId, targetDivisionName:route.targetDivisionName, formConfig: { ...route.formConfig, taxonomy:[...route.formConfig.taxonomy], customFieldIds:[...route.formConfig.customFieldIds] } });
+    setWizard({ name:route.name, description:route.description, icon:route.icon, color:route.color, targetDepartmentId:route.targetDepartmentId, targetDepartmentName:route.targetDepartmentName, targetDivisionId:route.targetDivisionId, targetDivisionName:route.targetDivisionName, formConfig: { ...route.formConfig, taxonomy:[...route.formConfig.taxonomy], customFieldIds:[...route.formConfig.customFieldIds], routeDynamicFields: [...(route.formConfig.routeDynamicFields || [])] } });
     setWizardStep(1); setView('wizard');
   };
   const cancelWizard = () => { setView('list'); setEditingId(null); };
@@ -155,27 +185,83 @@ export const TicketRoutingTab: React.FC = () => {
   const saveRoute = () => {
     if (!wizard.name.trim() || !wizard.targetDepartmentId) return;
     const now = new Date().toISOString();
+    
     if (editingId) {
+      // Update existing route: preserve the ID and other absolute properties, update wizard content
       persistRoutes(routes.map(r => r.id === editingId ? { ...r, ...wizard, updatedAt: now } : r));
     } else {
-      persistRoutes([...routes, { id: `route_${Date.now()}`, ...wizard, isActive: true, createdAt: now, updatedAt: now }]);
+      // Create new route: Generate a strict unique ID (UUID style representation)
+      const uniqueSuffix = crypto.randomUUID ? crypto.randomUUID().split('-')[0] : Math.random().toString(36).substring(2, 10);
+      const strictRouteId = `path_route_${uniqueSuffix}`;
+      
+      persistRoutes([...routes, { 
+        id: strictRouteId, 
+        ...wizard, 
+        isActive: true, 
+        createdAt: now, 
+        updatedAt: now 
+      }]);
     }
-    setView('list'); setEditingId(null);
+    
+    setView('list'); 
+    setEditingId(null);
   };
 
   const toggleActive = (id: string) => persistRoutes(routes.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r));
+
+  // --- Soft Delete (Archive) Functions for Taxonomy ---
+  const toggleMainIssueStatus = (routeId: string, mainIssueId: string) => {
+    persistRoutes(routes.map(route => {
+      if (route.id !== routeId) return route;
+      const updatedTaxonomy = route.formConfig.taxonomy.map(main => {
+        if (main.id === mainIssueId) {
+          // Cascading logic: If we are disabling the main issue, it implicitly hides sub-issues in the UI,
+          // but we only flip the main issue's isActive flag to preserve data structure.
+          return { ...main, isActive: !main.isActive };
+        }
+        return main;
+      });
+      return { ...route, formConfig: { ...route.formConfig, taxonomy: updatedTaxonomy } };
+    }));
+  };
+
+  const toggleSubIssueStatus = (routeId: string, mainIssueId: string, subIssueId: string) => {
+    persistRoutes(routes.map(route => {
+      if (route.id !== routeId) return route;
+      const updatedTaxonomy = route.formConfig.taxonomy.map(main => {
+        if (main.id !== mainIssueId) return main;
+        const updatedSubIssues = main.subIssues.map(sub => 
+          sub.id === subIssueId ? { ...sub, isActive: !sub.isActive } : sub
+        );
+        return { ...main, subIssues: updatedSubIssues };
+      });
+      return { ...route, formConfig: { ...route.formConfig, taxonomy: updatedTaxonomy } };
+    }));
+  };
+  
+  const toggleIndicatorOptionStatus = (routeId: string, mainIssueId: string, subIssueId: string, optionId: string) => {
+    persistRoutes(routes.map(route => {
+      if (route.id !== routeId) return route;
+      const updatedTaxonomy = route.formConfig.taxonomy.map(main => {
+        if (main.id !== mainIssueId) return main;
+        const updatedSubIssues = main.subIssues.map(sub => {
+          if (sub.id !== subIssueId) return sub;
+          const updatedOptions = sub.options.map(opt => 
+            opt.id === optionId ? { ...opt, isActive: !opt.isActive } : opt
+          );
+          return { ...sub, options: updatedOptions };
+        });
+        return { ...main, subIssues: updatedSubIssues };
+      });
+      return { ...route, formConfig: { ...route.formConfig, taxonomy: updatedTaxonomy } };
+    }));
+  };
+  // ---------------------------------------------------
   const deleteRoute = (id: string) => { persistRoutes(routes.filter(r => r.id !== id)); setDeleteConfirmId(null); };
 
   const selectedDept = departments.find(d => d.id === wizard.targetDepartmentId);
   const divisions: OrgDivision[] = selectedDept?.divisions || [];
 
-  const addTaxonomy = () => {
-    if (!newTaxMain.trim()) return;
-    const subs = newTaxSub.split(',').map(s => s.trim()).filter(Boolean);
-    setFC({ taxonomy: [...wizard.formConfig.taxonomy, { main: newTaxMain.trim(), sub: subs }] });
-    setNewTaxMain(''); setNewTaxSub('');
-  };
-  const removeTaxonomy = (idx: number) => setFC({ taxonomy: wizard.formConfig.taxonomy.filter((_, i) => i !== idx) });
   const toggleCustomField = (fieldId: string) => {
     const ids = wizard.formConfig.customFieldIds;
     setFC({ customFieldIds: ids.includes(fieldId) ? ids.filter(id => id !== fieldId) : [...ids, fieldId] });
@@ -266,26 +352,7 @@ export const TicketRoutingTab: React.FC = () => {
         </div>
       )}
       <div>
-        <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:8 }}>تصنيف المشكلة / نوع الطلب</label>
-        <div style={{ background:A.bg, borderRadius:A.radiusSm, padding:12, display:'flex', flexDirection:'column', gap:8 }}>
-          {wizard.formConfig.taxonomy.map((t,i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'8px 10px', background:A.surface, borderRadius:8, gap:8 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:A.text }}>{t.main}</div>
-                {t.sub.length>0 && <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:4 }}>{t.sub.map((s,si) => <span key={si} className="tr-tag">{s}</span>)}</div>}
-              </div>
-              <div className="route-action-btn" onClick={() => removeTaxonomy(i)} style={{ color:A.red, fontSize:16, padding:2 }}>✕</div>
-            </div>
-          ))}
-          <div style={{ display:'flex', flexDirection:'column', gap:6, borderTop:`1px solid ${A.sep}`, paddingTop:10 }}>
-            <input className="tr-input" placeholder="المشكلة الرئيسية (مثال: مشكلة عتاد)" value={newTaxMain} onChange={e => setNewTaxMain(e.target.value)} />
-            <input className="tr-input" placeholder="المشاكل الفرعية مفصولة بفاصلة (مثال: شاشة,طابعة,كيبورد)" value={newTaxSub} onChange={e => setNewTaxSub(e.target.value)} />
-            <button className="route-action-btn" onClick={addTaxonomy} style={{ padding:'8px 14px', borderRadius:8, background:`${wizard.color}18`, color:wizard.color, border:`1px solid ${wizard.color}44`, fontSize:12, fontWeight:600 }}>+ إضافة تصنيف</button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:8 }}>المستدلات الديناميكية المرتبطة</label>
+        <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:8 }}>المستدلات الديناميكية المرفقة</label>
         {dynamicFields.length===0 ? (
           <div style={{ fontSize:11, color:A.textTer, padding:'10px 12px', background:A.bg, borderRadius:A.radiusSm }}>💡 أنشئ المستدلات من تبويب "المستدلات الديناميكية" لتتمكن من إرفاقها هنا</div>
         ) : (
@@ -359,10 +426,10 @@ export const TicketRoutingTab: React.FC = () => {
               <div style={{ fontSize:10, color:A.textSub }}>→ {wizard.targetDepartmentName||'الإدارة المستقبلة'}</div>
             </div>
           </div>
-          {wizard.formConfig.taxonomy.length>0 && (
+          {wizard.formConfig.routeDynamicFields && wizard.formConfig.routeDynamicFields.length>0 && (
             <div>
-              <div style={{ fontSize:10, color:A.textSub, marginBottom:4, fontWeight:600 }}>نوع المشكلة *</div>
-              <div style={{ padding:'6px 10px', borderRadius:6, background:A.bg, fontSize:12, color:A.textTer }}>-- اختر نوع المشكلة --</div>
+              <div style={{ fontSize:10, color:A.textSub, marginBottom:4, fontWeight:600 }}>بيانات إضافية *</div>
+              <div style={{ padding:'6px 10px', borderRadius:6, background:A.bg, fontSize:12, color:A.textTer }}>-- حقول ديناميكية --</div>
             </div>
           )}
           {wizard.formConfig.showDescription && (
@@ -416,7 +483,6 @@ export const TicketRoutingTab: React.FC = () => {
             </div>
             {route.description && <p style={{ fontSize:12, color:A.textSub, margin:'0 0 12px', lineHeight:1.5 }}>{route.description}</p>}
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
-              {route.formConfig.taxonomy.length>0 && <span className="tr-tag" style={{ background:`${route.color}15`, color:route.color }}>🏷️ {route.formConfig.taxonomy.length} تصنيف</span>}
               {route.formConfig.customFieldIds.length>0 && <span className="tr-tag" style={{ background:`${A.purple}15`, color:A.purple }}>⬟ {route.formConfig.customFieldIds.length} مستدلة</span>}
               {route.formConfig.showAttachments && <span className="tr-tag" style={{ background:`${A.blue}15`, color:A.blue }}>📎 مرفقات</span>}
               {route.targetDivisionName && <span className="tr-tag" style={{ background:'rgba(0,0,0,0.05)', color:A.textSub }}>⊂ {route.targetDivisionName}</span>}

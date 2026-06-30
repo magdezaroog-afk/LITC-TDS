@@ -27,7 +27,7 @@ export interface UIComponentDefinition {
 
 const initialComponents: UIComponentDefinition[] = [
   // ─── Submission Modules ───
-  { id: 'ticket_create', name: 'إنشاء التذكرة وتوجيهها الأولي', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { targetDestinations: [], maxAttachmentSize: 5, descriptionLimit: 1000, authorizedPathManager: '', enforceAttachments: false, enforceDescription: true, singleTicketRestriction: false, issueTaxonomy: {} } },
+  { id: 'ticket_create', name: 'مكون إرسال وتوجيه الطلبات', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { destinationRoutes: [] } },
   { id: 'ticket_inbox', name: 'لوحة استعراض التذاكر المرسلة', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
   { id: 'admin_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'submission', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true, identityProvider: 'Microsoft_SSO', twoFactorEnforced: false } },
   { id: 'knowledge_base_user', name: 'الأدلة المعرفية ومكتبة المساعدة', category: 'submission', isActive: false, target_zone: 'Main_Viewport', properties: { enableSearch: true, autoSuggest: true } },
@@ -279,99 +279,20 @@ export interface SavedInterface {
   associated_team?: string | null;
 }
 
+export interface SubmissionTemplate {
+  id: string;
+  name: string;
+  components: any[]; // UIComponentDefinition[]
+  lastUpdated: string;
+  isDefault?: boolean;
+}
 
-const DelegationToggle = ({
-  propKey,
-  componentId,
-  interfaceCategory,
-  isDelegated,
-  onChange
-}: {
-  propKey: string;
-  componentId: string;
-  interfaceCategory: CoreRole | null;
-  isDelegated: boolean;
-  onChange: (compId: string, propKey: string, allowed: boolean) => void;
-}) => {
-  if (interfaceCategory !== 'OPERATIONAL_MANAGER' && interfaceCategory !== 'IT_ADMIN') return null;
+export interface RoleToTemplateMapping {
+  role: CoreRole;
+  templateId: string;
+}
 
-  return (
-    <div style={{ marginTop: '6px', marginBottom: '4px', marginLeft: '24px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(139, 92, 246, 0.05)', padding: '4px 8px', borderRadius: '6px', border: '1px dashed rgba(139, 92, 246, 0.3)' }} onClick={e => e.stopPropagation()}>
-      <input 
-        type="checkbox" 
-        checked={isDelegated} 
-        onChange={(e) => onChange(componentId, propKey, e.target.checked)} 
-        style={{ cursor: 'pointer', accentColor: '#8b5cf6', width: '12px', height: '12px' }}
-      />
-      <span style={{ fontSize: '10px', color: '#a78bfa', fontWeight: 'bold' }}>
-        🔑 تفويض هذه الخاصية للصلاحيات الأدنى
-      </span>
-    </div>
-  );
-};
 
-const HardCeilingToggle = ({
-  propKey,
-  componentId,
-  currentBuilderRole,
-  config,
-  onChange
-}: {
-  propKey: string;
-  componentId: string;
-  currentBuilderRole: CoreRole;
-  config?: CascadingCeilingConfig;
-  onChange: (compId: string, propKey: string, newConfig: CascadingCeilingConfig) => void;
-}) => {
-  if (currentBuilderRole !== 'IT_ADMIN') return null; // Only IT_ADMIN can see and configure the hard ceiling
-
-  const currentConfig: CascadingCeilingConfig = config || { allowedRoles: [], adminAbsoluteOverride: false };
-
-  const handleToggleRole = (role: CoreRole) => {
-    let newRoles = [...currentConfig.allowedRoles];
-    if (newRoles.includes(role)) {
-      newRoles = newRoles.filter(r => r !== role);
-    } else {
-      newRoles.push(role);
-    }
-    onChange(componentId, propKey, { ...currentConfig, allowedRoles: newRoles });
-  };
-
-  return (
-    <div style={{ marginTop: '6px', marginBottom: '12px', marginLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0, 0, 0, 0.4)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }} onClick={e => e.stopPropagation()}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <input 
-          type="checkbox" 
-          checked={currentConfig.adminAbsoluteOverride} 
-          onChange={(e) => onChange(componentId, propKey, { ...currentConfig, adminAbsoluteOverride: e.target.checked })} 
-          style={{ cursor: 'pointer', accentColor: '#ef4444', width: '14px', height: '14px' }}
-        />
-        <span style={{ fontSize: '11px', color: '#f87171', fontWeight: 'bold' }}>
-          👑 تجاوز مطلق (Absolute Override): منع جميع הרتب الأدنى من التحكم بهذه الخاصية
-        </span>
-      </div>
-      
-      {!currentConfig.adminAbsoluteOverride && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '22px', borderRight: '1px dashed #ef4444', paddingRight: '10px' }}>
-          <span style={{ fontSize: '10px', color: '#64748b' }}>أو قم بتفويض التعديل للأدوار التالية تتابعياً:</span>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {['OPERATIONAL_MANAGER', 'OPERATIONAL_USER'].map(r => (
-              <label key={r} style={{ fontSize: '10px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={currentConfig.allowedRoles.includes(r as CoreRole)}
-                  onChange={() => handleToggleRole(r as CoreRole)}
-                  style={{ cursor: 'pointer', accentColor: '#3b82f6' }}
-                />
-                {r === 'OPERATIONAL_MANAGER' ? 'مدير إدارة' : 'رئيس قسم/فريق'}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 
@@ -485,9 +406,48 @@ export function UILayoutEngineTab() {
   const [currentBuilderRole, setCurrentBuilderRole] = useState<CoreRole>('IT_ADMIN');
   const { isPropertyAllowed } = useCascadingCeilingValidator(currentBuilderRole);
 
+  // --- Submission Templates & Builder Modes ---
+  const [builderMode, setBuilderMode] = useState<'OPERATIONAL' | 'SUBMISSION_TEMPLATE'>('OPERATIONAL');
+  
+  const loadSubmissionTemplates = (): SubmissionTemplate[] => {
+    try {
+      const data = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
+      if (data) return JSON.parse(data);
+    } catch(e) {}
+    return [{
+      id: 'template_standard_1',
+      name: 'القالب القياسي (Standard)',
+      lastUpdated: new Date().toISOString(),
+      isDefault: true,
+      components: [] // will be filled or kept empty meaning default fallback
+    }];
+  };
+
+  const loadRoleTemplateMappings = (): RoleToTemplateMapping[] => {
+    try {
+      const data = localStorage.getItem('ROLE_SUBMISSION_MAPPINGS');
+      if (data) return JSON.parse(data);
+    } catch(e) {}
+    return [];
+  };
+
+  const [submissionTemplates, setSubmissionTemplates] = useState<SubmissionTemplate[]>(loadSubmissionTemplates);
+  const [roleTemplateMappings, setRoleTemplateMappings] = useState<RoleToTemplateMapping[]>(loadRoleTemplateMappings);
+  const [currentTemplateId, setCurrentTemplateId] = useState<string>('template_standard_1');
+
+  // When saving submission templates
+  useEffect(() => {
+    localStorage.setItem('SUBMISSION_TEMPLATES_SCHEMA', JSON.stringify(submissionTemplates));
+  }, [submissionTemplates]);
+
+  useEffect(() => {
+    localStorage.setItem('ROLE_SUBMISSION_MAPPINGS', JSON.stringify(roleTemplateMappings));
+  }, [roleTemplateMappings]);
+
 
   // --- Interactive Live Sandbox States ---
   const [previewRole, setPreviewRole] = useState<string>('Super_Admin');
+  const [previewSelectedRouteId, setPreviewSelectedRouteId] = useState<string | null>(null);
   const [previewActiveTab, setPreviewActiveTab] = useState<string>('');
   const [previewDynamicFields, setPreviewDynamicFields] = useState<any[]>([]);
   const [previewDesc, setPreviewDesc] = useState<string>('');
@@ -533,10 +493,21 @@ export function UILayoutEngineTab() {
 
   // --- Confirm Save Handler ---
   const handleConfirmSave = () => {
-    const activeInterface = savedInterfaces.find(ui => ui.name === interfaceName) || { id: 'ui_' + (interfaceCategory || 'default'), roleType: interfaceCategory || 'IT_ADMIN' };
-    localStorage.setItem(`litc_layout_components_${activeInterface.id}`, JSON.stringify(components));
-    localStorage.setItem(`litc_layout_components_${activeInterface.roleType}`, JSON.stringify(components));
-    localStorage.setItem('litc_layout_components', JSON.stringify(components));
+    if (builderMode === 'SUBMISSION_TEMPLATE') {
+      setSubmissionTemplates(prev => {
+        const existing = prev.find(t => t.id === currentTemplateId);
+        if (existing) {
+          return prev.map(t => t.id === currentTemplateId ? { ...t, components, lastUpdated: new Date().toISOString() } : t);
+        } else {
+          return [...prev, { id: currentTemplateId, name: interfaceName || currentTemplateId, components, lastUpdated: new Date().toISOString() }];
+        }
+      });
+    } else {
+      const activeInterface = savedInterfaces.find(ui => ui.name === interfaceName) || { id: 'ui_' + (interfaceCategory || 'default'), roleType: interfaceCategory || 'IT_ADMIN' };
+      localStorage.setItem(`litc_layout_components_${activeInterface.id}`, JSON.stringify(components));
+      localStorage.setItem(`litc_layout_components_${activeInterface.roleType}`, JSON.stringify(components));
+      localStorage.setItem('litc_layout_components', JSON.stringify(components));
+    }
     setShowSaveReportModal(false);
     setIsManagerMode(true);
   };
@@ -639,37 +610,7 @@ export function UILayoutEngineTab() {
     }));
   };
 
-    const handleDelegationChange = (compId: string, propKey: string, allowed: boolean) => {
-    setComponents(prev => prev.map(c => {
-      if (c.id === compId) {
-        const currentConfig = c.delegationConfig || {};
-        return {
-          ...c,
-          delegationConfig: {
-            ...currentConfig,
-            [propKey]: { allow_override: allowed, delegated_to: '' }
-          }
-        };
-      }
-      return c;
-    }));
-  };
 
-  const handleCeilingChange = (compId: string, propKey: string, newConfig: CascadingCeilingConfig) => {
-    setComponents(prev => prev.map(c => {
-      if (c.id === compId) {
-        const currentCeiling = c.strict_ceiling_props || {};
-        return {
-          ...c,
-          strict_ceiling_props: {
-            ...currentCeiling,
-            [propKey]: newConfig
-          }
-        };
-      }
-      return c;
-    }));
-  };
 
   if (isManagerMode) {
     return (
@@ -678,9 +619,29 @@ export function UILayoutEngineTab() {
 
           {!showSavedList ? (
             <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '20px', padding: '48px 40px', textAlign: 'center', maxWidth: '540px', width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-              <div style={{ width: '72px', height: '72px', borderRadius: '18px', background: 'linear-gradient(135deg, #5856D6, #AF52DE)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', boxShadow: '0 8px 24px rgba(88,86,214,0.3)' }}>⚡</div>
-              <h1 style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '10px', fontWeight: '800', letterSpacing: '-0.4px' }}>محرك هندسة الواجهات</h1>
-              <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '36px', lineHeight: '1.7' }}>أنشئ وخصّص واجهات النظام لكل دور بمرونة كاملة دون أي قيود تقنية.</p>
+              
+              <div style={{ display: 'flex', background: '#F5F5F7', padding: '6px', borderRadius: '12px', marginBottom: '30px' }}>
+                <button
+                  onClick={() => setBuilderMode('OPERATIONAL')}
+                  style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: builderMode === 'OPERATIONAL' ? '#FFFFFF' : 'transparent', color: builderMode === 'OPERATIONAL' ? '#1D1D1F' : '#6E6E73', boxShadow: builderMode === 'OPERATIONAL' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
+                >
+                  الواجهات التشغيلية
+                </button>
+                <button
+                  onClick={() => setBuilderMode('SUBMISSION_TEMPLATE')}
+                  style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: builderMode === 'SUBMISSION_TEMPLATE' ? '#FFFFFF' : 'transparent', color: builderMode === 'SUBMISSION_TEMPLATE' ? '#1D1D1F' : '#6E6E73', boxShadow: builderMode === 'SUBMISSION_TEMPLATE' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
+                >
+                  قوالب الموظفين للإرسال
+                </button>
+              </div>
+
+              <div style={{ width: '72px', height: '72px', borderRadius: '18px', background: builderMode === 'OPERATIONAL' ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : 'linear-gradient(135deg, #34C759, #32D74B)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', boxShadow: builderMode === 'OPERATIONAL' ? '0 8px 24px rgba(88,86,214,0.3)' : '0 8px 24px rgba(52,199,89,0.3)' }}>{builderMode === 'OPERATIONAL' ? '⚡' : '📝'}</div>
+              <h1 style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '10px', fontWeight: '800', letterSpacing: '-0.4px' }}>
+                {builderMode === 'OPERATIONAL' ? 'محرك هندسة الواجهات التشغيلية' : 'محرك قوالب إرسال الموظفين'}
+              </h1>
+              <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '36px', lineHeight: '1.7' }}>
+                {builderMode === 'OPERATIONAL' ? 'أنشئ وخصّص واجهات النظام لكل دور بمرونة كاملة.' : 'صمم قوالب إرسال التذاكر التي تظهر للموظفين والمستخدمين النهائيين.'}
+              </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
@@ -689,7 +650,7 @@ export function UILayoutEngineTab() {
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(88,86,214,0.45)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(88,86,214,0.35)'; }}
                 >
-                  <span style={{ fontSize: '18px' }}>+</span> إنشاء واجهة جديدة
+                  <span style={{ fontSize: '18px' }}>+</span> {builderMode === 'OPERATIONAL' ? 'إنشاء واجهة جديدة' : 'إنشاء قالب إرسال جديد'}
                 </button>
 
                 <button
@@ -698,7 +659,7 @@ export function UILayoutEngineTab() {
                   onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(88,86,214,0.06)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
                 >
-                  <span>📁</span> الواجهات المحفوظة
+                  <span>📁</span> {builderMode === 'OPERATIONAL' ? 'الواجهات المحفوظة' : 'قوالب الإرسال المحفوظة'}
                 </button>
               </div>
             </div>
@@ -707,7 +668,7 @@ export function UILayoutEngineTab() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
                 <h3 style={{ color: '#1D1D1F', margin: 0, fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ background: 'rgba(88,86,214,0.1)', color: '#5856D6', padding: '6px', borderRadius: '8px', fontSize: '14px' }}>📁</span>
-                  الواجهات المحفوظة
+                  {builderMode === 'SUBMISSION_TEMPLATE' ? 'قوالب الإرسال المحفوظة' : 'الواجهات المحفوظة'}
                 </h3>
                 <button
                   onClick={() => setShowSavedList(false)}
@@ -1013,8 +974,6 @@ export function UILayoutEngineTab() {
                               />
                               {filter.label}
                             </label>
-<DelegationToggle propKey="allowedReportFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedReportFilters']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowedReportFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedReportFilters"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                           );
@@ -1047,8 +1006,6 @@ export function UILayoutEngineTab() {
                               />
                               {col.label}
                             </label>
-<DelegationToggle propKey="allowedReportColumns" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedReportColumns']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowedReportColumns" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedReportColumns"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                           );
@@ -1070,8 +1027,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'enableTimelineAuditLog', e.target.checked)} />
                           تفعيل شريط السجل التاريخي المتكامل (Timeline Audit Log) 📜
                         </label>
-<DelegationToggle propKey="enableTimelineAuditLog" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enableTimelineAuditLog']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="enableTimelineAuditLog" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enableTimelineAuditLog"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 <>{isPropertyAllowed("enableHistoricalExport", selectedComponent.strict_ceiling_props) && (
@@ -1081,8 +1036,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'enableHistoricalExport', e.target.checked)} />
                           تفعيل زر تصدير التقارير التاريخية (Excel/PDF) 📥
                         </label>
-<DelegationToggle propKey="enableHistoricalExport" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enableHistoricalExport']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="enableHistoricalExport" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enableHistoricalExport"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1112,8 +1065,6 @@ export function UILayoutEngineTab() {
                               />
                               {filter.label}
                             </label>
-<DelegationToggle propKey="enabledUIFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enabledUIFilters']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="enabledUIFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enabledUIFilters"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                           );
@@ -1150,8 +1101,6 @@ export function UILayoutEngineTab() {
                               />
                               تبويب: {tab.label}
                             </label>
-<DelegationToggle propKey="tabsConfig" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['tabsConfig']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="tabsConfig" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["tabsConfig"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                             
@@ -1180,8 +1129,6 @@ export function UILayoutEngineTab() {
                                         }} />
                                         {actionLabels[action] || action}
                                       </label>
-<DelegationToggle propKey="tabsConfig" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['tabsConfig']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="tabsConfig" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["tabsConfig"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                                     );
@@ -1208,8 +1155,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'enableDescription', e.target.checked)} />
                           تفعيل حقل الوصف
                         </label>
-<DelegationToggle propKey="enableDescription" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enableDescription']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="enableDescription" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enableDescription"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                         {selectedComponent.properties.enableDescription && (
@@ -1231,8 +1176,6 @@ export function UILayoutEngineTab() {
                           <option value="SEQUENTIAL">تسلسلي (Sequential)</option>
                           <option value="PARALLEL">متزامن (Parallel)</option>
                         </select>
-<DelegationToggle propKey="concurrencyMode" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['concurrencyMode']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="concurrencyMode" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["concurrencyMode"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1255,8 +1198,6 @@ export function UILayoutEngineTab() {
                           <option value="CROSS_DEPARTMENT">أقسام مختلفة</option>
                           <option value="GLOBAL">كل الكيانات</option>
                         </select>
-<DelegationToggle propKey="routingScope" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['routingScope']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="routingScope" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["routingScope"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1277,8 +1218,6 @@ export function UILayoutEngineTab() {
                         <option value="EDIT">تعديل (Edit)</option>
                         <option value="FULL_ACCESS">تحكم كامل (Full Access)</option>
                       </select>
-<DelegationToggle propKey="accessLevel" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['accessLevel']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="accessLevel" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["accessLevel"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                     </div>
@@ -1287,152 +1226,24 @@ export function UILayoutEngineTab() {
                   {/* ═══ ticket_create Inspector ═══ */}
                   {selectedComponent.id === 'ticket_create' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص إنشاء وتوجيه التذاكر:</h5>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص مكون إنشاء تذكرة:</h5>
                       
                       <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-<>{isPropertyAllowed("attachmentsEnabled", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.attachmentsEnabled || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentsEnabled', e.target.checked)} />
-                          السماح بالمرفقات للمستخدم
-                        </label>
-<DelegationToggle propKey="attachmentsEnabled" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['attachmentsEnabled']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="attachmentsEnabled" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["attachmentsEnabled"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("mandatoryAttachments", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.mandatoryAttachments || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'mandatoryAttachments', e.target.checked)} />
-                          إجبار المستخدم على إرفاق ملف
-                        </label>
-<DelegationToggle propKey="mandatoryAttachments" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['mandatoryAttachments']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="mandatoryAttachments" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["mandatoryAttachments"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("slaConditions", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.slaConditions || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'slaConditions', e.target.checked)} />
-                          ربط التذكرة بشروط الـ SLA فور إنشائها
-                        </label>
-<DelegationToggle propKey="slaConditions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['slaConditions']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="slaConditions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["slaConditions"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("voiceToText", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.voiceToText || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'voiceToText', e.target.checked)} />
-                          تفعيل الإدخال الصوتي الذكي (تحويل الصوت إلى نص)
-                        </label>
-<DelegationToggle propKey="voiceToText" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['voiceToText']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="voiceToText" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["voiceToText"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("showPriority", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.showPriority || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'showPriority', e.target.checked)} />
-                          إظهار حقل مستوى الأولوية
-                        </label>
-<DelegationToggle propKey="showPriority" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['showPriority']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="showPriority" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["showPriority"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("mandatoryDescription", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.mandatoryDescription || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'mandatoryDescription', e.target.checked)} />
-                          إجبار المستخدم على كتابة وصف المشكلة
-                        </label>
-<DelegationToggle propKey="mandatoryDescription" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['mandatoryDescription']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="mandatoryDescription" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["mandatoryDescription"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-                      </div>
-
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>الحد الأقصى للمرفق (ميجابايت):</h6>
-                        <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }} value={selectedComponent.properties.attachmentMaxSizeMB || 5}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'attachmentMaxSizeMB', parseInt(e.target.value))} />
-                      </div>
-
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>أنواع المرفقات المسموح بها:</h6>
-                        <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-<>{isPropertyAllowed("attachmentAllowedExtensions", selectedComponent.strict_ceiling_props) && (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('PDF')} 
-                              onChange={e => {
-                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
-                                const newExts = e.target.checked 
-                                  ? Array.from(new Set([...exts, 'PDF', 'DOCX']))
-                                  : exts.filter((x: string) => x !== 'PDF' && x !== 'DOCX');
-                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
-                              }} />
-                            وثائق ومستندات (PDF, DOCX)
-                          </label>
-<DelegationToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['attachmentAllowedExtensions']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["attachmentAllowedExtensions"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("attachmentAllowedExtensions", selectedComponent.strict_ceiling_props) && (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('PNG')} 
-                              onChange={e => {
-                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
-                                const newExts = e.target.checked 
-                                  ? Array.from(new Set([...exts, 'PNG', 'JPG']))
-                                  : exts.filter((x: string) => x !== 'PNG' && x !== 'JPG');
-                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
-                              }} />
-                            صور ولقطات شاشة (PNG, JPG)
-                          </label>
-<DelegationToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['attachmentAllowedExtensions']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["attachmentAllowedExtensions"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-<>{isPropertyAllowed("attachmentAllowedExtensions", selectedComponent.strict_ceiling_props) && (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={(selectedComponent.properties.attachmentAllowedExtensions || []).includes('ZIP')} 
-                              onChange={e => {
-                                const exts = selectedComponent.properties.attachmentAllowedExtensions || [];
-                                const newExts = e.target.checked 
-                                  ? Array.from(new Set([...exts, 'ZIP', 'RAR']))
-                                  : exts.filter((x: string) => x !== 'ZIP' && x !== 'RAR');
-                                handlePropertyChange(selectedComponent.id, 'attachmentAllowedExtensions', newExts);
-                              }} />
-                            ملفات مضغوطة (ZIP, RAR)
-                          </label>
-<DelegationToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['attachmentAllowedExtensions']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="attachmentAllowedExtensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["attachmentAllowedExtensions"]} onChange={handleCeilingChange} />
-</div>
-)}</>
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>توجيه التذكرة التلقائي المزدوج:</h6>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>المسارات المسموحة (يمكن للموظف اختيارها):</h6>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>ملاحظة: المرفقات والمستدلات تتم إدارتها من (تبويب مسارات التذاكر). هنا نحدد فقط المسارات التي ستظهر للموظف.</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                          {(selectedComponent.properties.destinationRoutes || []).map((route: string, idx: number) => (
-                            <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                              {route}
-                              <span style={{ cursor: 'pointer', color: '#f87171' }} onClick={() => {
-                                const routes = selectedComponent.properties.destinationRoutes.filter((r: string) => r !== route);
-                                handlePropertyChange(selectedComponent.id, 'destinationRoutes', routes);
-                              }}>×</span>
-                            </span>
-                          ))}
+                          {(selectedComponent.properties.destinationRoutes || []).map((route: string, idx: number) => {
+                            const rDef = savedRoutes.find(r => r.id === route);
+                            return (
+                              <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                {rDef ? rDef.name : route}
+                                <span style={{ cursor: 'pointer', color: '#f87171' }} onClick={() => {
+                                  const routes = selectedComponent.properties.destinationRoutes.filter((r: string) => r !== route);
+                                  handlePropertyChange(selectedComponent.id, 'destinationRoutes', routes);
+                                }}>x</span>
+                              </span>
+                            );
+                          })}
                         </div>
 <>{isPropertyAllowed("destinationRoutes", selectedComponent.strict_ceiling_props) && (
                         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -1443,24 +1254,12 @@ export function UILayoutEngineTab() {
                           }
                           e.target.value = ''; // reset
                         }}>
-                          <option value="">إضافة مسار توجيه...</option>
-                          {savedRoutes.filter(r => r.isActive).length > 0
-                            ? savedRoutes.filter(r => r.isActive).map(r => (
-                                <option key={r.id} value={r.id}>{r.icon} {r.name} ← {r.targetDepartmentName}</option>
-                              ))
-                            : (
-                              <>
-                                <option disabled style={{ color: '#AEAEB2' }}>── مسارات افتراضية ──</option>
-                                <option value="IT_SUPPORT">الدعم التقني</option>
-                                <option value="MAINTENANCE">الصيانة العامة</option>
-                                <option value="HR">الموارد البشرية</option>
-                                <option value="SECURITY">الأمن والسلامة</option>
-                              </>
-                            )
+                          <option value="">إضافة مسار مسموح...</option>
+                          {savedRoutes.filter(r => r.isActive).length > 0 
+                            ? savedRoutes.filter(r => r.isActive).map((r, i) => <option key={i} value={r.id}>{r.name}</option>)
+                            : <option value="support">الدعم الفني (افتراضي)</option>
                           }
                         </select>
-<DelegationToggle propKey="destinationRoutes" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['destinationRoutes']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="destinationRoutes" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["destinationRoutes"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1487,8 +1286,6 @@ export function UILayoutEngineTab() {
                                 />
                                 {scope === 'PERSONAL' ? 'شخصي (Personal)' : scope === 'TEAM' ? 'الفريق (Team)' : 'موظف محدد (Specific)'}
                               </label>
-                              <DelegationToggle propKey="dataScope" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['dataScope']?.allow_override || false} onChange={handleDelegationChange} />
-                              <HardCeilingToggle propKey="dataScope" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["dataScope"]} onChange={handleCeilingChange} />
                             </div>
                           ))}
                         </div>
@@ -1515,8 +1312,6 @@ export function UILayoutEngineTab() {
                                     }} />
                                     {f.label}
                                   </label>
-                                  <DelegationToggle propKey="enabledUIFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enabledUIFilters']?.allow_override || false} onChange={handleDelegationChange} />
-                                  <HardCeilingToggle propKey="enabledUIFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enabledUIFilters"]} onChange={handleCeilingChange} />
                                 </div>
                               )}
                             </div>
@@ -1546,8 +1341,6 @@ export function UILayoutEngineTab() {
                                     }} />
                                     {c.label}
                                   </label>
-                                  <DelegationToggle propKey="activeCharts" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['activeCharts']?.allow_override || false} onChange={handleDelegationChange} />
-                                  <HardCeilingToggle propKey="activeCharts" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["activeCharts"]} onChange={handleCeilingChange} />
                                 </div>
                               )}
                             </div>
@@ -1637,8 +1430,6 @@ export function UILayoutEngineTab() {
                                     }} />
                                     {d.label}
                                   </label>
-                                  <DelegationToggle propKey="allowedDimensions" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedDimensions']?.allow_override || false} onChange={handleDelegationChange} />
-                                  <HardCeilingToggle propKey="allowedDimensions" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedDimensions"]} onChange={handleCeilingChange} />
                                 </div>
                               )}
                             </div>
@@ -1667,8 +1458,6 @@ export function UILayoutEngineTab() {
                                     }} />
                                     {m.label}
                                   </label>
-                                  <DelegationToggle propKey="allowedMetrics" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedMetrics']?.allow_override || false} onChange={handleDelegationChange} />
-                                  <HardCeilingToggle propKey="allowedMetrics" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedMetrics"]} onChange={handleCeilingChange} />
                                 </div>
                               )}
                             </div>
@@ -1691,8 +1480,6 @@ export function UILayoutEngineTab() {
                               onChange={() => handlePropertyChange(selectedComponent.id, 'archiveScope', scope)} />
                             {scope.replace(/_/g, ' ')}
                           </label>
-<DelegationToggle propKey="archiveScope" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['archiveScope']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="archiveScope" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["archiveScope"]} onChange={handleCeilingChange} />
 </div>
                         ))}
                       </div>
@@ -1706,8 +1493,6 @@ export function UILayoutEngineTab() {
                           onChange={e => handlePropertyChange(selectedComponent.id, 'allowCompletedClosedTickets', e.target.checked)} />
                         التذاكر المنجزة والمغلقة (Completed/Closed)
                       </label>
-<DelegationToggle propKey="allowCompletedClosedTickets" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowCompletedClosedTickets']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowCompletedClosedTickets" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowCompletedClosedTickets"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 <>{isPropertyAllowed("allowSupplementaryAdditionalTickets", selectedComponent.strict_ceiling_props) && (
@@ -1717,8 +1502,6 @@ export function UILayoutEngineTab() {
                           onChange={e => handlePropertyChange(selectedComponent.id, 'allowSupplementaryAdditionalTickets', e.target.checked)} />
                         التذاكر الفرعية/الإضافية (Supplementary)
                       </label>
-<DelegationToggle propKey="allowSupplementaryAdditionalTickets" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowSupplementaryAdditionalTickets']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowSupplementaryAdditionalTickets" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowSupplementaryAdditionalTickets"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 
@@ -1742,8 +1525,6 @@ export function UILayoutEngineTab() {
                               }} />
                               {f.label}
                             </label>
-<DelegationToggle propKey="enabledUIFilters" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enabledUIFilters']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="enabledUIFilters" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enabledUIFilters"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                           );
@@ -1764,8 +1545,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'allowThemeCustomization', e.target.checked)} />
                           السماح بتخصيص المظهر (Theme Customization)
                         </label>
-<DelegationToggle propKey="allowThemeCustomization" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowThemeCustomization']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowThemeCustomization" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowThemeCustomization"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 <>{isPropertyAllowed("manualInputFallback", selectedComponent.strict_ceiling_props) && (
@@ -1775,8 +1554,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'manualInputFallback', e.target.checked)} />
                           تفعيل الإدخال اليدوي كبديل (Manual Input Fallback)
                         </label>
-<DelegationToggle propKey="manualInputFallback" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['manualInputFallback']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="manualInputFallback" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["manualInputFallback"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1792,8 +1569,6 @@ export function UILayoutEngineTab() {
                           <option value="Active_Directory">Active Directory On-Premise</option>
                           <option value="Internal_DB">قاعدة البيانات الداخلية</option>
                         </select>
-<DelegationToggle propKey="identityProvider" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['identityProvider']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="identityProvider" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["identityProvider"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1809,8 +1584,6 @@ export function UILayoutEngineTab() {
                           <option value="Neon Purple">Neon Purple</option>
                           <option value="Crimson Red">Crimson Red</option>
                         </select>
-<DelegationToggle propKey="neonPalette" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['neonPalette']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="neonPalette" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["neonPalette"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1837,8 +1610,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'allowUserSwitch', e.target.checked)} />
                           السماح للمستخدم بتغيير اللغة (User Switch)
                         </label>
-<DelegationToggle propKey="allowUserSwitch" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowUserSwitch']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="allowUserSwitch" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowUserSwitch"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 <>{isPropertyAllowed("darkModeEnabled", selectedComponent.strict_ceiling_props) && (
@@ -1848,8 +1619,6 @@ export function UILayoutEngineTab() {
                             onChange={e => handlePropertyChange(selectedComponent.id, 'darkModeEnabled', e.target.checked)} />
                           تفعيل النمط الداكن الافتراضي (Dark Mode)
                         </label>
-<DelegationToggle propKey="darkModeEnabled" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['darkModeEnabled']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="darkModeEnabled" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["darkModeEnabled"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1863,8 +1632,6 @@ export function UILayoutEngineTab() {
                           <option value="ar">العربية (Arabic)</option>
                           <option value="en">الإنجليزية (English)</option>
                         </select>
-<DelegationToggle propKey="defaultLanguage" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['defaultLanguage']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="defaultLanguage" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["defaultLanguage"]} onChange={handleCeilingChange} />
 </div>
 )}</>
                       </div>
@@ -1889,8 +1656,6 @@ export function UILayoutEngineTab() {
                           onChange={e => handlePropertyChange(selectedComponent.id, 'forceWhatsappCritical', e.target.checked)} />
                         فرض إشعارات WhatsApp للأحداث الحرجة 📱
                       </label>
-<DelegationToggle propKey="forceWhatsappCritical" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['forceWhatsappCritical']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="forceWhatsappCritical" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["forceWhatsappCritical"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 <>{isPropertyAllowed("lockSLAThresholds", selectedComponent.strict_ceiling_props) && (
@@ -1900,8 +1665,6 @@ export function UILayoutEngineTab() {
                           onChange={e => handlePropertyChange(selectedComponent.id, 'lockSLAThresholds', e.target.checked)} />
                         قفل تعديل مدد الـ SLA (منع المدراء من التخفيض) 🔒
                       </label>
-<DelegationToggle propKey="lockSLAThresholds" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['lockSLAThresholds']?.allow_override || false} onChange={handleDelegationChange} />
-<HardCeilingToggle propKey="lockSLAThresholds" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["lockSLAThresholds"]} onChange={handleCeilingChange} />
 </div>
 )}</>
 
@@ -1943,8 +1706,6 @@ export function UILayoutEngineTab() {
                                     }} />
                                     {v.label}
                                   </label>
-                                  <DelegationToggle propKey="allowedViews" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['allowedViews']?.allow_override || false} onChange={handleDelegationChange} />
-                                  <HardCeilingToggle propKey="allowedViews" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["allowedViews"]} onChange={handleCeilingChange} />
                                 </div>
                               )}
                             </React.Fragment>
@@ -2002,8 +1763,6 @@ export function UILayoutEngineTab() {
                                 onChange={e => handlePropertyChange(selectedComponent.id, 'enableDragAndDrop', e.target.checked)} />
                               تفعيل السحب والإفلات (Drag & Drop)
                             </label>
-                            <DelegationToggle propKey="enableDragAndDrop" componentId={selectedComponent.id} interfaceCategory={interfaceCategory} isDelegated={selectedComponent.delegationConfig?.['enableDragAndDrop']?.allow_override || false} onChange={handleDelegationChange} />
-                            <HardCeilingToggle propKey="enableDragAndDrop" componentId={selectedComponent.id} currentBuilderRole={currentBuilderRole} config={selectedComponent.strict_ceiling_props?.["enableDragAndDrop"]} onChange={handleCeilingChange} />
                           </div>
                         )}
                       </div>
@@ -2083,7 +1842,7 @@ export function UILayoutEngineTab() {
                     <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', padding: '20px'}}>لا توجد خصائص إضافية</div>
                   ) : (
                     <div>
-                      {Object.entries(selectedComponent.properties).filter(([k]) => !['destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport', 'issueTypeCustomization', 'injectedDynamicFields', 'attachmentAllowedExtensions', 'routingDestination', 'cascadingDropdowns', 'dependencyMapping'].includes(k)).map(([key, val]) => {
+                      {Object.entries(selectedComponent.properties).filter(([k]) => !['destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport', 'issueTypeCustomization', 'injectedDynamicFields', 'attachmentAllowedExtensions', 'routingDestination', 'cascadingDropdowns', 'dependencyMapping', 'maxAttachmentSizeMB', 'allowedExtensions', 'mandatoryDescription', 'targetDestinations', 'maxAttachmentSize', 'descriptionLimit', 'authorizedPathManager', 'enforceAttachments', 'enforceDescription', 'singleTicketRestriction', 'issueTaxonomy'].includes(k)).map(([key, val]) => {
                         // Boolean toggle
                         if (typeof val === 'boolean') {
                           return (
@@ -2573,116 +2332,141 @@ export function UILayoutEngineTab() {
                     // Render component preview block helper
                     const renderComponent = (c: UIComponentDefinition) => {
                       switch (c.id) {
-                        case 'ticket_create': {
+                                                case 'ticket_create': {
                           const tProps = c.properties || {};
-                          const targets = tProps.targetDestinations || [];
-                          const isInstantRouting = targets.length === 1;
-                          const maxDesc = tProps.descriptionLimit || 1000;
-                          const taxRaw = tProps.issueTaxonomyRaw || '';
-                          const taxonomyLines = taxRaw.split('\n').filter((l: string) => l.trim() !== '');
-                          const taxonomyList = taxonomyLines.map((line: string) => {
-                            const [main, sub] = line.split('|');
-                            return { main: main?.trim() || '', sub: sub ? sub.split(',').map((s: string) => s.trim()) : [] };
-                          }).filter((t: any) => t.main !== '');
+                          const destinationRouteIds: string[] = tProps.destinationRoutes || [];
+                          
+                          const activeRoutes = savedRoutes.filter(r => r.isActive);
+                          const visibleRoutes = destinationRouteIds.length > 0
+                            ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
+                            : activeRoutes;
+
+                          if (!previewSelectedRouteId) {
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                <button 
+                                  onClick={() => {
+                                    if (visibleRoutes.length === 1) {
+                                      setPreviewSelectedRouteId(visibleRoutes[0].id);
+                                    } else {
+                                      setPreviewSelectedRouteId('ROUTE_SELECTION');
+                                    }
+                                  }}
+                                  style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}>
+                                  + إنشاء تذكرة جديدة
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          if (previewSelectedRouteId === 'ROUTE_SELECTION') {
+                            if (visibleRoutes.length === 0) {
+                              return (
+                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                  <div style={{ color: '#FF3B30', fontWeight: 'bold' }}>لا توجد مسارات تذاكر متاحة</div>
+                                  <p style={{ fontSize: '12px', color: '#6E6E73' }}>يرجى إضافة مسارات مسموحة من خصائص المكون.</p>
+                                  <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', marginTop: '10px' }}>← إلغاء</button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px' }}>
+                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
+                                <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
+                                <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                  {visibleRoutes.map(route => (
+                                    <div key={route.id}
+                                      onClick={() => setPreviewSelectedRouteId(route.id)}
+                                      style={{ padding: '16px', borderRadius: '8px', border: '2px solid transparent', background: 'linear-gradient(to right, rgba(0,82,204,0.02), rgba(0,101,255,0.02))', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${route.colorCode || '#0052cc'}15`, color: route.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                          {route.icon || '📄'}
+                                        </div>
+                                        <div>
+                                          <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#172b4d' }}>{route.name}</h4>
+                                          <div style={{ fontSize: '11px', color: '#5e6c84' }}>{route.description || 'اضغط لإنشاء هذا الطلب'}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          const routeDef = savedRoutes.find(r => r.id === previewSelectedRouteId);
+                          if (!routeDef) {
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
+                                <div style={{ color: '#FF3B30' }}>خطأ: لم يتم العثور على المسار</div>
+                              </div>
+                            );
+                          }
+
+                          const renderDynamicFieldsPreview = () => {
+                            const rdfs = routeDef.formConfig?.routeDynamicFields || (routeDef.formConfig?.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
+                            const fields = previewDynamicFields.filter(f => rdfs.some(r => r.fieldId === f.id));
+                            if (!fields || fields.length === 0) return null;
+                            return fields.map((f, i) => {
+                              const isReq = rdfs.find(r => r.fieldId === f.id)?.isRequired;
+                              return (
+                                <div key={i} style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>{f.name} {isReq && <span style={{color:'red'}}>*</span>}</label>
+                                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none' }}>
+                                    <option>-- اختر --</option>
+                                    {f.options?.map((o: string, idx: number) => <option key={idx}>{o}</option>)}
+                                  </select>
+                                </div>
+                              );
+                            });
+                          };
 
                           return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                              {!isInstantRouting && (
-                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                  <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>توجيه التذكرة (Routing)</h4>
-                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>إلى أي إدارة تريد إرسال هذه التذكرة؟ <span style={{ color: '#FF3B30' }}>*</span></label>
-                                  <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                                    <option value="">-- اختر الإدارة المستقبلة --</option>
-                                    {targets.map((deptId: string) => {
-                                      const deptName = mockOrgStructure.find(d => d.id === deptId)?.name || deptId;
-                                      return <option key={deptId} value={deptId}>{deptName}</option>;
-                                    })}
-                                  </select>
+                            <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                              <button 
+                                onClick={() => setPreviewSelectedRouteId(visibleRoutes.length > 1 ? 'ROUTE_SELECTION' : null)}
+                                style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>
+                                ← العودة
+                              </button>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #dfe1e6' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: `${routeDef.colorCode || '#0052cc'}15`, color: routeDef.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{routeDef.icon || '📄'}</div>
+                                <div>
+                                  <h3 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>{routeDef.name}</h3>
+                                  <div style={{ fontSize: '11px', color: '#5e6c84' }}>توجيه إلى: {routeDef.targetDepartmentId}</div>
+                                </div>
+                              </div>
+                              
+
+                              {renderDynamicFieldsPreview()}
+
+                              {routeDef.formConfig?.showDescription && (
+                                <div style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل إضافية {routeDef.formConfig?.mandatoryDescription && <span style={{color:'red'}}>*</span>}</label>
+                                  <textarea style={{ width: '100%', padding: '10px 12px', minHeight: '80px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none', resize: 'vertical' }} placeholder="الرجاء الوصف بدقة..." />
+                                </div>
+                              )}
+                              
+                              {routeDef.formConfig?.showAttachments && (
+                                <div style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>المرفقات {routeDef.formConfig?.mandatoryAttachments && <span style={{color:'red'}}>*</span>}</label>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: '10px', background: '#fafbfc', color: '#5e6c84', fontSize: '13px', fontWeight: 500 }}>
+                                    <span style={{ fontSize: '20px' }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
+                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>(الحد: {routeDef.formConfig.maxAttachmentSizeMB || 5}MB)</span>
+                                  </div>
                                 </div>
                               )}
 
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>الموقع الفعلي (Physical Location)</h4>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                  <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المبنى الحالي <span style={{ color: '#FF3B30' }}>*</span></label>
-                                    <select 
-                                      value={selectedBuildingForPreview}
-                                      onChange={e => setSelectedBuildingForPreview(e.target.value)}
-                                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}
-                                    >
-                                      <option value="">-- المبنى --</option>
-                                      {corporateLocations.map(loc => (
-                                        <option key={loc.id} value={loc.id}>{loc.buildingName}</option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>الإدارة التابع لها أو المكتب <span style={{ color: '#FF3B30' }}>*</span></label>
-                                    <select 
-                                      disabled={!selectedBuildingForPreview}
-                                      style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: !selectedBuildingForPreview ? '#EBEBEB' : '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit', opacity: !selectedBuildingForPreview ? 0.6 : 1 }}
-                                    >
-                                      <option value="">-- الإدارة أو المكتب --</option>
-                                      {selectedBuildingForPreview && corporateLocations.find(l => l.id === selectedBuildingForPreview)?.offices.map(off => (
-                                        <option key={off.id} value={off.id}>{off.name}</option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
 
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تصنيف المشكلة (Issue Taxonomy)</h4>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                  <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الرئيسية <span style={{ color: '#FF3B30' }}>*</span></label>
-                                    <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                                      <option value="">-- اختر المشكلة الرئيسية --</option>
-                                      {taxonomyList.map((t: any, i: number) => <option key={i}>{t.main}</option>)}
-                                    </select>
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'block', marginBottom: '8px' }}>المشكلة الفرعية <span style={{ color: '#FF3B30' }}>*</span></label>
-                                    <select style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', color: '#1D1D1F', fontFamily: 'inherit' }}>
-                                      <option value="">-- اختر المشكلة الفرعية --</option>
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>تفاصيل التذكرة والمرفقات</h4>
-                                
-                                <input type="text" placeholder="عنوان التذكرة (عنوان اختياري)" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', marginBottom: '15px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }} />
-                                
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span>وصف المشكلة بالتفصيل {tProps.enforceDescription && <span style={{ color: '#FF3B30' }}>*</span>}</span>
-                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>0 / {maxDesc}</span>
-                                  </label>
-                                  <textarea 
-                                    placeholder="الرجاء كتابة تفاصيل المشكلة هنا..."
-                                    style={{ width: '100%', padding: '12px', minHeight: '100px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#1D1D1F' }}
-                                  />
-                                </div>
-
-                                <div>
-                                  <label style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span>إرفاق ملفات أو صور {tProps.enforceAttachments && <span style={{ color: '#FF3B30' }}>*</span>}</span>
-                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>الحد الأقصى: {tProps.maxAttachmentSize || 5}MB</span>
-                                  </label>
-                                  <div style={{ width: '100%', padding: '20px', border: '2px dashed rgba(0,0,0,0.15)', borderRadius: '8px', background: '#F9F9FB', textAlign: 'center', cursor: 'pointer', color: '#6E6E73', fontSize: '13px', fontWeight: '500' }}>
-                                    + اسحب الملفات هنا أو اضغط للاستعراض
-                                  </div>
-                                </div>
-                              </div>
-
-                              <button style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                              >
-                                إرسال التذكرة 🚀
+                              <button 
+                                onClick={() => {
+                                    alert('تم الإرسال بنجاح (محاكاة)!');
+                                    setPreviewSelectedRouteId(null);
+                                }}
+                                style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${routeDef.colorCode || '#0052cc'} 0%, ${routeDef.colorCode || '#0052cc'}dd 100%)`, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                إرسال الطلب
                               </button>
                             </div>
                           );

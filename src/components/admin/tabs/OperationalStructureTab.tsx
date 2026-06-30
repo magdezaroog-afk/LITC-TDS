@@ -13,6 +13,7 @@ export interface OrgUser {
   departmentId?: string;
   divisionId?: string;
   teamId?: string;
+  assignedSubmissionTemplateId?: string;
 }
 
 export interface OrgTeam {
@@ -876,11 +877,28 @@ export const OperationalStructureTab: React.FC = () => {
                   </div>
                </div>
                <div>
-                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>واجهة النظام الافتراضية</label>
-                  <select value={profileEditData.activeUI} onChange={e => setProfileEditData({...profileEditData, activeUI: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }}>
+                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>واجهة النظام التشغيلية الافتراضية</label>
+                  <select value={profileEditData.activeUI || ''} onChange={e => setProfileEditData({...profileEditData, activeUI: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px', marginBottom: '15px' }}>
                      <option value="ticket_create">Ticket Create (إنشاء تذاكر)</option>
                      <option value="inbound_tickets">Inbound Hub (استقبال التذاكر)</option>
                      <option value="analytics_dashboard">Analytics Dashboard (لوحة التحليلات)</option>
+                  </select>
+               </div>
+               <div>
+                  <label style={{ display: 'block', color: OA.textSub, fontSize: '12px', marginBottom: '5px' }}>تخصيص قالب إرسال الموظف (تجاوز الافتراضي)</label>
+                  <select value={profileEditData.assignedSubmissionTemplateId || ''} onChange={e => setProfileEditData({...profileEditData, assignedSubmissionTemplateId: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(241,245,249,0.9)', border: `1px solid ${OA.sep}`, color: OA.text, fontSize: '14px' }}>
+                     <option value="">-- القالب الافتراضي للدور --</option>
+                     {(() => {
+                        try {
+                           const st = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
+                           if (st) {
+                              return JSON.parse(st).map((t: any) => (
+                                 <option key={t.id} value={t.id}>{t.name}</option>
+                              ));
+                           }
+                        } catch(e) {}
+                        return null;
+                     })()}
                   </select>
                </div>
             </div>

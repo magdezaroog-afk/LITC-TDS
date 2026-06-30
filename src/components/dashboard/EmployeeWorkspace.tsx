@@ -4,6 +4,9 @@ import { DynamicCustomField } from '../admin/tabs/DynamicFieldsTab';
 import { ArchiveTable } from './ArchiveTable';
 import { DynamicUserProfile } from '../profile/DynamicUserProfile';
 import { loadRoutes, TicketRouteDefinition } from '../admin/tabs/TicketRoutingTab';
+import { TicketJourneyTimeline } from './TicketJourneyTimeline';
+import { MOCK_JOURNEYS } from './mockJourneyData';
+
 
 interface SchemaComponent {
   componentId: string;
@@ -74,6 +77,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<CoreRole>('OPERATIONAL_MANAGER');
+  const [expandedJourneyTicketId, setExpandedJourneyTicketId] = useState<string | null>(null);
   const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
   const [showBellDropdown, setShowBellDropdown] = useState(false);
 
@@ -81,7 +85,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [isRecording, setIsRecording] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [activeInboxTab, setActiveInboxTab] = useState<string>('NEW');
 
   // Route Selection State
@@ -91,7 +95,6 @@ export const EmployeeWorkspace: React.FC = () => {
   const [routeSelectedTaxMain, setRouteSelectedTaxMain] = useState<string>('');
   const [routeSelectedTaxSub, setRouteSelectedTaxSub] = useState<string>('');
   const [routeDescription, setRouteDescription] = useState<string>('');
-  const [routeTicketTitle, setRouteTicketTitle] = useState<string>('');
   const [routeSubmitSuccess, setRouteSubmitSuccess] = useState(false);
 
   // Analytics State
@@ -149,6 +152,27 @@ export const EmployeeWorkspace: React.FC = () => {
         { componentId: 'admin_sovereign_custody_ledger_v10', name: 'منظومة العُهد والمخازن السيادية الشاملة V10', settings: { allowedReportFilters: ['BY_ITEM_TYPE', 'BY_DATE_RANGE'], allowedReportColumns: ['SHOW_RECEIVER_IDENTITY', 'SHOW_VERIFICATION_STATUS'] } },
         { componentId: 'admin_operational_console', name: 'قمرة إدارة الكيانات التشغيلية', settings: {} }
       ];
+
+      // --- SUBMISSION TEMPLATE LOGIC ---
+      let submissionLayout: any[] = [];
+      try {
+        const templatesRaw = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
+        const roleMappingsRaw = localStorage.getItem('ROLE_SUBMISSION_MAPPINGS');
+        if (templatesRaw) {
+          const templates = JSON.parse(templatesRaw);
+          const mappings = roleMappingsRaw ? JSON.parse(roleMappingsRaw) : [];
+          
+          // Simulation: If a mapping exists for currentUserRole, use it. Else use default.
+          const mapping = mappings.find((m: any) => m.role === currentUserRole);
+          const activeTemplate = mapping 
+            ? templates.find((t: any) => t.id === mapping.templateId)
+            : templates.find((t: any) => t.isDefault);
+
+          if (activeTemplate && activeTemplate.components && activeTemplate.components.length > 0) {
+            submissionLayout = activeTemplate.components;
+          }
+        }
+      } catch(e) {}
 
       // Perform cascading merge
       const baseList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
@@ -222,6 +246,17 @@ export const EmployeeWorkspace: React.FC = () => {
         }
       });
 
+      // Override with Submission Template components
+      submissionLayout.forEach((subItem: any) => {
+        const existingIdx = combined.findIndex(c => c.componentId === subItem.id);
+        const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };
+        if (existingIdx >= 0) {
+          combined[existingIdx] = transformed;
+        } else {
+          combined.push(transformed);
+        }
+      });
+
       setSchema({
         version: "v43.5",
         layoutConfig: combined
@@ -275,35 +310,42 @@ export const EmployeeWorkspace: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFileError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const rules = ticketCreateSettings || {};
+    const routeDef = savedRoutes.find(r => r.id === selectedRouteId);
+    const rules = routeDef?.formConfig || {};
     const maxSizeMB = rules.maxAttachmentSizeMB || 5;
     const allowedExts = (rules.allowedExtensions || '*').split(',').map((s: string) => s.trim().toLowerCase());
 
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > maxSizeMB) {
-      setFileError(`حجم الملف يتجاوز الحد المسموح (${maxSizeMB}MB)`);
-      e.target.value = '';
-      return;
-    }
+    const validFiles = files.filter(file => {
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > maxSizeMB) {
+        setFileError(`حجم الملف ${file.name} يتجاوز الحد المسموح (${maxSizeMB}MB)`);
+        return false;
+      }
 
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
-    if (allowedExts[0] !== '*' && !allowedExts.includes(fileExt)) {
-      setFileError(`امتداد الملف غير مسموح. المسموح: ${rules.allowedExtensions}`);
-      e.target.value = '';
-      return;
-    }
+      if (!allowedExts.includes('*')) {
+        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+        if (!allowedExts.includes(fileExt)) {
+          setFileError(`صيغة الملف ${file.name} غير مسموحة. المسموح: ${rules.allowedExtensions}`);
+          return false;
+        }
+      }
+      return true;
+    });
 
-    setSelectedFile(file);
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+  const removeFile = (idx: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleTicketSubmit = () => {
     const rules = ticketCreateSettings || {};
     const destinations = rules.destinationRoutes || ['IT_SUPPORT'];
     
-    if (rules.mandatoryAttachments && !selectedFile) {
+    if (rules.mandatoryAttachments && selectedFiles.length === 0) {
       alert('الرجاء إرفاق الملف الإلزامي قبل الإرسال.');
       return;
     }
@@ -313,7 +355,7 @@ export const EmployeeWorkspace: React.FC = () => {
       fields: fieldValues,
       destination_department_ids: destinations,
       hasVoiceToText: isRecording,
-      hasAttachment: !!selectedFile
+      hasAttachment: selectedFiles.length > 0
     };
 
     console.log('✅ تم إرسال التذكرة بنجاح بالخلفية:', payload);
@@ -448,7 +490,7 @@ export const EmployeeWorkspace: React.FC = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {visibleRoutes.map(route => (
                       <div key={route.id}
-                        onClick={() => { setSelectedRouteId(route.id); setRouteFieldValues({}); setRouteDescription(''); setRouteTicketTitle(''); setRouteSelectedTaxMain(''); setRouteSelectedTaxSub(''); setRouteSubmitSuccess(false); }}
+                        onClick={() => { setSelectedRouteId(route.id); setRouteFieldValues({}); setRouteDescription(''); setRouteSelectedTaxMain(''); setRouteSelectedTaxSub(''); setRouteSubmitSuccess(false); setSelectedFiles([]); }}
                         style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: `${route.color}0A`, cursor: 'pointer', transition: 'all 0.2s' }}
                         onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(-3px)')}
                         onMouseLeave={e => (e.currentTarget.style.transform = 'translateX(0)')}
@@ -497,9 +539,7 @@ export const EmployeeWorkspace: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>عنوان الطلب</label>
-                  <input type="text" style={inputStyle} placeholder={`مثال: ${route.name} - وصف موجز`} value={routeTicketTitle} onChange={e => setRouteTicketTitle(e.target.value)} />
+
 
                   {/* Taxonomy */}
                   {route.formConfig.taxonomy.length > 0 && (
@@ -522,15 +562,19 @@ export const EmployeeWorkspace: React.FC = () => {
                   )}
 
                   {/* Custom Fields */}
-                  {route.formConfig.customFieldIds.length > 0 && customFields
+                  {route.formConfig.customFieldIds && route.formConfig.customFieldIds.length > 0 && customFields
                     .filter(f => route.formConfig.customFieldIds.includes(f.id))
                     .map(field => {
-                      const opts = field.dependsOn && field.dependencyMap && fieldValues[field.dependsOn]
-                        ? field.dependencyMap[fieldValues[field.dependsOn]] || field.options
+                      const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
+                      const isReq = rdfs.find(r => r.fieldId === field.id)?.isRequired;
+                      const opts = field.dependsOn && field.dependencyMap && routeFieldValues[field.dependsOn]
+                        ? field.dependencyMap[routeFieldValues[field.dependsOn]] || field.options
                         : field.options;
                       return (
                         <div key={field.id} style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
-                          <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>{field.name}</label>
+                          <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>
+                            {field.name} {isReq && <span style={{ color: '#ff5630' }}>*</span>}
+                          </label>
                           <select style={inputStyle} value={routeFieldValues[field.id] || ''} onChange={e => setRouteFieldValues({ ...routeFieldValues, [field.id]: e.target.value })}>
                             <option value="">-- اختر --</option>
                             {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -555,25 +599,54 @@ export const EmployeeWorkspace: React.FC = () => {
 
                   {/* Attachments */}
                   {route.formConfig.showAttachments && (
-                    <>
+                    <div style={{ marginBottom: 12 }}>
                       <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
-                        المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ff5630' }}>* (إلزامي)</span>}
-                        <span style={{ fontSize: 10, color: '#888', display: 'block' }}>الحجم المسموح: {route.formConfig.maxAttachmentMB}MB | {route.formConfig.attachmentTypes.join(', ')}</span>
+                        المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ff5630' }}>*</span>}
+                        <span style={{ fontSize: 10, color: '#AEAEB2', marginRight: 8, fontWeight: 400 }}>(الحد: {route.formConfig.maxAttachmentMB || 5}MB | {route.formConfig.attachmentTypes?.join(', ') || 'الكل'})</span>
                       </label>
-                      <input type="file" onChange={handleFileChange}
-                        style={{ ...inputStyle, padding: '6px', background: 'transparent', border: '1px dashed #b3bac5' }}
-                        accept={route.formConfig.attachmentTypes.map(t => `.${t.toLowerCase()}`).join(',')} />
-                      {fileError && <div style={{ color: '#ff5630', fontSize: '12px', marginBottom: '10px', padding: '8px', background: '#ffebe6', borderRadius: '4px' }}>⚠️ {fileError}</div>}
-                    </>
+                      <div style={{ position: 'relative', marginBottom: 8 }}>
+                        <input type="file" multiple onChange={handleFileChange}
+                          accept={route.formConfig.attachmentTypes?.map((t: string) => `.${t.toLowerCase()}`).join(',')}
+                          style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 2 }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: 10, background: '#fafbfc', color: '#5e6c84', fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}>
+                          <span style={{ fontSize: 20 }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
+                        </div>
+                      </div>
+                      {fileError && <div style={{ color: '#ff5630', fontSize: 11, padding: '8px 12px', background: '#ffebe6', borderRadius: 8, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>⚠️ {fileError}</div>}
+                      {selectedFiles.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {selectedFiles.map((f, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#e3fcef', border: '1px solid #abf5d1', borderRadius: 8, fontSize: 12, animation: 'fadeIn 0.3s ease' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 16 }}>✅</span>
+                                <span style={{ color: '#172b4d', fontWeight: 600 }}>{f.name}</span>
+                                <span style={{ color: '#5e6c84', fontSize: 10 }}>({(f.size / 1024 / 1024).toFixed(2)} MB)</span>
+                              </div>
+                              <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#ff5630', cursor: 'pointer', fontWeight: 'bold', fontSize: 14, padding: '2px 6px', borderRadius: 4 }}>✕</button>
+                            </div>
+                          ))}
+                          <div style={{ fontSize: 11, color: '#36B37E', fontWeight: 600, textAlign: 'center', marginTop: 2 }}>📎 {selectedFiles.length} ملف مرفق بنجاح</div>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Submit */}
                   <button
                     onClick={() => {
                       if (route.formConfig.mandatoryDescription && !routeDescription.trim()) { alert('وصف المشكلة إلزامي لهذا المسار.'); return; }
-                      if (route.formConfig.mandatoryAttachments && !selectedFile) { alert('المرفق إلزامي لهذا المسار.'); return; }
-                      if (route.formConfig.taxonomy.length > 0 && !routeSelectedTaxMain) { alert('يرجى اختيار نوع المشكلة.'); return; }
-                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: routeTicketTitle, taxonomy: { main: routeSelectedTaxMain, sub: routeSelectedTaxSub }, description: routeDescription, customFields: routeFieldValues });
+                      if (route.formConfig.mandatoryAttachments && selectedFiles.length === 0) { alert('المرفق إلزامي لهذا المسار.'); return; }
+                      
+                      const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
+                      const missingFields = rdfs.filter(r => r.isRequired && !routeFieldValues[r.fieldId]);
+                      if (missingFields.length > 0) {
+                        const firstMissing = customFields.find(f => f.id === missingFields[0].fieldId);
+                        alert(`يرجى إدخال الحقل الإلزامي: ${firstMissing?.name}`);
+                        return;
+                      }
+
+                      const generatedTitle = Object.values(routeFieldValues).filter(Boolean).join(' - ') || route.name;
+                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: generatedTitle, description: routeDescription, customFields: routeFieldValues, attachments: selectedFiles.map(f => f.name) });
                       setRouteSubmitSuccess(true);
                     }}
                     style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 15px ${route.color}44`, fontSize: 14, marginTop: 4 }}
@@ -710,6 +783,16 @@ export const EmployeeWorkspace: React.FC = () => {
                           </div>
                         );
                       })()}
+
+                      {/* Ticket Journey Timeline (Compact Mode) */}
+                      {MOCK_JOURNEYS[ticket.id] && (
+                        <div style={{ cursor: 'pointer', transition: 'all 0.2s', padding: '5px', borderRadius: '8px' }}
+                             onClick={() => setExpandedJourneyTicketId(ticket.id)}
+                             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,82,204,0.05)'}
+                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                          <TicketJourneyTimeline ticketId={ticket.id} nodes={MOCK_JOURNEYS[ticket.id]} compactMode={true} />
+                        </div>
+                      )}
                     </div>
                   )) : (
                     <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#5e6c84', ...glassPanel }}>
@@ -1379,6 +1462,20 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
       )}
 
+      {/* Expanded Ticket Journey Modal */}
+      {expandedJourneyTicketId && MOCK_JOURNEYS[expandedJourneyTicketId] && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 30, 66, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', width: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '12px', boxShadow: '0 8px 30px rgba(9, 30, 66, 0.25)', position: 'relative' }}>
+            <button 
+              onClick={() => setExpandedJourneyTicketId(null)}
+              style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#5e6c84' }}
+            >
+              ✕
+            </button>
+            <TicketJourneyTimeline ticketId={expandedJourneyTicketId} nodes={MOCK_JOURNEYS[expandedJourneyTicketId]} compactMode={false} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

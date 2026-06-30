@@ -12,11 +12,17 @@ export interface ChildFieldBinding {
   triggerValue: string;
 }
 
+export interface DynamicFieldOption {
+  id: string;
+  label: string;
+  isActive: boolean;
+}
+
 export interface DynamicCustomField {
   id: string;
   name: string;
   /** خيارات المستدلة المستقلة */
-  options: string[];
+  options: DynamicFieldOption[]; // تحويل من نصوص لكائنات
   // ── نظام قديم (للتوافق) ──
   dependsOn?: string;
   dependencyMap?: Record<string, string[]>;
@@ -67,6 +73,24 @@ const loadFields = (): DynamicCustomField[] => {
 const persistFields = (fields: DynamicCustomField[]) => {
   localStorage.setItem('litc_dynamic_fields', JSON.stringify(fields));
 };
+
+// --- Soft Delete (Archive) Function for Dynamic Fields ---
+const toggleDynamicFieldOptionStatus = (fieldId: string, optionId: string) => {
+  try {
+    const s = localStorage.getItem('litc_dynamic_fields');
+    const fields = s ? JSON.parse(s) : [];
+    const updatedFields = fields.map((field: DynamicCustomField) => {
+      if (field.id !== fieldId) return field;
+      const updatedOptions = field.options.map((opt: DynamicFieldOption) => 
+        opt.id === optionId ? { ...opt, isActive: !opt.isActive } : opt
+      );
+      return { ...field, options: updatedOptions };
+    });
+    localStorage.setItem('litc_dynamic_fields', JSON.stringify(updatedFields));
+    // Note: State might need to be refreshed if called from outside, but this encapsulates the local storage update.
+  } catch(e) {}
+};
+// ---------------------------------------------------------
 
 // ═══════════════════════════════════════════════════════════
 // Mini-Component: Option Tag (مع زر حذف)
@@ -382,79 +406,133 @@ export const DynamicFieldsTab: React.FC = () => {
         )}
       </div>
 
-      {view === 'CREATE' && <CreateView />}
-      {view === 'DETAIL' && detailId && <DetailView />}
+      {view === 'CREATE' && CreateView()}
+      {view === 'DETAIL' && detailId && DetailView()}
 
       {view === 'LIST' && (
         <div>
           {parentFields.length === 0 ? (
-            <div style={{ background: A.surface, borderRadius: A.radius, border: `1px solid ${A.sep}`, boxShadow: A.shadow, padding: '64px 32px', textAlign: 'center' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🗂️</div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: A.text, marginBottom: 8 }}>لا توجد مستدلات بعد</div>
-              <div style={{ fontSize: 14, color: A.textSub, marginBottom: 24 }}>ابدأ بإنشاء مستدلتك الأولى لإضافة حقول مخصصة لنماذج التذاكر</div>
-              <button className="dft-btn" onClick={() => { resetCreate(); setView('CREATE'); }}
-                style={{ padding: '10px 24px', background: `${A.indigo}15`, color: A.indigo, border: `1px solid ${A.indigo}25`, borderRadius: A.radiusSm, fontSize: 14, fontWeight: 600 }}>
-                إنشاء أول مستدلة
-              </button>
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: A.surface, borderRadius: A.radius, border: `2px dashed ${A.sep}` }}>
+              <div style={{ fontSize: 40, marginBottom: 15 }}>✨</div>
+              <h3 style={{ margin: '0 0 10px', fontSize: 18, color: A.text }}>لا توجد مستدلات حالياً</h3>
+              <p style={{ margin: '0 0 20px', fontSize: 14, color: A.textSub }}>ابدأ بإنشاء مستدلات لتصنيف بياناتك وتنظيم مسارات التذاكر الخاصة بك بمرونة.</p>
+              <button className="dft-btn" onClick={() => { resetCreate(); setView('CREATE'); }} style={{ padding: '10px 24px', background: A.indigo, color: '#fff', border: 'none', borderRadius: A.radiusSm, fontSize: 14, fontWeight: 700, boxShadow: `0 4px 12px ${A.indigo}50` }}>+ إنشاء أول مستدلة</button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {parentFields.map((field, idx) => {
-                const totalChildren = (field.childBindings || []).length;
-                const optionsWithChildren = new Set((field.childBindings || []).map(b => b.triggerValue)).size;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
+              {/* Complex Fields Section */}
+              {parentFields.filter(f => (f.childBindings || []).length > 0).length > 0 && (
+                <div>
+                  <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: A.text, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: A.amber }}>🌳</span> مستدلات مركبة (لها تفرعات)
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
+                    {parentFields.filter(f => (f.childBindings || []).length > 0).map((field, idx) => {
+                      const totalChildren = (field.childBindings || []).length;
+                      const optionsWithChildren = new Set((field.childBindings || []).map(b => b.triggerValue)).size;
 
-                return (
-                  <div key={field.id} className="dft-card" style={{ animationDelay: `${idx * 0.05}s`, background: A.surface, borderRadius: A.radius, border: `1px solid ${A.sep}`, boxShadow: A.shadow, padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                      <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: A.text }}>{field.name}</div>
-                          <span style={{ padding: '2px 8px', background: `${A.green}15`, color: A.green, borderRadius: 5, fontSize: 11, fontWeight: 600 }}>رئيسية مستقلة</span>
-                        </div>
-                        {/* Options preview */}
-                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
-                          {field.options.slice(0, 5).map(opt => {
-                            const hasChild = (field.childBindings || []).some(b => b.triggerValue === opt);
-                            return (
-                              <span key={opt} style={{ padding: '2px 8px', background: hasChild ? `${A.amber}15` : A.bg, color: hasChild ? A.amber : A.textSub, borderRadius: 6, fontSize: 11, fontWeight: hasChild ? 700 : 400, border: `1px solid ${hasChild ? A.amber + '30' : A.sep}` }}>
-                                {opt} {hasChild ? '⬟' : ''}
-                              </span>
-                            );
-                          })}
-                          {field.options.length > 5 && <span style={{ fontSize: 11, color: A.textTer, alignSelf: 'center' }}>+{field.options.length - 5}</span>}
-                        </div>
-                        {totalChildren > 0 && (
-                          <div style={{ fontSize: 12, color: A.textSub }}>
-                            <span style={{ color: A.amber, fontWeight: 600 }}>⬟ {totalChildren} مستدلة فرعية</span>
-                            <span style={{ marginRight: 6 }}>على {optionsWithChildren} خيار</span>
-                            <span style={{ color: A.blue, fontWeight: 600 }}>← اضغط لإدارتها</span>
+                      return (
+                        <div key={field.id} className="dft-card" style={{ animationDelay: `${idx * 0.05}s`, background: A.surface, borderRadius: A.radius, border: `1px solid ${A.amber}40`, boxShadow: A.shadow, padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                            <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: A.text }}>{field.name}</div>
+                                <span style={{ padding: '2px 8px', background: `${A.amber}15`, color: A.amber, borderRadius: 5, fontSize: 11, fontWeight: 600 }}>مستدلة مركبة</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
+                                {field.options.slice(0, 4).map(opt => {
+                                  const hasChild = (field.childBindings || []).some(b => b.triggerValue === opt);
+                                  return (
+                                    <span key={opt} style={{ padding: '2px 8px', background: hasChild ? `${A.amber}15` : A.bg, color: hasChild ? A.amber : A.textSub, borderRadius: 6, fontSize: 11, fontWeight: hasChild ? 700 : 400, border: `1px solid ${hasChild ? A.amber + '30' : A.sep}` }}>
+                                      {opt} {hasChild ? '🔗' : ''}
+                                    </span>
+                                  );
+                                })}
+                                {field.options.length > 4 && <span style={{ fontSize: 11, color: A.textTer, alignSelf: 'center' }}>+{field.options.length - 4}</span>}
+                              </div>
+                              <div style={{ fontSize: 12, color: A.textSub }}>
+                                <span style={{ color: A.amber, fontWeight: 600 }}>⬟ {totalChildren} مستدلة فرعية</span>
+                                <span style={{ marginRight: 6 }}>عبر {optionsWithChildren} خيار</span>
+                                <span style={{ color: A.blue, fontWeight: 600 }}> ← انقر للتفاصيل</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                              <button className="dft-btn" onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}
+                                style={{ width: 32, height: 32, borderRadius: 8, background: `${A.blue}15`, color: A.blue, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                ✏️
+                              </button>
+                              <button className="dft-btn" onClick={() => setDeleteConfirm(field.id)}
+                                style={{ width: 32, height: 32, borderRadius: 8, background: `${A.red}15`, color: A.red, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                ✕
+                              </button>
+                            </div>
                           </div>
-                        )}
-                        {totalChildren === 0 && (
-                          <div style={{ fontSize: 12, color: A.textTer }}>لا توجد مستدلات فرعية — اضغط لإضافتها</div>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <button className="dft-btn" onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}
-                          style={{ padding: '7px 14px', background: `${A.indigo}10`, color: A.indigo, border: `1px solid ${A.indigo}20`, borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-                          ⚙️ إدارة
-                        </button>
-                        {deleteConfirm === field.id ? (
-                          <div style={{ display: 'flex', gap: 5 }}>
-                            <button className="dft-btn" onClick={() => handleDelete(field.id)}
-                              style={{ padding: '7px 12px', background: `${A.red}18`, color: A.red, border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700 }}>تأكيد</button>
-                            <button className="dft-btn" onClick={() => setDeleteConfirm(null)}
-                              style={{ padding: '7px 10px', background: A.bg, border: 'none', borderRadius: 8, fontSize: 11, color: A.textSub }}>لا</button>
-                          </div>
-                        ) : (
-                          <button className="dft-btn" onClick={() => setDeleteConfirm(field.id)}
-                            style={{ padding: '7px 12px', background: `${A.red}10`, color: A.red, border: `1px solid ${A.red}20`, borderRadius: 8, fontSize: 12, fontWeight: 600 }}>حذف</button>
-                        )}
-                      </div>
-                    </div>
+                          {deleteConfirm === field.id && (
+                            <div style={{ marginTop: 12, padding: 12, background: `${A.red}10`, borderRadius: 8, border: `1px solid ${A.red}30` }}>
+                              <div style={{ fontSize: 12, color: A.red, fontWeight: 600, marginBottom: 8 }}>هل أنت متأكد؟ سيتم حذفها مع التفرعات.</div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button className="dft-btn" onClick={() => handleDelete(field.id)} style={{ flex: 1, padding: '6px', background: A.red, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>نعم، احذف</button>
+                                <button className="dft-btn" onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '6px', background: '#fff', color: A.textSub, border: `1px solid ${A.sep}`, borderRadius: 6, fontSize: 12, fontWeight: 600 }}>إلغاء</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Simple Fields Section */}
+              {parentFields.filter(f => (f.childBindings || []).length === 0).length > 0 && (
+                <div>
+                  <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: A.text, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: A.green }}>📄</span> مستدلات بسيطة
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 20 }}>
+                    {parentFields.filter(f => (f.childBindings || []).length === 0).map((field, idx) => (
+                        <div key={field.id} className="dft-card" style={{ animationDelay: `${idx * 0.05}s`, background: A.surface, borderRadius: A.radius, border: `1px solid ${A.sep}`, boxShadow: A.shadow, padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                            <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: A.text }}>{field.name}</div>
+                                <span style={{ padding: '2px 8px', background: `${A.green}15`, color: A.green, borderRadius: 5, fontSize: 11, fontWeight: 600 }}>مستدلة بسيطة</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
+                                {field.options.slice(0, 5).map(opt => (
+                                  <span key={opt} style={{ padding: '2px 8px', background: A.bg, color: A.textSub, borderRadius: 6, fontSize: 11, fontWeight: 400, border: `1px solid ${A.sep}` }}>
+                                    {opt}
+                                  </span>
+                                ))}
+                                {field.options.length > 5 && <span style={{ fontSize: 11, color: A.textTer, alignSelf: 'center' }}>+{field.options.length - 5}</span>}
+                              </div>
+                              <div style={{ fontSize: 12, color: A.textTer }}>لا يوجد ارتباطات فرعية - انقر للتفاصيل أو الإضافة</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                              <button className="dft-btn" onClick={() => { setDetailId(field.id); setView('DETAIL'); resetBinding(); }}
+                                style={{ width: 32, height: 32, borderRadius: 8, background: `${A.blue}15`, color: A.blue, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                ✏️
+                              </button>
+                              <button className="dft-btn" onClick={() => setDeleteConfirm(field.id)}
+                                style={{ width: 32, height: 32, borderRadius: 8, background: `${A.red}15`, color: A.red, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                          {deleteConfirm === field.id && (
+                            <div style={{ marginTop: 12, padding: 12, background: `${A.red}10`, borderRadius: 8, border: `1px solid ${A.red}30` }}>
+                              <div style={{ fontSize: 12, color: A.red, fontWeight: 600, marginBottom: 8 }}>هل أنت متأكد؟</div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button className="dft-btn" onClick={() => handleDelete(field.id)} style={{ flex: 1, padding: '6px', background: A.red, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>نعم، احذف</button>
+                                <button className="dft-btn" onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '6px', background: '#fff', color: A.textSub, border: `1px solid ${A.sep}`, borderRadius: 6, fontSize: 12, fontWeight: 600 }}>إلغاء</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
