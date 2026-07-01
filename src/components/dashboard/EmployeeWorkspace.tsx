@@ -510,7 +510,7 @@ export const EmployeeWorkspace: React.FC = () => {
             })() : (() => {
               const route = savedRoutes.find(r => r.id === selectedRouteId)!;
               if (!route) return null;
-              const taxEntry = route.formConfig.taxonomy.find(t => t.main === routeSelectedTaxMain);
+              const taxEntry = route.formConfig.taxonomy?.find(t => t.id === routeSelectedTaxMain && t.isActive);
 
               if (routeSubmitSuccess) {
                 return (
@@ -542,19 +542,19 @@ export const EmployeeWorkspace: React.FC = () => {
 
 
                   {/* Taxonomy */}
-                  {route.formConfig.taxonomy.length > 0 && (
+                  {route.formConfig.taxonomy && route.formConfig.taxonomy.length > 0 && (
                     <>
                       <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>نوع المشكلة <span style={{ color: '#ff5630' }}>*</span></label>
                       <select style={inputStyle} value={routeSelectedTaxMain} onChange={e => { setRouteSelectedTaxMain(e.target.value); setRouteSelectedTaxSub(''); }}>
                         <option value="">-- اختر نوع المشكلة --</option>
-                        {route.formConfig.taxonomy.map((t, i) => <option key={i} value={t.main}>{t.main}</option>)}
+                        {route.formConfig.taxonomy.filter(t => t.isActive).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                       </select>
-                      {taxEntry && taxEntry.sub.length > 0 && (
+                      {taxEntry && taxEntry.subIssues && taxEntry.subIssues.length > 0 && (
                         <>
                           <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>المشكلة الفرعية</label>
                           <select style={inputStyle} value={routeSelectedTaxSub} onChange={e => setRouteSelectedTaxSub(e.target.value)}>
                             <option value="">-- اختر المشكلة الفرعية --</option>
-                            {taxEntry.sub.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                            {taxEntry.subIssues.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                           </select>
                         </>
                       )}
@@ -577,7 +577,11 @@ export const EmployeeWorkspace: React.FC = () => {
                           </label>
                           <select style={inputStyle} value={routeFieldValues[field.id] || ''} onChange={e => setRouteFieldValues({ ...routeFieldValues, [field.id]: e.target.value })}>
                             <option value="">-- اختر --</option>
-                            {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            {opts.map((opt: any) => {
+                              if (typeof opt === 'string') return <option key={opt} value={opt}>{opt}</option>;
+                              if (!opt.isActive) return null;
+                              return <option key={opt.id} value={opt.id}>{opt.label}</option>;
+                            })}
                           </select>
                         </div>
                       );
@@ -646,7 +650,21 @@ export const EmployeeWorkspace: React.FC = () => {
                       }
 
                       const generatedTitle = Object.values(routeFieldValues).filter(Boolean).join(' - ') || route.name;
-                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: generatedTitle, description: routeDescription, customFields: routeFieldValues, attachments: selectedFiles.map(f => f.name) });
+                      
+                      // --- Historical Snapshot Capture ---
+                      const historicalSnapshot = {
+                        mainIssueLabel: taxEntry?.label || routeSelectedTaxMain,
+                        subIssueLabel: taxEntry?.subIssues?.find(s => s.id === routeSelectedTaxSub)?.label || routeSelectedTaxSub,
+                        customFieldsLabels: Object.keys(routeFieldValues).reduce((acc, fieldId) => {
+                          const field = customFields.find(f => f.id === fieldId);
+                          const selectedOpt = field?.options?.find((o: any) => o.id === routeFieldValues[fieldId]);
+                          acc[field?.name || fieldId] = selectedOpt?.label || routeFieldValues[fieldId];
+                          return acc;
+                        }, {} as Record<string, string>)
+                      };
+                      // ------------------------------------
+
+                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: generatedTitle, description: routeDescription, customFields: routeFieldValues, attachments: selectedFiles.map(f => f.name), captured_historical_data: historicalSnapshot });
                       setRouteSubmitSuccess(true);
                     }}
                     style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 15px ${route.color}44`, fontSize: 14, marginTop: 4 }}

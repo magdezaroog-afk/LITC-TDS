@@ -16,11 +16,18 @@ export interface OrgUser {
   assignedSubmissionTemplateId?: string;
 }
 
+export interface GovernanceSettings {
+  isLockedByParent?: boolean; // حق الفيتو ومنع التعديل من المستويات الأدنى
+  inheritedInterfaceId?: string; // المعرف الموروث من المستوى الأعلى
+  customInterfaceId?: string; // المعرف المخصص في حال الـ Override
+}
+
 export interface OrgTeam {
   id: string;
   name: string;
   leaderId?: string;
   assignedInterfaceId?: string;
+  governance?: GovernanceSettings;
   users: OrgUser[];
   expanded?: boolean;
 }
@@ -30,6 +37,7 @@ export interface OrgDivision {
   name: string;
   headId?: string;
   assignedInterfaceId?: string;
+  governance?: GovernanceSettings;
   teams: OrgTeam[];
   unassignedUsers: OrgUser[];
   isIndependent: boolean;
@@ -41,6 +49,7 @@ export interface OrgDepartment {
   name: string;
   managerId?: string;
   assignedInterfaceId?: string;
+  governance?: GovernanceSettings;
   divisions: OrgDivision[];
   expanded?: boolean;
 }
@@ -56,6 +65,48 @@ const mockAvailableInterfaces: AvailableUI[] = [
   { id: 'ui_div_head', name: 'واجهة رؤساء الأقسام', roleType: 'OPERATIONAL_MANAGER' },
   { id: 'ui_team_lead', name: 'شاشة قادة الفرق', roleType: 'OPERATIONAL_USER' },
 ];
+
+// ─── Governance Resolution Engine ───
+export interface ResolutionResult {
+  effectiveInterfaceId: string | undefined;
+  isLocked: boolean;
+  source: 'LOCAL' | 'PARENT' | 'GRANDPARENT';
+}
+
+export const resolveEffectiveSettings = (
+  node: any, 
+  parent?: any, 
+  grandparent?: any 
+): ResolutionResult => {
+  // 1. Strict Override (Veto) from Top (Grandparent)
+  if (grandparent && grandparent.governance?.isLockedByParent) {
+    const id = grandparent.governance.customInterfaceId || grandparent.assignedInterfaceId;
+    if (id) return { effectiveInterfaceId: id, isLocked: true, source: 'GRANDPARENT' };
+  }
+  
+  // 2. Strict Override (Veto) from Parent
+  if (parent && parent.governance?.isLockedByParent) {
+    const id = parent.governance.customInterfaceId || parent.assignedInterfaceId;
+    if (id) return { effectiveInterfaceId: id, isLocked: true, source: 'PARENT' };
+    
+    // Fallback if parent is locked but empty (inherits up)
+    const fallbackId = grandparent?.governance?.customInterfaceId || grandparent?.assignedInterfaceId;
+    if (fallbackId) return { effectiveInterfaceId: fallbackId, isLocked: true, source: 'GRANDPARENT' };
+  }
+
+  // 3. No Veto. Local Custom takes precedence
+  const localId = node.governance?.customInterfaceId || node.assignedInterfaceId;
+  if (localId) {
+    return { effectiveInterfaceId: localId, isLocked: false, source: 'LOCAL' };
+  }
+
+  // 4. Normal Cascading (Inherit upwards if local is empty)
+  const parentId = parent?.governance?.customInterfaceId || parent?.assignedInterfaceId;
+  if (parentId) return { effectiveInterfaceId: parentId, isLocked: false, source: 'PARENT' };
+
+  const gpId = grandparent?.governance?.customInterfaceId || grandparent?.assignedInterfaceId;
+  return { effectiveInterfaceId: gpId, isLocked: false, source: 'GRANDPARENT' };
+};
 
 // ─── Mock Data for Org Structure ───
 const initialOperationalUsers: OrgUser[] = [
@@ -182,6 +233,7 @@ export const OperationalStructureTab: React.FC = () => {
   const [editEntityName, setEditEntityName] = useState<string>('');
   const [editEntityLeaderId, setEditEntityLeaderId] = useState<string>('');
   const [editEntityUiId, setEditEntityUiId] = useState<string>('');
+  const [editResolution, setEditResolution] = useState<ResolutionResult | null>(null);
   const [availableUIs, setAvailableUIs] = useState<AvailableUI[]>(mockAvailableInterfaces);
   
   // Advanced Dropdown & Warning States
@@ -230,7 +282,7 @@ export const OperationalStructureTab: React.FC = () => {
   });
 
   // --- Handlers ---
-  const handleOpenEditModal = (type: 'DEPARTMENT' | 'DIVISION' | 'TEAM', entity: any) => {
+  const handleOpenEditModal = (type: 'DEPARTMENT' | 'DIVISION' | 'TEAM', entity: any, parent?: any, grandparent?: any) => {
     setEditEntityType(type);
     setEditEntityId(entity.id);
     setEditEntityName(entity.name);
@@ -238,6 +290,7 @@ export const OperationalStructureTab: React.FC = () => {
     const leaderId = entity.managerId || entity.headId || entity.leaderId || '';
     setEditEntityLeaderId(leaderId);
     setEditEntityUiId(entity.assignedInterfaceId || '');
+    setEditResolution(resolveEffectiveSettings(entity, parent, grandparent));
     
     setEditEntityLeaderSearchTerm('');
     if (leaderId) {
@@ -630,7 +683,7 @@ export const OperationalStructureTab: React.FC = () => {
                             {div.isIndependent && <span style={{ fontSize: '10px', background: `${OA.amber}12`, color: OA.amber, padding: '2px 6px', borderRadius: '4px', border: `1px solid ${OA.amber}20`, fontWeight: '600' }}>مستقل</span>}
                           </div>
                           <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
-                             <button onClick={() => handleOpenEditModal('DIVISION', div)} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
+                             <button onClick={() => handleOpenEditModal('DIVISION', div, dept)} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
                              <button style={{ background: `${OA.green}10`, border: `1px solid ${OA.green}20`, color: OA.green, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>+ فريق</button>
                              <button onClick={() => handleDeleteEntity('DIVISION', div.id, div.name)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>حذف</button>
                           </div>
@@ -659,7 +712,7 @@ export const OperationalStructureTab: React.FC = () => {
                                     )}
                                   </div>
                                   <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
-                                     <button onClick={() => handleOpenEditModal('TEAM', team)} style={{ background: OA.surface, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
+                                     <button onClick={() => handleOpenEditModal('TEAM', team, div, dept)} style={{ background: OA.surface, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
                                      <button onClick={() => handleOpenDeleteTeamModal(team, div)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '4px 8px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', fontFamily: OA.font }}>حذف</button>
                                   </div>
                                 </div>
@@ -1005,21 +1058,29 @@ export const OperationalStructureTab: React.FC = () => {
             </div>
 
             <div style={{ marginBottom: '30px', background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '10px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <label style={{ display: 'block', color: OA.textSub, fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>تخصيص الواجهة المخصصة لهذا المنصب</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ color: OA.textSub, fontSize: '13px', fontWeight: 'bold' }}>تخصيص الواجهة المخصصة لهذا المنصب</label>
+                {editResolution && (
+                  <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: editResolution.isLocked ? 'rgba(239, 68, 68, 0.1)' : editResolution.source === 'LOCAL' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(99, 102, 241, 0.1)', color: editResolution.isLocked ? '#ef4444' : editResolution.source === 'LOCAL' ? '#22c55e' : '#6366f1', fontWeight: 'bold' }}>
+                    {editResolution.isLocked ? '🔒 موروث ومقفل من الإدارة العليا' : editResolution.source === 'LOCAL' ? '⚙️ تخصيص نشط - Override' : '🔗 موروث تلقائياً'}
+                  </div>
+                )}
+              </div>
               <p style={{ fontSize: '11px', color: OA.textSub, marginBottom: '10px' }}>الواجهة التي سيتم عرضها لهذا المسؤول بمجرد تسجيل دخوله</p>
               
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <select 
-                  value={editEntityUiId}
+                  value={editResolution?.isLocked ? editResolution.effectiveInterfaceId || '' : editEntityUiId}
                   onChange={e => setEditEntityUiId(e.target.value)}
-                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${OA.sep}`, background: OA.bg, color: '#6366f1', fontSize: '13px', outline: 'none', fontWeight: 'bold' }}
+                  disabled={editResolution?.isLocked}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${OA.sep}`, background: editResolution?.isLocked ? 'rgba(0,0,0,0.05)' : OA.bg, color: '#6366f1', fontSize: '13px', outline: 'none', fontWeight: 'bold', cursor: editResolution?.isLocked ? 'not-allowed' : 'pointer' }}
                 >
                   <option value="">-- الواجهة الافتراضية --</option>
                   {availableUIs.map(ui => (
                     <option key={ui.id} value={ui.id}>🖥️ {ui.name}</option>
                   ))}
                 </select>
-                <button onClick={handleCreateNewUI} style={{ background: `${OA.blue}15`, color: '#6366f1', border: `1px solid ${OA.blue}30`, padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <button onClick={handleCreateNewUI} disabled={editResolution?.isLocked} style={{ background: `${OA.blue}15`, color: '#6366f1', border: `1px solid ${OA.blue}30`, padding: '10px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: editResolution?.isLocked ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: editResolution?.isLocked ? 0.5 : 1 }}>
                   ➕ إنشاء واجهة جديدة
                 </button>
               </div>
