@@ -164,25 +164,40 @@ const TicketRowComponent: React.FC<{
     opacity: btnDisabled ? 0.5 : 1
   });
 
-  const slaDeadline = (ticket as any).slaDeadline || new Date(new Date(ticket.createdAt).getTime() + 60 * 60 * 1000).toISOString();
+  const slaDeadline = ticket.slaDeadline || new Date(new Date(ticket.createdAt || Date.now()).getTime() + 60 * 60 * 1000).toISOString();
 
   return (
     <div style={rowStyle} className="hover:scale-[1.01] hover:bg-white/15">
       <strong>{ticket.id}</strong>
       <span>
-        {ticket.title}
-        {ticket.isEscalated && (
-          <span style={{
-            marginLeft: '8px',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            backgroundColor: '#ff8c00',
-            color: '#fff',
-            fontSize: '10px',
-            fontWeight: 'bold'
-          }}>
-            تصعيد SLA
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {ticket.title}
+          {ticket.isEscalated && (
+            <span style={{
+              marginLeft: '8px',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              backgroundColor: '#ff8c00',
+              color: '#fff',
+              fontSize: '10px',
+              fontWeight: 'bold'
+            }}>
+              تصعيد SLA
+            </span>
+          )}
+        </div>
+        {ticket.captured_historical_data && (
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px', background: 'rgba(0,0,0,0.1)', padding: '6px', borderRadius: '6px' }}>
+            {ticket.captured_historical_data.mainIssueLabel && (
+              <span style={{ fontWeight: 'bold', color: theme.colors.primary || '#00e5ff' }}>
+                📌 {ticket.captured_historical_data.mainIssueLabel} 
+                {ticket.captured_historical_data.subIssueLabel ? ` > ${ticket.captured_historical_data.subIssueLabel}` : ''}
+              </span>
+            )}
+            {ticket.captured_historical_data.customFieldsLabels && Object.entries(ticket.captured_historical_data.customFieldsLabels).map(([key, val]) => (
+               <span key={key}>▪️ {key}: <strong>{String(val)}</strong></span>
+            ))}
+          </div>
         )}
       </span>
       <span>
@@ -347,6 +362,10 @@ export const OperationalDashboard: React.FC<{
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  
+  // Smart Filters
+  const [filterBuildingText, setFilterBuildingText] = useState<string>('');
+  const [filterMainIssueText, setFilterMainIssueText] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetDept, setTargetDept] = useState('IT');
   const [reason, setReason] = useState('');
@@ -478,15 +497,23 @@ export const OperationalDashboard: React.FC<{
     fetchPermissions(true);
   }, [fetchPermissions]);
 
-  // تحديث التذاكر من المخزن المحلي للمحرك بناء على القسم
   const loadTickets = useCallback(() => {
     const allTickets: Ticket[] = [];
+    const role = (user as any)?.role || 'technician';
+    const isTopManager = role === 'admin' || role === 'manager'; // مدير الإدارة العليا
+
     // محاكاة جلب البيانات التشغيلية
     WorkflowEngine['mockDatabase'].forEach((t) => {
-      if (t.department === userDept) {
+      // 🛡️ حوكمة نطاق الرؤية الإلزامية (Strict Vision Scope)
+      // إذا كان المستخدم مدير إدارة عليا، يرى تذاكر إدارته بالكامل أو كل التذاكر.
+      // إذا كان مهندساً أو رئيس قسم، يرى فقط التذاكر المحولة لقسمه الفعلي بدقة.
+      const belongsToUserDept = t.department === userDept || t.routeId === userDept; // Fallback mapping for demo
+      
+      if (isTopManager || belongsToUserDept) {
         allTickets.push(t);
       }
     });
+
     // ترتيب التذاكر بحيث تأتي المصعدة أولاً
     allTickets.sort((a, b) => {
       const aEsc = a.isEscalated ? 1 : 0;
@@ -494,7 +521,7 @@ export const OperationalDashboard: React.FC<{
       return bEsc - aEsc;
     });
     setTickets(allTickets);
-  }, [userDept]);
+  }, [userDept, user]);
 
   // الاتصال بالبث اللحظي عند تحميل المكون
   useEffect(() => {
@@ -1256,32 +1283,81 @@ export const OperationalDashboard: React.FC<{
         </div>
       )}
 
-      <div style={{ marginBottom: theme.spacing.md, fontWeight: 'bold', fontSize: '14px' }}>
-        قائمة التذاكر التشغيلية الخاصة بقسمك:
+      <div style={{ marginBottom: theme.spacing.md, fontWeight: 'bold', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>قائمة التذاكر التشغيلية الخاصة بقسمك:</span>
       </div>
 
-      {tickets.length === 0 ? (
-        <div style={{ padding: theme.spacing.xl, textAlign: 'center', opacity: 0.6, fontSize: '14px' }}>
-          لا توجد تذاكر معلقة موجهة لقسمك حالياً.
-        </div>
-      ) : (
-        <div>
-          {tickets.map((ticket) => (
-            <TicketRowComponent
-              key={ticket.id}
-              ticket={ticket}
-              canTransfer={permissions?.canTransfer || false}
-              canClose={permissions?.canClose || false}
-              disabled={isSubmitting || isCooldownActive}
-              isHighlighted={highlightedTicketId === ticket.id}
-              isEscalatedHighlighted={escalatedHighlightTicketId === ticket.id}
-              onOpenTransferModal={openTransferModal}
-              onCloseTicket={handleCloseTicket}
-              onCreateSubTicket={openSubTicketModal}
-            />
-          ))}
-        </div>
-      )}
+      {/* Smart Filter Panel (Glassmorphism) */}
+      <div style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md, background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '15px', alignItems: 'center', backdropFilter: 'blur(10px)' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '13px', color: theme.colors?.primary || '#00e5ff' }}>🔍 فلاتر ذكية:</div>
+        <input 
+          type="text" 
+          placeholder="بحث بنوع المشكلة (مثال: هاردوير)..." 
+          value={filterMainIssueText}
+          onChange={e => setFilterMainIssueText(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: '#fff', fontSize: '12px', flex: 1, outline: 'none' }}
+        />
+        <input 
+          type="text" 
+          placeholder="بحث بالمبنى/الموقع..." 
+          value={filterBuildingText}
+          onChange={e => setFilterBuildingText(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: '#fff', fontSize: '12px', flex: 1, outline: 'none' }}
+        />
+      </div>
+
+      {(() => {
+        // [TODO/Blueprint] Decoupling Filter Logic: 
+        // الفلترة النصية الحالية (Client-Side) مخصصة للبيئة التجريبية (Mock) فقط.
+        // عند الربط الفعلي بقاعدة البيانات (SQL Server)، يجب تفريغ هذه العملية (Offloading)
+        // وتمرير قيم الفلاتر (filterMainIssueText, filterBuildingText) كـ Server-Side Query Parameters
+        // مثال: GET /api/v1/tickets?building=123&issueType=456 
+        // لضمان استقرار أداء الواجهة (UI Rendering) وعدم حدوث تجميد عند كثرة التذاكر.
+        const filteredTickets = tickets.filter(t => {
+          if (filterMainIssueText && !t.captured_historical_data?.mainIssueLabel?.toLowerCase().includes(filterMainIssueText.toLowerCase()) && !t.title.toLowerCase().includes(filterMainIssueText.toLowerCase())) return false;
+          
+          if (filterBuildingText) {
+            let foundBuilding = false;
+            if (t.captured_historical_data?.customFieldsLabels) {
+              for (const val of Object.values(t.captured_historical_data.customFieldsLabels)) {
+                if (String(val).toLowerCase().includes(filterBuildingText.toLowerCase())) {
+                  foundBuilding = true;
+                  break;
+                }
+              }
+            }
+            if (!foundBuilding) return false;
+          }
+          return true;
+        });
+
+        if (filteredTickets.length === 0) {
+          return (
+            <div style={{ padding: theme.spacing.xl, textAlign: 'center', opacity: 0.6, fontSize: '14px' }}>
+              لا توجد تذاكر مطابقة لخيارات الفلترة المحددة.
+            </div>
+          );
+        }
+
+        return (
+          <div>
+            {filteredTickets.map((ticket) => (
+              <TicketRowComponent
+                key={ticket.id}
+                ticket={ticket}
+                canTransfer={permissions?.canTransfer || false}
+                canClose={permissions?.canClose || false}
+                disabled={isSubmitting || isCooldownActive}
+                isHighlighted={highlightedTicketId === ticket.id}
+                isEscalatedHighlighted={escalatedHighlightTicketId === ticket.id}
+                onOpenTransferModal={openTransferModal}
+                onCloseTicket={handleCloseTicket}
+                onCreateSubTicket={openSubTicketModal}
+              />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* نافذة التحويل المشروطة (Transfer Ticket Modal) */}
       {isModalOpen && (

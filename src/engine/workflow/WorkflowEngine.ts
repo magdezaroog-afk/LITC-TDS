@@ -28,10 +28,10 @@ export interface Ticket {
   title: string;
   description: string;
   status: TicketStatus;
-  mainCategory: string;
-  subCategory: string;
+  mainCategory?: string; // Legacy
+  subCategory?: string; // Legacy
   attachments: Attachment[];
-  location: string;
+  location?: string; // Legacy
   department: string; // القسم الحالي المالك للتذكرة
   creatorId: string;
   assignedTechId?: string;
@@ -40,8 +40,16 @@ export interface Ticket {
   workflowPath: WorkflowStep[]; // سجل رحلة التذكرة والتحويلات المعتمدة
   version: number;
   createdAt?: number;
+  slaDeadline?: string | null;
   isEscalated?: boolean;
   escalatedTo?: string;
+  routeId?: string;
+  customFields?: Record<string, string>;
+  captured_historical_data?: {
+    mainIssueLabel?: string;
+    subIssueLabel?: string;
+    customFieldsLabels?: Record<string, string>;
+  };
 }
 
 export class WorkflowEngine {
@@ -52,13 +60,33 @@ export class WorkflowEngine {
    */
   public static saveTicket(ticket: Ticket): void {
     // تطهير نصوص التذكرة أمنياً لمنع الاختراقات
+    
+    // [TODO/API Blueprint] SLA Calculation Layer:
+    // هذا المنطق المحلي (Fallback Map) مؤقت للبيئة التجريبية.
+    // مستقبلاً في الـ Backend، سيتم حساب الـ `slaDeadline` الدقيق عند إنشاء التذكرة 
+    // بالاعتماد على (Taxonomy ID) وليس النصوص، مع تخزينه مباشرة في قاعدة البيانات.
+    if (!ticket.slaDeadline) {
+      const issueLabel = ticket.captured_historical_data?.mainIssueLabel?.toLowerCase() || '';
+      let thresholdMinutes = 120; // Default: 2 hours
+
+      // Fallback Map: تحديد وقت الحل حسب خطورة المشكلة التاريخية
+      if (issueLabel.includes('hardware') || issueLabel.includes('server') || issueLabel.includes('حرج') || issueLabel.includes('هاردوير')) {
+        thresholdMinutes = 15;
+      } else if (issueLabel.includes('شبكة') || issueLabel.includes('network') || issueLabel.includes('انقطاع')) {
+        thresholdMinutes = 30;
+      }
+
+      const createdTime = ticket.createdAt || Date.now();
+      ticket.slaDeadline = new Date(createdTime + thresholdMinutes * 60 * 1000).toISOString();
+    }
+
     const sanitizedTicket = {
       ...ticket,
       title: SecurityUtils.sanitize(ticket.title),
       description: SecurityUtils.sanitize(ticket.description),
-      mainCategory: SecurityUtils.sanitize(ticket.mainCategory),
-      subCategory: SecurityUtils.sanitize(ticket.subCategory),
-      location: SecurityUtils.sanitize(ticket.location),
+      mainCategory: ticket.mainCategory ? SecurityUtils.sanitize(ticket.mainCategory) : undefined,
+      subCategory: ticket.subCategory ? SecurityUtils.sanitize(ticket.subCategory) : undefined,
+      location: ticket.location ? SecurityUtils.sanitize(ticket.location) : undefined,
       department: SecurityUtils.sanitize(ticket.department),
     };
     this.mockDatabase.set(sanitizedTicket.id, sanitizedTicket);
@@ -247,33 +275,26 @@ export class SLABackgroundWorkerClass {
     try {
       const { RealTimeSynchronizer } = await import('../../services/RealTimeSynchronizer');
 
-      // Fetch SLA Configuration from API instead of DatabaseController directly
-      const response = await fetch('/api/v1/admin/sla-config/IT', {
-        headers: { 'Authorization': 'Bearer system_token_123' }
-      });
-      const config = response.ok ? await response.json() : null;
-      if (!config) {
-        return;
-      }
-
-      // If escalation is disabled, ignore escalation entirely
-      if (!config.isEscalationEnabled) {
-        return;
-      }
-
-      const thresholdMs = config.thresholdMinutes * 60 * 1000;
+      // [TODO/API Blueprint] Future Escalation Offloading (Server-Side Cron Job):
+      // هذه الفئة (SLABackgroundWorkerClass) بالكامل عبارة عن محاكاة في بيئة المتصفح.
+      // في الإنتاج (Production)، سيتم إيقاف هذا الـ Worker واستبداله بـ Server-Side Cron Job 
+      // (مثل Node-Cron أو رسائل Queue) يبحث في قاعدة البيانات عبر استعلام مباشر:
+      // WHERE slaDeadline < NOW() AND status IN ('new', 'in-progress')
+      // ليضمن تصعيد التذاكر فوراً حتى لو كان المتصفح مغلقاً، مما يمنع ضياع أي خرق للـ SLA.
+      
       const now = Date.now();
 
-      // 2. Loop over mock database and escalate tickets exceeding threshold
+      // Loop over mock database and escalate tickets exceeding their specific slaDeadline
       WorkflowEngine.getMockDatabase().forEach((ticket) => {
         // Only process open tickets ('new' or 'in-progress') that are not already escalated
-        if ((ticket.status === 'new' || ticket.status === 'in-progress') && !ticket.isEscalated) {
-          const createdAt = ticket.createdAt || now; // fallback to now if not set
-          if (now - createdAt > thresholdMs) {
-            console.log(`[SLABackgroundWorker] Escalating ticket ${ticket.id} because it exceeded threshold of ${config.thresholdMinutes} minutes.`);
+        if ((ticket.status === 'new' || ticket.status === 'in-progress') && !ticket.isEscalated && ticket.slaDeadline) {
+          const deadlineMs = new Date(ticket.slaDeadline).getTime();
+          
+          if (now > deadlineMs) {
+            console.log(`[SLABackgroundWorker] Escalating ticket ${ticket.id} because it exceeded its specific slaDeadline.`);
             
             ticket.isEscalated = true;
-            ticket.escalatedTo = config.escalationTargetRole;
+            ticket.escalatedTo = 'Manager'; // Fallback Escalation Role
             ticket.status = 'in-progress';
             ticket.version += 1;
             WorkflowEngine.saveTicket(ticket);
@@ -282,7 +303,7 @@ export class SLABackgroundWorkerClass {
             RealTimeSynchronizer.broadcast('TICKET_ESCALATED', {
               ticketId: ticket.id,
               department: ticket.department,
-              escalatedTo: config.escalationTargetRole
+              escalatedTo: ticket.escalatedTo
             });
           }
         }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { UniversalAnalyticsCube } from '../../components/analytics/UniversalAnalyticsCube';
+import { UnifiedSmartAnalytics } from '../../components/analytics/UnifiedSmartAnalytics';
 
 export const MobileAnalyticsCube: React.FC = () => {
   return (
@@ -23,7 +23,7 @@ export const MobileAnalyticsCube: React.FC = () => {
         flexDirection: 'column',
         gap: '20px'
       }}>
-        <UniversalAnalyticsCube />
+        <UnifiedSmartAnalytics />
       </div>
     </div>
   );

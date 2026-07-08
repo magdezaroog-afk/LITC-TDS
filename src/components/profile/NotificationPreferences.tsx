@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
-export type UserRole = 'USER' | 'ENGINEER' | 'TEAM_LEAD' | 'DEPT_HEAD';
+// Using actual roles from AuthContext / System
+export type UserRole = 'Technician' | 'Employee' | 'viewer' | 'editor' | 'Department_Head' | 'HEAD_DEPT' | 'admin' | 'IT_Admin';
 
 export interface NotificationSetting {
   id: string;
@@ -11,6 +12,7 @@ export interface NotificationSetting {
   isHighPriority?: boolean; // For Emergency WhatsApp Gateway mapping
   slaThresholdMinutes?: number; 
   isSLASetting?: boolean;
+  isBroadcastSetting?: boolean;
 }
 
 interface NotificationPreferencesProps {
@@ -26,24 +28,27 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
 }) => {
   const [settings, setSettings] = useState<NotificationSetting[]>(initialSettings);
 
+  const isAdmin = role === 'admin' || role === 'IT_Admin';
+  const isManager = role === 'Department_Head' || role === 'HEAD_DEPT' || isAdmin;
+  const isEngineer = !isManager; // Engineer only sees their own ticket movements
+
   const toggleChannel = (id: string, channel: 'inApp' | 'email' | 'whatsapp') => {
     // If Admin locks SLA, we might also lock whatsapp overrides for SLA events
     const setting = settings.find(s => s.id === id);
-    if (setting?.isSLASetting && isSlaLockedByAdmin && channel === 'whatsapp') return;
+    if (setting?.isSLASetting && isSlaLockedByAdmin && channel === 'whatsapp' && !isAdmin) return;
     
     setSettings(prev => prev.map(s => s.id === id ? { ...s, [channel]: !s[channel] } : s));
   };
 
   const updateSLAThreshold = (id: string, minutes: number) => {
-    if (isSlaLockedByAdmin) return;
+    if (isSlaLockedByAdmin && !isAdmin) return;
     setSettings(prev => prev.map(s => s.id === id ? { ...s, slaThresholdMinutes: minutes } : s));
   };
 
-  const isManager = role === 'TEAM_LEAD' || role === 'DEPT_HEAD';
-
-  // Separate SLA Settings and Standard Settings
-  const standardSettings = settings.filter(s => !s.isSLASetting);
+  // Separate settings by category
+  const standardSettings = settings.filter(s => !s.isSLASetting && !s.isBroadcastSetting);
   const slaSettings = settings.filter(s => s.isSLASetting);
+  const broadcastSettings = settings.filter(s => s.isBroadcastSetting);
 
   // CSS in JS to replicate Tailwind requirements (bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl)
   return (
@@ -148,7 +153,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
             <h4 style={{ margin: 0, fontSize: '14px', color: '#38bdf8', fontWeight: 'bold' }}>
               إعدادات الرقابة الإدارية والتجاوزات (Managerial Tier SLA)
             </h4>
-            {isSlaLockedByAdmin && (
+            {isSlaLockedByAdmin && !isAdmin && (
               <span style={{ 
                 background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)',
                 padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold',
@@ -173,17 +178,17 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
                       type="number" 
                       value={setting.slaThresholdMinutes || 0}
                       onChange={(e) => updateSLAThreshold(setting.id, parseInt(e.target.value))}
-                      disabled={isSlaLockedByAdmin}
+                      disabled={isSlaLockedByAdmin && !isAdmin}
                       style={{
-                        background: isSlaLockedByAdmin ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                        border: isSlaLockedByAdmin ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        background: (isSlaLockedByAdmin && !isAdmin) ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                        border: (isSlaLockedByAdmin && !isAdmin) ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
                         borderRadius: '6px',
                         padding: '6px 12px',
-                        color: isSlaLockedByAdmin ? '#f87171' : '#f8fafc',
+                        color: (isSlaLockedByAdmin && !isAdmin) ? '#f87171' : '#f8fafc',
                         width: '80px',
                         outline: 'none',
                         fontSize: '13px',
-                        cursor: isSlaLockedByAdmin ? 'not-allowed' : 'text'
+                        cursor: (isSlaLockedByAdmin && !isAdmin) ? 'not-allowed' : 'text'
                       }}
                     />
                   </div>
@@ -197,7 +202,43 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
                       <input type="checkbox" checked={setting.email} onChange={() => toggleChannel(setting.id, 'email')} style={{ cursor: 'pointer', accentColor: '#3b82f6', width: '16px', height: '16px' }} />
                     </label>
                     <label title="Emergency WhatsApp" style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="checkbox" checked={setting.whatsapp} disabled={isSlaLockedByAdmin} onChange={() => toggleChannel(setting.id, 'whatsapp')} style={{ cursor: isSlaLockedByAdmin ? 'not-allowed' : 'pointer', accentColor: '#10b981', width: '16px', height: '16px' }} />
+                      <input type="checkbox" checked={setting.whatsapp} disabled={isSlaLockedByAdmin && !isAdmin} onChange={() => toggleChannel(setting.id, 'whatsapp')} style={{ cursor: (isSlaLockedByAdmin && !isAdmin) ? 'not-allowed' : 'pointer', accentColor: '#10b981', width: '16px', height: '16px' }} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Broadcast Section */}
+      {isAdmin && broadcastSettings.length > 0 && (
+        <div style={{ marginTop: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', color: '#f43f5e', fontWeight: 'bold' }}>
+              بث النظام الشامل للإدارة العليا (Admin Broadcast)
+            </h4>
+          </div>
+          
+          <div style={{ background: 'rgba(225, 29, 72, 0.1)', borderRadius: '12px', border: '1px solid rgba(244, 63, 94, 0.3)', overflow: 'hidden', padding: '16px' }}>
+            {broadcastSettings.map((setting) => (
+              <div key={setting.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(244, 63, 94, 0.1)' }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '13px', color: '#ffe4e6', fontWeight: 'bold' }}>{setting.label}</span>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                  {/* Channels for Broadcast Alert */}
+                  <div style={{ display: 'flex', gap: '15px' }}>
+                    <label title="In-App Log" style={{ display: 'flex', alignItems: 'center' }}>
+                      <input type="checkbox" checked={setting.inApp} onChange={() => toggleChannel(setting.id, 'inApp')} style={{ cursor: 'pointer', accentColor: '#06b6d4', width: '16px', height: '16px' }} />
+                    </label>
+                    <label title="Office 365" style={{ display: 'flex', alignItems: 'center' }}>
+                      <input type="checkbox" checked={setting.email} onChange={() => toggleChannel(setting.id, 'email')} style={{ cursor: 'pointer', accentColor: '#3b82f6', width: '16px', height: '16px' }} />
+                    </label>
+                    <label title="Emergency WhatsApp" style={{ display: 'flex', alignItems: 'center' }}>
+                      <input type="checkbox" checked={setting.whatsapp} onChange={() => toggleChannel(setting.id, 'whatsapp')} style={{ cursor: 'pointer', accentColor: '#10b981', width: '16px', height: '16px' }} />
                     </label>
                   </div>
                 </div>

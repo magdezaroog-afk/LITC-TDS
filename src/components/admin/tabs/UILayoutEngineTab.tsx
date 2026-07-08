@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { loadRoutes, TicketRouteDefinition } from './TicketRoutingTab';
 
-export type ComponentCategory = 'submission' | 'operations' | 'intelligence' | 'admin';
+export type ComponentCategory = 'employee_workspace' | 'technical_support_console' | 'operations_and_management' | 'system_admin_control';
 
 export interface DelegationRule {
   allow_override: boolean;
@@ -26,31 +26,25 @@ export interface UIComponentDefinition {
 }
 
 const initialComponents: UIComponentDefinition[] = [
-  // ─── Submission Modules ───
-  { id: 'ticket_create', name: 'مكون إرسال وتوجيه الطلبات', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { destinationRoutes: [] } },
-  { id: 'ticket_inbox', name: 'لوحة استعراض التذاكر المرسلة', category: 'submission', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
-  { id: 'admin_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'submission', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true, identityProvider: 'Microsoft_SSO', twoFactorEnforced: false } },
-  { id: 'knowledge_base_user', name: 'الأدلة المعرفية ومكتبة المساعدة', category: 'submission', isActive: false, target_zone: 'Main_Viewport', properties: { enableSearch: true, autoSuggest: true } },
+  // ─── [المرسل - Employee Workspace] ───
+  { id: 'ticket_create', name: 'مكون إرسال وتوجيه الطلبات', category: 'employee_workspace', isActive: true, target_zone: 'Main_Viewport', properties: { destinationRoutes: [] } },
+  { id: 'ticket_inbox', name: 'لوحة استعراض التذاكر المرسلة', category: 'employee_workspace', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
+  { id: 'admin_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'employee_workspace', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true, identityProvider: 'Microsoft_SSO', twoFactorEnforced: false } },
+  { id: 'knowledge_base_user', name: 'الأدلة المعرفية ومكتبة المساعدة', category: 'employee_workspace', isActive: false, target_zone: 'Main_Viewport', properties: { enableSearch: true, autoSuggest: true } },
 
-  // ─── Operations Modules ───
-  { id: 'admin_operational_console', name: 'لوحة التذاكر الواردة متعددة التبويبات', category: 'operations', isActive: true, target_zone: 'Main_Viewport', properties: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true }, routingScope: 'INTERNAL_TEAM', allowedCrossEscalationRoles: ['OPERATIONAL_MANAGER', 'SECTION_HEAD'], snatchingGovernance: true, activeConsoleTabs: ['NEW', 'IN_PROGRESS'], autoEscalationTimeMinutes: 30 } },
-  { id: 'audit_timeline', name: 'شريط الزمن التدقيقي لمسار التذكرة', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { showInternalNotes: false, detailedTimestamps: true } },
-  { id: 'admin_notifications', name: 'مركز الإشعارات والتنبيهات', category: 'operations', isActive: false, target_zone: 'Top_Navbar', properties: { inApp: true, office365Email: true, pushNotifications: true, forceWhatsappChannel: false, autoEscalateSLA: true } },
-  { id: 'engineer_live_status', name: 'لوحة الحالة الحية للمهندسين', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { mapIntegration: false, autoRefreshSeconds: 30 } },
-  { id: 'quick_actions_panel', name: 'لوحة الإجراءات السريعة', category: 'operations', isActive: false, target_zone: 'Main_Viewport', properties: { enableOneClickClose: false, escalateToManager: true, enableHandshakeTransfer: true, enableDependencyLock: true } },
+  // ─── [الاستقبال - Technical Support Console] ───
+  { id: 'admin_operational_console', name: 'لوحة التذاكر الواردة متعددة التبويبات', category: 'technical_support_console', isActive: true, target_zone: 'Main_Viewport', properties: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true }, routingScope: 'INTERNAL_TEAM', allowedCrossEscalationRoles: ['OPERATIONAL_MANAGER', 'SECTION_HEAD'], snatchingGovernance: true, activeConsoleTabs: ['NEW', 'IN_PROGRESS'], autoEscalationTimeMinutes: 30 } },
+  { id: 'admin_notifications', name: 'مركز الإشعارات والتنبيهات', category: 'technical_support_console', isActive: false, target_zone: 'Top_Navbar', properties: { inApp: true, office365Email: true, pushNotifications: true, forceWhatsappChannel: false, autoEscalateSLA: true } },
+  { id: 'engineer_live_status', name: 'لوحة الحالة الحية للمهندسين', category: 'technical_support_console', isActive: false, target_zone: 'Main_Viewport', properties: { mapIntegration: false, autoRefreshSeconds: 30 } },
+  { id: 'quick_actions_panel', name: 'لوحة الإجراءات السريعة', category: 'technical_support_console', isActive: false, target_zone: 'Main_Viewport', properties: { enableOneClickClose: false, escalateToManager: true, enableHandshakeTransfer: true, enableDependencyLock: true } },
 
-  // ─── Intelligence & Governance ───
-  { id: 'admin_analytics', name: 'التحليل المركزي للمؤشرات', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { activeCharts: ['kpi_cards', 'bar_chart'], dateRangeEnabled: true, managerAnalyticsControl: { allowEngineerDrilldown: true, allowLocationFilter: true, allowTaxonomyFilter: true }, adminOverride: false, enabledDimensions: ['GEO', 'STRUCT', 'TAXONOMY', 'TIME'], dataScope: 'TEAM', filterDestDept: 'IT' } },
-  { id: 'admin_leaderboard', name: 'المقارنات التقاطعية للفرق', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowedMetrics: ['VOLUME', 'SPEED', 'SLA'], maxComparisonElements: 3, allowedComparisonTypes: ['ENGINEERS', 'LOCATIONS', 'PROBLEMS'], allowedDimensions: ['ENGINEERS', 'LOCATIONS', 'PROBLEMS'] } },
-  { id: 'advanced_reports', name: 'لوحة التقارير المتقدمة', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { exportFormats: ['PDF', 'EXCEL'], autoSchedule: false } },
-  { id: 'admin_sovereign_custody_ledger_v10', name: 'منظومة العُهد والمخازن السيادية الشاملة V10', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { allowedReportFilters: ['BY_ITEM_TYPE', 'BY_DATE_RANGE'], allowedReportColumns: ['SHOW_RECEIVER_IDENTITY', 'SHOW_VERIFICATION_STATUS'], allowManagerToEnforceRules: true, flexibleApprovalChain: 'DEPT_HEAD_ONLY' } },
-  { id: 'admin_archive', name: 'الأرشيف التاريخي', category: 'intelligence', isActive: true, target_zone: 'Main_Viewport', properties: { archiveScope: 'Department_Only', enableHistoricalExport: true, enableTimelineAuditLog: true } },
-  { id: 'sla_monitor', name: 'شاشة مراقبة الـ SLA', category: 'intelligence', isActive: false, target_zone: 'Main_Viewport', properties: { warningThreshold: 15, autoEscalate: true } },
+  // ─── [الإدارة والتحليل - Operations & Management] ───
+  { id: 'admin_analytics', name: 'Performance Analytics (Unified Smart Analytics)', category: 'operations_and_management', isActive: true, target_zone: 'Main_Viewport', properties: { activeCharts: ['kpi_cards', 'bar_chart'], dateRangeEnabled: true, managerAnalyticsControl: { allowEngineerDrilldown: true, allowLocationFilter: true, allowTaxonomyFilter: true }, adminOverride: false, enabledDimensions: ['GEO', 'STRUCT', 'TAXONOMY', 'TIME'], dataScope: 'TEAM', filterDestDept: 'IT' } },
 
-  // ─── System Admin Modules ───
-  { id: 'governance_config', name: 'مكون إعدادات الحوكمة وتخصيص الواجهات', category: 'admin', isActive: false, target_zone: 'Main_Viewport', properties: { restrictToSuperAdmin: true } },
-  { id: 'system_audit_logs', name: 'سجل العمليات والأمان الشامل', category: 'admin', isActive: false, target_zone: 'Main_Viewport', properties: { logRetentionDays: 90, trackLogins: true } },
-  { id: 'global_settings', name: 'الإعدادات العامة والربط الشبكي', category: 'admin', isActive: false, target_zone: 'Main_Viewport', properties: { defaultLanguage: 'ar', enableSSO: true } }
+
+  // ─── [الحوكمة والآدمن - System Admin Control] ───
+  { id: 'system_audit_logs', name: 'سجل العمليات والأمان الشامل', category: 'system_admin_control', isActive: false, target_zone: 'Main_Viewport', properties: { logRetentionDays: 90, trackLogins: true } },
+  { id: 'global_settings', name: 'الإعدادات العامة والربط الشبكي', category: 'system_admin_control', isActive: false, target_zone: 'Main_Viewport', properties: { defaultLanguage: 'ar', enableSSO: true } }
 ];
 
 const styles = {
@@ -870,10 +864,10 @@ export function UILayoutEngineTab() {
                       style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '10px', overflowX: 'auto', overflowY: 'auto', padding: '12px 16px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.03)' : 'transparent', flex: 1 }}
                     >
                       {[
-                        { key: 'submission', label: 'الإرسال', color: '#34C759', icon: '📤' },
-                        { key: 'operations', label: 'الاستقبال', color: '#007AFF', icon: '⚙️' },
-                        { key: 'intelligence', label: 'الذكاء', color: '#FF9500', icon: '🧠' },
-                        { key: 'admin', label: 'الإدارة', color: '#FF3B30', icon: '👑' }
+                        { key: 'employee_workspace', label: 'المرسل - Employee Workspace', color: '#34C759', icon: '📝' },
+                        { key: 'technical_support_console', label: 'الاستقبال - Technical Support Console', color: '#007AFF', icon: '🛠' },
+                        { key: 'operations_and_management', label: 'الإدارة والتحليل - Operations & Management', color: '#FF9500', icon: '📊' },
+                        { key: 'system_admin_control', label: 'الحوكمة والآدمن - System Admin Control', color: '#FF3B30', icon: '🛡' }
                       ].map(group => {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                         if (groupComponents.length === 0) return null;
@@ -2010,7 +2004,7 @@ export function UILayoutEngineTab() {
                               boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
                               transition: 'all 0.3s'
                             }}>
-                              {c.category === 'submission' ? '📤' : c.category === 'operations' ? '⚙️' : c.category === 'intelligence' ? '🧠' : '👑'}
+                              {c.category === 'employee_workspace' ? '📝' : c.category === 'technical_support_console' ? '🛠' : c.category === 'operations_and_management' ? '📊' : '🛡'}
                             </div>
                             <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
                             {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
@@ -2898,7 +2892,7 @@ export function UILayoutEngineTab() {
                                       {c.name}
                                     </span>
                                     <span style={{ fontSize: '9px', background: isSelected ? 'rgba(88,86,214,0.08)' : '#F5F5F7', color: isSelected ? '#5856D6' : '#8E8E93', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
-                                      {c.category === 'submission' ? 'تقديم الطلبات' : c.category === 'operations' ? 'التشغيل والدعم' : c.category === 'intelligence' ? 'التحليل والحوكمة' : 'إدارة النظام'}
+                                      {c.category === 'employee_workspace' ? 'المرسل' : c.category === 'technical_support_console' ? 'الاستقبال' : c.category === 'operations_and_management' ? 'الإدارة والتحليل' : 'الحوكمة'}
                                     </span>
                                   </div>
 
