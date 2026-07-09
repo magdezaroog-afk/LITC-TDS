@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { OperationalDashboard } from '../components/dashboard/OperationalDashboard';
-import { AdminGovernanceConsole } from '../components/admin/AdminGovernanceConsole';
+import { OperationalDashboard } from '../pages/console/OperationalDashboard';
+import { AdminGovernanceConsole } from '../pages/admin/AdminGovernanceConsole';
 import { MobileUserProfile } from './components/MobileUserProfile';
 import { MobileAnalyticsCube } from './components/MobileAnalyticsCube';
 

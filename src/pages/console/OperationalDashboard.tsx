@@ -12,9 +12,9 @@ import { EventBus } from '../../engine/events/EventBus';
 import { RealTimeSynchronizer, ConnectionStatus } from '../../services/RealTimeSynchronizer';
 import { Ticket, WorkflowEngine } from '../../engine/workflow/WorkflowEngine';
 import { FieldDefinition, FieldType } from '../../types/dynamicFields';
-import { SlaCountdownTimer } from '../atoms/SlaCountdownTimer';
-
-type CircuitState = 'CLOSED' | 'OPEN' | 'HALF-OPEN';
+import { SlaCountdownTimer } from '../../components/atoms/SlaCountdownTimer';
+import { ActionModals } from '../../components/organisms/ActionModals';
+import { useRealTimeConnection, CircuitState } from '../../hooks/useRealTimeConnection';
 
 // =========================================================================
 // واجهة محاكاة لـ DatabaseController للربط مع الـ API الخلفي
@@ -279,23 +279,84 @@ export const OperationalDashboard: React.FC<{
   // الحالة المحلية لإدارة صلاحيات الدور المستلمة ديناميكياً
   const [permissions, setPermissions] = useState<{ canTransfer: boolean; canClose: boolean } | null>(null);
   const [loadingPermissions, setLoadingPermissions] = useState<boolean>(true);
-  const [permissionsError, setPermissionsError] = useState<string | null>(null);
+  // خطاف جلب الصلاحيات ديناميكياً من الباك-إند بناءً على دور المستخدم
+  const fetchPermissions = useCallback(async (showLoading = true) => {
+    if (!user) {
+      if (isMountedRef.current) {
+        setLoadingPermissions(false);
+      }
+      return;
+    }
+    try {
+      if (showLoading) {
+        setLoadingPermissions(true);
+      }
+      setPermissionsError(null);
+      
+      // محاكاة تأخير شبكي طفيف (Latency) لاختبار استمرارية وتأثير المؤشر الزجاجي
+      if (showLoading) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
 
-  // حالة وميض التذاكر عند استلام تحويل لحظي
-  const [highlightedTicketId, setHighlightedTicketId] = useState<string | null>(null);
-  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+      const response = await fetch(`/api/v1/auth/permissions/${user.role}`, {
+        headers: {
+          'Authorization': 'Bearer system_token_123',
+          'Content-Type': 'application/json'
+        }
+      });
 
-  // حالة وميض التذاكر عند استلام تصعيد لحظي
-  const [escalatedHighlightTicketId, setEscalatedHighlightTicketId] = useState<string | null>(null);
-  const escalateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+      if (!response.ok) {
+        throw new Error(`Failed to load permissions: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (isMountedRef.current) {
+        setPermissions(data);
+      }
+    } catch (err: any) {
+      console.error('[OperationalDashboard] permissions fetch error:', err);
+      if (isMountedRef.current) {
+        setPermissionsError(err.message || 'خطأ في تحميل الصلاحيات');
+        // أدنى صلاحية أمنية عند الفشل لمنع الاختراقات
+        setPermissions({ canTransfer: false, canClose: false });
+      }
+    } finally {
+      if (showLoading && isMountedRef.current) {
+        setLoadingPermissions(false);
+      }
+    }
+  }, [user]);
+
   const isMountedRef = useRef<boolean>(true);
 
-  // حالة اتصال قناة البث اللحظية — تُحدَّث عبر EventBus من RealTimeSynchronizer
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('CONNECTED');
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-  // حالة قاطع الدائرة السيادي — تُحدَّث عبر EventBus من DatabaseController
-  const [circuitBreakerState, setCircuitBreakerState] = useState<CircuitState>('CLOSED');
-  const [queuedOpsCount, setQueuedOpsCount] = useState<number>(0);
+  // القسم الحالي الخاص بالموظف
+  const userDept = useMemo(() => {
+    return (user as any)?.department || 'IT';
+  }, [user]);
+
+  const {
+    connectionStatus,
+    circuitBreakerState,
+    queuedOpsCount,
+    tickets,
+    highlightedTicketId,
+    escalatedHighlightTicketId,
+    notifications,
+    toasts,
+    setNotifications,
+    setToasts,
+    loadTickets,
+    showToast
+  } = useRealTimeConnection({ user, userDept, fetchPermissions });
+
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   // Ticket Creation Form State with Dynamic Fields
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -355,66 +416,6 @@ export const OperationalDashboard: React.FC<{
     };
   }, []);
 
-  // القسم الحالي الخاص بالموظف
-  const userDept = useMemo(() => {
-    return (user as any)?.department || 'IT';
-  }, [user]);
-
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  
-  // Smart Filters
-  const [filterBuildingText, setFilterBuildingText] = useState<string>('');
-  const [filterMainIssueText, setFilterMainIssueText] = useState<string>('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [targetDept, setTargetDept] = useState('IT');
-  const [reason, setReason] = useState('');
-  
-  // حالة الإشعارات والتحذيرات
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // إعدادات وحالة الإشعارات والتحذيرات اللحظية
-  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; content: string; timestamp: string; read: boolean }>>([]);
-  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
-  const [toasts, setToasts] = useState<Array<{ id: string; title: string; message: string }>>([]);
-  const [notifSettings, setNotifSettings] = useState<{ isToastEnabled: boolean; isBellEnabled: boolean }>({
-    isToastEnabled: true,
-    isBellEnabled: true
-  });
-  
-  const notifSettingsRef = useRef(notifSettings);
-  const toastTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
-
-  const fetchNotifSettings = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/v1/admin/notification-config/${userDept}`, {
-        headers: {
-          'Authorization': 'Bearer system_token_123'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const settings = {
-          isToastEnabled: !!data.isToastEnabled,
-          isBellEnabled: !!data.isBellEnabled
-        };
-        setNotifSettings(settings);
-        notifSettingsRef.current = settings;
-      }
-    } catch (err) {
-      console.error('[OperationalDashboard] failed to fetch notification config:', err);
-    }
-  }, [userDept]);
-
-  const showToast = useCallback((title: string, message: string) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, title, message }]);
-    const timeout = setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
-    toastTimeoutsRef.current.push(timeout);
-  }, []);
 
   // حالة التحكم بقفل التبريد وإرسال النموذج لمنع السبام وحماية السيرفر
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -444,299 +445,17 @@ export const OperationalDashboard: React.FC<{
     };
   }, [isCooldownActive, cooldownSeconds]);
 
-  // خطاف جلب الصلاحيات ديناميكياً من الباك-إند بناءً على دور المستخدم
-  const fetchPermissions = useCallback(async (showLoading = true) => {
-    if (!user) {
-      if (isMountedRef.current) {
-        setLoadingPermissions(false);
-      }
-      return;
-    }
-    try {
-      if (showLoading) {
-        setLoadingPermissions(true);
-      }
-      setPermissionsError(null);
-      
-      // محاكاة تأخير شبكي طفيف (Latency) لاختبار استمرارية وتأثير المؤشر الزجاجي
-      if (showLoading) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      }
-
-      const response = await fetch(`/api/v1/auth/permissions/${user.role}`, {
-        headers: {
-          'Authorization': 'Bearer system_token_123',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load permissions: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      if (isMountedRef.current) {
-        setPermissions(data);
-      }
-    } catch (err: any) {
-      console.error('[OperationalDashboard] permissions fetch error:', err);
-      if (isMountedRef.current) {
-        setPermissionsError(err.message || 'خطأ في تحميل الصلاحيات');
-        // أدنى صلاحية أمنية عند الفشل لمنع الاختراقات
-        setPermissions({ canTransfer: false, canClose: false });
-      }
-    } finally {
-      if (showLoading && isMountedRef.current) {
-        setLoadingPermissions(false);
-      }
-    }
-  }, [user]);
-
-  // استدعاء جلب الصلاحيات عند تغير المستخدم
-  useEffect(() => {
-    fetchPermissions(true);
-  }, [fetchPermissions]);
-
-  const loadTickets = useCallback(() => {
-    const allTickets: Ticket[] = [];
-    const role = (user as any)?.role || 'technician';
-    const isTopManager = role === 'admin' || role === 'manager'; // مدير الإدارة العليا
-
-    // محاكاة جلب البيانات التشغيلية
-    WorkflowEngine['mockDatabase'].forEach((t) => {
-      // 🛡️ حوكمة نطاق الرؤية الإلزامية (Strict Vision Scope)
-      // إذا كان المستخدم مدير إدارة عليا، يرى تذاكر إدارته بالكامل أو كل التذاكر.
-      // إذا كان مهندساً أو رئيس قسم، يرى فقط التذاكر المحولة لقسمه الفعلي بدقة.
-      const belongsToUserDept = t.department === userDept || t.routeId === userDept; // Fallback mapping for demo
-      
-      if (isTopManager || belongsToUserDept) {
-        allTickets.push(t);
-      }
-    });
-
-    // ترتيب التذاكر بحيث تأتي المصعدة أولاً
-    allTickets.sort((a, b) => {
-      const aEsc = a.isEscalated ? 1 : 0;
-      const bEsc = b.isEscalated ? 1 : 0;
-      return bEsc - aEsc;
-    });
-    setTickets(allTickets);
-  }, [userDept, user]);
-
-  // الاتصال بالبث اللحظي عند تحميل المكون
-  useEffect(() => {
-    if (user) {
-      // المزامنة اللحظية
-      RealTimeSynchronizer.connect(user.permissions, userDept);
-      loadTickets();
-      fetchNotifSettings();
-
-      // الاستماع لتغييرات التذاكر الموجهة للقسم
-      const handleTicketUpdate = (event: any) => {
-        if (event.department === userDept) {
-          loadTickets();
-        }
-      };
-
-      const handlePermissionsUpdate = (event: any) => {
-        // Re-fetch permissions smoothly without full-screen loading spinner
-        fetchPermissions(false);
-        fetchNotifSettings();
-      };
-
-      const handleTicketTransferred = (event: any) => {
-        if (event && event.ticketId) {
-          // تحديث القسم والحالة محلياً في قاعدة البيانات المؤقتة
-          const ticket = WorkflowEngine.getTicket(event.ticketId);
-          if (ticket) {
-            ticket.department = event.department;
-            ticket.status = 'transferred';
-            ticket.version = (ticket.version || 0) + 1;
-            WorkflowEngine.saveTicket(ticket);
-          } else {
-            // تذكرة افتراضية احتياطية للتصيير
-            const newMockTicket: Ticket = {
-              id: event.ticketId,
-              title: `تذكرة محولة جديدة (${event.ticketId})`,
-              description: 'تفاصيل التذكرة المحولة تلقائياً عبر ناقل الأحداث',
-              status: 'transferred',
-              mainCategory: 'IT',
-              subCategory: 'Network',
-              attachments: [],
-              location: 'غير محدد',
-              department: event.department,
-              creatorId: 'system-sync',
-              childTicketIds: [],
-              workflowPath: [],
-              version: 1
-            };
-            WorkflowEngine.saveTicket(newMockTicket);
-          }
-
-          // تفعيل وميض النيون الأخضر للتذكرة المنقولة لقسمنا
-          if (event.department === userDept) {
-            const settings = notifSettingsRef.current;
-            if (settings.isBellEnabled) {
-              setNotifications(prev => [
-                {
-                  id: Math.random().toString(36).substring(2, 9),
-                  title: 'تحويل تذكرة',
-                  content: `تم تحويل التذكرة رقم ${event.ticketId} لقسمك.`,
-                  timestamp: new Date().toLocaleTimeString('ar-EG'),
-                  read: false
-                },
-                ...prev
-              ]);
-            }
-            if (settings.isToastEnabled) {
-              showToast('تحويل تذكرة', `تم تحويل التذكرة رقم ${event.ticketId} لقسمك.`);
-            }
-
-            setHighlightedTicketId(event.ticketId);
-            if (highlightTimeoutRef.current) {
-              clearTimeout(highlightTimeoutRef.current);
-            }
-            highlightTimeoutRef.current = setTimeout(() => {
-              setHighlightedTicketId(null);
-            }, 2500);
-          }
-          loadTickets();
-        }
-      };
-
-      const handleTicketEscalated = (event: any) => {
-        if (event && event.ticketId) {
-          // تحديث التذكرة في المخزن المحلي للمحرك
-          const ticket = WorkflowEngine.getTicket(event.ticketId);
-          if (ticket) {
-            ticket.isEscalated = true;
-            ticket.escalatedTo = event.escalatedTo;
-            ticket.status = 'in-progress';
-            ticket.version = (ticket.version || 0) + 1;
-            WorkflowEngine.saveTicket(ticket);
-          } else {
-            // تذكرة افتراضية احتياطية للتصيير
-            const newMockTicket: Ticket = {
-              id: event.ticketId,
-              title: `تذكرة مصعدة جديدة (${event.ticketId})`,
-              description: 'تفاصيل التذكرة المصعدة تلقائياً عبر مراقب الـ SLA',
-              status: 'in-progress',
-              mainCategory: 'IT',
-              subCategory: 'Network',
-              attachments: [],
-              location: 'غير محدد',
-              department: event.department,
-              creatorId: 'system-sync',
-              childTicketIds: [],
-              workflowPath: [],
-              version: 1,
-              isEscalated: true,
-              escalatedTo: event.escalatedTo
-            };
-            WorkflowEngine.saveTicket(newMockTicket);
-          }
-
-          // تفعيل وميض النيون البرتقالي للتذكرة المصعدة لقسمنا
-          if (event.department === userDept) {
-            const settings = notifSettingsRef.current;
-            if (settings.isBellEnabled) {
-              setNotifications(prev => [
-                {
-                  id: Math.random().toString(36).substring(2, 9),
-                  title: 'تصعيد SLA للتذكرة',
-                  content: `تم تصعيد التذكرة رقم ${event.ticketId} إلى ${event.escalatedTo || 'IT_Admin'}.`,
-                  timestamp: new Date().toLocaleTimeString('ar-EG'),
-                  read: false
-                },
-                ...prev
-              ]);
-            }
-            if (settings.isToastEnabled) {
-              showToast('تصعيد SLA', `تم تصعيد التذكرة رقم ${event.ticketId} إلى ${event.escalatedTo || 'IT_Admin'}.`);
-            }
-
-            setEscalatedHighlightTicketId(event.ticketId);
-            if (escalateTimeoutRef.current) {
-              clearTimeout(escalateTimeoutRef.current);
-            }
-            escalateTimeoutRef.current = setTimeout(() => {
-              setEscalatedHighlightTicketId(null);
-            }, 2500);
-          }
-          loadTickets();
-        }
-      };
-
-      const handleConfigUpdated = (event: any) => {
-        if (event && event.departmentId) {
-          if (event.departmentId === createDeptRef.current) {
-            console.log(`[OperationalDashboard] Dynamic fields update received for active department: ${event.departmentId}. Updating fields.`);
-            setFields(event.fields || []);
-          }
-        } else if (event && event.ServiceType === userDept) {
-          console.log(`[OperationalDashboard] Silent live settings update received for department: ${event.ServiceType}. Refetching settings.`);
-          fetchNotifSettings();
-        }
-      };
-
-      // مستمع حالة الاتصال الحية — يُحدِّث شارة إعادة الاتصال النيونية بدون تجميد الشاشة
-      const handleConnectionStatusChanged = (event: any) => {
-        if (isMountedRef.current && event?.status) {
-          setConnectionStatus(event.status as ConnectionStatus);
-        }
-      };
-
-      // مستمع قاطع الدائرة السيادي — يُحدِّث شارة الطابور المعلق
-      const handleCircuitBreakerStateChanged = (event: any) => {
-        if (isMountedRef.current && event?.state) {
-          setCircuitBreakerState(event.state as CircuitState);
-          if (typeof event.queueSize === 'number') {
-            setQueuedOpsCount(event.queueSize);
-          }
-        }
-      };
-
-      // مستمع إشعار نجاح الـ Auto-Flush — يُعيد الحالة لـ CLOSED ويُصفّر العداد
-      const handleQueueFlushed = (event: any) => {
-        if (isMountedRef.current) {
-          setCircuitBreakerState('CLOSED');
-          setQueuedOpsCount(event?.remaining ?? 0);
-          if (event?.flushedCount > 0) {
-            showToast('تم تنفيذ العمليات المؤجلة', `تم حقن ${event.flushedCount} عملية مؤجلة بنجاح في قاعدة البيانات.`);
-          }
-        }
-      };
-
-      EventBus.on('TICKET_ASSIGNED_TO_DEPT', handleTicketUpdate);
-      EventBus.on('TICKET_REFRESH', loadTickets);
-      EventBus.on('PERMISSIONS_UPDATED', handlePermissionsUpdate);
-      EventBus.on('TICKET_TRANSFERRED', handleTicketTransferred);
-      EventBus.on('TICKET_ESCALATED', handleTicketEscalated);
-      EventBus.on('CONFIG_UPDATED', handleConfigUpdated);
-      EventBus.on('CONNECTION_STATUS_CHANGED', handleConnectionStatusChanged);
-      EventBus.on('CIRCUIT_BREAKER_STATE_CHANGED', handleCircuitBreakerStateChanged);
-      EventBus.on('QUEUE_FLUSHED', handleQueueFlushed);
-
-      return () => {
-        RealTimeSynchronizer.disconnect();
-        EventBus.off('TICKET_ASSIGNED_TO_DEPT', handleTicketUpdate);
-        EventBus.off('TICKET_REFRESH', loadTickets);
-        EventBus.off('PERMISSIONS_UPDATED', handlePermissionsUpdate);
-        EventBus.off('TICKET_TRANSFERRED', handleTicketTransferred);
-        EventBus.off('TICKET_ESCALATED', handleTicketEscalated);
-        EventBus.off('CONFIG_UPDATED', handleConfigUpdated);
-        EventBus.off('CONNECTION_STATUS_CHANGED', handleConnectionStatusChanged);
-        EventBus.off('CIRCUIT_BREAKER_STATE_CHANGED', handleCircuitBreakerStateChanged);
-        EventBus.off('QUEUE_FLUSHED', handleQueueFlushed);
-        if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-        if (escalateTimeoutRef.current) clearTimeout(escalateTimeoutRef.current);
-        if (toastTimeoutsRef.current) {
-          toastTimeoutsRef.current.forEach(clearTimeout);
-          toastTimeoutsRef.current = [];
-        }
-      };
-    }
-  }, [user, userDept, loadTickets, fetchPermissions, fetchNotifSettings]);
+  // Smart Filters
+  const [filterBuildingText, setFilterBuildingText] = useState<string>('');
+  const [filterMainIssueText, setFilterMainIssueText] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetDept, setTargetDept] = useState('IT');
+  const [reason, setReason] = useState('');
+  
+  // حالة الإشعارات والتحذيرات
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
 
   // إغلاق التذكرة بقفل التبعية التراكمي
   const handleCloseTicket = useCallback(async (ticketId: string) => {
@@ -1359,340 +1078,43 @@ export const OperationalDashboard: React.FC<{
         );
       })()}
 
-      {/* نافذة التحويل المشروطة (Transfer Ticket Modal) */}
-      {isModalOpen && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h3 style={{ marginTop: 0, marginBottom: theme.spacing.md, fontSize: '16px' }}>تحويل التذكرة إلى قسم آخر</h3>
-            
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>القسم المستهدف:</label>
-            <select 
-              value={targetDept} 
-              onChange={(e) => setTargetDept(e.target.value)}
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            >
-              <option value="IT">تقنية المعلومات (IT)</option>
-              <option value="Maintenance">الصيانة العامة (Maintenance)</option>
-              <option value="HR">الموارد البشرية (HR)</option>
-            </select>
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>سبب تحويل التذكرة بالتفصيل:</label>
-            <textarea
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="اكتب التبرير الفني للتحويل..."
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: theme.spacing.md }}>
-              <button 
-                style={{
-                  ...cancelButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer'
-                }} 
-                onClick={() => setIsModalOpen(false)}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                إلغاء
-              </button>
-              <button 
-                style={{
-                  ...submitButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer',
-                  backgroundColor: (isSubmitting || isCooldownActive) ? 'rgba(255,255,255,0.1)' : '#0052cc'
-                }} 
-                onClick={handleTransferSubmit}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                {isSubmitting ? 'جاري التحويل...' : 'تحويل التذكرة'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ═══ شارة قاطع الدائرة السيادي (Circuit Breaker OPEN Banner) ═══
-           تظهر فقط حين تكون الدائرة OPEN أو HALF-OPEN وتُطمئن الموظف
-           بأن عملياته محفوظة في الطابور وستُنفَّذ تلقائياً */}
-      {(circuitBreakerState === 'OPEN' || circuitBreakerState === 'HALF-OPEN') && (
-        <div style={{
-          position: 'fixed',
-          bottom: '130px',
-          left: '20px',
-          zIndex: 1210,
-          maxWidth: '320px',
-          padding: '12px 18px',
-          background: 'rgba(20, 15, 0, 0.92)',
-          backdropFilter: 'blur(18px)',
-          border: '1px solid rgba(255, 200, 0, 0.55)',
-          borderRadius: '14px',
-          animation: 'circuitBreakerFlash 2.2s ease-in-out infinite',
-          color: '#ffe066',
-          fontFamily: theme.typography.fontFamily,
-          fontSize: '12px',
-          direction: 'rtl',
-          lineHeight: '1.6',
-          pointerEvents: 'none'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{
-              width: '11px', height: '11px',
-              borderRadius: '50%',
-              background: circuitBreakerState === 'OPEN' ? '#ffcc00' : '#ff8c00',
-              boxShadow: circuitBreakerState === 'OPEN' ? '0 0 10px #ffcc00' : '0 0 10px #ff8c00',
-              display: 'inline-block', flexShrink: 0
-            }} />
-            <strong style={{ fontSize: '13px' }}>
-              {circuitBreakerState === 'OPEN' ? '⚡ الشبكة متذبذبة — الحماية مفعّلة' : '🔍 فحص استعادة الاتصال...'}
-            </strong>
-          </div>
-          <div style={{ opacity: 0.9 }}>
-            تم حفظ عمليتك مؤقتاً{queuedOpsCount > 0 ? ` (${queuedOpsCount} عملية في الطابور)` : ''} وسيتم تنفيذها تلقائياً فور استقرار الاتصال بقاعدة البيانات.
-          </div>
-        </div>
-      )}
-
-      {/* شارة إعادة الاتصال النيونية — تظهر فقط عند الانقطاع أو إعادة الاتصال */}
-      {(connectionStatus === 'DISCONNECTED' || connectionStatus === 'CONNECTING') && (
-        <div style={{
-          position: 'fixed',
-          bottom: '80px',
-          left: '20px',
-          zIndex: 1200,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '10px 18px',
-          background: 'rgba(23, 20, 10, 0.88)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 140, 0, 0.5)',
-          borderRadius: '30px',
-          animation: 'reconnectPulse 1.8s ease-in-out infinite',
-          color: '#ffb347',
-          fontFamily: theme.typography.fontFamily,
-          fontSize: '13px',
-          fontWeight: 'bold',
-          direction: 'rtl',
-          pointerEvents: 'none'
-        }}>
-          <span style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: connectionStatus === 'CONNECTING' ? '#ff8c00' : '#ff4444',
-            display: 'inline-block',
-            flexShrink: 0,
-            boxShadow: connectionStatus === 'CONNECTING'
-              ? '0 0 8px #ff8c00'
-              : '0 0 8px #ff4444'
-          }} />
-          {connectionStatus === 'CONNECTING'
-            ? 'جاري إعادة الاتصال الآمن...'
-            : 'الاتصال مقطوع — في انتظار الشبكة'}
-        </div>
-      )}
-
-      {/* نافذة إنشاء تذكرة جديدة ديناميكية (Dynamic Create Ticket Modal) */}
-      {isCreateModalOpen && (
-        <div style={modalOverlayStyle}>
-          <div style={{ ...modalContentStyle, width: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ marginTop: 0, marginBottom: theme.spacing.md, fontSize: '16px', color: '#00a3ff' }}>إنشاء تذكرة جديدة ديناميكية</h3>
-            
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>عنوان التذكرة:</label>
-            <input 
-              type="text" 
-              value={createTitle}
-              onChange={(e) => setCreateTitle(e.target.value)}
-              placeholder="مثال: عطل في طابعة الدور الثاني"
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>وصف التفاصيل:</label>
-            <textarea
-              rows={3}
-              value={createDescription}
-              onChange={(e) => setCreateDescription(e.target.value)}
-              placeholder="اكتب التبرير الفني والوصف بالتفصيل..."
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>موقع حدوث المشكلة:</label>
-            <input
-              type="text"
-              value={createLocation}
-              onChange={(e) => setCreateLocation(e.target.value)}
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>القسم المسؤول المستهدف:</label>
-            <select 
-              value={createDept} 
-              onChange={(e) => {
-                setCreateDept(e.target.value);
-                setDynamicFieldValues({});
-              }}
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            >
-              <option value="IT">تقنية المعلومات (IT)</option>
-              <option value="Maintenance">الصيانة العامة (Maintenance)</option>
-              <option value="Infrastructure">البنية التحتية (Infrastructure)</option>
-            </select>
-
-            {/* تصيير الحقول الديناميكية رنتايم */}
-            {fields.length > 0 && (
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                borderRadius: '10px',
-                padding: '12px',
-                marginBottom: theme.spacing.md,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#c8aaff', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '4px' }}>حقول مخصصة للقسم:</div>
-                {fields.map((f) => {
-                  const val = dynamicFieldValues[f.fieldId] || '';
-                  const handleFieldChange = (v: string) => {
-                    setDynamicFieldValues(prev => ({ ...prev, [f.fieldId]: v }));
-                  };
-                  return (
-                    <div key={f.fieldId}>
-                      <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', opacity: 0.9 }}>
-                        {f.label} {f.required && <span style={{ color: '#ff3d57' }}>*</span>}
-                      </label>
-                      {f.type === 'dropdown' ? (
-                        <select
-                          value={val}
-                          onChange={(e) => handleFieldChange(e.target.value)}
-                          style={inputStyle}
-                          disabled={isSubmitting || isCooldownActive}
-                        >
-                          <option value="">-- اختر خياراً --</option>
-                          {f.options?.map((opt, idx) => (
-                            <option key={idx} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={f.type === 'number' ? 'number' : 'text'}
-                          value={val}
-                          onChange={(e) => handleFieldChange(e.target.value)}
-                          placeholder={f.placeholder || `أدخل ${f.label}`}
-                          style={inputStyle}
-                          disabled={isSubmitting || isCooldownActive}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: theme.spacing.md }}>
-              <button 
-                style={{
-                  ...cancelButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer'
-                }} 
-                onClick={() => setIsCreateModalOpen(false)}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                إلغاء
-              </button>
-              <button 
-                style={{
-                  ...submitButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer',
-                  backgroundColor: (isSubmitting || isCooldownActive) ? 'rgba(255,255,255,0.1)' : '#0052cc'
-                }} 
-                onClick={handleCreateTicketSubmit}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                {isSubmitting ? 'جاري الإنشاء...' : 'إنشاء التذكرة'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sub-Ticket Create Modal */}
-      {isSubTicketModalOpen && (
-        <div style={modalOverlayStyle}>
-          <div style={{ ...modalContentStyle, width: '450px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid rgba(255, 140, 0, 0.4)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: theme.spacing.md, fontSize: '16px', color: '#ff8c00' }}>إنشاء تذكرة فرعية (Sub-Ticket)</h3>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginBottom: '15px' }}>التذكرة الأم: #{subTicketParentId}</p>
-            
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>عنوان التذكرة الفرعية:</label>
-            <input 
-              type="text" 
-              value={subTicketTitle}
-              onChange={(e) => setSubTicketTitle(e.target.value)}
-              placeholder="وصف مختصر للمشكلة الفرعية"
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>تفاصيل إضافية:</label>
-            <textarea
-              rows={3}
-              value={subTicketDescription}
-              onChange={(e) => setSubTicketDescription(e.target.value)}
-              placeholder="اكتب تفاصيل التذكرة الفرعية..."
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            />
-
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px' }}>القسم المستهدف:</label>
-            <select 
-              value={subTicketDept} 
-              onChange={(e) => setSubTicketDept(e.target.value)}
-              style={inputStyle}
-              disabled={isSubmitting || isCooldownActive}
-            >
-              <option value="IT">تقنية المعلومات (IT)</option>
-              <option value="Maintenance">الصيانة العامة (Maintenance)</option>
-              <option value="Infrastructure">البنية التحتية (Infrastructure)</option>
-            </select>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: theme.spacing.md }}>
-              <button 
-                style={{
-                  ...cancelButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer'
-                }} 
-                onClick={() => setIsSubTicketModalOpen(false)}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                إلغاء
-              </button>
-              <button 
-                style={{
-                  ...submitButtonStyle,
-                  opacity: (isSubmitting || isCooldownActive) ? 0.5 : 1,
-                  cursor: (isSubmitting || isCooldownActive) ? 'not-allowed' : 'pointer',
-                  backgroundColor: (isSubmitting || isCooldownActive) ? 'rgba(255,255,255,0.1)' : '#ff8c00'
-                }} 
-                onClick={handleSubTicketSubmit}
-                disabled={isSubmitting || isCooldownActive}
-              >
-                {isSubmitting ? 'جاري الإنشاء...' : 'حفظ وإنشاء'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* All Action Modals */}
+      <ActionModals
+        theme={theme}
+        isSubmitting={isSubmitting}
+        isCooldownActive={isCooldownActive}
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        targetDept={targetDept}
+        setTargetDept={setTargetDept}
+        reason={reason}
+        setReason={setReason}
+        handleTransferSubmit={handleTransferSubmit}
+        isCreateModalOpen={isCreateModalOpen}
+        setIsCreateModalOpen={setIsCreateModalOpen}
+        createTitle={createTitle}
+        setCreateTitle={setCreateTitle}
+        createDescription={createDescription}
+        setCreateDescription={setCreateDescription}
+        createLocation={createLocation}
+        setCreateLocation={setCreateLocation}
+        createDept={createDept}
+        setCreateDept={setCreateDept}
+        fields={fields}
+        dynamicFieldValues={dynamicFieldValues}
+        setDynamicFieldValues={setDynamicFieldValues}
+        handleCreateTicketSubmit={handleCreateTicketSubmit}
+        isSubTicketModalOpen={isSubTicketModalOpen}
+        setIsSubTicketModalOpen={setIsSubTicketModalOpen}
+        subTicketParentId={subTicketParentId}
+        subTicketTitle={subTicketTitle}
+        setSubTicketTitle={setSubTicketTitle}
+        subTicketDescription={subTicketDescription}
+        setSubTicketDescription={setSubTicketDescription}
+        subTicketDept={subTicketDept}
+        setSubTicketDept={setSubTicketDept}
+        handleSubTicketSubmit={handleSubTicketSubmit}
+      />
 
       {/* Toast Alert Container */}
       <div style={toastContainerStyle}>

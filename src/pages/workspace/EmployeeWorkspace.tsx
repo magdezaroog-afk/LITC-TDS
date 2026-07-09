@@ -1,23 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../engine/ui-loader/ThemeProvider';
-import { DynamicCustomField } from '../admin/tabs/DynamicFieldsTab';
-import { ArchiveTable } from './ArchiveTable';
-import { DynamicUserProfile } from '../profile/DynamicUserProfile';
+import { ArchiveTable } from '../../components/dashboard/ArchiveTable';
+import { DynamicUserProfile } from '../../components/profile/DynamicUserProfile';
 import { loadRoutes, TicketRouteDefinition } from '../admin/tabs/TicketRoutingTab';
-import { TicketJourneyTimeline } from './TicketJourneyTimeline';
-import { MOCK_JOURNEYS } from './mockJourneyData';
-
-
-interface SchemaComponent {
-  componentId: string;
-  name: string;
-  settings: any;
-}
-
-interface UiSchema {
-  version: string;
-  layoutConfig: SchemaComponent[];
-}
+import { TicketJourneyTimeline } from '../../components/dashboard/TicketJourneyTimeline';
+import { MOCK_JOURNEYS } from '../../components/dashboard/mockJourneyData';
+import { TicketCreatorForm } from '../../components/organisms/TicketCreatorForm';
+import { useWorkspaceLayout, CoreRole } from '../../hooks/useWorkspaceLayout';
 
 interface MockTicket {
   id: string;
@@ -73,29 +62,16 @@ const getRoleNotifications = (role: CoreRole) => {
 export const EmployeeWorkspace: React.FC = () => {
   const theme = useTheme();
 
-  const [schema, setSchema] = useState<UiSchema | null>(null);
-  const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<CoreRole>('OPERATIONAL_MANAGER');
+  
+  // Custom Hook for layout logic
+  const { schema, customFields, loading, getComponentSettings, isComponentActive } = useWorkspaceLayout(currentUserRole);
+
   const [expandedJourneyTicketId, setExpandedJourneyTicketId] = useState<string | null>(null);
   const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
   const [showBellDropdown, setShowBellDropdown] = useState(false);
-
-  // Form State
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const [isRecording, setIsRecording] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [activeInboxTab, setActiveInboxTab] = useState<string>('NEW');
-
-  // Route Selection State
   const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>([]);
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-  const [routeFieldValues, setRouteFieldValues] = useState<Record<string, string>>({});
-  const [routeSelectedTaxMain, setRouteSelectedTaxMain] = useState<string>('');
-  const [routeSelectedTaxSub, setRouteSelectedTaxSub] = useState<string>('');
-  const [routeDescription, setRouteDescription] = useState<string>('');
-  const [routeSubmitSuccess, setRouteSubmitSuccess] = useState(false);
+  const [activeInboxTab, setActiveInboxTab] = useState<string>('unassigned');
 
   // Analytics State
   const [analyticsDestDept, setAnalyticsDestDept] = useState<string>('ALL');
@@ -105,174 +81,10 @@ export const EmployeeWorkspace: React.FC = () => {
   const [leaderboardTarget1, setLeaderboardTarget1] = useState<string>('EMP_A');
   const [leaderboardTarget2, setLeaderboardTarget2] = useState<string>('EMP_B');
 
-  // Mocking the fetch of the layout configuration from the server
+  // Load ticket routes
   useEffect(() => {
-    const fetchSchema = async () => {
-      // Fetch dynamic fields from local storage
-      const savedFields = localStorage.getItem('litc_dynamic_fields');
-      if (savedFields) {
-        try { setCustomFields(JSON.parse(savedFields)); } catch (e) {}
-      }
-      // Load ticket routes
-      setSavedRoutes(loadRoutes());
-
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // 1. Load layouts from localStorage for each role level
-      const adminLayout = localStorage.getItem('litc_layout_components_IT_ADMIN') || localStorage.getItem('litc_layout_components');
-      const managerLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_MANAGER');
-      const userLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_USER');
-      const endUserLayout = localStorage.getItem('litc_layout_components_END_USER');
-
-      // 2. Parse layouts
-      let adminList: any[] = [];
-      try { adminList = adminLayout ? JSON.parse(adminLayout) : []; } catch (e) {}
-
-      let managerList: any[] = [];
-      try { managerList = managerLayout ? JSON.parse(managerLayout) : []; } catch (e) {}
-
-      let userList: any[] = [];
-      try { userList = userLayout ? JSON.parse(userLayout) : []; } catch (e) {}
-
-      let endUserList: any[] = [];
-      try { endUserList = endUserLayout ? JSON.parse(endUserLayout) : []; } catch (e) {}
-
-      // Default layout config if no configurations found
-      const defaultLayoutConfig = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
-        { componentId: 'ticket_create', name: 'إنشاء تذكرة للمرسل', settings: { mandatoryAttachments: true, enableSLA: true, enableVoiceToText: true, showPriorityField: true, enableAttachments: true, maxAttachmentSizeMB: 5, allowedExtensions: 'pdf, jpg, png', injectedFields: customFields.map(f => f.id) } },
-        { componentId: 'ticket_inbox', name: 'التذاكر الواردة', settings: {} },
-        { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
-        { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
-        { componentId: 'admin_analytics', name: 'التحليل المركزي', settings: { dataScope: 'TEAM', filterDestDept: true, activeCharts: ['kpi_cards', 'bar_chart'], allowedFilters: [] } },
-        { componentId: 'admin_leaderboard', name: 'المقارنة', settings: { allowedDimensions: ['EMP_VS_EMP', 'DEPT_VS_DEPT'], allowedMetrics: ['VOLUME', 'SPEED', 'SLA'], displayModes: ['SIDE_BAR', 'VARIANCE_TABLE'] } },
-        { componentId: 'admin_archive', name: 'الأرشيف المركزي', settings: { archiveScope: 'Department_Only', allowCompletedClosedTickets: true, allowSupplementaryAdditionalTickets: true, enabledUIFilters: ['operator_name', 'end_user_name', 'issue_type', 'building_location'] } },
-        { componentId: 'admin_profile', name: 'الملف الشخصي', settings: { identityProvider: 'Microsoft_SSO', allowThemeCustomization: true } },
-        { componentId: 'admin_notifications', name: 'إعدادات الإشعارات والـ SLA', settings: { forceWhatsappCritical: true, lockSLAThresholds: false } },
-        { componentId: 'admin_sovereign_custody_ledger_v10', name: 'منظومة العُهد والمخازن السيادية الشاملة V10', settings: { allowedReportFilters: ['BY_ITEM_TYPE', 'BY_DATE_RANGE'], allowedReportColumns: ['SHOW_RECEIVER_IDENTITY', 'SHOW_VERIFICATION_STATUS'] } },
-        { componentId: 'admin_operational_console', name: 'قمرة إدارة الكيانات التشغيلية', settings: {} }
-      ];
-
-      // --- SUBMISSION TEMPLATE LOGIC ---
-      let submissionLayout: any[] = [];
-      try {
-        const templatesRaw = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
-        const roleMappingsRaw = localStorage.getItem('ROLE_SUBMISSION_MAPPINGS');
-        if (templatesRaw) {
-          const templates = JSON.parse(templatesRaw);
-          const mappings = roleMappingsRaw ? JSON.parse(roleMappingsRaw) : [];
-          
-          // Simulation: If a mapping exists for currentUserRole, use it. Else use default.
-          const mapping = mappings.find((m: any) => m.role === currentUserRole);
-          const activeTemplate = mapping 
-            ? templates.find((t: any) => t.id === mapping.templateId)
-            : templates.find((t: any) => t.isDefault);
-
-          if (activeTemplate && activeTemplate.components && activeTemplate.components.length > 0) {
-            submissionLayout = activeTemplate.components;
-          }
-        }
-      } catch(e) {}
-
-      // Perform cascading merge
-      const baseList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
-      const activeLayout = baseList.filter((c: any) => c.isActive);
-
-      let finalLayoutConfig = activeLayout.map((c: any) => {
-        const mergedProps = { ...c.properties };
-
-        // A. Apply Operational Manager overrides if role allows
-        const managerComp = managerList.find((mc: any) => mc.id === c.id);
-        if (managerComp && (currentUserRole === 'OPERATIONAL_MANAGER' || currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
-          Object.keys(managerComp.properties || {}).forEach(key => {
-            const rule = c.delegationConfig?.[key];
-            const ceiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (rule && rule.allow_override) || (ceiling && !ceiling.adminAbsoluteOverride && ceiling.allowedRoles?.includes('OPERATIONAL_MANAGER'));
-            if (isAllowedByAdmin) {
-              mergedProps[key] = managerComp.properties[key];
-            }
-          });
-        }
-
-        // B. Apply Operational User (Section Head) overrides
-        const userComp = userList.find((uc: any) => uc.id === c.id);
-        if (userComp && (currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
-          Object.keys(userComp.properties || {}).forEach(key => {
-            const adminRule = c.delegationConfig?.[key];
-            const adminCeiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && (adminCeiling.allowedRoles?.includes('OPERATIONAL_USER') || adminCeiling.allowedRoles?.includes('OPERATIONAL_MANAGER')));
-            
-            const managerCompObj = managerList.find((mc: any) => mc.id === c.id);
-            const managerRule = managerCompObj?.delegationConfig?.[key];
-            const isAllowedByManager = !managerCompObj || (managerRule && managerRule.allow_override);
-
-            if (isAllowedByAdmin && isAllowedByManager) {
-              mergedProps[key] = userComp.properties[key];
-            }
-          });
-        }
-
-        // C. Apply End User (Field Engineer) overrides
-        const endUserComp = endUserList.find((ec: any) => ec.id === c.id);
-        if (endUserComp && currentUserRole === 'END_USER') {
-          Object.keys(endUserComp.properties || {}).forEach(key => {
-            const adminRule = c.delegationConfig?.[key];
-            const adminCeiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && adminCeiling.allowedRoles?.includes('END_USER'));
-            if (isAllowedByAdmin) {
-              mergedProps[key] = endUserComp.properties[key];
-            }
-          });
-        }
-
-        return {
-          componentId: c.id,
-          name: c.name,
-          settings: mergedProps
-        };
-      });
-
-      // Ensure basic system utilities are present
-      const systemUtils = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
-        { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
-        { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
-      ];
-      
-      const combined = [...systemUtils];
-      finalLayoutConfig.forEach((item: any) => {
-        if (!combined.some(s => s.componentId === item.componentId)) {
-          combined.push(item);
-        }
-      });
-
-      // Override with Submission Template components
-      submissionLayout.forEach((subItem: any) => {
-        const existingIdx = combined.findIndex(c => c.componentId === subItem.id);
-        const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };
-        if (existingIdx >= 0) {
-          combined[existingIdx] = transformed;
-        } else {
-          combined.push(transformed);
-        }
-      });
-
-      setSchema({
-        version: "v43.5",
-        layoutConfig: combined
-      });
-      setLoading(false);
-    };
-    fetchSchema();
-  }, [currentUserRole]);
-
-  const getComponentSettings = (id: string) => {
-    return schema?.layoutConfig.find(c => c.componentId === id)?.settings || null;
-  };
-
-  const isComponentActive = (id: string) => {
-    return schema?.layoutConfig.some(c => c.componentId === id) ?? false;
-  };
+    setSavedRoutes(loadRoutes());
+  }, []);
 
   const glassPanel: React.CSSProperties = {
     background: 'rgba(255, 255, 255, 0.7)',
@@ -307,60 +119,6 @@ export const EmployeeWorkspace: React.FC = () => {
 
   const langSettings = getComponentSettings('tool_language_theme');
   const ticketCreateSettings = getComponentSettings('ticket_create');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFileError(null);
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const routeDef = savedRoutes.find(r => r.id === selectedRouteId);
-    const rules = routeDef?.formConfig || {};
-    const maxSizeMB = rules.maxAttachmentSizeMB || 5;
-    const allowedExts = (rules.allowedExtensions || '*').split(',').map((s: string) => s.trim().toLowerCase());
-
-    const validFiles = files.filter(file => {
-      const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > maxSizeMB) {
-        setFileError(`حجم الملف ${file.name} يتجاوز الحد المسموح (${maxSizeMB}MB)`);
-        return false;
-      }
-
-      if (!allowedExts.includes('*')) {
-        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
-        if (!allowedExts.includes(fileExt)) {
-          setFileError(`صيغة الملف ${file.name} غير مسموحة. المسموح: ${rules.allowedExtensions}`);
-          return false;
-        }
-      }
-      return true;
-    });
-
-    setSelectedFiles(prev => [...prev, ...validFiles]);
-  };
-  const removeFile = (idx: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleTicketSubmit = () => {
-    const rules = ticketCreateSettings || {};
-    const destinations = rules.destinationRoutes || ['IT_SUPPORT'];
-    
-    if (rules.mandatoryAttachments && selectedFiles.length === 0) {
-      alert('الرجاء إرفاق الملف الإلزامي قبل الإرسال.');
-      return;
-    }
-
-    const payload = {
-      title: 'تذكرة جديدة', // placeholder
-      fields: fieldValues,
-      destination_department_ids: destinations,
-      hasVoiceToText: isRecording,
-      hasAttachment: selectedFiles.length > 0
-    };
-
-    console.log('✅ تم إرسال التذكرة بنجاح بالخلفية:', payload);
-    alert('تم توجيه التذكرة إلى الأقسام التالية: \n' + destinations.join('\n'));
-  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f4f5f7 0%, #e1e5eb 100%)', color: '#172b4d', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", direction: 'rtl' }}>
@@ -457,224 +215,12 @@ export const EmployeeWorkspace: React.FC = () => {
         
         {/* Right Sidebar: Ticket Creator */}
         {isComponentActive('ticket_create') ? (
-          <aside style={{ ...glassPanel, alignSelf: 'start' }}>
-            {/* ═══ Route Selection Step ═══ */}
-            {!selectedRouteId ? (() => {
-              const activeRoutes = savedRoutes.filter(r => r.isActive);
-              const destinationRouteIds: string[] = ticketCreateSettings?.destinationRoutes || [];
-              // Show routes that admin has enabled on this interface, or all active if none specified
-              const visibleRoutes = destinationRouteIds.length > 0
-                ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
-                : activeRoutes;
-
-              if (visibleRoutes.length === 0) {
-                // Fallback: legacy plain form
-                return (
-                  <div>
-                    <h3 style={{ borderBottom: '2px solid #0052cc', display: 'inline-block', paddingBottom: '5px', marginBottom: '20px', color: '#0052cc', fontSize: '16px' }}>إنشاء بلاغ جديد</h3>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>عنوان البلاغ</label>
-                    <input type="text" style={inputStyle} placeholder="وصف موجز للمشكلة..." />
-                    <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل البلاغ</label>
-                    <textarea style={{ ...inputStyle, height: '100px', resize: 'none' }} placeholder="الرجاء وصف المشكلة بدقة..." />
-                    <button style={{ width: '100%', padding: '12px', background: 'linear-gradient(90deg, #0052cc 0%, #0065ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                      إرسال البلاغ فوراً
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <div>
-                  <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
-                  <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {visibleRoutes.map(route => (
-                      <div key={route.id}
-                        onClick={() => { setSelectedRouteId(route.id); setRouteFieldValues({}); setRouteDescription(''); setRouteSelectedTaxMain(''); setRouteSelectedTaxSub(''); setRouteSubmitSuccess(false); setSelectedFiles([]); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: `${route.color}0A`, cursor: 'pointer', transition: 'all 0.2s' }}
-                        onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(-3px)')}
-                        onMouseLeave={e => (e.currentTarget.style.transform = 'translateX(0)')}
-                      >
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{route.icon}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#172b4d' }}>{route.name}</div>
-                          {route.description && <div style={{ fontSize: 11, color: '#5e6c84', marginTop: 2 }}>{route.description}</div>}
-                          <div style={{ fontSize: 10, color: route.color, marginTop: 3, fontWeight: 600 }}>→ {route.targetDepartmentName}</div>
-                        </div>
-                        <div style={{ color: route.color, fontSize: 18 }}>›</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })() : (() => {
-              const route = savedRoutes.find(r => r.id === selectedRouteId)!;
-              if (!route) return null;
-              const taxEntry = route.formConfig.taxonomy?.find(t => t.id === routeSelectedTaxMain && t.isActive);
-
-              if (routeSubmitSuccess) {
-                return (
-                  <div style={{ textAlign: 'center', padding: '30px 10px' }}>
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#172b4d', marginBottom: 6 }}>تم إرسال طلبك بنجاح!</div>
-                    <div style={{ fontSize: 12, color: '#5e6c84', marginBottom: 20 }}>تم توجيه طلبك إلى {route.targetDepartmentName}</div>
-                    <button onClick={() => { setSelectedRouteId(null); setRouteSubmitSuccess(false); }}
-                      style={{ padding: '10px 20px', borderRadius: 10, background: route.color, color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      إرسال طلب آخر
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <div>
-                  {/* Route Header */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                    <button onClick={() => setSelectedRouteId(null)}
-                      style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.05)', border: 'none', fontSize: 12, cursor: 'pointer', color: '#5e6c84' }}>← رجوع</button>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{route.icon}</div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: route.color }}>{route.name}</div>
-                      <div style={{ fontSize: 10, color: '#5e6c84' }}>→ {route.targetDepartmentName}{route.targetDivisionName ? ` › ${route.targetDivisionName}` : ''}</div>
-                    </div>
-                  </div>
-
-
-
-                  {/* Taxonomy */}
-                  {route.formConfig.taxonomy && route.formConfig.taxonomy.length > 0 && (
-                    <>
-                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>نوع المشكلة <span style={{ color: '#ff5630' }}>*</span></label>
-                      <select style={inputStyle} value={routeSelectedTaxMain} onChange={e => { setRouteSelectedTaxMain(e.target.value); setRouteSelectedTaxSub(''); }}>
-                        <option value="">-- اختر نوع المشكلة --</option>
-                        {route.formConfig.taxonomy.filter(t => t.isActive).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                      </select>
-                      {taxEntry && taxEntry.subIssues && taxEntry.subIssues.length > 0 && (
-                        <>
-                          <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>المشكلة الفرعية</label>
-                          <select style={inputStyle} value={routeSelectedTaxSub} onChange={e => setRouteSelectedTaxSub(e.target.value)}>
-                            <option value="">-- اختر المشكلة الفرعية --</option>
-                            {taxEntry.subIssues.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                          </select>
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  {/* Custom Fields */}
-                  {route.formConfig.customFieldIds && route.formConfig.customFieldIds.length > 0 && customFields
-                    .filter(f => route.formConfig.customFieldIds.includes(f.id))
-                    .map(field => {
-                      const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                      const isReq = rdfs.find(r => r.fieldId === field.id)?.isRequired;
-                      const opts = field.dependsOn && field.dependencyMap && routeFieldValues[field.dependsOn]
-                        ? field.dependencyMap[routeFieldValues[field.dependsOn]] || field.options
-                        : field.options;
-                      return (
-                        <div key={field.id} style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
-                          <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>
-                            {field.name} {isReq && <span style={{ color: '#ff5630' }}>*</span>}
-                          </label>
-                          <select style={inputStyle} value={routeFieldValues[field.id] || ''} onChange={e => setRouteFieldValues({ ...routeFieldValues, [field.id]: e.target.value })}>
-                            <option value="">-- اختر --</option>
-                            {opts.map((opt: any) => {
-                              if (typeof opt === 'string') return <option key={opt} value={opt}>{opt}</option>;
-                              if (!opt.isActive) return null;
-                              return <option key={opt.id} value={opt.id}>{opt.label}</option>;
-                            })}
-                          </select>
-                        </div>
-                      );
-                    })
-                  }
-
-                  {/* Description */}
-                  {route.formConfig.showDescription && (
-                    <>
-                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
-                        وصف المشكلة {route.formConfig.mandatoryDescription && <span style={{ color: '#ff5630' }}>*</span>}
-                      </label>
-                      <textarea style={{ ...inputStyle, height: '90px', resize: 'none' }}
-                        placeholder="اكتب تفاصيل المشكلة هنا..."
-                        value={routeDescription}
-                        onChange={e => setRouteDescription(e.target.value)} />
-                    </>
-                  )}
-
-                  {/* Attachments */}
-                  {route.formConfig.showAttachments && (
-                    <div style={{ marginBottom: 12 }}>
-                      <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
-                        المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ff5630' }}>*</span>}
-                        <span style={{ fontSize: 10, color: '#AEAEB2', marginRight: 8, fontWeight: 400 }}>(الحد: {route.formConfig.maxAttachmentMB || 5}MB | {route.formConfig.attachmentTypes?.join(', ') || 'الكل'})</span>
-                      </label>
-                      <div style={{ position: 'relative', marginBottom: 8 }}>
-                        <input type="file" multiple onChange={handleFileChange}
-                          accept={route.formConfig.attachmentTypes?.map((t: string) => `.${t.toLowerCase()}`).join(',')}
-                          style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 2 }} />
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: 10, background: '#fafbfc', color: '#5e6c84', fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}>
-                          <span style={{ fontSize: 20 }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
-                        </div>
-                      </div>
-                      {fileError && <div style={{ color: '#ff5630', fontSize: 11, padding: '8px 12px', background: '#ffebe6', borderRadius: 8, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>⚠️ {fileError}</div>}
-                      {selectedFiles.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {selectedFiles.map((f, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#e3fcef', border: '1px solid #abf5d1', borderRadius: 8, fontSize: 12, animation: 'fadeIn 0.3s ease' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 16 }}>✅</span>
-                                <span style={{ color: '#172b4d', fontWeight: 600 }}>{f.name}</span>
-                                <span style={{ color: '#5e6c84', fontSize: 10 }}>({(f.size / 1024 / 1024).toFixed(2)} MB)</span>
-                              </div>
-                              <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#ff5630', cursor: 'pointer', fontWeight: 'bold', fontSize: 14, padding: '2px 6px', borderRadius: 4 }}>✕</button>
-                            </div>
-                          ))}
-                          <div style={{ fontSize: 11, color: '#36B37E', fontWeight: 600, textAlign: 'center', marginTop: 2 }}>📎 {selectedFiles.length} ملف مرفق بنجاح</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Submit */}
-                  <button
-                    onClick={() => {
-                      if (route.formConfig.mandatoryDescription && !routeDescription.trim()) { alert('وصف المشكلة إلزامي لهذا المسار.'); return; }
-                      if (route.formConfig.mandatoryAttachments && selectedFiles.length === 0) { alert('المرفق إلزامي لهذا المسار.'); return; }
-                      
-                      const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                      const missingFields = rdfs.filter(r => r.isRequired && !routeFieldValues[r.fieldId]);
-                      if (missingFields.length > 0) {
-                        const firstMissing = customFields.find(f => f.id === missingFields[0].fieldId);
-                        alert(`يرجى إدخال الحقل الإلزامي: ${firstMissing?.name}`);
-                        return;
-                      }
-
-                      const generatedTitle = Object.values(routeFieldValues).filter(Boolean).join(' - ') || route.name;
-                      
-                      // --- Historical Snapshot Capture ---
-                      const historicalSnapshot = {
-                        mainIssueLabel: taxEntry?.label || routeSelectedTaxMain,
-                        subIssueLabel: taxEntry?.subIssues?.find(s => s.id === routeSelectedTaxSub)?.label || routeSelectedTaxSub,
-                        customFieldsLabels: Object.keys(routeFieldValues).reduce((acc, fieldId) => {
-                          const field = customFields.find(f => f.id === fieldId);
-                          const selectedOpt = field?.options?.find((o: any) => o.id === routeFieldValues[fieldId]);
-                          acc[field?.name || fieldId] = selectedOpt?.label || routeFieldValues[fieldId];
-                          return acc;
-                        }, {} as Record<string, string>)
-                      };
-                      // ------------------------------------
-
-                      console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: generatedTitle, description: routeDescription, customFields: routeFieldValues, attachments: selectedFiles.map(f => f.name), captured_historical_data: historicalSnapshot });
-                      setRouteSubmitSuccess(true);
-                    }}
-                    style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 15px ${route.color}44`, fontSize: 14, marginTop: 4 }}
-                  >
-                    إرسال الطلب {route.icon}
-                  </button>
-                </div>
-              );
-            })()}
-          </aside>
+          <TicketCreatorForm
+            customFields={customFields}
+            ticketCreateSettings={ticketCreateSettings}
+            glassPanelStyle={glassPanel}
+            inputStyle={inputStyle}
+          />
         ) : (
           <aside style={{ ...glassPanel, alignSelf: 'start', opacity: 0.5, textAlign: 'center' }}>
             <span style={{ display: 'block', padding: '40px 0' }}>مكون إنشاء التذاكر معطل من قبل النظام.</span>

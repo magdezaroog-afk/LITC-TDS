@@ -7,19 +7,19 @@ import React from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './engine/ui-loader/ThemeProvider';
 import { AuthProvider, useAuth } from './engine/auth/AuthContext';
-import { OperationalDashboard } from './components/dashboard/OperationalDashboard';
-import { AdminGovernanceConsole } from './components/admin/AdminGovernanceConsole';
+import { OperationalDashboard } from './pages/console/OperationalDashboard';
+import { AdminGovernanceConsole } from './pages/admin/AdminGovernanceConsole';
 import { UserProfileConsole } from './components/profile/UserProfileConsole';
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { OperationalEntitiesConsole } from './components/admin/OperationalEntitiesConsole';
-import { NotificationPolicyConsole } from './components/admin/NotificationPolicyConsole';
-import { SecurityControlTab } from './components/admin/tabs/SecurityControlTab';
+import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
+import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
+import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
 import { FloatingAIBot } from './components/bot/FloatingAIBot';
-import { EmployeeWorkspace } from './components/dashboard/EmployeeWorkspace';
-import { DepartmentHeadWorkspace } from './components/dashboard/DepartmentHeadWorkspace';
+import { EmployeeWorkspace } from './pages/workspace/EmployeeWorkspace';
+import { DepartmentHeadWorkspace } from './pages/management/DepartmentHeadWorkspace';
 import { SystemModeToggle } from './components/molecules/SystemModeToggle';
 
 // Route Guard Component
