@@ -648,19 +648,7 @@ export function UILayoutEngineTab() {
             >
               ✏️ تعديل الاسم
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(88,86,214,0.08)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(88,86,214,0.15)' }}>
-              <label style={{ fontSize: '12px', fontWeight: '700', color: '#5856D6', margin: 0 }}> دور الباني النشط (Builder Role):</label>
-              <select 
-                value={currentBuilderRole} 
-                onChange={(e) => setCurrentBuilderRole(e.target.value as CoreRole)} 
-                style={{ background: 'transparent', border: 'none', color: '#1D1D1F', fontSize: '12px', fontWeight: '700', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                <option value="IT_ADMIN">💻 IT Admin</option>
-                <option value="OPERATIONAL_MANAGER">📊 Operational Manager</option>
-                <option value="OPERATIONAL_USER">🛠️ Operational User</option>
-                <option value="END_USER">👤 End User</option>
-              </select>
-            </div>
+            
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
@@ -677,10 +665,8 @@ export function UILayoutEngineTab() {
 
         <DragDropContext onDragEnd={onDragEnd}>
           <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '16px', height: 'calc(100vh - 160px)', width: '100%', position: 'relative' }}>
-
-            {/* ── LEFT PANEL: Repository + Inspector ── */}
+            {/* ── RIGHT COLUMN (RTL Col 1): Repository + Active Mapped Components ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
-
               {/* Component Repository */}
               <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0, maxHeight: '50%', minHeight: '260px', display: 'flex', flexDirection: 'column' }}>
                 <style>{`
@@ -777,7 +763,1033 @@ export function UILayoutEngineTab() {
                   )}
                 </Droppable>
               </div>
+              
+              {/* Modern Dynamic Navigation Panel (Active Components Sidebar) - Outside device frame */}
+              <div style={{ width: '100%', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '8px' }}>
+              <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المكونات النشطة</span>
+              <span style={{ fontSize: '10px', background: '#E5E5EA', color: '#6E6E73', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>{activeComponents.length}</span>
+            </div>
+            
+            <Droppable droppableId="active-canvas">
+              {(provided, snapshot) => (
+                <div 
+                  ref={provided.innerRef} 
+                  {...provided.droppableProps}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.04)' : 'transparent', borderRadius: '16px', transition: 'all 0.3s', overflowY: 'auto' }}
+                  className="scrollbar-thin"
+                >
+                  {activeComponents.map((c, index) => (
+                    <Draggable key={c.id} draggableId={c.id} index={index}>
+                      {(provided, snapshot) => {
+                        const isActive = previewActiveTab === c.id;
+                        return (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
+                            style={{
+                              padding: '12px 14px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
+                              background: isActive ? '#FFFFFF' : snapshot.isDragging ? '#FFFFFF' : 'transparent',
+                              color: isActive ? '#1D1D1F' : '#6E6E73',
+                              border: isActive ? '1px solid rgba(88,86,214,0.15)' : '1px solid transparent',
+                              boxShadow: isActive ? '0 4px 14px rgba(88,86,214,0.08)' : snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.1)' : 'none',
+                              transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                              transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
+                              fontWeight: isActive ? '700' : '600',
+                              fontSize: '13px',
+                              ...provided.draggableProps.style
+                            }}
+                            onMouseEnter={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.6)' }}
+                            onMouseLeave={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent' }}
+                          >
+                            <div style={{ 
+                              width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
+                              background: isActive ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : '#F5F5F7',
+                              color: isActive ? '#FFF' : '#8E8E93',
+                              boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
+                              transition: 'all 0.3s'
+                            }}>
+                              {c.category === 'employee_workspace' ? '📝' : c.category === 'technical_support_console' ? '🛠' : c.category === 'operations_and_management' ? '📊' : '🛡'}
+                            </div>
+                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                            {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
+                          </div>
+                        );
+                      }}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
+            </div>
 
+            {/* ── LEFT COLUMN (RTL Col 2): Live Preview Canvas + Component Inspector ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
+              {/* Device Simulator Workspace */}
+              <div style={{ 
+            flex: 1, minHeight: 0, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            background: 'radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%)', 
+            borderRadius: '16px', 
+            border: '1px solid rgba(0,0,0,0.06)',
+            padding: '24px', 
+            overflow: 'auto',
+            position: 'relative',
+            height: '100%',
+            minHeight: '600px'
+          }}>
+            {/* Device Container Frame */}
+            <div style={{
+              width: previewDevice === 'mobile' ? '360px' : previewDevice === 'tablet' ? '580px' : '100%',
+              maxWidth: previewDevice === 'desktop' ? '950px' : 'none',
+              height: previewDevice === 'mobile' ? '680px' : previewDevice === 'tablet' ? '730px' : '580px',
+              borderRadius: previewDevice === 'mobile' ? '40px' : previewDevice === 'tablet' ? '28px' : '12px',
+              border: previewDevice === 'mobile' ? '12px solid #1D1D1F' : previewDevice === 'tablet' ? '14px solid #1D1D1F' : '4px solid #1D1D1F',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 8px rgba(0,0,0,0.8)',
+              backgroundColor: '#FFFFFF',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              
+              {/* Device Top Decoration (Notch/Camera/macOS title bar) */}
+              {previewDevice === 'mobile' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '120px',
+                  height: '22px',
+                  background: '#1D1D1F',
+                  borderRadius: '0 0 14px 14px',
+                  zIndex: 100,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}>
+                  {/* Speaker Grill */}
+                  <div style={{ width: '45px', height: '3px', background: '#3A3A3C', borderRadius: '1.5px' }}></div>
+                  {/* Camera lens */}
+                  <div style={{ width: '6px', height: '6px', background: '#0D0D11', border: '1px solid #2C2C2E', borderRadius: '50%' }}></div>
+                </div>
+              )}
+
+              {previewDevice === 'tablet' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '4px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '8px',
+                  height: '8px',
+                  background: '#1D1D1F',
+                  borderRadius: '50%',
+                  zIndex: 100,
+                  border: '1px solid #334155'
+                }}></div>
+              )}
+
+              {previewDevice === 'desktop' && (
+                <div style={{ 
+                  height: '36px', 
+                  background: '#E8E8ED', 
+                  borderBottom: '1px solid rgba(0,0,0,0.08)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  padding: '0 12px', 
+                  gap: '8px',
+                  userSelect: 'none',
+                  position: 'relative',
+                  flexShrink: 0
+                }}>
+                  {/* Window Controls */}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FF5F56', border: '0.5px solid #E0443E' }}></div>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FFBD2E', border: '0.5px solid #DEA123' }}></div>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27C93F', border: '0.5px solid #1AAB2F' }}></div>
+                  </div>
+                  {/* Window Title */}
+                  <div style={{ 
+                    position: 'absolute',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '11px', 
+                    fontWeight: 'bold', 
+                    color: '#6E6E73',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    🖥️ معاينة شاشة الكمبيوتر
+                  </div>
+                </div>
+              )}
+
+              {/* Viewport Content Container */}
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%', position: 'relative' }}>
+                
+                {/* Simulated App Top Navbar */}
+                <div style={{ 
+                  height: '52px', 
+                  background: 'rgba(255, 255, 255, 0.8)', 
+                  backdropFilter: 'blur(20px)', 
+                  WebkitBackdropFilter: 'blur(20px)', 
+                  borderBottom: '1px solid rgba(0,0,0,0.05)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  padding: previewDevice === 'mobile' ? '0 16px' : '0 24px', 
+                  justifyContent: 'space-between', 
+                  gap: '10px', 
+                  zIndex: 200,
+                  flexShrink: 0,
+                  position: 'relative'
+                }}>
+                  {/* Brand logo/title */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #007AFF, #5856D6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '12px', fontWeight: '800' }}>L</div>
+                    <span style={{ fontSize: '13px', fontWeight: '800', color: '#1D1D1F' }}>قمرة التشغيل</span>
+                  </div>
+
+                  {/* Top Navbar items */}
+                  <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                    
+                    {/* Bell Notification Icon */}
+                    {activeComponents.some(c => c.id === 'admin_notifications') && (
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => {
+                            setShowNotificationsDropdown(!showNotificationsDropdown);
+                            setShowProfileDropdown(false);
+                          }}
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showNotificationsDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
+                          }}
+                          title="الإشعارات والتنبيهات"
+                        >
+                          🔔
+                          <span style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#FF3B30', border: '1.5px solid #FFF' }}></span>
+                        </button>
+
+                        {/* Glassmorphic Notifications Dropdown */}
+                        {showNotificationsDropdown && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '44px',
+                            left: '0',
+                            width: '280px',
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '14px',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                            padding: '12px',
+                            zIndex: 1000,
+                            textAlign: 'right',
+                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '8px', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>مركز التنبيهات الحية</span>
+                              <span style={{ fontSize: '10px', color: '#007AFF', cursor: 'pointer' }} onClick={() => setShowNotificationsDropdown(false)}>إغلاق</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {(() => {
+                                const getRoleNotifications = () => {
+                                  if (previewRole === 'Super_Admin') {
+                                    return [
+                                      { title: '🔒 تحديث أمني ناجح للنظام', desc: 'تم تطبيق الحزمة الأمنية v43.5.2 بنجاح.', time: 'منذ ساعة', unread: false },
+                                      { title: '⚠️ محاولة تسجيل دخول مريبة', desc: 'تم رصد محاولة دخول من عنوان IP غير معروف.', time: 'منذ ساعتين', unread: true },
+                                      { title: '⚙️ استقرار خادم قاعدة البيانات', desc: 'استهلاك الذاكرة الإجمالي مستقر عند 42%.', time: 'منذ 4 ساعات', unread: false }
+                                    ];
+                                  } else if (previewRole === 'Dept_Head') {
+                                    return [
+                                      { title: '📥 تذكرة جديدة غير مسندة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT في انتظار الإسناد.', time: 'منذ دقيقة', unread: true },
+                                      { title: '⏰ SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية لفريق الشبكات.', time: 'منذ 5 دقائق', unread: true },
+                                      { title: '🤝 تأكيد تحويل تذكرة #TKT-0883', desc: 'وافق م. خليل على إدارة التذكرة المحولة له.', time: 'منذ ساعتين', unread: false }
+                                    ];
+                                  } else {
+                                    // Field_Engineer or default
+                                    return [
+                                      { title: '🛠️ تم إسناد تذكرة جديدة لك #TKT-1029', desc: 'الرجاء فحص عطل شبكة HQ IT والتوجه للموقع.', time: 'منذ دقيقة', unread: true },
+                                      { title: '⚠️ أولوية التذكرة #TKT-0994 مرتفعة', desc: 'تحديث حالة المعالجة لتجنب خرق مؤشر SLA.', time: 'منذ 5 دقائق', unread: true },
+                                      { title: '📝 رسالة جديدة من العميل', desc: 'تم إضافة مرفق جديد لتفاصيل التذكرة #TKT-1029.', time: 'منذ ساعة', unread: false }
+                                    ];
+                                  }
+                                };
+                                return getRoleNotifications().map((item, idx) => (
+                                  <div key={idx} style={{ padding: '8px', borderRadius: '8px', background: item.unread ? 'rgba(0,122,255,0.05)' : 'transparent', borderBottom: '0.5px solid rgba(0,0,0,0.03)', cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: '700', color: item.unread ? '#007AFF' : '#1D1D1F' }}>{item.title}</span>
+                                      <span style={{ fontSize: '9px', color: '#8E8E93' }}>{item.time}</span>
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#6E6E73', marginTop: '2px' }}>{item.desc}</div>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Profile Icon */}
+                    {activeComponents.some(c => c.id === 'admin_profile') && (
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => {
+                            setShowProfileDropdown(!showProfileDropdown);
+                            setShowNotificationsDropdown(false);
+                          }}
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showProfileDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
+                          }}
+                          title="الملف الشخصي"
+                        >
+                          👤
+                        </button>
+
+                        {/* Glassmorphic Profile Dropdown */}
+                        {showProfileDropdown && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '44px',
+                            left: '0',
+                            width: '220px',
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '14px',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                            padding: '12px',
+                            zIndex: 1000,
+                            textAlign: 'right',
+                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: '8px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#5856D6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', fontSize: '14px' }}>M</div>
+                              <div>
+                                <div style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>majdi.alzarrouk</div>
+                                <div style={{ fontSize: '10px', color: '#8E8E93' }}>{previewRole}</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {['الملف الشخصي', 'إعدادات الحساب', 'تسجيل الخروج'].map((opt, i) => (
+                                <div key={opt} style={{ padding: '8px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: i === 2 ? '#FF3B30' : '#1D1D1F', cursor: 'pointer', background: 'transparent', transition: 'background 0.2s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  onClick={() => setShowProfileDropdown(false)}
+                                >
+                                  {opt}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* Viewport Scrollable Screen Content */}
+                <div 
+                  style={{ 
+                    flex: 1, minHeight: 0, 
+                    background: '#F9FAFB', 
+                    padding: previewDevice === 'mobile' ? '16px' : '24px', 
+                    overflowY: 'auto', 
+                    paddingBottom: '80px',
+                    position: 'relative'
+                  }} 
+                  className="admin-scroll"
+                  onClick={() => {
+                    // Close dropdowns when clicking outside
+                    setShowNotificationsDropdown(false);
+                    setShowProfileDropdown(false);
+                  }}
+                >
+                  
+                  {(() => {
+                    const mainComponents = activeComponents.filter(c => c.target_zone === 'Main_Viewport' || !c.target_zone);
+
+                    if (mainComponents.length === 0) {
+                      return (
+                        <div style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#AEAEB2', gap: '16px' }}>
+                          <div style={{ width: '64px', height: '64px', background: '#F5F5F7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>⚙️</div>
+                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1D1D1F' }}>لا توجد مكونات نشطة بمساحة العرض</div>
+                          <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>قم بتفعيل المكونات في قائمة "المكونات النشطة" لتظهر فوراً في المعاينة.</div>
+                        </div>
+                      );
+                    }
+
+                    // Render component preview block helper
+                    const renderComponent = (c: UIComponentDefinition) => {
+                      switch (c.id) {
+                                                case 'ticket_create': {
+                          const tProps = c.properties || {};
+                          const destinationRouteIds: string[] = tProps.destinationRoutes || [];
+                          
+                          const activeRoutes = savedRoutes.filter(r => r.isActive);
+                          const visibleRoutes = destinationRouteIds.length > 0
+                            ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
+                            : activeRoutes;
+
+                          if (!previewSelectedRouteId) {
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                <button 
+                                  onClick={() => {
+                                    if (visibleRoutes.length === 1) {
+                                      setPreviewSelectedRouteId(visibleRoutes[0].id);
+                                    } else {
+                                      setPreviewSelectedRouteId('ROUTE_SELECTION');
+                                    }
+                                  }}
+                                  style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}>
+                                  + إنشاء تذكرة جديدة
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          if (previewSelectedRouteId === 'ROUTE_SELECTION') {
+                            if (visibleRoutes.length === 0) {
+                              return (
+                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                  <div style={{ color: '#FF3B30', fontWeight: 'bold' }}>لا توجد مسارات تذاكر متاحة</div>
+                                  <p style={{ fontSize: '12px', color: '#6E6E73' }}>يرجى إضافة مسارات مسموحة من خصائص المكون.</p>
+                                  <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', marginTop: '10px' }}>← إلغاء</button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px' }}>
+                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
+                                <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
+                                <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                  {visibleRoutes.map(route => (
+                                    <div key={route.id}
+                                      onClick={() => setPreviewSelectedRouteId(route.id)}
+                                      style={{ padding: '16px', borderRadius: '8px', border: '2px solid transparent', background: 'linear-gradient(to right, rgba(0,82,204,0.02), rgba(0,101,255,0.02))', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${route.colorCode || '#0052cc'}15`, color: route.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                          {route.icon || '📄'}
+                                        </div>
+                                        <div>
+                                          <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#172b4d' }}>{route.name}</h4>
+                                          <div style={{ fontSize: '11px', color: '#5e6c84' }}>{route.description || 'اضغط لإنشاء هذا الطلب'}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          const routeDef = savedRoutes.find(r => r.id === previewSelectedRouteId);
+                          if (!routeDef) {
+                            return (
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
+                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
+                                <div style={{ color: '#FF3B30' }}>خطأ: لم يتم العثور على المسار</div>
+                              </div>
+                            );
+                          }
+
+                          const renderDynamicFieldsPreview = () => {
+                            const rdfs = routeDef.formConfig?.routeDynamicFields || (routeDef.formConfig?.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
+                            const fields = previewDynamicFields.filter(f => rdfs.some(r => r.fieldId === f.id));
+                            if (!fields || fields.length === 0) return null;
+                            return fields.map((f, i) => {
+                              const isReq = rdfs.find(r => r.fieldId === f.id)?.isRequired;
+                              return (
+                                <div key={i} style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>{f.name} {isReq && <span style={{color:'red'}}>*</span>}</label>
+                                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none' }}>
+                                    <option>-- اختر --</option>
+                                    {f.options?.map((o: string, idx: number) => <option key={idx}>{o}</option>)}
+                                  </select>
+                                </div>
+                              );
+                            });
+                          };
+
+                          return (
+                            <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                              <button 
+                                onClick={() => setPreviewSelectedRouteId(visibleRoutes.length > 1 ? 'ROUTE_SELECTION' : null)}
+                                style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>
+                                ← العودة
+                              </button>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #dfe1e6' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: `${routeDef.colorCode || '#0052cc'}15`, color: routeDef.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{routeDef.icon || '📄'}</div>
+                                <div>
+                                  <h3 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>{routeDef.name}</h3>
+                                  <div style={{ fontSize: '11px', color: '#5e6c84' }}>توجيه إلى: {routeDef.targetDepartmentId}</div>
+                                </div>
+                              </div>
+                              
+
+                              {renderDynamicFieldsPreview()}
+
+                              {routeDef.formConfig?.showDescription && (
+                                <div style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل إضافية {routeDef.formConfig?.mandatoryDescription && <span style={{color:'red'}}>*</span>}</label>
+                                  <textarea style={{ width: '100%', padding: '10px 12px', minHeight: '80px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none', resize: 'vertical' }} placeholder="الرجاء الوصف بدقة..." />
+                                </div>
+                              )}
+                              
+                              {routeDef.formConfig?.showAttachments && (
+                                <div style={{ marginBottom: '15px' }}>
+                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>المرفقات {routeDef.formConfig?.mandatoryAttachments && <span style={{color:'red'}}>*</span>}</label>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: '10px', background: '#fafbfc', color: '#5e6c84', fontSize: '13px', fontWeight: 500 }}>
+                                    <span style={{ fontSize: '20px' }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
+                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>(الحد: {routeDef.formConfig.maxAttachmentSizeMB || 5}MB)</span>
+                                  </div>
+                                </div>
+                              )}
+
+
+                              <button 
+                                onClick={() => {
+                                    alert('تم الإرسال بنجاح (محاكاة)!');
+                                    setPreviewSelectedRouteId(null);
+                                }}
+                                style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${routeDef.colorCode || '#0052cc'} 0%, ${routeDef.colorCode || '#0052cc'}dd 100%)`, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                إرسال الطلب
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        case 'ticket_inbox': {
+                          const p = c.properties || {};
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>قائمة التذاكر المرسلة</h4>
+                                {p.allowCancellation && (
+                                  <span style={{ fontSize: '11px', color: '#FF3B30', background: '#FFF1F0', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>إمكانية الإلغاء مفعلة</span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {[
+                                  { id: 'TKT-1002', title: 'شاشة حاسوب معطلة', date: 'منذ ساعتين', status: 'مفتوحة' },
+                                  { id: 'TKT-0994', title: 'طلب صلاحية للشبكة', date: 'أمس', status: 'محلولة' }
+                                ].map(t => (
+                                  <div key={t.id} style={{ padding: '14px', background: '#F5F5F7', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
+                                    <div>
+                                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{t.title}</div>
+                                      <div style={{ fontSize: '11px', color: '#8E8E93', marginTop: '4px' }}>{t.id} • {t.date}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <span style={{ 
+                                        padding: '4px 8px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '11px', 
+                                        fontWeight: '700',
+                                        background: t.status === 'مفتوحة' ? '#E5F1FF' : '#E8F5E9',
+                                        color: t.status === 'مفتوحة' ? '#007AFF' : '#34C759'
+                                      }}>
+                                        {t.status}
+                                      </span>
+                                      {p.allowCancellation && t.status === 'مفتوحة' && (
+                                        <button style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: '#FF3B30', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>إلغاء ❌</button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_operational_console': {
+                          const p = c.properties || {};
+                          const snatching = p.snatchingGovernance || false;
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>لوحة التذاكر الواردة</h4>
+                                
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
+                                  {['الجديدة', 'قيد المعالجة', 'معلقة', 'مغلقة'].map((tab, i) => (
+                                     <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? '#E5F1FF' : 'transparent', color: i===0 ? '#007AFF' : '#6E6E73', fontSize: '13px', fontWeight: i===0 ? '700' : '500', cursor: 'pointer' }}>
+                                        {tab}
+                                     </div>
+                                  ))}
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10294</div>
+                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
+                                    </div>
+                                    {snatching && (
+                                      <button style={{ padding: '8px 14px', background: '#FFF1F0', color: '#FF3B30', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>سحب التذكرة ✋</button>
+                                    )}
+                                  </div>
+                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10295</div>
+                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>تحديث النظام - جديدة</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'quick_actions_panel': {
+                          const p = c.properties || {};
+                          const handshake = p.enableHandshakeTransfer || false;
+                          const depLock = p.enableDependencyLock || false;
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>الإجراءات السريعة (Quick Actions)</h4>
+                                
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                  <button style={{ padding: '12px 18px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,122,255,0.2)' }}>
+                                    إسناد لنفسي 🙋‍♂️
+                                  </button>
+                                  
+                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                                    تحويل التذكرة {handshake && <span style={{ color: '#FF9500', fontSize: '11px', marginInlineStart: '5px' }}>(مشروط 🤝)</span>}
+                                  </button>
+
+                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                                    إنشاء تذكرة فرعية {depLock && <span style={{ color: '#FF3B30', fontSize: '11px', marginInlineStart: '5px' }}>(قفل الاعتماد 🔒)</span>}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                                {handshake ? (
+                                   <div style={{ position: 'relative', zIndex: 1 }}>
+                                     <h5 style={{ margin: '0 0 10px 0', color: '#FF9500', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                                        <span style={{ fontSize: '18px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
+                                     </h5>
+                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة معلقة.</p>
+                                     <div style={{ display: 'flex', gap: '10px' }}>
+                                       <select style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }}>
+                                         <option>اختر الزميل...</option>
+                                         <option>م. خليل (فريق الشبكات)</option>
+                                       </select>
+                                       <button style={{ padding: '12px 24px', background: '#FF9500', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)' }}>إرسال طلب التحويل</button>
+                                     </div>
+                                   </div>
+                                ) : depLock ? (
+                                   <div style={{ position: 'relative', zIndex: 1 }}>
+                                     <h5 style={{ margin: '0 0 10px 0', color: '#007AFF', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
+                                        <span style={{ fontSize: '18px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي
+                                     </h5>
+                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#FF3B30' }}>(معلقة)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
+                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                       <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }} />
+                                       <button style={{ alignSelf: 'flex-end', padding: '12px 24px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 122, 255, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
+                                     </div>
+                                   </div>
+                                ) : (
+                                   <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#AEAEB2', fontSize: '13px', padding: '20px' }}>
+                                     قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من خصائص المكون لرؤية النوافذ التفاعلية.
+                                   </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_analytics': {
+                          const p = c.properties || {};
+                          const isOverride = p.adminOverride || false;
+                          const isSectionHead = previewRole === 'Dept_Head';
+                          const drilldown = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowEngineerDrilldown);
+                          const locationF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowLocationFilter);
+                          const taxF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowTaxonomyFilter);
+                          const activeCharts = p.activeCharts || ['kpi_cards', 'bar_chart'];
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ padding: '24px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+                                <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1D1D1F', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
+                                  <span>لوحة التحليل المركزي (OLAP Engine)</span>
+                                  {isOverride && <span style={{ fontSize: '11px', background: '#FFF1F0', color: '#FF3B30', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>تجاوز المشرف النشط</span>}
+                                </h4>
+                                
+                                <div style={{ display: 'flex', gap: '15px', marginBottom: '24px' }}>
+                                  {locationF ? (
+                                    <select style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>📍 تصفية حسب المبنى</option>
+                                      <option>المبنى الرئيسي (طرابلس)</option>
+                                      <option>فرع بنغازي</option>
+                                    </select>
+                                  ) : (
+                                    <div style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>
+                                  )}
+                                  
+                                  {taxF ? (
+                                    <select style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>🗂️ تصفية حسب التصنيف</option>
+                                      <option>أعطال تقنية</option>
+                                      <option>أعطال تشغيلية</option>
+                                    </select>
+                                  ) : (
+                                    <div style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية التصنيفات مقفلة</div>
+                                  )}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                  <div style={{ flex: 2, minWidth: '280px', height: '220px', background: '#F9F9FB', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '32px' }}>📊</span>
+                                    <span style={{ fontWeight: '600', color: '#6E6E73' }}>مؤشرات الأداء الزمنية</span>
+                                  </div>
+                                  
+                                  <div style={{ flex: 1, minHeight: 0, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    {drilldown ? (
+                                      <div style={{ flex: 1, minHeight: 0, background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px' }}>🏆 أفضل المهندسين أداءً</span>
+                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
+                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
+                                      </div>
+                                    ) : (
+                                      <div style={{ flex: 1, minHeight: 0, background: '#FFF1F0', borderRadius: '12px', border: '1px solid #FECACA', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FF3B30', textAlign: 'center' }}>
+                                        <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
+                                        <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
+                                        <span style={{ fontSize: '10px', marginTop: '4px' }}>بناءً على قيود الصلاحية</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                {activeCharts.includes('kpi_cards') && (
+                                  <div style={{ flex: 1, minHeight: 0, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>إجمالي التذاكر (المحلولة)</span>
+                                    <strong style={{ fontSize: '20px', color: '#1D1D1F', marginTop: '4px' }}>243</strong>
+                                  </div>
+                                )}
+                                {activeCharts.includes('line_chart') && (
+                                  <div style={{ flex: 1, minHeight: 0, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>معدّل سرعة الاستجابة</span>
+                                    <strong style={{ fontSize: '20px', color: '#007AFF', marginTop: '4px' }}>18 دقيقة</strong>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_leaderboard': {
+                          const p = c.properties || {};
+                          const maxElements = p.maxComparisonElements || 3;
+                          const types = p.allowedComparisonTypes || ['ENGINEERS'];
+                          const activeType = types[0] || 'ENGINEERS';
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
+                                {types.map((t: string) => (
+                                  <div key={t} style={{ padding: '8px 18px', background: t === activeType ? '#5856D6' : '#F5F5F7', color: t === activeType ? '#FFFFFF' : '#6E6E73', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${t === activeType ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, transition: 'all 0.2s' }}>
+                                    {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
+                                  </div>
+                                ))}
+                                {types.length === 0 && <span style={{ fontSize: '13px', color: '#FF3B30' }}>لا توجد مقارنات مسموحة</span>}
+                              </div>
+
+                              <div style={{ height: '240px', padding: '20px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '15px', justifyContent: 'flex-end', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+                                <div style={{ fontSize: '13px', color: '#1D1D1F', fontWeight: '700' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'المهندسين' : activeType === 'LOCATIONS' ? 'المباني' : 'المشاكل'})</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
+                                   {['أحمد', 'محمد', 'علي'].map((name, idx) => (
+                                     <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1, minHeight: 0, height: '100%', justifyContent: 'flex-end' }}>
+                                       <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
+                                          {Array.from({ length: Math.min(3, maxElements) }).map((_, barIdx) => {
+                                             const colors = [['#5856D6', '#AF52DE'], ['#007AFF', '#34C759'], ['#FF9500', '#FF3B30']];
+                                             const color = colors[barIdx % colors.length];
+                                             const h = 30 + Math.random() * 60;
+                                             return (
+                                               <div key={barIdx} style={{ width: '14px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '4px 4px 0 0', opacity: 0.9, transition: 'all 0.5s' }}></div>
+                                             );
+                                          })}
+                                       </div>
+                                       <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '600' }}>{name}</span>
+                                     </div>
+                                   ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        case 'admin_archive': {
+                          const p = c.properties || {};
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  {(p.enabledUIFilters || ['التاريخ', 'الحالة']).map((filter: string, idx: number) => (
+                                    <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }}>
+                                      <option>تصفية: {filter}</option>
+                                    </select>
+                                  ))}
+                                </div>
+                                {p.enableHistoricalExport && (
+                                  <button style={{ padding: '10px 18px', background: '#34C759', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(52, 199, 89, 0.3)' }}>
+                                    تصدير التقرير 📥
+                                  </button>
+                                )}
+                              </div>
+                              
+                              <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                  <thead style={{ background: '#F5F5F7', textAlign: 'right', fontSize: '13px', color: '#6E6E73' }}>
+                                    <tr>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>رقم التذكرة</th>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>التصنيف</th>
+                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>الحالة التاريخية</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody style={{ fontSize: '14px', color: '#1D1D1F' }}>
+                                    {[1, 2].map(row => (
+                                      <tr key={row} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                        <td style={{ padding: '16px 20px', fontWeight: '500' }}>#TKT-2026-00{row}</td>
+                                        <td style={{ padding: '16px 20px' }}>عطل تقني متقدم</td>
+                                        <td style={{ padding: '16px 20px' }}>
+                                          <span style={{ padding: '4px 10px', background: '#E8F5E9', color: '#34C759', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>مغلقة نهائياً</span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {p.enableTimelineAuditLog && (
+                                <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRight: '4px solid #007AFF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
+                                  <div style={{ fontSize: '13px', color: '#6E6E73', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#007AFF' }}/> 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        default:
+                          return (
+                            <div style={{ padding: '20px', background: '#F5F5F7', borderRadius: '12px', border: '1px dashed rgba(0,0,0,0.1)', textAlign: 'center', color: '#8E8E93', fontSize: '13px' }}>
+                              ⚙️ مكون "{c.name}" - جاهز للعمل.
+                            </div>
+                          );
+                      }
+                    };
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s ease' }}>
+                        
+                        {/* Segmented View Mode Controller (Stack vs Tabs) */}
+                        <div style={{ 
+                          display: 'flex', 
+                          background: 'rgba(118, 118, 128, 0.12)', 
+                          borderRadius: '10px', 
+                          padding: '2px', 
+                          gap: '2px', 
+                          alignItems: 'center', 
+                          width: '100%',
+                          maxWidth: '280px',
+                          alignSelf: 'center',
+                          direction: 'rtl'
+                        }}>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('stack'); }}
+                            style={{ 
+                              flex: 1, minHeight: 0, 
+                              padding: '6px 12px', 
+                              border: 'none', 
+                              borderRadius: '8px', 
+                              fontSize: '11px', 
+                              fontWeight: '700', 
+                              cursor: 'pointer', 
+                              background: simulatorViewMode === 'stack' ? '#FFFFFF' : 'transparent',
+                              color: simulatorViewMode === 'stack' ? '#1D1D1F' : '#6E6E73',
+                              boxShadow: simulatorViewMode === 'stack' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            📑 عرض متتالي
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('tabs'); }}
+                            style={{ 
+                              flex: 1, minHeight: 0, 
+                              padding: '6px 12px', 
+                              border: 'none', 
+                              borderRadius: '8px', 
+                              fontSize: '11px', 
+                              fontWeight: '700', 
+                              cursor: 'pointer', 
+                              background: simulatorViewMode === 'tabs' ? '#FFFFFF' : 'transparent',
+                              color: simulatorViewMode === 'tabs' ? '#1D1D1F' : '#6E6E73',
+                              boxShadow: simulatorViewMode === 'tabs' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            🗂️ عرض تبويبي
+                          </button>
+                        </div>
+
+                        {/* Rendering Viewport Contents based on mode */}
+                        {simulatorViewMode === 'stack' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {mainComponents.map(c => {
+                              const isSelected = selectedComponentId === c.id;
+                              return (
+                                <div 
+                                  key={c.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedComponentId(c.id);
+                                    setPreviewActiveTab(c.id);
+                                  }}
+                                  style={{
+                                    border: isSelected ? '2px solid #5856D6' : '1px solid rgba(0,0,0,0.08)',
+                                    borderRadius: '16px',
+                                    padding: '20px',
+                                    background: '#FFFFFF',
+                                    boxShadow: isSelected ? '0 8px 24px rgba(88,86,214,0.1)' : '0 2px 8px rgba(0,0,0,0.03)',
+                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    position: 'relative'
+                                  }}
+                                >
+                                  {/* Component Header badge */}
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid rgba(0,0,0,0.06)',
+                                    paddingBottom: '8px',
+                                    marginBottom: '16px'
+                                  }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '800', color: isSelected ? '#5856D6' : '#1D1D1F', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#5856D6' : '#8E8E93' }}/>
+                                      {c.name}
+                                    </span>
+                                    <span style={{ fontSize: '9px', background: isSelected ? 'rgba(88,86,214,0.08)' : '#F5F5F7', color: isSelected ? '#5856D6' : '#8E8E93', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                      {c.category === 'employee_workspace' ? 'المرسل' : c.category === 'technical_support_console' ? 'الاستقبال' : c.category === 'operations_and_management' ? 'الإدارة والتحليل' : 'الحوكمة'}
+                                    </span>
+                                  </div>
+
+                                  {renderComponent(c)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Horizontal scrollable tab row */}
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '6px', 
+                              overflowX: 'auto', 
+                              paddingBottom: '8px',
+                              borderBottom: '1px solid rgba(0,0,0,0.05)',
+                              direction: 'rtl'
+                            }} className="scrollbar-thin">
+                              {mainComponents.map(c => {
+                                const isSelected = selectedComponentId === c.id;
+                                return (
+                                  <button
+                                    key={c.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComponentId(c.id);
+                                      setPreviewActiveTab(c.id);
+                                    }}
+                                    style={{
+                                      padding: '6px 14px',
+                                      border: 'none',
+                                      borderRadius: '16px',
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      background: isSelected ? '#5856D6' : '#F5F5F7',
+                                      color: isSelected ? '#FFFFFF' : '#6E6E73',
+                                      boxShadow: isSelected ? '0 2px 8px rgba(88,86,214,0.2)' : 'none',
+                                      whiteSpace: 'nowrap',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    {c.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Render active tab component */}
+                            {(() => {
+                              const activeTabComp = mainComponents.find(c => c.id === selectedComponentId) || mainComponents[0];
+                              if (!activeTabComp) return null;
+                              return (
+                                <div style={{ animation: 'fadeIn 0.25s ease' }}>
+                                  {renderComponent(activeTabComp)}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })()}
+
+                </div>
+              </div>
+              {/* Bottom iOS Indicator line */}
+              {(previewDevice === 'mobile' || previewDevice === 'tablet') && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '6px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '120px',
+                  height: '4px',
+                  background: '#1D1D1F',
+                  borderRadius: '2px',
+                  zIndex: 100,
+                  opacity: 0.8
+                }}></div>
+              )}
+
+            </div>
+          </div>
+              
               {/* ── Inspector Panel ── */}
               <div style={{ ...styles.glassBox, flex: 1, overflow: 'hidden' }}>
                 <div style={{ ...styles.boxHeader, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1755,1091 +2767,9 @@ export function UILayoutEngineTab() {
               )}
             </div>
           </div>
-          </div> {/* End col-span-4 */}
-
-          {/* LEFT SIDE (col-span-8): LIVE SANDBOX (MODERN GLASSMORPHISM) ═══ */}
-          <div className="col-span-8 flex flex-col h-full overflow-hidden">
-            <div className="admin-scroll" style={{ flex: '1', backgroundColor: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)', color: '#1D1D1F', display: 'flex', flexDirection: 'column', maxHeight: '750px', overflowY: 'hidden', transition: 'all 0.25s ease' }}>
-        
-        {/* Sandbox Toolbar */}
-        <div style={{ position: 'sticky', top: 0, background: '#F5F5F7', borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-          <div style={{ fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px', color: '#1D1D1F', fontSize: '14px' }}>
-            <span style={{ fontSize: '20px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>🧪</span> المعاينة الحية للواجهة (Modern Live Preview)
-          </div>
-
-          {/* Segmented Device Viewport Switcher */}
-          <div style={{ display: 'flex', background: 'rgba(118, 118, 128, 0.12)', borderRadius: '10px', padding: '2px', gap: '2px', alignItems: 'center', direction: 'rtl' }}>
-            {(['desktop', 'tablet', 'mobile'] as const).map(d => {
-              const isActive = previewDevice === d;
-              const label = d === 'desktop' ? 'كمبيوتر' : d === 'tablet' ? 'تابلت' : 'جوال';
-              const icon = d === 'desktop' ? '🖥️' : d === 'tablet' ? '📟' : '📱';
-              return (
-                <button
-                  key={d}
-                  onClick={() => setPreviewDevice(d)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '6px 14px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    background: isActive ? '#FFFFFF' : 'transparent',
-                    color: isActive ? '#1D1D1F' : '#6E6E73',
-                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                >
-                  <span style={{ fontSize: '14px' }}>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>محاكاة الدور (Role Testing):</label>
-            <select style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#FFFFFF', fontSize: '12px', color: '#1D1D1F', fontWeight: '600', outline: 'none', cursor: 'pointer' }} value={previewRole} onChange={(e) => setPreviewRole(e.target.value)}>
-              <option value="Super_Admin">مدير نظام (Super Admin)</option>
-              <option value="Dept_Head">رئيس قسم (Dept Head)</option>
-              <option value="Field_Engineer">مهندس ميداني (Field Engineer)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Sandbox Shell Areas */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', direction: 'rtl', padding: '20px', gap: '20px', overflow: 'hidden' }}>
-          
-          {/* Modern Dynamic Navigation Panel (Active Components Sidebar) - Outside device frame */}
-          <div style={{ width: '250px', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>المكونات النشطة</span>
-              <span style={{ fontSize: '10px', background: '#E5E5EA', color: '#6E6E73', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>{activeComponents.length}</span>
             </div>
-            
-            <Droppable droppableId="active-canvas">
-              {(provided, snapshot) => (
-                <div 
-                  ref={provided.innerRef} 
-                  {...provided.droppableProps}
-                  style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '100px', backgroundColor: snapshot.isDraggingOver ? 'rgba(88,86,214,0.04)' : 'transparent', borderRadius: '16px', transition: 'all 0.3s', overflowY: 'auto' }}
-                  className="scrollbar-thin"
-                >
-                  {activeComponents.map((c, index) => (
-                    <Draggable key={c.id} draggableId={c.id} index={index}>
-                      {(provided, snapshot) => {
-                        const isActive = previewActiveTab === c.id;
-                        return (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            onClick={() => { setPreviewActiveTab(c.id); setSelectedComponentId(c.id); }}
-                            style={{
-                              padding: '12px 14px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
-                              background: isActive ? '#FFFFFF' : snapshot.isDragging ? '#FFFFFF' : 'transparent',
-                              color: isActive ? '#1D1D1F' : '#6E6E73',
-                              border: isActive ? '1px solid rgba(88,86,214,0.15)' : '1px solid transparent',
-                              boxShadow: isActive ? '0 4px 14px rgba(88,86,214,0.08)' : snapshot.isDragging ? '0 12px 24px rgba(0,0,0,0.1)' : 'none',
-                              transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                              transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
-                              fontWeight: isActive ? '700' : '600',
-                              fontSize: '13px',
-                              ...provided.draggableProps.style
-                            }}
-                            onMouseEnter={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.6)' }}
-                            onMouseLeave={(e) => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent' }}
-                          >
-                            <div style={{ 
-                              width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
-                              background: isActive ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : '#F5F5F7',
-                              color: isActive ? '#FFF' : '#8E8E93',
-                              boxShadow: isActive ? '0 2px 8px rgba(88,86,214,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.05)',
-                              transition: 'all 0.3s'
-                            }}>
-                              {c.category === 'employee_workspace' ? '📝' : c.category === 'technical_support_console' ? '🛠' : c.category === 'operations_and_management' ? '📊' : '🛡'}
-                            </div>
-                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                            {isActive && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#5856D6', boxShadow: '0 0 6px rgba(88,86,214,0.5)' }}></div>}
-                          </div>
-                        );
-                      }}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+
           </div>
-
-          {/* Device Simulator Workspace */}
-          <div style={{ 
-            flex: 1, 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            background: 'radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%)', 
-            borderRadius: '16px', 
-            border: '1px solid rgba(0,0,0,0.06)',
-            padding: '24px', 
-            overflow: 'auto',
-            position: 'relative',
-            height: '100%',
-            minHeight: '600px'
-          }}>
-            {/* Device Container Frame */}
-            <div style={{
-              width: previewDevice === 'mobile' ? '360px' : previewDevice === 'tablet' ? '580px' : '100%',
-              maxWidth: previewDevice === 'desktop' ? '950px' : 'none',
-              height: previewDevice === 'mobile' ? '680px' : previewDevice === 'tablet' ? '730px' : '580px',
-              borderRadius: previewDevice === 'mobile' ? '40px' : previewDevice === 'tablet' ? '28px' : '12px',
-              border: previewDevice === 'mobile' ? '12px solid #1D1D1F' : previewDevice === 'tablet' ? '14px solid #1D1D1F' : '4px solid #1D1D1F',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 8px rgba(0,0,0,0.8)',
-              backgroundColor: '#FFFFFF',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}>
-              
-              {/* Device Top Decoration (Notch/Camera/macOS title bar) */}
-              {previewDevice === 'mobile' && (
-                <div style={{
-                  position: 'absolute',
-                  top: '0',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '120px',
-                  height: '22px',
-                  background: '#1D1D1F',
-                  borderRadius: '0 0 14px 14px',
-                  zIndex: 100,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px'
-                }}>
-                  {/* Speaker Grill */}
-                  <div style={{ width: '45px', height: '3px', background: '#3A3A3C', borderRadius: '1.5px' }}></div>
-                  {/* Camera lens */}
-                  <div style={{ width: '6px', height: '6px', background: '#0D0D11', border: '1px solid #2C2C2E', borderRadius: '50%' }}></div>
-                </div>
-              )}
-
-              {previewDevice === 'tablet' && (
-                <div style={{
-                  position: 'absolute',
-                  top: '4px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '8px',
-                  height: '8px',
-                  background: '#1D1D1F',
-                  borderRadius: '50%',
-                  zIndex: 100,
-                  border: '1px solid #334155'
-                }}></div>
-              )}
-
-              {previewDevice === 'desktop' && (
-                <div style={{ 
-                  height: '36px', 
-                  background: '#E8E8ED', 
-                  borderBottom: '1px solid rgba(0,0,0,0.08)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  padding: '0 12px', 
-                  gap: '8px',
-                  userSelect: 'none',
-                  position: 'relative',
-                  flexShrink: 0
-                }}>
-                  {/* Window Controls */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FF5F56', border: '0.5px solid #E0443E' }}></div>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FFBD2E', border: '0.5px solid #DEA123' }}></div>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27C93F', border: '0.5px solid #1AAB2F' }}></div>
-                  </div>
-                  {/* Window Title */}
-                  <div style={{ 
-                    position: 'absolute',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    fontSize: '11px', 
-                    fontWeight: 'bold', 
-                    color: '#6E6E73',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    🖥️ معاينة شاشة الكمبيوتر
-                  </div>
-                </div>
-              )}
-
-              {/* Viewport Content Container */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%', position: 'relative' }}>
-                
-                {/* Simulated App Top Navbar */}
-                <div style={{ 
-                  height: '52px', 
-                  background: 'rgba(255, 255, 255, 0.8)', 
-                  backdropFilter: 'blur(20px)', 
-                  WebkitBackdropFilter: 'blur(20px)', 
-                  borderBottom: '1px solid rgba(0,0,0,0.05)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  padding: previewDevice === 'mobile' ? '0 16px' : '0 24px', 
-                  justifyContent: 'space-between', 
-                  gap: '10px', 
-                  zIndex: 200,
-                  flexShrink: 0,
-                  position: 'relative'
-                }}>
-                  {/* Brand logo/title */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #007AFF, #5856D6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '12px', fontWeight: '800' }}>L</div>
-                    <span style={{ fontSize: '13px', fontWeight: '800', color: '#1D1D1F' }}>قمرة التشغيل</span>
-                  </div>
-
-                  {/* Top Navbar items */}
-                  <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
-                    
-                    {/* Bell Notification Icon */}
-                    {activeComponents.some(c => c.id === 'admin_notifications') && (
-                      <div style={{ position: 'relative' }}>
-                        <button 
-                          onClick={() => {
-                            setShowNotificationsDropdown(!showNotificationsDropdown);
-                            setShowProfileDropdown(false);
-                          }}
-                          style={{
-                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showNotificationsDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
-                          }}
-                          title="الإشعارات والتنبيهات"
-                        >
-                          🔔
-                          <span style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#FF3B30', border: '1.5px solid #FFF' }}></span>
-                        </button>
-
-                        {/* Glassmorphic Notifications Dropdown */}
-                        {showNotificationsDropdown && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '44px',
-                            left: '0',
-                            width: '280px',
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: '14px',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                            padding: '12px',
-                            zIndex: 1000,
-                            textAlign: 'right',
-                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                          }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '8px', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>مركز التنبيهات الحية</span>
-                              <span style={{ fontSize: '10px', color: '#007AFF', cursor: 'pointer' }} onClick={() => setShowNotificationsDropdown(false)}>إغلاق</span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {(() => {
-                                const getRoleNotifications = () => {
-                                  if (previewRole === 'Super_Admin') {
-                                    return [
-                                      { title: '🔒 تحديث أمني ناجح للنظام', desc: 'تم تطبيق الحزمة الأمنية v43.5.2 بنجاح.', time: 'منذ ساعة', unread: false },
-                                      { title: '⚠️ محاولة تسجيل دخول مريبة', desc: 'تم رصد محاولة دخول من عنوان IP غير معروف.', time: 'منذ ساعتين', unread: true },
-                                      { title: '⚙️ استقرار خادم قاعدة البيانات', desc: 'استهلاك الذاكرة الإجمالي مستقر عند 42%.', time: 'منذ 4 ساعات', unread: false }
-                                    ];
-                                  } else if (previewRole === 'Dept_Head') {
-                                    return [
-                                      { title: '📥 تذكرة جديدة غير مسندة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT في انتظار الإسناد.', time: 'منذ دقيقة', unread: true },
-                                      { title: '⏰ SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية لفريق الشبكات.', time: 'منذ 5 دقائق', unread: true },
-                                      { title: '🤝 تأكيد تحويل تذكرة #TKT-0883', desc: 'وافق م. خليل على إدارة التذكرة المحولة له.', time: 'منذ ساعتين', unread: false }
-                                    ];
-                                  } else {
-                                    // Field_Engineer or default
-                                    return [
-                                      { title: '🛠️ تم إسناد تذكرة جديدة لك #TKT-1029', desc: 'الرجاء فحص عطل شبكة HQ IT والتوجه للموقع.', time: 'منذ دقيقة', unread: true },
-                                      { title: '⚠️ أولوية التذكرة #TKT-0994 مرتفعة', desc: 'تحديث حالة المعالجة لتجنب خرق مؤشر SLA.', time: 'منذ 5 دقائق', unread: true },
-                                      { title: '📝 رسالة جديدة من العميل', desc: 'تم إضافة مرفق جديد لتفاصيل التذكرة #TKT-1029.', time: 'منذ ساعة', unread: false }
-                                    ];
-                                  }
-                                };
-                                return getRoleNotifications().map((item, idx) => (
-                                  <div key={idx} style={{ padding: '8px', borderRadius: '8px', background: item.unread ? 'rgba(0,122,255,0.05)' : 'transparent', borderBottom: '0.5px solid rgba(0,0,0,0.03)', cursor: 'pointer' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '11px', fontWeight: '700', color: item.unread ? '#007AFF' : '#1D1D1F' }}>{item.title}</span>
-                                      <span style={{ fontSize: '9px', color: '#8E8E93' }}>{item.time}</span>
-                                    </div>
-                                    <div style={{ fontSize: '10px', color: '#6E6E73', marginTop: '2px' }}>{item.desc}</div>
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Profile Icon */}
-                    {activeComponents.some(c => c.id === 'admin_profile') && (
-                      <div style={{ position: 'relative' }}>
-                        <button 
-                          onClick={() => {
-                            setShowProfileDropdown(!showProfileDropdown);
-                            setShowNotificationsDropdown(false);
-                          }}
-                          style={{
-                            width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: showProfileDropdown ? 'rgba(0,0,0,0.05)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: '16px'
-                          }}
-                          title="الملف الشخصي"
-                        >
-                          👤
-                        </button>
-
-                        {/* Glassmorphic Profile Dropdown */}
-                        {showProfileDropdown && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '44px',
-                            left: '0',
-                            width: '220px',
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: '14px',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                            padding: '12px',
-                            zIndex: 1000,
-                            textAlign: 'right',
-                            animation: 'slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: '8px' }}>
-                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#5856D6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', fontSize: '14px' }}>M</div>
-                              <div>
-                                <div style={{ fontSize: '12px', fontWeight: '800', color: '#1D1D1F' }}>majdi.alzarrouk</div>
-                                <div style={{ fontSize: '10px', color: '#8E8E93' }}>{previewRole}</div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              {['الملف الشخصي', 'إعدادات الحساب', 'تسجيل الخروج'].map((opt, i) => (
-                                <div key={opt} style={{ padding: '8px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: i === 2 ? '#FF3B30' : '#1D1D1F', cursor: 'pointer', background: 'transparent', transition: 'background 0.2s' }}
-                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
-                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                  onClick={() => setShowProfileDropdown(false)}
-                                >
-                                  {opt}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                  </div>
-                </div>
-
-                {/* Viewport Scrollable Screen Content */}
-                <div 
-                  style={{ 
-                    flex: 1, 
-                    background: '#F9FAFB', 
-                    padding: previewDevice === 'mobile' ? '16px' : '24px', 
-                    overflowY: 'auto', 
-                    paddingBottom: '80px',
-                    position: 'relative'
-                  }} 
-                  className="admin-scroll"
-                  onClick={() => {
-                    // Close dropdowns when clicking outside
-                    setShowNotificationsDropdown(false);
-                    setShowProfileDropdown(false);
-                  }}
-                >
-                  
-                  {(() => {
-                    const mainComponents = activeComponents.filter(c => c.target_zone === 'Main_Viewport' || !c.target_zone);
-
-                    if (mainComponents.length === 0) {
-                      return (
-                        <div style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#AEAEB2', gap: '16px' }}>
-                          <div style={{ width: '64px', height: '64px', background: '#F5F5F7', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>⚙️</div>
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: '#1D1D1F' }}>لا توجد مكونات نشطة بمساحة العرض</div>
-                          <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '250px', lineHeight: '1.6' }}>قم بتفعيل المكونات في قائمة "المكونات النشطة" لتظهر فوراً في المعاينة.</div>
-                        </div>
-                      );
-                    }
-
-                    // Render component preview block helper
-                    const renderComponent = (c: UIComponentDefinition) => {
-                      switch (c.id) {
-                                                case 'ticket_create': {
-                          const tProps = c.properties || {};
-                          const destinationRouteIds: string[] = tProps.destinationRoutes || [];
-                          
-                          const activeRoutes = savedRoutes.filter(r => r.isActive);
-                          const visibleRoutes = destinationRouteIds.length > 0
-                            ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
-                            : activeRoutes;
-
-                          if (!previewSelectedRouteId) {
-                            return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                <button 
-                                  onClick={() => {
-                                    if (visibleRoutes.length === 1) {
-                                      setPreviewSelectedRouteId(visibleRoutes[0].id);
-                                    } else {
-                                      setPreviewSelectedRouteId('ROUTE_SELECTION');
-                                    }
-                                  }}
-                                  style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}>
-                                  + إنشاء تذكرة جديدة
-                                </button>
-                              </div>
-                            );
-                          }
-
-                          if (previewSelectedRouteId === 'ROUTE_SELECTION') {
-                            if (visibleRoutes.length === 0) {
-                              return (
-                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                  <div style={{ color: '#FF3B30', fontWeight: 'bold' }}>لا توجد مسارات تذاكر متاحة</div>
-                                  <p style={{ fontSize: '12px', color: '#6E6E73' }}>يرجى إضافة مسارات مسموحة من خصائص المكون.</p>
-                                  <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', marginTop: '10px' }}>← إلغاء</button>
-                                </div>
-                              );
-                            }
-                            return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px' }}>
-                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
-                                <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
-                                <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  {visibleRoutes.map(route => (
-                                    <div key={route.id}
-                                      onClick={() => setPreviewSelectedRouteId(route.id)}
-                                      style={{ padding: '16px', borderRadius: '8px', border: '2px solid transparent', background: 'linear-gradient(to right, rgba(0,82,204,0.02), rgba(0,101,255,0.02))', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-                                    >
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${route.colorCode || '#0052cc'}15`, color: route.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                                          {route.icon || '📄'}
-                                        </div>
-                                        <div>
-                                          <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#172b4d' }}>{route.name}</h4>
-                                          <div style={{ fontSize: '11px', color: '#5e6c84' }}>{route.description || 'اضغط لإنشاء هذا الطلب'}</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          const routeDef = savedRoutes.find(r => r.id === previewSelectedRouteId);
-                          if (!routeDef) {
-                            return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
-                                <div style={{ color: '#FF3B30' }}>خطأ: لم يتم العثور على المسار</div>
-                              </div>
-                            );
-                          }
-
-                          const renderDynamicFieldsPreview = () => {
-                            const rdfs = routeDef.formConfig?.routeDynamicFields || (routeDef.formConfig?.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                            const fields = previewDynamicFields.filter(f => rdfs.some(r => r.fieldId === f.id));
-                            if (!fields || fields.length === 0) return null;
-                            return fields.map((f, i) => {
-                              const isReq = rdfs.find(r => r.fieldId === f.id)?.isRequired;
-                              return (
-                                <div key={i} style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>{f.name} {isReq && <span style={{color:'red'}}>*</span>}</label>
-                                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none' }}>
-                                    <option>-- اختر --</option>
-                                    {f.options?.map((o: string, idx: number) => <option key={idx}>{o}</option>)}
-                                  </select>
-                                </div>
-                              );
-                            });
-                          };
-
-                          return (
-                            <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                              <button 
-                                onClick={() => setPreviewSelectedRouteId(visibleRoutes.length > 1 ? 'ROUTE_SELECTION' : null)}
-                                style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>
-                                ← العودة
-                              </button>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #dfe1e6' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: `${routeDef.colorCode || '#0052cc'}15`, color: routeDef.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{routeDef.icon || '📄'}</div>
-                                <div>
-                                  <h3 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>{routeDef.name}</h3>
-                                  <div style={{ fontSize: '11px', color: '#5e6c84' }}>توجيه إلى: {routeDef.targetDepartmentId}</div>
-                                </div>
-                              </div>
-                              
-
-                              {renderDynamicFieldsPreview()}
-
-                              {routeDef.formConfig?.showDescription && (
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل إضافية {routeDef.formConfig?.mandatoryDescription && <span style={{color:'red'}}>*</span>}</label>
-                                  <textarea style={{ width: '100%', padding: '10px 12px', minHeight: '80px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none', resize: 'vertical' }} placeholder="الرجاء الوصف بدقة..." />
-                                </div>
-                              )}
-                              
-                              {routeDef.formConfig?.showAttachments && (
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>المرفقات {routeDef.formConfig?.mandatoryAttachments && <span style={{color:'red'}}>*</span>}</label>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: '10px', background: '#fafbfc', color: '#5e6c84', fontSize: '13px', fontWeight: 500 }}>
-                                    <span style={{ fontSize: '20px' }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
-                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>(الحد: {routeDef.formConfig.maxAttachmentSizeMB || 5}MB)</span>
-                                  </div>
-                                </div>
-                              )}
-
-
-                              <button 
-                                onClick={() => {
-                                    alert('تم الإرسال بنجاح (محاكاة)!');
-                                    setPreviewSelectedRouteId(null);
-                                }}
-                                style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${routeDef.colorCode || '#0052cc'} 0%, ${routeDef.colorCode || '#0052cc'}dd 100%)`, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                                إرسال الطلب
-                              </button>
-                            </div>
-                          );
-                        }
-
-                        case 'ticket_inbox': {
-                          const p = c.properties || {};
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ margin: 0, fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>قائمة التذاكر المرسلة</h4>
-                                {p.allowCancellation && (
-                                  <span style={{ fontSize: '11px', color: '#FF3B30', background: '#FFF1F0', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>إمكانية الإلغاء مفعلة</span>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {[
-                                  { id: 'TKT-1002', title: 'شاشة حاسوب معطلة', date: 'منذ ساعتين', status: 'مفتوحة' },
-                                  { id: 'TKT-0994', title: 'طلب صلاحية للشبكة', date: 'أمس', status: 'محلولة' }
-                                ].map(t => (
-                                  <div key={t.id} style={{ padding: '14px', background: '#F5F5F7', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
-                                    <div>
-                                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{t.title}</div>
-                                      <div style={{ fontSize: '11px', color: '#8E8E93', marginTop: '4px' }}>{t.id} • {t.date}</div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                      <span style={{ 
-                                        padding: '4px 8px', 
-                                        borderRadius: '6px', 
-                                        fontSize: '11px', 
-                                        fontWeight: '700',
-                                        background: t.status === 'مفتوحة' ? '#E5F1FF' : '#E8F5E9',
-                                        color: t.status === 'مفتوحة' ? '#007AFF' : '#34C759'
-                                      }}>
-                                        {t.status}
-                                      </span>
-                                      {p.allowCancellation && t.status === 'مفتوحة' && (
-                                        <button style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: '#FF3B30', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>إلغاء ❌</button>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        case 'admin_operational_console': {
-                          const p = c.properties || {};
-                          const snatching = p.snatchingGovernance || false;
-                          
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>لوحة التذاكر الواردة</h4>
-                                
-                                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
-                                  {['الجديدة', 'قيد المعالجة', 'معلقة', 'مغلقة'].map((tab, i) => (
-                                     <div key={tab} style={{ padding: '8px 16px', borderRadius: '20px', background: i===0 ? '#E5F1FF' : 'transparent', color: i===0 ? '#007AFF' : '#6E6E73', fontSize: '13px', fontWeight: i===0 ? '700' : '500', cursor: 'pointer' }}>
-                                        {tab}
-                                     </div>
-                                  ))}
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10294</div>
-                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>مشكلة في الشبكة - مسندة إلى: أحمد (مهندس)</div>
-                                    </div>
-                                    {snatching && (
-                                      <button style={{ padding: '8px 14px', background: '#FFF1F0', color: '#FF3B30', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>سحب التذكرة ✋</button>
-                                    )}
-                                  </div>
-                                  <div style={{ padding: '16px', background: '#F9F9FB', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F' }}>تذكرة #10295</div>
-                                      <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '4px' }}>تحديث النظام - جديدة</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        case 'quick_actions_panel': {
-                          const p = c.properties || {};
-                          const handshake = p.enableHandshakeTransfer || false;
-                          const depLock = p.enableDependencyLock || false;
-                          
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#1D1D1F', fontWeight: '700' }}>الإجراءات السريعة (Quick Actions)</h4>
-                                
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                  <button style={{ padding: '12px 18px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,122,255,0.2)' }}>
-                                    إسناد لنفسي 🙋‍♂️
-                                  </button>
-                                  
-                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-                                    تحويل التذكرة {handshake && <span style={{ color: '#FF9500', fontSize: '11px', marginInlineStart: '5px' }}>(مشروط 🤝)</span>}
-                                  </button>
-
-                                  <button style={{ padding: '12px 18px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-                                    إنشاء تذكرة فرعية {depLock && <span style={{ color: '#FF3B30', fontSize: '11px', marginInlineStart: '5px' }}>(قفل الاعتماد 🔒)</span>}
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 12px 24px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                                {handshake ? (
-                                   <div style={{ position: 'relative', zIndex: 1 }}>
-                                     <h5 style={{ margin: '0 0 10px 0', color: '#FF9500', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
-                                        <span style={{ fontSize: '18px' }}>🤝</span> نافذة التحويل المشروط (Handshake Transfer)
-                                     </h5>
-                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>أنت تقوم بتحويل هذه التذكرة. لن تنتقل الملكية رسمياً حتى يوافق الطرف الآخر. ستظل التذكرة بحالة معلقة.</p>
-                                     <div style={{ display: 'flex', gap: '10px' }}>
-                                       <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }}>
-                                         <option>اختر الزميل...</option>
-                                         <option>م. خليل (فريق الشبكات)</option>
-                                       </select>
-                                       <button style={{ padding: '12px 24px', background: '#FF9500', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255, 149, 0, 0.3)' }}>إرسال طلب التحويل</button>
-                                     </div>
-                                   </div>
-                                ) : depLock ? (
-                                   <div style={{ position: 'relative', zIndex: 1 }}>
-                                     <h5 style={{ margin: '0 0 10px 0', color: '#007AFF', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700' }}>
-                                        <span style={{ fontSize: '18px' }}>🔒</span> تذكرة فرعية مع قفل اعتمادي
-                                     </h5>
-                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6E6E73', lineHeight: '1.6' }}>سيؤدي إرسال هذه التذكرة الفرعية إلى تحويل التذكرة الأصلية فوراً لحالة <strong style={{ color: '#FF3B30' }}>(معلقة)</strong> حتى يتم إنجاز التذكرة الفرعية.</p>
-                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                       <input type="text" placeholder="عنوان التذكرة الفرعية..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', fontSize: '13px', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit' }} />
-                                       <button style={{ alignSelf: 'flex-end', padding: '12px 24px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 122, 255, 0.3)' }}>إنشاء وقفل التذكرة الأصلية</button>
-                                     </div>
-                                   </div>
-                                ) : (
-                                   <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#AEAEB2', fontSize: '13px', padding: '20px' }}>
-                                     قم بتفعيل خيار "التحويل المشروط" أو "القفل الاعتمادي" من خصائص المكون لرؤية النوافذ التفاعلية.
-                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        case 'admin_analytics': {
-                          const p = c.properties || {};
-                          const isOverride = p.adminOverride || false;
-                          const isSectionHead = previewRole === 'Dept_Head';
-                          const drilldown = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowEngineerDrilldown);
-                          const locationF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowLocationFilter);
-                          const taxF = isOverride || (!isSectionHead || p.managerAnalyticsControl?.allowTaxonomyFilter);
-                          const activeCharts = p.activeCharts || ['kpi_cards', 'bar_chart'];
-                          
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                              <div style={{ padding: '24px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-                                <h4 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#1D1D1F', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
-                                  <span>لوحة التحليل المركزي (OLAP Engine)</span>
-                                  {isOverride && <span style={{ fontSize: '11px', background: '#FFF1F0', color: '#FF3B30', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FECACA' }}>تجاوز المشرف النشط</span>}
-                                </h4>
-                                
-                                <div style={{ display: 'flex', gap: '15px', marginBottom: '24px' }}>
-                                  {locationF ? (
-                                    <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
-                                      <option>📍 تصفية حسب المبنى</option>
-                                      <option>المبنى الرئيسي (طرابلس)</option>
-                                      <option>فرع بنغازي</option>
-                                    </select>
-                                  ) : (
-                                    <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>
-                                  )}
-                                  
-                                  {taxF ? (
-                                    <select style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
-                                      <option>🗂️ تصفية حسب التصنيف</option>
-                                      <option>أعطال تقنية</option>
-                                      <option>أعطال تشغيلية</option>
-                                    </select>
-                                  ) : (
-                                    <div style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية التصنيفات مقفلة</div>
-                                  )}
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                                  <div style={{ flex: 2, minWidth: '280px', height: '220px', background: '#F9F9FB', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '32px' }}>📊</span>
-                                    <span style={{ fontWeight: '600', color: '#6E6E73' }}>مؤشرات الأداء الزمنية</span>
-                                  </div>
-                                  
-                                  <div style={{ flex: 1, minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    {drilldown ? (
-                                      <div style={{ flex: 1, background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px' }}>🏆 أفضل المهندسين أداءً</span>
-                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{ fontWeight: '500' }}>م. أحمد سالم</span><span>120 تذكرة</span></div>
-                                        <div style={{ fontSize: '12px', color: '#6E6E73', display: 'flex', justifyContent: 'space-between' }}><span style={{ fontWeight: '500' }}>م. سارة علي</span><span>115 تذكرة</span></div>
-                                      </div>
-                                    ) : (
-                                      <div style={{ flex: 1, background: '#FFF1F0', borderRadius: '12px', border: '1px solid #FECACA', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FF3B30', textAlign: 'center' }}>
-                                        <span style={{ fontSize: '24px', marginBottom: '6px' }}>🔒</span>
-                                        <span style={{ fontSize: '12px', fontWeight: '700' }}>تفاصيل المهندسين محجوبة</span>
-                                        <span style={{ fontSize: '10px', marginTop: '4px' }}>بناءً على قيود الصلاحية</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                                {activeCharts.includes('kpi_cards') && (
-                                  <div style={{ flex: 1, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>إجمالي التذاكر (المحلولة)</span>
-                                    <strong style={{ fontSize: '20px', color: '#1D1D1F', marginTop: '4px' }}>243</strong>
-                                  </div>
-                                )}
-                                {activeCharts.includes('line_chart') && (
-                                  <div style={{ flex: 1, minWidth: '120px', height: '100px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                    <span style={{ fontSize: '11px', color: '#8E8E93' }}>معدّل سرعة الاستجابة</span>
-                                    <strong style={{ fontSize: '20px', color: '#007AFF', marginTop: '4px' }}>18 دقيقة</strong>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        case 'admin_leaderboard': {
-                          const p = c.properties || {};
-                          const maxElements = p.maxComparisonElements || 3;
-                          const types = p.allowedComparisonTypes || ['ENGINEERS'];
-                          const activeType = types[0] || 'ENGINEERS';
-                          
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-thin">
-                                {types.map((t: string) => (
-                                  <div key={t} style={{ padding: '8px 18px', background: t === activeType ? '#5856D6' : '#F5F5F7', color: t === activeType ? '#FFFFFF' : '#6E6E73', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: `1px solid ${t === activeType ? '#5856D6' : 'rgba(0,0,0,0.08)'}`, transition: 'all 0.2s' }}>
-                                    {t === 'ENGINEERS' ? 'المهندسين' : t === 'LOCATIONS' ? 'المباني' : 'المشاكل'}
-                                  </div>
-                                ))}
-                                {types.length === 0 && <span style={{ fontSize: '13px', color: '#FF3B30' }}>لا توجد مقارنات مسموحة</span>}
-                              </div>
-
-                              <div style={{ height: '240px', padding: '20px', background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '15px', justifyContent: 'flex-end', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-                                <div style={{ fontSize: '13px', color: '#1D1D1F', fontWeight: '700' }}>مؤشر الأداء ({activeType === 'ENGINEERS' ? 'المهندسين' : activeType === 'LOCATIONS' ? 'المباني' : 'المشاكل'})</div>
-                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
-                                   {['أحمد', 'محمد', 'علي'].map((name, idx) => (
-                                     <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                                       <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
-                                          {Array.from({ length: Math.min(3, maxElements) }).map((_, barIdx) => {
-                                             const colors = [['#5856D6', '#AF52DE'], ['#007AFF', '#34C759'], ['#FF9500', '#FF3B30']];
-                                             const color = colors[barIdx % colors.length];
-                                             const h = 30 + Math.random() * 60;
-                                             return (
-                                               <div key={barIdx} style={{ width: '14px', height: `${h}%`, background: `linear-gradient(180deg, ${color[0]} 0%, ${color[1]} 100%)`, borderRadius: '4px 4px 0 0', opacity: 0.9, transition: 'all 0.5s' }}></div>
-                                             );
-                                          })}
-                                       </div>
-                                       <span style={{ fontSize: '11px', color: '#6E6E73', fontWeight: '600' }}>{name}</span>
-                                     </div>
-                                   ))}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        case 'admin_archive': {
-                          const p = c.properties || {};
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                  {(p.enabledUIFilters || ['التاريخ', 'الحالة']).map((filter: string, idx: number) => (
-                                    <select key={idx} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', background: '#F5F5F7', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#1D1D1F' }}>
-                                      <option>تصفية: {filter}</option>
-                                    </select>
-                                  ))}
-                                </div>
-                                {p.enableHistoricalExport && (
-                                  <button style={{ padding: '10px 18px', background: '#34C759', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(52, 199, 89, 0.3)' }}>
-                                    تصدير التقرير 📥
-                                  </button>
-                                )}
-                              </div>
-                              
-                              <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                  <thead style={{ background: '#F5F5F7', textAlign: 'right', fontSize: '13px', color: '#6E6E73' }}>
-                                    <tr>
-                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>رقم التذكرة</th>
-                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>التصنيف</th>
-                                      <th style={{ padding: '14px 20px', fontWeight: '600' }}>الحالة التاريخية</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody style={{ fontSize: '14px', color: '#1D1D1F' }}>
-                                    {[1, 2].map(row => (
-                                      <tr key={row} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                        <td style={{ padding: '16px 20px', fontWeight: '500' }}>#TKT-2026-00{row}</td>
-                                        <td style={{ padding: '16px 20px' }}>عطل تقني متقدم</td>
-                                        <td style={{ padding: '16px 20px' }}>
-                                          <span style={{ padding: '4px 10px', background: '#E8F5E9', color: '#34C759', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>مغلقة نهائياً</span>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-
-                              {p.enableTimelineAuditLog && (
-                                <div style={{ marginTop: '10px', padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', borderRight: '4px solid #007AFF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                  <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>📜 شريط السجل التاريخي المتكامل (Timeline Audit Log)</h5>
-                                  <div style={{ fontSize: '13px', color: '#6E6E73', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#007AFF' }}/> 2026-05-30 14:00 - تم إغلاق التذكرة بواسطة (مدير النظام)</div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-
-                        default:
-                          return (
-                            <div style={{ padding: '20px', background: '#F5F5F7', borderRadius: '12px', border: '1px dashed rgba(0,0,0,0.1)', textAlign: 'center', color: '#8E8E93', fontSize: '13px' }}>
-                              ⚙️ مكون "{c.name}" - جاهز للعمل.
-                            </div>
-                          );
-                      }
-                    };
-
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fadeIn 0.3s ease' }}>
-                        
-                        {/* Segmented View Mode Controller (Stack vs Tabs) */}
-                        <div style={{ 
-                          display: 'flex', 
-                          background: 'rgba(118, 118, 128, 0.12)', 
-                          borderRadius: '10px', 
-                          padding: '2px', 
-                          gap: '2px', 
-                          alignItems: 'center', 
-                          width: '100%',
-                          maxWidth: '280px',
-                          alignSelf: 'center',
-                          direction: 'rtl'
-                        }}>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('stack'); }}
-                            style={{ 
-                              flex: 1, 
-                              padding: '6px 12px', 
-                              border: 'none', 
-                              borderRadius: '8px', 
-                              fontSize: '11px', 
-                              fontWeight: '700', 
-                              cursor: 'pointer', 
-                              background: simulatorViewMode === 'stack' ? '#FFFFFF' : 'transparent',
-                              color: simulatorViewMode === 'stack' ? '#1D1D1F' : '#6E6E73',
-                              boxShadow: simulatorViewMode === 'stack' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            📑 عرض متتالي
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setSimulatorViewMode('tabs'); }}
-                            style={{ 
-                              flex: 1, 
-                              padding: '6px 12px', 
-                              border: 'none', 
-                              borderRadius: '8px', 
-                              fontSize: '11px', 
-                              fontWeight: '700', 
-                              cursor: 'pointer', 
-                              background: simulatorViewMode === 'tabs' ? '#FFFFFF' : 'transparent',
-                              color: simulatorViewMode === 'tabs' ? '#1D1D1F' : '#6E6E73',
-                              boxShadow: simulatorViewMode === 'tabs' ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            🗂️ عرض تبويبي
-                          </button>
-                        </div>
-
-                        {/* Rendering Viewport Contents based on mode */}
-                        {simulatorViewMode === 'stack' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {mainComponents.map(c => {
-                              const isSelected = selectedComponentId === c.id;
-                              return (
-                                <div 
-                                  key={c.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedComponentId(c.id);
-                                    setPreviewActiveTab(c.id);
-                                  }}
-                                  style={{
-                                    border: isSelected ? '2px solid #5856D6' : '1px solid rgba(0,0,0,0.08)',
-                                    borderRadius: '16px',
-                                    padding: '20px',
-                                    background: '#FFFFFF',
-                                    boxShadow: isSelected ? '0 8px 24px rgba(88,86,214,0.1)' : '0 2px 8px rgba(0,0,0,0.03)',
-                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    position: 'relative'
-                                  }}
-                                >
-                                  {/* Component Header badge */}
-                                  <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    borderBottom: '1px solid rgba(0,0,0,0.06)',
-                                    paddingBottom: '8px',
-                                    marginBottom: '16px'
-                                  }}>
-                                    <span style={{ fontSize: '12px', fontWeight: '800', color: isSelected ? '#5856D6' : '#1D1D1F', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#5856D6' : '#8E8E93' }}/>
-                                      {c.name}
-                                    </span>
-                                    <span style={{ fontSize: '9px', background: isSelected ? 'rgba(88,86,214,0.08)' : '#F5F5F7', color: isSelected ? '#5856D6' : '#8E8E93', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
-                                      {c.category === 'employee_workspace' ? 'المرسل' : c.category === 'technical_support_console' ? 'الاستقبال' : c.category === 'operations_and_management' ? 'الإدارة والتحليل' : 'الحوكمة'}
-                                    </span>
-                                  </div>
-
-                                  {renderComponent(c)}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {/* Horizontal scrollable tab row */}
-                            <div style={{ 
-                              display: 'flex', 
-                              gap: '6px', 
-                              overflowX: 'auto', 
-                              paddingBottom: '8px',
-                              borderBottom: '1px solid rgba(0,0,0,0.05)',
-                              direction: 'rtl'
-                            }} className="scrollbar-thin">
-                              {mainComponents.map(c => {
-                                const isSelected = selectedComponentId === c.id;
-                                return (
-                                  <button
-                                    key={c.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedComponentId(c.id);
-                                      setPreviewActiveTab(c.id);
-                                    }}
-                                    style={{
-                                      padding: '6px 14px',
-                                      border: 'none',
-                                      borderRadius: '16px',
-                                      fontSize: '11px',
-                                      fontWeight: '700',
-                                      cursor: 'pointer',
-                                      background: isSelected ? '#5856D6' : '#F5F5F7',
-                                      color: isSelected ? '#FFFFFF' : '#6E6E73',
-                                      boxShadow: isSelected ? '0 2px 8px rgba(88,86,214,0.2)' : 'none',
-                                      whiteSpace: 'nowrap',
-                                      transition: 'all 0.2s ease'
-                                    }}
-                                  >
-                                    {c.name}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Render active tab component */}
-                            {(() => {
-                              const activeTabComp = mainComponents.find(c => c.id === selectedComponentId) || mainComponents[0];
-                              if (!activeTabComp) return null;
-                              return (
-                                <div style={{ animation: 'fadeIn 0.25s ease' }}>
-                                  {renderComponent(activeTabComp)}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-
-                      </div>
-                    );
-                  })()}
-
-                </div>
-              </div>
-              {/* Bottom iOS Indicator line */}
-              {(previewDevice === 'mobile' || previewDevice === 'tablet') && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '6px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '120px',
-                  height: '4px',
-                  background: '#1D1D1F',
-                  borderRadius: '2px',
-                  zIndex: 100,
-                  opacity: 0.8
-                }}></div>
-              )}
-
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
 </DragDropContext>
 </div>
 
