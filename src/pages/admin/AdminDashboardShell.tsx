@@ -224,26 +224,6 @@ export const AdminDashboardShell: React.FC = () => {
               </div>
             </div>
 
-            {/* User Badge */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: APPLE.surface, borderRadius: '20px',
-              padding: '6px 14px 6px 8px',
-              border: `1px solid ${APPLE.separator}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}>
-              <div style={{
-                width: '26px', height: '26px', borderRadius: '50%',
-                background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.policies.color})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '11px', color: '#fff', fontWeight: '700',
-              }}>
-                {user?.name?.[0]?.toUpperCase() || 'A'}
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: APPLE.text }}>
-                {user?.name || 'Admin'}
-              </span>
-            </div>
           </header>
 
           {/* Content Area */}
