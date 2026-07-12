@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { loadRoutes, TicketRouteDefinition } from './TicketRoutingTab';
+import { LayoutEngineLanding } from './LayoutEngineLanding';
 
 export type ComponentCategory = 'employee_workspace' | 'technical_support_console' | 'operations_and_management' | 'system_admin_control';
 
@@ -29,12 +30,9 @@ const initialComponents: UIComponentDefinition[] = [
   // ─── [المرسل - Employee Workspace] ───
   { id: 'ticket_create', name: 'مكون إرسال وتوجيه الطلبات', category: 'employee_workspace', isActive: true, target_zone: 'Main_Viewport', properties: { destinationRoutes: [] } },
   { id: 'ticket_inbox', name: 'لوحة استعراض التذاكر المرسلة', category: 'employee_workspace', isActive: true, target_zone: 'Main_Viewport', properties: { showStatusBadges: true, allowCancellation: false } },
-  { id: 'admin_profile', name: 'الملف الشخصي وإعدادات الحساب', category: 'employee_workspace', isActive: false, target_zone: 'Top_Navbar', properties: { allowThemeCustomization: true, allowPasswordChange: true, identityProvider: 'Microsoft_SSO', twoFactorEnforced: false } },
-  { id: 'knowledge_base_user', name: 'الأدلة المعرفية ومكتبة المساعدة', category: 'employee_workspace', isActive: false, target_zone: 'Main_Viewport', properties: { enableSearch: true, autoSuggest: true } },
 
   // ─── [الاستقبال - Technical Support Console] ───
   { id: 'admin_operational_console', name: 'لوحة التذاكر الواردة متعددة التبويبات', category: 'technical_support_console', isActive: true, target_zone: 'Main_Viewport', properties: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true }, routingScope: 'INTERNAL_TEAM', allowedCrossEscalationRoles: ['OPERATIONAL_MANAGER', 'SECTION_HEAD'], snatchingGovernance: true, activeConsoleTabs: ['NEW', 'IN_PROGRESS'], autoEscalationTimeMinutes: 30 } },
-  { id: 'admin_notifications', name: 'مركز الإشعارات والتنبيهات', category: 'technical_support_console', isActive: false, target_zone: 'Top_Navbar', properties: { inApp: true, office365Email: true, pushNotifications: true, forceWhatsappChannel: false, autoEscalateSLA: true } },
   { id: 'engineer_live_status', name: 'لوحة الحالة الحية للمهندسين', category: 'technical_support_console', isActive: false, target_zone: 'Main_Viewport', properties: { mapIntegration: false, autoRefreshSeconds: 30 } },
   { id: 'quick_actions_panel', name: 'لوحة الإجراءات السريعة', category: 'technical_support_console', isActive: false, target_zone: 'Main_Viewport', properties: { enableOneClickClose: false, escalateToManager: true, enableHandshakeTransfer: true, enableDependencyLock: true } },
 
@@ -608,159 +606,17 @@ export function UILayoutEngineTab() {
 
   if (isManagerMode) {
     return (
-      <div style={{ fontFamily: "-apple-system, 'SF Pro Display', 'Inter', sans-serif", color: '#1D1D1F', display: 'flex', flexDirection: 'column', minHeight: '85vh', background: 'transparent' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '40px 20px' }}>
-
-          {!showSavedList ? (
-            <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '20px', padding: '48px 40px', textAlign: 'center', maxWidth: '540px', width: '100%', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-              
-              <div style={{ display: 'flex', background: '#F5F5F7', padding: '6px', borderRadius: '12px', marginBottom: '30px' }}>
-                <button
-                  onClick={() => setBuilderMode('OPERATIONAL')}
-                  style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: builderMode === 'OPERATIONAL' ? '#FFFFFF' : 'transparent', color: builderMode === 'OPERATIONAL' ? '#1D1D1F' : '#6E6E73', boxShadow: builderMode === 'OPERATIONAL' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
-                >
-                  الواجهات التشغيلية
-                </button>
-                <button
-                  onClick={() => setBuilderMode('SUBMISSION_TEMPLATE')}
-                  style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: builderMode === 'SUBMISSION_TEMPLATE' ? '#FFFFFF' : 'transparent', color: builderMode === 'SUBMISSION_TEMPLATE' ? '#1D1D1F' : '#6E6E73', boxShadow: builderMode === 'SUBMISSION_TEMPLATE' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
-                >
-                  قوالب الموظفين للإرسال
-                </button>
-              </div>
-
-              <div style={{ width: '72px', height: '72px', borderRadius: '18px', background: builderMode === 'OPERATIONAL' ? 'linear-gradient(135deg, #5856D6, #AF52DE)' : 'linear-gradient(135deg, #34C759, #32D74B)', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', boxShadow: builderMode === 'OPERATIONAL' ? '0 8px 24px rgba(88,86,214,0.3)' : '0 8px 24px rgba(52,199,89,0.3)' }}>{builderMode === 'OPERATIONAL' ? '⚡' : '📝'}</div>
-              <h1 style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '10px', fontWeight: '800', letterSpacing: '-0.4px' }}>
-                {builderMode === 'OPERATIONAL' ? 'محرك هندسة الواجهات التشغيلية' : 'محرك قوالب إرسال الموظفين'}
-              </h1>
-              <p style={{ fontSize: '14px', color: '#6E6E73', marginBottom: '36px', lineHeight: '1.7' }}>
-                {builderMode === 'OPERATIONAL' ? 'أنشئ وخصّص واجهات النظام لكل دور بمرونة كاملة.' : 'صمم قوالب إرسال التذاكر التي تظهر للموظفين والمستخدمين النهائيين.'}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button
-                  onClick={() => { setIsManagerMode(false); setShowNameModal(true); }}
-                  style={{ width: '100%', padding: '14px', background: '#5856D6', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(88,86,214,0.35)', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(88,86,214,0.45)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(88,86,214,0.35)'; }}
-                >
-                  <span style={{ fontSize: '18px' }}>+</span> {builderMode === 'OPERATIONAL' ? 'إنشاء واجهة جديدة' : 'إنشاء قالب إرسال جديد'}
-                </button>
-
-                <button
-                  onClick={() => setShowSavedList(true)}
-                  style={{ width: '100%', padding: '14px', background: '#F5F5F7', color: '#1D1D1F', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(88,86,214,0.06)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#F5F5F7'}
-                >
-                  <span>📁</span> {builderMode === 'OPERATIONAL' ? 'الواجهات المحفوظة' : 'قوالب الإرسال المحفوظة'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '800px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                <h3 style={{ color: '#1D1D1F', margin: 0, fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ background: 'rgba(88,86,214,0.1)', color: '#5856D6', padding: '6px', borderRadius: '8px', fontSize: '14px' }}>📁</span>
-                  {builderMode === 'SUBMISSION_TEMPLATE' ? 'قوالب الإرسال المحفوظة' : 'الواجهات المحفوظة'}
-                </h3>
-                <button
-                  onClick={() => setShowSavedList(false)}
-                  style={{ background: '#F5F5F7', border: '1px solid rgba(0,0,0,0.08)', color: '#1D1D1F', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', fontFamily: "inherit" }}
-                >
-                  رجوع
-                </button>
-              </div>
-              {savedInterfaces.length === 0 ? (
-                <div style={{ color: '#AEAEB2', fontSize: '14px', textAlign: 'center', padding: '40px' }}>لا توجد واجهات محفوظة حالياً.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {[
-                    { key: 'IT_ADMIN', label: 'مسؤول النظام', color: '#FF3B30', icon: '🔴' },
-                    { key: 'OPERATIONAL_MANAGER', label: 'المسؤول التشغيلي', color: '#FF9500', icon: '🟠' },
-                    { key: 'OPERATIONAL_USER', label: 'المستخدم التشغيلي', color: '#007AFF', icon: '🔵' },
-                    { key: 'END_USER', label: 'المستخدم العادي', color: '#34C759', icon: '🟢' }
-                  ].map(category => {
-                    const categoryInterfaces = savedInterfaces.filter(ui => ui.roleType === category.key);
-                    if (categoryInterfaces.length === 0) return null;
-                    return (
-                      <div key={category.key} style={{ background: '#F5F5F7', borderRadius: '12px', padding: '16px', border: `1px solid ${category.color}20` }}>
-                        <h4 style={{ color: category.color, margin: '0 0 14px 0', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{category.icon}</span> {category.label} ({categoryInterfaces.length})
-                        </h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '10px' }}>
-                          {categoryInterfaces.map(ui => (
-                            <div key={ui.id} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '14px', border: '1px solid rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.2s ease', cursor: 'default', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-                                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = `${category.color}50`; e.currentTarget.style.boxShadow = `0 4px 12px ${category.color}15`; }}
-                                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.07)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; }}>
-                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{ui.name}</div>
-                              <div style={{ fontSize: '11px', color: '#AEAEB2' }}>آخر تعديل: {ui.lastUpdated}</div>
-                              <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                                <button onClick={() => handleLoadInterface(ui)} style={{ flex: 1, padding: '6px', background: `${category.color}12`, border: `1px solid ${category.color}30`, color: category.color, borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>تعديل</button>
-                                <button style={{ flex: 1, padding: '6px', background: '#FFF1F0', border: '1px solid #FECACA', color: '#FF3B30', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>حذف</button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-      {/* ─── Data Loss Warning Modal ─── */}
-      {showWarningModal && interfaceToLoad && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.3)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ color: '#f87171', margin: '0 0 15px 0', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span>⚠️</span> تحذير: فقدان العمل غير المحفوظ
-            </h3>
-            
-            <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-              أنت تقوم حالياً بتعديل واجهة تحت اسم <strong style={{ color: '#6366f1' }}>({interfaceName})</strong>.
-              <br/><br/>
-              محاولة فتح واجهة <strong style={{ color: '#f59e0b' }}>({interfaceToLoad.name})</strong> ستؤدي إلى إزالة كل التعديلات الحالية غير المحفوظة والمكونات الموزعة وإعادة تحميل مساحة العمل بالواجهة المطلوبة.
-            </p>
-
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button 
-                onClick={() => {
-                  setInterfaceName(interfaceToLoad.name);
-                  setInterfaceCategory(interfaceToLoad.roleType);
-                  const key = `litc_layout_components_${interfaceToLoad.id}`;
-                  const saved = localStorage.getItem(key);
-                  if (saved) {
-                    setComponents(JSON.parse(saved));
-                  } else {
-                    const roleSaved = localStorage.getItem(`litc_layout_components_${interfaceToLoad.roleType}`);
-                    setComponents(roleSaved ? JSON.parse(roleSaved) : initialComponents);
-                  }
-                  setShowWarningModal(false);
-                  setInterfaceToLoad(null);
-                  setIsManagerMode(false);
-                }}
-                style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
-              >
-                موافق، افتح الواجهة
-              </button>
-              <button 
-                onClick={() => {
-                  setShowWarningModal(false);
-                  setInterfaceToLoad(null);
-                }}
-                style={{ flex: 1, padding: '12px', background: '#3b82f6', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s' }}
-              >
-                إلغاء والعودة
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      </div>
+      <LayoutEngineLanding 
+         savedInterfaces={savedInterfaces}
+         setSavedInterfaces={setSavedInterfaces as any}
+         handleLoadInterface={handleLoadInterface}
+         onStartNewLayout={(payload) => {
+            setInterfaceName(payload.name);
+            setInterfaceCategory(payload.roleType);
+            setComponents(initialComponents);
+            setIsManagerMode(false);
+         }}
+      />
     );
   }
 

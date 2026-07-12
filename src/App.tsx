@@ -9,15 +9,17 @@ import { ThemeProvider } from './engine/ui-loader/ThemeProvider';
 import { AuthProvider, useAuth } from './engine/auth/AuthContext';
 import { OperationalDashboard } from './pages/console/OperationalDashboard';
 import { AdminGovernanceConsole } from './pages/admin/AdminGovernanceConsole';
-import { UserProfileConsole } from './components/profile/UserProfileConsole';
+
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
+import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
+import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
 import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
-import { FloatingAIBot } from './components/bot/FloatingAIBot';
+
 import { EmployeeWorkspace } from './pages/workspace/EmployeeWorkspace';
 import { DepartmentHeadWorkspace } from './pages/management/DepartmentHeadWorkspace';
 import { SystemModeToggle } from './components/molecules/SystemModeToggle';
@@ -33,7 +35,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
     // Redirect if they have insufficient permissions
     if (user.role === 'IT_Admin' || user.role === 'admin') {
       return <Navigate to="/admin" replace />;
-    } else if (user.role === 'Department_Head' || user.role === 'HEAD_DEPT') {
+    } else if (user.role === 'Department_Head') {
       return <Navigate to="/head" replace />;
     } else {
       return <Navigate to="/employee" replace />;
@@ -179,7 +181,8 @@ const Navigation: React.FC = () => {
         >
           🌐 {t('nav.language')}
         </button>
-        <Link to="/profile" style={linkStyle('/profile')}>👤 {t('nav.profile')}</Link>
+        <NotificationBell />
+        <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
       </div>
     </nav>
   );
@@ -194,7 +197,7 @@ const AppContent: React.FC = () => {
       <>
         <MobileShell />
         <NeonSignalToast />
-        <FloatingAIBot />
+
       </>
     );
   }
@@ -203,7 +206,7 @@ const AppContent: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navigation />
       <NeonSignalToast />
-      <FloatingAIBot />
+
       <SystemModeToggle />
       
       <div style={{ flex: 1, padding: user && user.role !== 'IT_Admin' && user.role !== 'admin' ? '0' : '0 20px' }}>
@@ -236,7 +239,7 @@ const AppContent: React.FC = () => {
           <Route path="/employee" element={<WorkspaceWrapper allowedRoles={['Technician', 'Employee', 'viewer', 'IT_Admin', 'admin']} isEmployeeRoute={true}><EmployeeWorkspace /></WorkspaceWrapper>} />
           
           {/* Shared Routes */}
-          <Route path="/profile" element={<ProtectedRoute allowedRoles={['ANY']}><UserProfileConsole /></ProtectedRoute>} />
+
           
           {/* Fallback Routes */}
           <Route path="/login" element={

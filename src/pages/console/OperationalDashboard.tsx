@@ -279,6 +279,7 @@ export const OperationalDashboard: React.FC<{
   // الحالة المحلية لإدارة صلاحيات الدور المستلمة ديناميكياً
   const [permissions, setPermissions] = useState<{ canTransfer: boolean; canClose: boolean } | null>(null);
   const [loadingPermissions, setLoadingPermissions] = useState<boolean>(true);
+  const [permissionsError, setPermissionsError] = useState<string | null>(null);
   // خطاف جلب الصلاحيات ديناميكياً من الباك-إند بناءً على دور المستخدم
   const fetchPermissions = useCallback(async (showLoading = true) => {
     if (!user) {
@@ -409,12 +410,7 @@ export const OperationalDashboard: React.FC<{
     };
   }, [createDept, fetchFieldsForDept]);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+
 
 
   // حالة التحكم بقفل التبريد وإرسال النموذج لمنع السبام وحماية السيرفر

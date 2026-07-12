@@ -4,14 +4,18 @@ import { loadRoutes, TicketRouteDefinition } from '../../pages/admin/tabs/Ticket
 
 interface TicketCreatorFormProps {
   customFields: DynamicCustomField[];
-  ticketCreateSettings: any;
+  allowedRouteIds?: string[]; // Allowed Workflows
+  concurrencyPolicy?: 'ALLOW_MULTIPLE' | 'PREVENT_CONCURRENT'; // Submission Concurrency Policy
+  hasActiveTicketInRoute?: (routeId: string) => boolean;
   glassPanelStyle?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
 }
 
 export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   customFields,
-  ticketCreateSettings,
+  allowedRouteIds = [],
+  concurrencyPolicy = 'ALLOW_MULTIPLE',
+  hasActiveTicketInRoute,
   glassPanelStyle = {},
   inputStyle = {}
 }) => {
@@ -24,9 +28,6 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [routeSubmitSuccess, setRouteSubmitSuccess] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-  
-  // Legacy form state
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSavedRoutes(loadRoutes());
@@ -39,20 +40,27 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
 
     const routeDef = savedRoutes.find(r => r.id === selectedRouteId);
     const rules = routeDef?.formConfig || {};
-    const maxSizeMB = rules.maxAttachmentSizeMB || 5;
-    const allowedExts = (rules.allowedExtensions || '*').split(',').map((s: string) => s.trim().toLowerCase());
+    
+    // Completely dynamic configuration from workflow settings (no defaults like 5 or '*')
+    const maxSizeMB = rules.maxAttachmentMB; 
+    const allowedExts = rules.attachmentTypes || [];
 
     const validFiles = files.filter(file => {
       const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > maxSizeMB) {
+      
+      // Strict size check only if defined
+      if (maxSizeMB !== undefined && fileSizeMB > maxSizeMB) {
         setFileError(`حجم الملف ${file.name} يتجاوز الحد المسموح (${maxSizeMB}MB)`);
         return false;
       }
 
-      if (!allowedExts.includes('*')) {
-        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
-        if (!allowedExts.includes(fileExt)) {
-          setFileError(`صيغة الملف ${file.name} غير مسموحة. المسموح: ${rules.allowedExtensions}`);
+      // Strict extension check only if defined
+      if (allowedExts.length > 0 && !allowedExts.includes('*')) {
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+        const lowerAllowedExts = allowedExts.map((s: string) => s.trim().toLowerCase());
+        
+        if (!lowerAllowedExts.includes(fileExt)) {
+          setFileError(`صيغة الملف ${file.name} غير مسموحة. المسموح: ${allowedExts.join(', ')}`);
           return false;
         }
       }
@@ -67,9 +75,8 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   };
 
   const activeRoutes = savedRoutes.filter(r => r.isActive);
-  const destinationRouteIds: string[] = ticketCreateSettings?.destinationRoutes || [];
-  const visibleRoutes = destinationRouteIds.length > 0
-    ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
+  const visibleRoutes = allowedRouteIds.length > 0
+    ? activeRoutes.filter(r => allowedRouteIds.includes(r.id))
     : activeRoutes;
 
   return (
@@ -91,22 +98,39 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
             <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
             <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {visibleRoutes.map(route => (
-                <div key={route.id}
-                  onClick={() => { setSelectedRouteId(route.id); setRouteFieldValues({}); setRouteDescription(''); setRouteSelectedTaxMain(''); setRouteSelectedTaxSub(''); setRouteSubmitSuccess(false); setSelectedFiles([]); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: `${route.color}0A`, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(-3px)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'translateX(0)')}
-                >
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{route.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#172b4d' }}>{route.name}</div>
-                    {route.description && <div style={{ fontSize: 11, color: '#5e6c84', marginTop: 2 }}>{route.description}</div>}
-                    <div style={{ fontSize: 10, color: route.color, marginTop: 3, fontWeight: 600 }}>→ {route.targetDepartmentName}</div>
+              {visibleRoutes.map(route => {
+                const isLocked = concurrencyPolicy === 'PREVENT_CONCURRENT' && hasActiveTicketInRoute && hasActiveTicketInRoute(route.id);
+                
+                return (
+                  <div key={route.id}
+                    onClick={() => { 
+                      if(isLocked) return;
+                      setSelectedRouteId(route.id); 
+                      setRouteFieldValues({}); 
+                      setRouteDescription(''); 
+                      setRouteSelectedTaxMain(''); 
+                      setRouteSelectedTaxSub(''); 
+                      setRouteSubmitSuccess(false); 
+                      setSelectedFiles([]); 
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: isLocked ? '#f4f5f7' : `${route.color}0A`, cursor: isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.6 : 1, transition: 'all 0.2s' }}
+                    onMouseEnter={e => !isLocked && (e.currentTarget.style.transform = 'translateX(-3px)')}
+                    onMouseLeave={e => !isLocked && (e.currentTarget.style.transform = 'translateX(0)')}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: isLocked ? '#dfe1e6' : route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                      {isLocked ? '🔒' : route.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? '#5e6c84' : '#172b4d' }}>{route.name}</div>
+                      {route.description && <div style={{ fontSize: 11, color: '#5e6c84', marginTop: 2 }}>{route.description}</div>}
+                      <div style={{ fontSize: 10, color: isLocked ? '#5e6c84' : route.color, marginTop: 3, fontWeight: 600 }}>
+                        {isLocked ? 'لديك طلب مفتوح مسبقاً' : `→ ${route.targetDepartmentName}`}
+                      </div>
+                    </div>
+                    <div style={{ color: isLocked ? '#5e6c84' : route.color, fontSize: 18 }}>{isLocked ? '⛔' : '›'}</div>
                   </div>
-                  <div style={{ color: route.color, fontSize: 18 }}>›</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )
@@ -202,7 +226,7 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 12, color: '#5e6c84', marginBottom: 6, fontWeight: 700 }}>
                   المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ff5630' }}>*</span>}
-                  <span style={{ fontSize: 10, color: '#AEAEB2', marginRight: 8, fontWeight: 400 }}>(الحد: {route.formConfig.maxAttachmentMB || 5}MB | {route.formConfig.attachmentTypes?.join(', ') || 'الكل'})</span>
+                  <span style={{ fontSize: 10, color: '#AEAEB2', marginRight: 8, fontWeight: 400 }}>(الحد: {route.formConfig.maxAttachmentMB || 'غير محدد'}MB | {route.formConfig.attachmentTypes?.join(', ') || 'الكل'})</span>
                 </label>
                 <div style={{ position: 'relative', marginBottom: 8 }}>
                   <input type="file" multiple onChange={handleFileChange}

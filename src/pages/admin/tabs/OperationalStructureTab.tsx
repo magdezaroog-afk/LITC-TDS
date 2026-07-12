@@ -214,14 +214,7 @@ export const OperationalStructureTab: React.FC = () => {
 
   const [profileEditData, setProfileEditData] = useState<any>({});
   const handleOpenProfile = (u: any) => {
-     setProfileModalUser(u);
-     setProfileEditData({
-       name: u.name || '',
-       email: u.email || `${u.employeeId}@litc.ly`,
-       phone: u.phone || '',
-       activeUI: u.activeUI || 'ticket_create',
-       status: u.status || 'ACTIVE'
-     });
+     // Legacy profile logic removed
   };
 
   const [assignUsersModalOpen, setAssignUsersModalOpen] = useState<boolean>(false);
@@ -874,7 +867,6 @@ export const OperationalStructureTab: React.FC = () => {
                       </td>
                       <td style={{ padding: '12px 15px' }}>
                           <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                            <button onClick={(e) => { e.stopPropagation(); handleOpenProfile(user); }} style={{ background: 'transparent', border: `1px solid ${OA.blue}30`, color: OA.blue, padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>🪪 بطاقة المستخدم</button>
                             <button onClick={(e) => { e.stopPropagation(); setSingleMoveUser(user); setTargetDeptId(''); setTargetDivId(''); setTargetTeamId(''); setSingleMoveModalOpen(true); }} style={{ background: 'transparent', border: `1px solid ${OA.sepStr}`, color: OA.textSub, padding: '6px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>🔄 نقل</button>
                           </div>
                       </td>
@@ -913,6 +905,42 @@ export const OperationalStructureTab: React.FC = () => {
               </div>
             </div>
             
+            {/* SSO Read-Only Fields */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', padding: '15px', background: 'rgba(9, 30, 66, 0.03)', borderRadius: '8px', border: `1px solid ${OA.sep}` }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: OA.textSub, marginBottom: '5px' }}>🔒 بيانات الدخول الموحد (SSO) - للقراءة فقط</div>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 45%' }}><span style={{ fontSize: '11px', color: '#6b7280' }}>معرف SSO:</span> <span style={{ fontSize: '12px', fontWeight: 'bold', color: OA.text }}>{profileModalUser.ssoId || 'غير متوفر'}</span></div>
+                <div style={{ flex: '1 1 45%' }}><span style={{ fontSize: '11px', color: '#6b7280' }}>معرف المنظمة:</span> <span style={{ fontSize: '12px', fontWeight: 'bold', color: OA.text }}>{profileModalUser.tenantId || 'غير متوفر'}</span></div>
+                <div style={{ flex: '1 1 45%' }}><span style={{ fontSize: '11px', color: '#6b7280' }}>المسمى الوظيفي:</span> <span style={{ fontSize: '12px', fontWeight: 'bold', color: OA.text }}>{profileModalUser.jobTitle || 'غير متوفر'}</span></div>
+                <div style={{ flex: '1 1 45%' }}><span style={{ fontSize: '11px', color: '#6b7280' }}>الدور التنظيمي:</span> <span style={{ fontSize: '12px', fontWeight: 'bold', color: OA.text }}>{profileModalUser.ssoRole || 'EMPLOYEE'}</span></div>
+              </div>
+            </div>
+
+            {/* Role-Based Dynamic View */}
+            {profileModalUser.ssoRole === 'OPERATOR' && (
+              <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#10b981', marginBottom: '10px' }}>🟢 حالة التوافر (Availability Status)</div>
+                <select 
+                  value={profileEditData.availabilityStatus || 'AVAILABLE'} 
+                  onChange={e => setProfileEditData({...profileEditData, availabilityStatus: e.target.value})} 
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #10b981', background: 'rgba(255,255,255,0.8)', color: '#0f172a', fontSize: '13px' }}
+                >
+                  <option value="AVAILABLE">متاح (Available)</option>
+                  <option value="BUSY">مشغول (Busy)</option>
+                  <option value="ON_LEAVE">في إجازة (On-Leave)</option>
+                </select>
+              </div>
+            )}
+            
+            {profileModalUser.ssoRole === 'LEADERSHIP' && (
+              <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0284c7', marginBottom: '10px' }}>👑 نطاق القيادة (Command Scope)</div>
+                <div style={{ fontSize: '12px', color: '#475569' }}>
+                  يتم عرض الهيكل التنظيمي للموظفين التابعين له هنا (يتطلب ربط مع API الاستعلام عن التابعين).
+                </div>
+              </div>
+            )}
+
             {/* Editable Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
                <div>

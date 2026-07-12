@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { ArchiveTable } from '../../components/dashboard/ArchiveTable';
-import { DynamicUserProfile } from '../../components/profile/DynamicUserProfile';
 import { loadRoutes, TicketRouteDefinition } from '../admin/tabs/TicketRoutingTab';
 import { TicketJourneyTimeline } from '../../components/dashboard/TicketJourneyTimeline';
 import { MOCK_JOURNEYS } from '../../components/dashboard/mockJourneyData';
 import { TicketCreatorForm } from '../../components/organisms/TicketCreatorForm';
+import { UserTicketTracker } from '../../components/organisms/UserTicketTracker';
 import { useWorkspaceLayout, CoreRole } from '../../hooks/useWorkspaceLayout';
 
 interface MockTicket {
@@ -28,36 +28,11 @@ const MOCK_TICKETS: MockTicket[] = [
 
 const CURRENT_EMPLOYEE_DEPT = 'IT_SUPPORT'; // For Strict Data Isolation
 
-export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'OPERATIONAL_MANAGER' | 'IT_ADMIN';
 
-const getRoleNotifications = (role: CoreRole) => {
-  if (role === 'IT_ADMIN') {
-    return [
-      { title: '🔒 تحديث أمني ناجح للنظام', desc: 'تم تطبيق الحزمة الأمنية v43.5.2 بنجاح.', time: 'منذ ساعة', unread: false },
-      { title: '⚠️ محاولة تسجيل دخول مريبة', desc: 'تم رصد محاولة دخول من عنوان IP غير معروف.', time: 'منذ ساعتين', unread: true },
-      { title: '⚙️ استقرار خادم قاعدة البيانات', desc: 'استهلاك الذاكرة الإجمالي مستقر عند 42%.', time: 'منذ 4 ساعات', unread: false }
-    ];
-  } else if (role === 'OPERATIONAL_MANAGER') {
-    return [
-      { title: '📈 تنبيه الأداء الأسبوعي', desc: 'معدل إنجاز القسم انخفض بنسبة 4% عن الأسبوع الماضي.', time: 'منذ ساعة', unread: true },
-      { title: '📥 طلبات تصعيد معلقة', desc: 'هناك تذكرتان تم تصعيدهما تتطلبان تدخلاً فورياً.', time: 'منذ ساعتين', unread: true },
-      { title: '📊 تقرير الـ SLA الشهري جاهز', desc: 'تم توليد تقرير الالتزام باتفاقية الخدمة لشهر مايو.', time: 'منذ يوم', unread: false }
-    ];
-  } else if (role === 'OPERATIONAL_USER') {
-    return [
-      { title: '📥 تذكرة جديدة غير مسندة #TKT-1029', desc: 'عطل طارئ في شبكة HQ IT في انتظار الإسناد.', time: 'منذ دقيقة', unread: true },
-      { title: '⏰ SLA وشيك لـ #TKT-0994', desc: 'متبقي 15 دقيقة على خرق الاتفاقية لفريق الشبكات.', time: 'منذ 5 دقائق', unread: true },
-      { title: '🤝 تأكيد تحويل تذكرة #TKT-0883', desc: 'وافق م. خليل على إدارة التذكرة المحولة له.', time: 'منذ ساعتين', unread: false }
-    ];
-  } else {
-    // END_USER / Field Engineer
-    return [
-      { title: '🛠️ تم إسناد تذكرة جديدة لك #TKT-1029', desc: 'الرجاء فحص عطل شبكة HQ IT والتوجه للموقع.', time: 'منذ دقيقة', unread: true },
-      { title: '⚠️ أولوية التذكرة #TKT-0994 مرتفعة', desc: 'تحديث حالة المعالجة لتجنب خرق مؤشر SLA.', time: 'منذ 5 دقائق', unread: true },
-      { title: '📝 رسالة جديدة من العميل', desc: 'تم إضافة مرفق جديد لتفاصيل التذكرة #TKT-1029.', time: 'منذ ساعة', unread: false }
-    ];
-  }
-};
+
+
+import { UnifiedProfileDropdown } from '../../components/infrastructure/UnifiedProfileDropdown';
+import { NotificationBell } from '../../components/infrastructure/NotificationBell';
 
 export const EmployeeWorkspace: React.FC = () => {
   const theme = useTheme();
@@ -69,9 +44,9 @@ export const EmployeeWorkspace: React.FC = () => {
 
   const [expandedJourneyTicketId, setExpandedJourneyTicketId] = useState<string | null>(null);
   const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
-  const [showBellDropdown, setShowBellDropdown] = useState(false);
+
   const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>([]);
-  const [activeInboxTab, setActiveInboxTab] = useState<string>('unassigned');
+  const [activeInboxTab, setActiveInboxTab] = useState<MockTicket['status'] | 'all'>('OPEN');
 
   // Analytics State
   const [analyticsDestDept, setAnalyticsDestDept] = useState<string>('ALL');
@@ -126,11 +101,8 @@ export const EmployeeWorkspace: React.FC = () => {
       {/* Top Header */}
       <header style={{ ...glassPanel, borderRadius: '0', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid rgba(9,30,66,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0052cc 0%, #0747a6 100%)', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>م</div>
-          <div>
-            <h4 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>محمد الموظف</h4>
-            <span style={{ fontSize: '12px', color: '#5e6c84' }}>قسم الدعم الفني ({currentUserRole === 'IT_ADMIN' ? 'مسؤول النظام' : currentUserRole === 'OPERATIONAL_MANAGER' ? 'مدير إدارة تشغيلية' : currentUserRole === 'OPERATIONAL_USER' ? 'رئيس قسم تنفيذي' : 'مهندس ميداني'})</span>
-          </div>
+          <UnifiedProfileDropdown currentUserRole={currentUserRole} />
+          <NotificationBell />
           {/* Simulated User Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(9, 30, 66, 0.04)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(9, 30, 66, 0.08)', marginInlineStart: '15px' }}>
             <label style={{ fontSize: '11px', fontWeight: '700', color: '#0052cc', margin: 0 }}>محاكاة موظف النظام:</label>
@@ -160,46 +132,7 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setShowBellDropdown(!showBellDropdown)}>
-            🔔
-            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ff5630', color: '#fff', fontSize: '10px', width: '15px', height: '15px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {getRoleNotifications(currentUserRole).length}
-            </span>
 
-            {/* Glassmorphic Bell Dropdown */}
-            {showBellDropdown && (
-              <div style={{
-                position: 'absolute',
-                top: '35px',
-                left: '0',
-                width: '300px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(0,0,0,0.1)',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-                padding: '15px',
-                zIndex: 1000,
-                textAlign: 'right'
-              }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#172b4d' }}>تنبيهات الموظف النشطة</span>
-                  <span style={{ fontSize: '11px', color: '#0052cc', cursor: 'pointer' }} onClick={() => setShowBellDropdown(false)}>إغلاق</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {getRoleNotifications(currentUserRole).map((n, i) => (
-                    <div key={i} style={{ padding: '8px', borderRadius: '8px', background: n.unread ? 'rgba(0,82,204,0.05)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.02)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: n.unread ? '#0052cc' : '#172b4d' }}>{n.title}</span>
-                        <span style={{ fontSize: '10px', color: '#5e6c84' }}>{n.time}</span>
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#5e6c84', marginTop: '3px' }}>{n.desc}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
           
           {isComponentActive('tool_language_theme') && langSettings?.allowUserSwitch && (
             <select style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #dfe1e6', background: '#fff', cursor: 'pointer', fontSize: '12px', color: '#172b4d' }}>
@@ -217,7 +150,9 @@ export const EmployeeWorkspace: React.FC = () => {
         {isComponentActive('ticket_create') ? (
           <TicketCreatorForm
             customFields={customFields}
-            ticketCreateSettings={ticketCreateSettings}
+            allowedRouteIds={ticketCreateSettings?.destinationRoutes || []}
+            concurrencyPolicy={ticketCreateSettings?.concurrencyPolicy || 'ALLOW_MULTIPLE'}
+            hasActiveTicketInRoute={(routeId) => false} // TODO: Implement open ticket check once global state is available
             glassPanelStyle={glassPanel}
             inputStyle={inputStyle}
           />
@@ -242,7 +177,7 @@ export const EmployeeWorkspace: React.FC = () => {
             const inboxSettings = getComponentSettings('ticket_inbox');
             const tabsConfig = inboxSettings?.tabsConfig || {};
             
-            const activeTabsMap = [
+            const activeTabsMap: { key: 'all' | 'OPEN' | 'NEW' | 'TRANSFERRED' | 'STUCK', label: string }[] = [
               { key: 'NEW', label: 'التذاكر الجديدة' },
               { key: 'OPEN', label: 'التذاكر المفتوحة' },
               { key: 'TRANSFERRED', label: 'التذاكر المحولة' },
@@ -251,7 +186,7 @@ export const EmployeeWorkspace: React.FC = () => {
 
             // Filter tickets based on status AND strict data isolation
             const filteredTickets = MOCK_TICKETS.filter(t => 
-              t.status === activeInboxTab && 
+              (activeInboxTab === 'all' || t.status === activeInboxTab) && 
               t.destination_department_ids.includes(CURRENT_EMPLOYEE_DEPT)
             );
 
@@ -279,91 +214,22 @@ export const EmployeeWorkspace: React.FC = () => {
                   )}
                 </div>
 
-                {/* Ticket Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                  {filteredTickets.length > 0 ? filteredTickets.map(ticket => (
-                    <div key={ticket.id} style={{ ...glassPanel, position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '4px', background: ticket.priority === 'P1' ? '#ff5630' : ticket.priority === 'P2' ? '#ffab00' : '#0052cc' }}></div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-                        <span style={{ fontSize: '11px', color: ticket.priority === 'P1' ? '#ff5630' : '#0052cc', fontWeight: 'bold', background: ticket.priority === 'P1' ? 'rgba(255,86,48,0.1)' : 'rgba(0,82,204,0.1)', padding: '4px 8px', borderRadius: '4px' }}>
-                          {ticket.priority === 'P1' ? 'طوارئ' : ticket.priority === 'P2' ? 'عاجل' : 'متوسط'} ({ticket.priority})
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#5e6c84' }}>#{ticket.id}</span>
-                      </div>
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#172b4d' }}>{ticket.title}</h4>
-                      
-                      {isComponentActive('tool_sla_timer') && ticket.sla_remaining && (
-                        <div style={{ background: ticket.priority === 'P1' ? 'rgba(255, 86, 48, 0.05)' : 'rgba(0, 82, 204, 0.05)', border: ticket.priority === 'P1' ? '1px solid rgba(255, 86, 48, 0.2)' : '1px solid rgba(0, 82, 204, 0.1)', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
-                          <span style={{ fontSize: '20px' }}>⏳</span>
-                          <div>
-                            <span style={{ display: 'block', fontSize: '10px', color: ticket.priority === 'P1' ? '#ff5630' : '#0052cc', fontWeight: 'bold' }}>الوقت المتبقي</span>
-                            <span style={{ display: 'block', fontSize: '14px', color: '#172b4d', fontWeight: 'bold', fontFamily: 'monospace' }}>{ticket.sla_remaining}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Dynamic Action Buttons */}
-                      {allowedActionsForCurrentTab.length > 0 && (
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-                          {allowedActionsForCurrentTab.includes('CLAIM') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>استلام التذكرة</button>}
-                          {allowedActionsForCurrentTab.includes('OPEN') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#0052cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>فتح للمعالجة</button>}
-                          {allowedActionsForCurrentTab.includes('TRANSFER') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'transparent', color: '#0052cc', border: '1px solid #0052cc', borderRadius: '4px', cursor: 'pointer' }}>تحويل</button>}
-                          {allowedActionsForCurrentTab.includes('REASSIGN') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'transparent', color: '#5e6c84', border: '1px solid #dfe1e6', borderRadius: '4px', cursor: 'pointer' }}>إسناد لموظف</button>}
-                          {allowedActionsForCurrentTab.includes('CLOSE') && <button style={{ flex: 1, padding: '8px', fontSize: '12px', background: '#36b37e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>إغلاق التذكرة</button>}
-                        </div>
-                      )}
-
-                      {/* Sub-Tickets Engine Governance */}
-                      {isComponentActive('ticket_sub') && ticket.status === 'OPEN' && (() => {
-                        const subSettings = getComponentSettings('ticket_sub');
-                        const concurrencyMode = subSettings?.concurrencyMode || 'PARALLEL';
-                        const maxSubTickets = subSettings?.maxSubTickets || 10;
-                        const childTickets = ticket.child_tickets || [];
-                        const openChildTickets = childTickets.filter((ct: any) => ct.status === 'OPEN').length;
-                        
-                        const isSequentialLocked = concurrencyMode === 'SEQUENTIAL' && openChildTickets > 0;
-                        const isMaxLocked = childTickets.length >= maxSubTickets;
-
-                        return (
-                          <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed rgba(9,30,66,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                              <h5 style={{ margin: 0, fontSize: '13px', color: '#172b4d' }}>التذاكر الفرعية ({childTickets.length}/{maxSubTickets})</h5>
-                              {concurrencyMode === 'SEQUENTIAL' && <span style={{ fontSize: '10px', background: '#ffebe6', color: '#ff5630', padding: '2px 6px', borderRadius: '4px' }}>نمط تسلسلي صارم</span>}
-                            </div>
-                            
-                            {isSequentialLocked ? (
-                              <div style={{ background: 'rgba(255, 86, 48, 0.05)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,86,48,0.2)', textAlign: 'center' }}>
-                                <span style={{ fontSize: '12px', color: '#ff5630', fontWeight: 'bold' }}>🔒 يجب اكتمال التذكرة الفرعية القائمة أولاً</span>
-                              </div>
-                            ) : isMaxLocked ? (
-                              <div style={{ background: 'rgba(255, 171, 0, 0.05)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,171,0,0.2)', textAlign: 'center' }}>
-                                <span style={{ fontSize: '12px', color: '#ffab00', fontWeight: 'bold' }}>🚫 تم الوصول للحد الأقصى للتذاكر الفرعية</span>
-                              </div>
-                            ) : (
-                              <button style={{ width: '100%', padding: '8px', fontSize: '12px', background: 'transparent', color: '#0052cc', border: '1px dashed #0052cc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                + إنشاء تذكرة فرعية جديدة
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Ticket Journey Timeline (Compact Mode) */}
-                      {MOCK_JOURNEYS[ticket.id] && (
-                        <div style={{ cursor: 'pointer', transition: 'all 0.2s', padding: '5px', borderRadius: '8px' }}
-                             onClick={() => setExpandedJourneyTicketId(ticket.id)}
-                             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,82,204,0.05)'}
-                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                          <TicketJourneyTimeline ticketId={ticket.id} nodes={MOCK_JOURNEYS[ticket.id]} compactMode={true} />
-                        </div>
-                      )}
-                    </div>
-                  )) : (
-                    <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#5e6c84', ...glassPanel }}>
-                      لا توجد تذاكر في هذه الحالة حالياً ضمن اختصاص قسمك.
-                    </div>
-                  )}
-                </div>
+                {/* Cleaned Pure Component for Tickets */}
+                <UserTicketTracker 
+                  layoutType="grid"
+                  tickets={filteredTickets as any}
+                  activeTab={activeInboxTab}
+                  onTicketClick={(ticketId) => console.log('Open Ticket Modal', ticketId)}
+                  allowedActions={allowedActionsForCurrentTab}
+                  slaEnabled={isComponentActive('tool_sla_timer')}
+                  subTicketsConfig={{
+                    enabled: isComponentActive('ticket_sub'),
+                    concurrencyMode: getComponentSettings('ticket_sub')?.concurrencyMode || 'PARALLEL',
+                    maxSubTickets: getComponentSettings('ticket_sub')?.maxSubTickets || 10
+                  }}
+                  journeys={MOCK_JOURNEYS}
+                  onJourneyClick={setExpandedJourneyTicketId}
+                />
               </>
             );
           })() : (

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { OperationalDashboard } from '../pages/console/OperationalDashboard';
 import { AdminGovernanceConsole } from '../pages/admin/AdminGovernanceConsole';
-import { MobileUserProfile } from './components/MobileUserProfile';
 import { MobileAnalyticsCube } from './components/MobileAnalyticsCube';
+import { NotificationBell } from '../components/infrastructure/NotificationBell';
 
 export const MobileShell: React.FC = () => {
   const navigate = useNavigate();
@@ -12,8 +12,7 @@ export const MobileShell: React.FC = () => {
   const navItems = [
     { label: 'الرئيسية', path: '/', icon: '🏠' },
     { label: 'التحاليل', path: '/mobile/analytics', icon: '📊' },
-    { label: 'الحوكمة', path: '/admin', icon: '🛡️' },
-    { label: 'البروفايل', path: '/profile', icon: '👤' }
+    { label: 'الحوكمة', path: '/admin', icon: '🛡️' }
   ];
 
   return (
@@ -36,9 +35,13 @@ export const MobileShell: React.FC = () => {
         fontSize: '1.2rem',
         fontWeight: 'bold',
         color: '#00ffcc',
-        textShadow: '0 0 10px rgba(0,255,204,0.5)'
+        textShadow: '0 0 10px rgba(0,255,204,0.5)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        LITC Mobility
+        <span>LITC Mobility</span>
+        <NotificationBell />
       </div>
 
       {/* Main Content Area */}
@@ -51,7 +54,6 @@ export const MobileShell: React.FC = () => {
         <Routes>
           <Route path="/" element={<OperationalDashboard />} />
           <Route path="/admin" element={<AdminGovernanceConsole />} />
-          <Route path="/profile" element={<MobileUserProfile />} />
           <Route path="/mobile/analytics" element={<MobileAnalyticsCube />} />
         </Routes>
       </div>
