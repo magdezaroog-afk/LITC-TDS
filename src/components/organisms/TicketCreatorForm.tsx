@@ -22,6 +22,8 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [routeFieldValues, setRouteFieldValues] = useState<Record<string, string>>({});
+  const [routeBuilding, setRouteBuilding] = useState<string>('');
+  const [routeDepartment, setRouteDepartment] = useState<string>('');
   const [routeSelectedTaxMain, setRouteSelectedTaxMain] = useState<string>('');
   const [routeSelectedTaxSub, setRouteSelectedTaxSub] = useState<string>('');
   const [routeDescription, setRouteDescription] = useState<string>('');
@@ -29,8 +31,33 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
 
+  const [orgDepartments, setOrgDepartments] = useState<any[]>([]);
+  const [spatialBuildings, setSpatialBuildings] = useState<any[]>([]);
+
   useEffect(() => {
     setSavedRoutes(loadRoutes());
+    
+    // Load Org Tree and flatten for dropdown
+    try {
+      const s = localStorage.getItem('litc_org_tree');
+      if (s) {
+        const rootNode = JSON.parse(s);
+        const flatten = (n: any): any[] => {
+          let res = [n];
+          if (n.children) n.children.forEach((c: any) => { res = res.concat(flatten(c)); });
+          return res;
+        };
+        // Filter to only include Departments (إدارة) or Offices (مكتب)
+        setOrgDepartments(flatten(rootNode).filter(n => n.type === 'إدارة' || n.type === 'مكتب'));
+      }
+    } catch {}
+
+    // Load Buildings
+    try {
+      const b = localStorage.getItem('litc_buildings_tree');
+      if (b) setSpatialBuildings(JSON.parse(b));
+    } catch {}
+
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,6 +134,8 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                       if(isLocked) return;
                       setSelectedRouteId(route.id); 
                       setRouteFieldValues({}); 
+                      setRouteBuilding('');
+                      setRouteDepartment('');
                       setRouteDescription(''); 
                       setRouteSelectedTaxMain(''); 
                       setRouteSelectedTaxSub(''); 
@@ -182,6 +211,34 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                   </>
                 )}
               </>
+            )}
+
+            {route.formConfig.showBuildingField && (
+              <div style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>
+                  المبنى / الموقع <span style={{ color: '#ff5630' }}>*</span>
+                </label>
+                <select style={inputStyle} value={routeBuilding} onChange={e => setRouteBuilding(e.target.value)}>
+                  <option value="">-- اختر المبنى --</option>
+                  {spatialBuildings.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {route.formConfig.showDepartmentField && (
+              <div style={{ background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: route.color, marginBottom: '6px', fontWeight: 'bold' }}>
+                  الإدارة / المكتب <span style={{ color: '#ff5630' }}>*</span>
+                </label>
+                <select style={inputStyle} value={routeDepartment} onChange={e => setRouteDepartment(e.target.value)}>
+                  <option value="">-- اختر الإدارة --</option>
+                  {orgDepartments.map(d => (
+                    <option key={d.id} value={d.id}>{d.title} ({d.type === 'department' ? 'إدارة' : 'مكتب'})</option>
+                  ))}
+                </select>
+              </div>
             )}
 
             {route.formConfig.customFieldIds && route.formConfig.customFieldIds.length > 0 && customFields

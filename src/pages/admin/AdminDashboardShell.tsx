@@ -3,10 +3,15 @@ import { useAuth } from '../../engine/auth/AuthContext';
 import { useLanguage } from '../../engine/ui-loader/LanguageContext';
 import { UILayoutEngineTab } from './tabs/UILayoutEngineTab';
 import { OperationalStructureTab } from './tabs/OperationalStructureTab';
-import { DynamicFieldsTab } from './tabs/DynamicFieldsTab';
+
 import { SecurityControlTab } from './tabs/SecurityControlTab';
 import { NotificationPolicyConsole } from './NotificationPolicyConsole';
 import { TicketRoutingTab } from './tabs/TicketRoutingTab';
+import { ExternalSystemsTab } from './tabs/ExternalSystemsTab';
+import { IdentityHubTab } from './tabs/IdentityHubTab';
+import { SystemOverviewTab } from './tabs/SystemOverviewTab';
+import { InstitutionalStructureTab } from './tabs/InstitutionalStructureTab';
+import { OrgNode, initialOrgTree } from './tabs/orgStructureTypes';
 
 /* ─────────────────────────────────────────────────────────────
    Apple-Inspired Design System Tokens
@@ -29,12 +34,15 @@ const APPLE = {
   font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
   spring: 'cubic-bezier(0.28, 0.11, 0.32, 1)',
   tabs: {
+    overview: { color: '#3b82f6', bg: '#eff6ff', label: 'اللوحة المركزية', sublabel: 'System Telemetry', icon: '◱' },
     ui: { color: '#5856D6', bg: '#F0F0FF', label: 'هندسة الواجهات', sublabel: 'UI Layout Engine', icon: '✦' },
     operations: { color: '#007AFF', bg: '#EBF5FF', label: 'الهيكل التشغيلي', sublabel: 'Operations & Structure', icon: '⬡' },
-    dynamic_fields: { color: '#FF9500', bg: '#FFF7EB', label: 'المستدلات الديناميكية', sublabel: 'Dynamic Fields Builder', icon: '⬟' },
     security: { color: '#FF3B30', bg: '#FFF0EF', label: 'الأمان والحوكمة', sublabel: 'Security Control Core', icon: '⬢' },
     policies: { color: '#AF52DE', bg: '#F7F0FF', label: 'سياسات التنبيهات', sublabel: 'Notification Policies', icon: '◈' },
     routing: { color: '#FF6B35', bg: '#FFF3ED', label: 'مسارات التذاكر', sublabel: 'Ticket Routing Engine', icon: '⟳' },
+    uecpHub: { color: '#8B5CF6', bg: '#F3E8FF', label: 'الأنظمة الخارجية', sublabel: 'External Integrations', icon: '🔌' },
+    identityHub: { color: '#10B981', bg: '#E6F4EA', label: 'إداراة الهوية والربط', sublabel: 'Identity Federation', icon: '🔑' },
+    institutional: { color: '#8B5CF6', bg: '#F3E8FF', label: 'المباني والمواقع', sublabel: 'Buildings & Locations', icon: '🏢' }
   }
 };
 
@@ -100,7 +108,11 @@ export const AdminDashboardShell: React.FC = () => {
   const { user } = useAuth();
   const { t, dir } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies' | 'routing'>('ui');
+  const [orgTree, setOrgTree] = useState<OrgNode>(() => {
+    try { const s = localStorage.getItem('litc_org_tree'); return s ? JSON.parse(s) : initialOrgTree; } catch { return initialOrgTree; }
+  });
+  useEffect(() => { localStorage.setItem('litc_org_tree', JSON.stringify(orgTree)); }, [orgTree]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional'>('overview');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const startMenuRef = useRef<HTMLDivElement>(null);
@@ -122,7 +134,7 @@ export const AdminDashboardShell: React.FC = () => {
     };
   }, [isStartMenuOpen]);
 
-  const isAdmin = user && user.role === 'IT_Admin';
+  const isAdmin = user && ['system_director', 'super_admin'].includes(user.role);
 
   if (!isAdmin) {
     return (
@@ -147,9 +159,10 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'ui' | 'operations' | 'dynamic_fields' | 'security' | 'policies' | 'routing'> = [
-    'ui', 'operations', 'dynamic_fields', 'security', 'policies', 'routing'
-  ];
+  const TAB_KEYS: Array<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional'> = [
+    'overview',
+    'ui', 'operations', 'security', 'policies', 'routing'
+  , 'uecpHub', 'institutional'];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
@@ -192,39 +205,7 @@ export const AdminDashboardShell: React.FC = () => {
           background: APPLE.bg,
           paddingBottom: '80px', // Space for taskbar
         }}>
-          {/* Top Bar */}
-          <header style={{
-            background: 'rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: `1px solid ${APPLE.separator}`,
-            padding: '16px 28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* Color dot */}
-              <div style={{
-                width: '10px', height: '10px', borderRadius: '50%',
-                background: activeConfig.color,
-                boxShadow: `0 0 8px ${activeConfig.color}60`,
-                transition: 'background 0.3s ease, box-shadow 0.3s ease'
-              }} />
-              <div>
-                <div style={{ fontSize: '15px', fontWeight: '700', color: APPLE.text }}>
-                  {activeConfig.label}
-                </div>
-                <div style={{ fontSize: '12px', color: APPLE.textTertiary, marginTop: '1px' }}>
-                  {activeConfig.sublabel}
-                </div>
-              </div>
-            </div>
-
-          </header>
+          
 
           {/* Content Area */}
           <div
@@ -242,171 +223,104 @@ export const AdminDashboardShell: React.FC = () => {
               width: '100%'
             }}
           >
+            {activeTab === 'overview' && <SystemOverviewTab />}
             {activeTab === 'ui' && <UILayoutEngineTab />}
-            {activeTab === 'operations' && <OperationalStructureTab />}
-            {activeTab === 'dynamic_fields' && <DynamicFieldsTab />}
+            {activeTab === 'operations' && <OperationalStructureTab orgTree={orgTree} />}
+            
             {activeTab === 'security' && <SecurityControlTab />}
             {activeTab === 'policies' && <NotificationPolicyConsole />}
             {activeTab === 'routing' && <TicketRoutingTab />}
+            {activeTab === 'uecpHub' && <ExternalSystemsTab />}
+            {activeTab === 'institutional' && <InstitutionalStructureTab orgTree={orgTree} setOrgTree={setOrgTree} />}
           </div>
         </main>
       </div>
 
-      {/* ── Elegant Glassmorphic Start Menu ── */}
-      <div ref={startMenuRef} style={{
-        position: 'fixed',
-        bottom: '100px',
-        right: '24px',
-        width: '380px',
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        borderRadius: '28px',
-        border: '1px solid rgba(255,255,255,0.6)',
-        boxShadow: '0 16px 50px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.8)',
-        padding: '24px',
-        zIndex: 1000,
-        transformOrigin: 'bottom right',
-        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        opacity: isStartMenuOpen ? 1 : 0,
-        transform: isStartMenuOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)',
-        pointerEvents: isStartMenuOpen ? 'auto' : 'none',
-      }}>
-          {/* Menu Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${APPLE.separator}` }}>
-             <div style={{
-                width: '40px', height: '40px', borderRadius: '12px',
-                background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.policies.color})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '18px', color: '#fff', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-              }}>⚡</div>
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: '800', color: APPLE.text, lineHeight: '1.2' }}>
-                  {t('admin.console')}
-                </div>
-                <div style={{ fontSize: '12px', color: APPLE.textSecondary, marginTop: '2px' }}>
-                  جميع أدوات التحكم التشغيلية
-                </div>
-              </div>
-          </div>
-
-          {/* Navigation Items */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
-            {TAB_KEYS.map((tabId) => {
-              const cfg = APPLE.tabs[tabId];
-              const isActive = activeTab === tabId;
-
-              return (
-                <div
-                  key={tabId}
-                  className="apple-tab-item"
-                  onClick={() => handleTabSwitch(tabId)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    padding: '12px 14px',
-                    borderRadius: '16px',
-                    background: isActive ? cfg.bg : 'transparent',
-                    border: `1px solid ${isActive ? cfg.color + '30' : 'transparent'}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  <div style={{
-                    width: '38px', height: '38px', flexShrink: 0,
-                    borderRadius: '10px',
-                    background: isActive ? cfg.color : `${cfg.color}15`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '16px',
-                    color: isActive ? '#fff' : cfg.color,
-                    fontWeight: '700',
-                    transition: 'all 0.2s ease',
-                    boxShadow: isActive ? `0 4px 12px ${cfg.color}40` : 'none',
-                  }}>
-                    {cfg.icon}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: '14px',
-                      fontWeight: isActive ? '700' : '600',
-                      color: isActive ? cfg.color : APPLE.text,
-                      lineHeight: '1.2',
-                    }}>
-                      {cfg.label}
-                    </div>
-                    <div style={{
-                      fontSize: '11px',
-                      color: APPLE.textTertiary,
-                      marginTop: '2px',
-                    }}>
-                      {cfg.sublabel}
-                    </div>
-                  </div>
-                  
-                  {isActive && (
-                    <div style={{
-                      width: '6px', height: '6px', borderRadius: '50%',
-                      background: cfg.color, flexShrink: 0,
-                    }} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-      {/* ── Unified Floating Menu Button ── */}
+      {/* ── Floating Dock Taskbar (macOS-inspired) ── */}
       <nav style={{
         position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        height: '64px',
-        width: '64px',
-        background: 'rgba(255,255,255,0.75)',
-        backdropFilter: 'blur(25px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(25px) saturate(180%)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        borderRadius: '50%',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)',
+        gap: '6px',
+        padding: '10px 16px',
+        background: 'rgba(255, 255, 255, 0.72)',
+        backdropFilter: 'blur(40px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+        borderRadius: '22px',
+        border: '1px solid rgba(255, 255, 255, 0.6)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
+        zIndex: 90000,
+        animation: 'appleReveal 0.5s cubic-bezier(0.28, 0.11, 0.32, 1)',
       }}>
-        {/* Start Button */}
-        <button
-          className="apple-btn"
-          onClick={(e) => { e.stopPropagation(); setIsStartMenuOpen(!isStartMenuOpen); }}
-          style={{
-            width: '100%', height: '100%',
-            borderRadius: '50%',
-            background: isStartMenuOpen ? 'rgba(0,0,0,0.05)' : 'transparent',
-            border: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '22px',
-            transition: 'all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1)',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-          onMouseLeave={(e) => { if (!isStartMenuOpen) e.currentTarget.style.background = 'transparent'; }}
-        >
-           <div style={{
-              width: '36px', height: '36px', borderRadius: '12px',
-              background: `linear-gradient(135deg, ${APPLE.tabs.ui.color}, ${APPLE.tabs.operations.color})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '18px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-              transform: isStartMenuOpen ? 'scale(0.95)' : 'scale(1)',
-              transition: 'transform 0.2s ease'
-           }}>⚡</div>
-        </button>
+        {TAB_KEYS.map((tabId) => {
+          const cfg = APPLE.tabs[tabId];
+          const isActive = activeTab === tabId;
+
+          return (
+            <button
+              key={tabId}
+              title={`${cfg.label} — ${cfg.sublabel}`}
+              onClick={() => handleTabSwitch(tabId)}
+              style={{
+                position: 'relative',
+                width: '52px',
+                height: '52px',
+                borderRadius: '14px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                background: isActive
+                  ? `linear-gradient(145deg, ${cfg.color}, ${cfg.color}dd)`
+                  : 'transparent',
+                color: isActive ? '#fff' : cfg.color,
+                fontSize: '18px',
+                fontWeight: '700',
+                transition: 'all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1)',
+                transform: isActive ? 'translateY(-4px) scale(1.08)' : 'translateY(0) scale(1)',
+                boxShadow: isActive
+                  ? `0 6px 20px ${cfg.color}50`
+                  : 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = `${cfg.color}15`;
+                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                }
+              }}
+            >
+              <span style={{ fontSize: '20px', lineHeight: '1' }}>{cfg.icon}</span>
+              <span style={{ fontSize: '8px', fontWeight: '600', opacity: 0.85, letterSpacing: '-0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '48px' }}>
+                {cfg.label.length > 6 ? cfg.label.substring(0, 6) + '..' : cfg.label}
+              </span>
+              
+              {/* Active indicator dot */}
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-6px',
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
+                  background: cfg.color,
+                  boxShadow: `0 0 6px ${cfg.color}`,
+                }} />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
     </div>

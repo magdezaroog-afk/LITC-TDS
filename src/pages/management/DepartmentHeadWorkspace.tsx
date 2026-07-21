@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SupervisorPolicyModal } from '../../components/modals/SupervisorPolicyModal';
 
 // Mock types
 type RoutingStrategy = 'POOL' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY';
@@ -34,6 +35,10 @@ export const DepartmentHeadWorkspace: React.FC = () => {
 
   const [assignments, setAssignments] = useState<Record<string, string>>({}); // ticketId -> engineerId
   const [message, setMessage] = useState<string | null>(null);
+
+  const [selectedEngineer, setSelectedEngineer] = useState<Engineer | null>(null);
+  const supervisorRole = 'SECTION_HEAD'; // Mocking the role as SECTION_HEAD for this workspace
+
 
   const handleStrategyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setStrategy(e.target.value as RoutingStrategy);
@@ -78,19 +83,7 @@ export const DepartmentHeadWorkspace: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f4f5f7 0%, #e1e5eb 100%)', color: '#172b4d', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", direction: 'rtl' }}>
       
-      {/* Top Header */}
-      <header style={{ ...glassPanel, borderRadius: '0', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid rgba(9,30,66,0.05)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #6554c0 0%, #403294 100%)', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>ر</div>
-          <div>
-            <h4 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>رئيس القسم</h4>
-            <span style={{ fontSize: '12px', color: '#5e6c84' }}>قسم الدعم الفني وتقنية المعلومات</span>
-          </div>
-        </div>
-        <div>
-          {message && <span style={{ background: '#e3fcef', color: '#006644', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>{message}</span>}
-        </div>
-      </header>
+      
 
       <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
         
@@ -162,16 +155,26 @@ export const DepartmentHeadWorkspace: React.FC = () => {
                     </div>
 
                     <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <select 
-                        style={{ ...selectStyle, width: '200px' }}
-                        value={assignments[ticket.id] || ''}
-                        onChange={(e) => handleEngineerSelect(ticket.id, e.target.value)}
-                      >
-                        <option value="" disabled>-- اختر مهندساً --</option>
-                        {engineers.map(eng => (
-                          <option key={eng.id} value={eng.id}>{eng.name} (مهام: {eng.workload})</option>
-                        ))}
-                      </select>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <select 
+                          style={{ ...selectStyle, width: '200px', marginBottom: 0 }}
+                          value={assignments[ticket.id] || ''}
+                          onChange={(e) => handleEngineerSelect(ticket.id, e.target.value)}
+                        >
+                          <option value="" disabled>-- اختر مهندساً --</option>
+                          {engineers.map(eng => (
+                            <option key={eng.id} value={eng.id}>{eng.name} (مهام: {eng.workload})</option>
+                          ))}
+                        </select>
+                        {assignments[ticket.id] && (
+                          <button 
+                            onClick={() => setSelectedEngineer(engineers.find(e => e.id === assignments[ticket.id]) || null)}
+                            style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '11px', cursor: 'pointer', textAlign: 'right', fontWeight: 'bold' }}
+                          >
+                            [⚙️ سياسة المكونات]
+                          </button>
+                        )}
+                      </div>
 
                       <button 
                         onClick={() => handleAssignTicket(ticket.id)}
@@ -199,6 +202,17 @@ export const DepartmentHeadWorkspace: React.FC = () => {
           </section>
         )}
 
+
+        
+
+        {selectedEngineer && (
+          <SupervisorPolicyModal 
+            engineer={selectedEngineer} 
+            supervisorRole={supervisorRole} 
+            allEngineers={engineers} 
+            onClose={() => setSelectedEngineer(null)} 
+          />
+        )}
       </div>
     </div>
   );

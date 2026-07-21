@@ -8,14 +8,21 @@ import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './engine/ui-loader/ThemeProvider';
 import { AuthProvider, useAuth } from './engine/auth/AuthContext';
 import { OperationalDashboard } from './pages/console/OperationalDashboard';
+import { UnifiedSmartAnalytics } from './components/analytics/UnifiedSmartAnalytics';
 import { AdminGovernanceConsole } from './pages/admin/AdminGovernanceConsole';
+import { AdminDashboardShell } from './pages/admin/AdminDashboardShell';
 
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
+import { Login } from './pages/auth/Login';
+import { PersonaSwitcher } from './components/molecules/PersonaSwitcher';
 import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
+import { WindowProvider } from './engine/ui-loader/WindowContext';
+import { WindowManagerRenderer } from './components/runtime/WindowManagerRenderer';
+import { useWindowManager } from './engine/ui-loader/WindowContext';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
 import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
@@ -23,6 +30,7 @@ import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
 import { EmployeeWorkspace } from './pages/workspace/EmployeeWorkspace';
 import { DepartmentHeadWorkspace } from './pages/management/DepartmentHeadWorkspace';
 import { SystemModeToggle } from './components/molecules/SystemModeToggle';
+import { FloatingTaskbar } from './components/runtime/FloatingTaskbar';
 
 // Route Guard Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({ children, allowedRoles }) => {
@@ -33,9 +41,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
   
   if (!allowedRoles.includes(user.role) && !allowedRoles.includes('ANY')) {
     // Redirect if they have insufficient permissions
-    if (user.role === 'IT_Admin' || user.role === 'admin') {
+    if (['super_admin', 'co_admin'].includes(user.role)) {
       return <Navigate to="/admin" replace />;
-    } else if (user.role === 'Department_Head') {
+    } else if (['dept_head', 'tech_director', 'team_leader'].includes(user.role)) {
       return <Navigate to="/head" replace />;
     } else {
       return <Navigate to="/employee" replace />;
@@ -69,9 +77,9 @@ const WorkspaceWrapper: React.FC<{ children: React.ReactNode; allowedRoles: stri
 
   // 3. Normal Role Guard checks in Work Mode
   if (!allowedRoles.includes(user.role) && !allowedRoles.includes('ANY')) {
-    if (user.role === 'IT_Admin' || user.role === 'admin') {
+    if (['super_admin', 'co_admin'].includes(user.role)) {
       return <Navigate to="/admin" replace />;
-    } else if (user.role === 'Department_Head' || user.role === 'HEAD_DEPT') {
+    } else if (['dept_head', 'tech_director', 'team_leader'].includes(user.role) || user.role === 'HEAD_DEPT') {
       return <Navigate to="/head" replace />;
     } else {
       return <Navigate to="/employee" replace />;
@@ -123,8 +131,7 @@ const Navigation: React.FC = () => {
   const { user } = useAuth();
   const { t, toggleLanguage, language, dir } = useLanguage();
   
-  // Hide Navigation on specific workspaces
-  if (location.pathname === '/employee' || location.pathname === '/head' || location.pathname === '/login') return null;
+  // Unified Navigation across all workspaces
   
   const navStyle: React.CSSProperties = {
     display: 'flex',
@@ -135,9 +142,17 @@ const Navigation: React.FC = () => {
     backdropFilter: 'blur(20px)',
     borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
-    fontFamily: "'Inter', sans-serif",
-    direction: dir
-  };
+    direction: dir,
+    
+    
+  
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    boxSizing: 'border-box',
+    height: '64px',
+    zIndex: 95000,};
 
   const linkStyle = (path: string): React.CSSProperties => {
     const isActive = (location.pathname.startsWith(path) && path !== '/') || location.pathname === path;
@@ -181,6 +196,7 @@ const Navigation: React.FC = () => {
         >
           🌐 {t('nav.language')}
         </button>
+        <SystemModeToggle />
         <NotificationBell />
         <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
       </div>
@@ -188,17 +204,83 @@ const Navigation: React.FC = () => {
   );
 };
 
+const UniversalWorkspaceRouter: React.FC<{ user: any, systemMode: string }> = ({ user, systemMode }) => {
+  const role = user?.role;
+  
+  if (!user) return <Navigate to="/login" replace />;
+
+  const wrapperStyle = {
+    animation: 'fadeIn 0.4s ease-in-out',
+    width: '100%',
+    height: '100%'
+  };
+
+  switch (role) {
+    case 'system_director':
+      return <div key={role} style={wrapperStyle}><AdminDashboardShell /></div>;
+    case 'super_admin':
+    case 'co_admin':
+      return <div key={role} style={wrapperStyle}><AdminGovernanceConsole /></div>;
+    case 'tech_director':
+      return (
+        <div key={role} style={wrapperStyle}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
+            <UnifiedSmartAnalytics title="نظرة عامة على العمليات التقنية" metrics={[]} layout="GRID" />
+            <OperationalDashboard />
+          </div>
+        </div>
+      );
+    case 'dept_head':
+      return <div key={role} style={wrapperStyle}><DepartmentHeadWorkspace /></div>;
+    case 'team_leader':
+      return (
+        <div key={role} style={wrapperStyle}>
+          <div style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>
+            <h2>واجهة قيادة الفريق (Team Leader Hub)</h2>
+            <p>توزيع التذاكر ومراقبة أداء الفريق</p>
+            <button style={{ padding: '10px 20px', background: '#0052cc', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', marginTop: '20px' }}>
+              فتح سياسات المشرفين (Supervisor Policy Modal)
+            </button>
+            <div style={{ marginTop: '40px' }}>
+              <EmployeeWorkspace />
+            </div>
+          </div>
+        </div>
+      );
+    case 'employee':
+    default:
+      return <div key={role} style={wrapperStyle}><EmployeeWorkspace /></div>;
+  }
+};
+
 const AppContent: React.FC = () => {
   const isMobile = useMobileViewport();
   const { user, systemMode } = useAuth();
+  const { activeWindows } = useWindowManager();
+  const location = useLocation();
 
   if (isMobile) {
     return (
       <>
         <MobileShell />
         <NeonSignalToast />
-
       </>
+    );
+  }
+
+  const isLoginPage = location.pathname === '/login';
+  const isSystemDirector = user?.role === 'system_director';
+
+  // 1. If we are on the login page, render ONLY the login page without the Navigation shell
+  if (isLoginPage || !user) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f172a' }}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+        <NeonSignalToast />
+      </div>
     );
   }
 
@@ -206,51 +288,22 @@ const AppContent: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navigation />
       <NeonSignalToast />
-
-      <SystemModeToggle />
+      <FloatingTaskbar />
       
-      <div style={{ flex: 1, padding: user && user.role !== 'IT_Admin' && user.role !== 'admin' ? '0' : '0 20px' }}>
+      <WindowManagerRenderer />
+      <PersonaSwitcher />
+      
+      <div 
+        className={`app-content-layer ${activeWindows.length > 0 ? 'app-content-layer--dimmed' : ''}`}
+        style={{ 
+          flex: 1, 
+          padding: user && !['super_admin', 'co_admin', 'system_director'].includes(user.role) ? '0' : '0 20px', 
+          minHeight: 'calc(100vh - 64px)', 
+          paddingTop: '64px' 
+        }}>
         <Routes>
-          {/* Default Route: Redirect based on role and systemMode */}
-          <Route path="/" element={
-            <ProtectedRoute allowedRoles={['ANY']}>
-              {systemMode === 'employee' ? (
-                <Navigate to="/employee" replace />
-              ) : (
-                user?.role === 'IT_Admin' || user?.role === 'admin' ? 
-                  <Navigate to="/admin" replace /> : 
-                 user?.role === 'Department_Head' || user?.role === 'HEAD_DEPT' ? 
-                  <Navigate to="/head" replace /> :
-                  <Navigate to="/employee" replace />
-              )}
-            </ProtectedRoute>
-          } />
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><AdminGovernanceConsole /></WorkspaceWrapper>} />
-          <Route path="/admin/operational" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><OperationalEntitiesConsole /></WorkspaceWrapper>} />
-          <Route path="/admin/policies" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><NotificationPolicyConsole /></WorkspaceWrapper>} />
-          <Route path="/admin/security" element={<WorkspaceWrapper allowedRoles={['IT_Admin', 'admin']}><SecurityControlTab /></WorkspaceWrapper>} />
-          
-          {/* Department Head Route */}
-          <Route path="/head" element={<WorkspaceWrapper allowedRoles={['Department_Head', 'HEAD_DEPT', 'IT_Admin', 'admin']}><DepartmentHeadWorkspace /></WorkspaceWrapper>} />
-
-          {/* Employee Routes */}
-          <Route path="/employee" element={<WorkspaceWrapper allowedRoles={['Technician', 'Employee', 'viewer', 'IT_Admin', 'admin']} isEmployeeRoute={true}><EmployeeWorkspace /></WorkspaceWrapper>} />
-          
-          {/* Shared Routes */}
-
-          
-          {/* Fallback Routes */}
-          <Route path="/login" element={
-            <div style={{ textAlign: 'center', marginTop: '100px', color: '#fff' }}>
-              <h2>شاشة تسجيل الدخول (Mock)</h2>
-              <p>تم تحويلك إلى هنا لأنك لست مسجلاً.</p>
-              <Link to="/">اضغط هنا لتسجيل الدخول (Simulated)</Link>
-            </div>
-          } />
-          
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="/" element={<UniversalWorkspaceRouter user={user} systemMode={systemMode} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </div>
@@ -262,8 +315,10 @@ export const App: React.FC = () => {
     <LanguageProvider>
       <ThemeProvider>
         <AuthProvider>
+            <WindowProvider>
           <AppContent />
-        </AuthProvider>
+        </WindowProvider>
+          </AuthProvider>
       </ThemeProvider>
     </LanguageProvider>
   );

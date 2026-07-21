@@ -4,15 +4,14 @@
  */
 import React, { createContext, useContext, useState } from 'react';
 
-export type UserRole = 'IT_Admin' | 'Department_Head' | 'Technician' | 'admin' | 'editor' | 'viewer';
+export type Role = 'system_director' | 'super_admin' | 'co_admin' | 'tech_director' | 'dept_head' | 'team_leader' | 'employee';
 
 export interface User {
   id: string;
-  role: UserRole;
-  permissions: string[];
+  role: Role;
+  name: string;
+  email: string;
   department?: string;
-  buildingId?: string;
-  fullName?: string;
 }
 
 export interface AuthContextType {
@@ -23,42 +22,43 @@ export interface AuthContextType {
   hasPermission: (permission: string) => boolean;
   login: (mockUser: User) => void;
   logout: () => void;
+  switchRole: (role: Role) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [systemMode, setSystemMode] = useState<'employee' | 'work'>('employee');
-  // تهيئة مستخدم افتراضي بصلاحيات عليا للاختبار
-  const [user, setUser] = useState<User | null>({
-    id: 'usr-999',
-    role: 'IT_Admin',
-    fullName: 'المهندس المعتمد',
-    department: 'IT',
-    buildingId: 'BLD-HQ',
-    permissions: ['admin', 'view_dashboard', 'edit_settings']
+  const [user, setUser] = useState<User | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const loginAs = params.get('login_as');
+    if (loginAs === 'employee') return { id: 'test1', name: 'مستخدم تشغيلي للاختبار', role: 'employee', email: 'test1@litc.ly', department: 'dept_it' };
+    if (loginAs === 'dept_head') return { id: 'test2', name: 'رئيس قسم للاختبار', role: 'dept_head', email: 'test2@litc.ly', department: 'dept_it' };
+    if (loginAs === 'tech_director') return { id: 'test3', name: 'مدير إدارة للاختبار', role: 'tech_director', email: 'test3@litc.ly', department: 'dept_it' };
+    if (loginAs === 'team_leader') return { id: 'test4', name: 'رئيس فريق للاختبار', role: 'team_leader', email: 'test4@litc.ly', department: 'dept_it' };
+    return null;
   });
   const [loading] = useState<boolean>(false);
 
   const hasPermission = (permission: string): boolean => {
-    // 1. فحص صحة معامل الإذن أمنياً ضد هجمات التلاعب بالمدخلات
-    if (!permission || typeof permission !== 'string' || permission.trim() === '') {
-      throw new Error(`SECURITY_CRITICAL: Invalid or malicious permission parameter evaluated: "${permission}".`);
-    }
+    if (!user) return false;
+    
+    // Super Admin has all permissions
+    if (user.role === 'super_admin') return true;
 
-    // 2. التحقق من وجود سياق مستخدم صالح ونشط
-    if (!user) {
-      throw new Error('SECURITY_CRITICAL: Permission evaluation requested without an active User context.');
+    // Define broad role capabilities here
+    // Currently relying on role-based routing and Taskbar checks.
+    if (permission === 'use_taskbar') {
+      return ['super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user.role);
     }
-
-    // 3. التحقق والمطابقة
-    if (user.role === 'admin') return true;
-    return user.permissions.includes(permission);
+    
+    // Default deny for unspecified specific permissions
+    return false;
   };
 
   const login = (mockUser: User) => {
     setUser(mockUser);
-    setSystemMode('employee'); // الدخول الافتراضي لوضع الموظف
+    setSystemMode('employee'); 
   };
 
   const logout = () => {
@@ -66,8 +66,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSystemMode('employee');
   };
 
+  const switchRole = (newRole: Role) => {
+    if (user) {
+      setUser({ ...user, role: newRole });
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, systemMode, setSystemMode, hasPermission, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, systemMode, setSystemMode, hasPermission, login, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

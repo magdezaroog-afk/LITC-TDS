@@ -752,7 +752,7 @@ export const OperationalDashboard: React.FC<{
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    zIndex: 1100,
+    zIndex: 90000,
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
@@ -787,7 +787,7 @@ export const OperationalDashboard: React.FC<{
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: 90000,
     backdropFilter: 'blur(5px)'
   };
 

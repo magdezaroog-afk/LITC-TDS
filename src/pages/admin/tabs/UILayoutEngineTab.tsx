@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { loadRoutes, TicketRouteDefinition } from './TicketRoutingTab';
 import { LayoutEngineLanding } from './LayoutEngineLanding';
 
-export type ComponentCategory = 'employee_workspace' | 'technical_support_console' | 'operations_and_management' | 'system_admin_control';
+export type ComponentCategory = 'employee_workspace' | 'technical_support_console' | 'operations_and_management' | 'system_admin_control' | 'external_components';
 
 export interface DelegationRule {
   allow_override: boolean;
@@ -450,6 +450,54 @@ export function UILayoutEngineTab() {
   const [simulatorViewMode, setSimulatorViewMode] = useState<'stack' | 'tabs'>('stack');
   const [simulatorActiveTab, setSimulatorActiveTab] = useState<string>('');
 
+  // --- External Systems (UECP) Fetch ---
+  useEffect(() => {
+    const fetchExternalSystems = async () => {
+      try {
+        const res = await fetch('/admin/uecp/systems', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('litc_token')}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const systems = data.data || [];
+          
+          setComponents(prev => {
+            const externalComps: UIComponentDefinition[] = systems.map((sys: any) => {
+              let parsedProps = {};
+              try {
+                const parsedManifest = JSON.parse(sys.manifestData);
+                parsedProps = parsedManifest.uiSchema?.configurableProps || {};
+              } catch (e) {
+                console.error("Failed to parse manifestData for", sys.systemName);
+              }
+              return {
+                id: `ext_${sys.id}`,
+                name: sys.systemName,
+                category: 'external_components' as ComponentCategory,
+                isActive: false,
+                target_zone: 'Main_Viewport',
+                properties: parsedProps
+              };
+            });
+            
+            // Add external components if they don't already exist in the state
+            const newPrev = [...prev];
+            externalComps.forEach(extComp => {
+              if (!newPrev.find(c => c.id === extComp.id)) {
+                newPrev.push(extComp);
+              }
+            });
+            return newPrev;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch external systems', err);
+      }
+    };
+    fetchExternalSystems();
+  }, []);
+
+
 
   // --- Landing Manager State ---
   const mockOrgStructure = [
@@ -530,7 +578,7 @@ export function UILayoutEngineTab() {
       setIsManagerMode(false);
     };
 
-    if (interfaceName && interfaceName.trim() !== '' && interfaceName !== ui.name) {
+    if (!isManagerMode && interfaceName && interfaceName.trim() !== '' && interfaceName !== ui.name) {
       setInterfaceToLoad(ui);
       setShowWarningModal(true);
     } else {
@@ -611,10 +659,21 @@ export function UILayoutEngineTab() {
          savedInterfaces={savedInterfaces}
          setSavedInterfaces={setSavedInterfaces as any}
          handleLoadInterface={handleLoadInterface}
+         handleDeleteInterface={(id) => setSavedInterfaces(prev => prev.filter(ui => ui.id !== id))}
          onStartNewLayout={(payload) => {
             setInterfaceName(payload.name);
-            setInterfaceCategory(payload.roleType);
-            setComponents([]);
+            setInterfaceCategory(payload.roleType as CoreRole);
+            setComponents(prev => {
+              const exts = prev.filter(c => c.category === 'external_components');
+              const inits = initialComponents.map(c => ({...c, isActive: false}));
+              const combined = [...inits];
+              exts.forEach(e => {
+                if (!combined.find(x => x.id === e.id)) {
+                  combined.push({...e, isActive: false});
+                }
+              });
+              return combined;
+            });
             setIsManagerMode(false);
          }}
       />
@@ -710,12 +769,19 @@ export function UILayoutEngineTab() {
                         { key: 'employee_workspace', label: 'المرسل - Employee Workspace', color: '#34C759', icon: '📝' },
                         { key: 'technical_support_console', label: 'الاستقبال - Technical Support Console', color: '#007AFF', icon: '🛠' },
                         { key: 'operations_and_management', label: 'الإدارة والتحليل - Operations & Management', color: '#FF9500', icon: '📊' },
-                        { key: 'system_admin_control', label: 'الحوكمة والآدمن - System Admin Control', color: '#FF3B30', icon: '🛡' }
+                        { key: 'system_admin_control', label: 'الحوكمة والآدمن - System Admin Control', color: '#FF3B30', icon: '🛡' },
+                        { key: 'external_components', label: 'المكونات الخارجية - External Components', color: '#8B5CF6', icon: '🔌' }
                       ].filter(group => {
                           if (showAdvancedComponents) return true;
-                          if (interfaceCategory === 'END_USER' && group.key === 'employee_workspace') return true;
-                          if (interfaceCategory === 'OPERATIONAL_USER' && group.key === 'technical_support_console') return true;
-                          if ((interfaceCategory === 'OPERATIONAL_MANAGER' || interfaceCategory === 'IT_ADMIN') && (group.key === 'operations_and_management' || group.key === 'system_admin_control')) return true;
+                          if (interfaceCategory === 'END_USER') {
+                            return group.key === 'employee_workspace';
+                          }
+                          if (interfaceCategory === 'OPERATIONAL_USER') {
+                            return ['employee_workspace', 'technical_support_console'].includes(group.key);
+                          }
+                          if (interfaceCategory === 'OPERATIONAL_MANAGER' || interfaceCategory === 'IT_ADMIN') {
+                            return true; // Managers and Admins can see everything
+                          }
                           return false;
                         }).map(group => {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
@@ -2782,7 +2848,7 @@ export function UILayoutEngineTab() {
 </div>
 
       {showNameModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
           <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '24px', width: '500px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
             <h3 style={{ color: '#1D1D1F', marginBottom: '24px', fontSize: '22px', fontWeight: '800' }}>تعريف الواجهة والتصنيف (Configuration)</h3>
             
@@ -2923,7 +2989,7 @@ export function UILayoutEngineTab() {
 
       {/* Save Success Modal */}
       {showSaveReportModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)' }}>
           <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '24px', width: '500px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
             <div style={{ width: '80px', height: '80px', background: '#34C759', borderRadius: '50%', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '40px', boxShadow: '0 8px 24px rgba(52,199,89,0.3)' }}>✓</div>
             <h3 style={{ color: '#1D1D1F', marginBottom: '16px', fontSize: '22px', fontWeight: '800' }}>تم الحفظ والاعتماد بنجاح!</h3>
@@ -2951,7 +3017,7 @@ export function UILayoutEngineTab() {
 
       {/* ─── Data Loss Warning Modal ─── */}
       {showWarningModal && interfaceToLoad && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(10px)' }}>
           <div style={{ background: '#FFFFFF', padding: '30px', borderRadius: '24px', width: '450px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)', textAlign: 'center' }}>
             <div style={{ width: '60px', height: '60px', background: '#FF3B30', borderRadius: '50%', margin: '0 auto 15px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '30px', boxShadow: '0 8px 24px rgba(255,59,48,0.3)' }}>!</div>
             <h3 style={{ color: '#1D1D1F', margin: '0 0 15px 0', fontSize: '20px', fontWeight: '800' }}>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LITC Asset Manager (Mock External System)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: transparent;
+            color: #172b4d;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e1e4e8;
+        }
+        .title {
+            margin: 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .handshake-info {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .token-badge {
+            display: inline-block;
+            background: #e3fcef;
+            color: #006644;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .user-badge {
+            display: inline-block;
+            background: #deebff;
+            color: #0747a6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .analytics-box {
+            background: #f4f5f7;
+            border: 1px dashed #c1c7d0;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none; /* Hidden by default, toggled via config */
+        }
+        .asset-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .asset-table th, .asset-table td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #ebecf0;
+        }
+        .asset-table th {
+            color: white;
+        }
+        .status-active {
+            background: #e3fcef;
+            color: #006644;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-maintenance {
+            background: #fff0b3;
+            color: #ff991f;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="title"><span id="accent-icon">📦</span> نظام إدارة الأصول (Mock)</h1>
+        <div>
+            <span class="status-active">متصل بنجاح</span>
+        </div>
+    </div>
+
+    <div class="handshake-info">
+        <strong>تفاصيل المصادقة الواردة (Handshake):</strong><br>
+        <span class="user-badge" id="display-user">جاري جلب المستخدم...</span>
+        <span class="token-badge" id="display-token">جاري جلب التوكن...</span>
+    </div>
+
+    <div class="analytics-box" id="analytics-container">
+        <h3 style="margin-top: 0;">📊 رسم بياني لملخص الأصول</h3>
+        <p style="color: #5e6c84; font-size: 13px;">تم تفعيل عرض التحليلات بناءً على إعدادات الـ UECP Admin.</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <div style="width: 20px; height: 80px; background: currentColor; border-radius: 4px 4px 0 0; opacity: 0.8;"></div>
+            <div style="width: 20px; height: 50px; background: currentColor; border-radius: 4px 4px 0 0; opacity: 0.6; align-self: flex-end;"></div>
+            <div style="width: 20px; height: 100px; background: currentColor; border-radius: 4px 4px 0 0; align-self: flex-end;"></div>
+            <div style="width: 20px; height: 30px; background: currentColor; border-radius: 4px 4px 0 0; opacity: 0.4; align-self: flex-end;"></div>
+        </div>
+    </div>
+
+    <table class="asset-table" id="asset-table">
+        <thead id="table-head">
+            <tr>
+                <th>رقم الأصل</th>
+                <th>الوصف</th>
+                <th>تاريخ الإضافة</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            <!-- Rows injected by JS -->
+        </tbody>
+    </table>
+
+    <script>
+        // 1. Read window.location.search
+        const params = new URLSearchParams(window.location.search);
+        
+        // 2. Extract Handshake Parameters
+        const token = params.get('token') || 'لا يوجد توكن';
+        const userId = params.get('userId') || 'غير معروف';
+        const rawConfig = params.get('config');
+        
+        let config = {};
+        if (rawConfig) {
+            try {
+                config = JSON.parse(decodeURIComponent(rawConfig));
+            } catch (e) {
+                console.error("Failed to parse config JSON", e);
+            }
+        }
+
+        // 3. Display Context Proof
+        const truncatedToken = token.length > 15 ? token.substring(0, 15) + '...' : token;
+        document.getElementById('display-token').innerText = `Token: ${truncatedToken}`;
+        document.getElementById('display-user').innerText = `User ID: ${userId}`;
+
+        // 4. Apply Configuration (Dynamic Styling & Rendering)
+        
+        // Accent Color
+        const accentColor = config.accentColor || '#8B5CF6'; // Default Purple
+        document.getElementById('table-head').style.backgroundColor = accentColor;
+        document.getElementById('accent-icon').style.color = accentColor;
+        document.getElementById('analytics-container').style.color = accentColor;
+        
+        // Show Analytics
+        if (config.showAnalytics) {
+            document.getElementById('analytics-container').style.display = 'block';
+        }
+
+        // Max Items List
+        const allAssets = [
+            { id: "AST-1001", desc: "سيرفر رئيسي HP ProLiant", date: "2026-01-15", status: "نشط", cssClass: "status-active" },
+            { id: "AST-1002", desc: "طابعة شبكية Canon", date: "2026-02-20", status: "تحت الصيانة", cssClass: "status-maintenance" },
+            { id: "AST-1003", desc: "موجه بيانات Cisco Router", date: "2026-03-05", status: "نشط", cssClass: "status-active" },
+            { id: "AST-1004", desc: "موزع شبكة 24-Port Switch", date: "2026-04-10", status: "نشط", cssClass: "status-active" },
+            { id: "AST-1005", desc: "جهاز عرض Projector", date: "2026-05-12", status: "تحت الصيانة", cssClass: "status-maintenance" },
+        ];
+
+        let maxItems = parseInt(config.maxItems);
+        if (isNaN(maxItems) || maxItems <= 0) maxItems = allAssets.length;
+
+        const tableBody = document.getElementById('table-body');
+        const displayAssets = allAssets.slice(0, maxItems);
+
+        if (displayAssets.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد أصول مطابقة.</td></tr>';
+        } else {
+            displayAssets.forEach(asset => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-family: monospace; color: #0052cc; font-weight: bold;">${asset.id}</td>
+                    <td>${asset.desc}</td>
+                    <td style="color: #5e6c84;">${asset.date}</td>
+                    <td><span class="${asset.cssClass}">${asset.status}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+    </script>
+</body>
+</html>

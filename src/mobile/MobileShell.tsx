@@ -4,6 +4,7 @@ import { OperationalDashboard } from '../pages/console/OperationalDashboard';
 import { AdminGovernanceConsole } from '../pages/admin/AdminGovernanceConsole';
 import { MobileAnalyticsCube } from './components/MobileAnalyticsCube';
 import { NotificationBell } from '../components/infrastructure/NotificationBell';
+import { SystemModeToggle } from '../components/molecules/SystemModeToggle';
 
 export const MobileShell: React.FC = () => {
   const navigate = useNavigate();
@@ -26,23 +27,7 @@ export const MobileShell: React.FC = () => {
       overflow: 'hidden'
     }}>
       {/* Header */}
-      <div style={{
-        padding: '20px',
-        textAlign: 'center',
-        background: 'rgba(255,255,255,0.05)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        fontSize: '1.2rem',
-        fontWeight: 'bold',
-        color: '#00ffcc',
-        textShadow: '0 0 10px rgba(0,255,204,0.5)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <span>LITC Mobility</span>
-        <NotificationBell />
-      </div>
+      
 
       {/* Main Content Area */}
       <div style={{
@@ -71,7 +56,7 @@ export const MobileShell: React.FC = () => {
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
-        zIndex: 1000,
+        zIndex: 90000,
         boxShadow: '0 -5px 20px rgba(0,0,0,0.5)'
       }}>
         {navItems.map((item) => {

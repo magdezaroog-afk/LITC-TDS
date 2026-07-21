@@ -22,7 +22,9 @@ model Location {
 model User {
   id            Int     @id @default(autoincrement())
   username      String  @unique
-  email         String  @unique
+  email         String? @unique
+  phone         String? @unique
+  externalAliases String?
   password      String?
   fullName      String
   isActive      Boolean @default(true)
@@ -81,6 +83,7 @@ model User {
   ssoRole                    String                       @default("EMPLOYEE")
   NotificationLog            NotificationLog[]
   UserNotificationPreference UserNotificationPreference[]
+  UserComponentPolicies      UserComponentPolicy[] @relation("UserComponentPolicy")
 }
 
 model Role {
@@ -723,4 +726,53 @@ model UserNotificationPreference {
   isEmailOff Boolean @default(false)
 
   @@unique([userId, eventKey])
+}
+
+
+// ==========================================
+// 10. Dynamic Component Policies & Governance
+// ==========================================
+model UserComponentPolicy {
+  id           String   @id @default(cuid())
+  userId       Int
+  user         User     @relation("UserComponentPolicy", fields: [userId], references: [id], onDelete: Cascade)
+  componentKey String
+  policy       String   // JSON stringified policy to ensure SQL Server compatibility
+  updatedAt    DateTime @updatedAt
+  updatedById  Int
+}
+
+model PolicyAuditLog {
+  id            String   @id @default(cuid())
+  actorId       Int
+  targetUserId  Int
+  componentKey  String
+  changeSummary String
+  status        String   @default("PENDING_ADMIN_APPROVAL")
+  createdAt     DateTime @default(now())
+}
+
+
+// ==========================================
+// 11. Unified External Component Protocol (UECP)
+// ==========================================
+model ExternalSystemRegistry {
+  id           String   @id @default(cuid())
+  systemName   String   @unique
+  manifestUrl  String
+  manifestData String   // JSON stringified to ensure SQL Server compatibility
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==========================================
+// 12. Security Audit & Incident Logs
+// ==========================================
+model SecurityAuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  actorId    String
+  actionType String
+  details    String
 }

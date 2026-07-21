@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { ArchiveTable } from '../../components/dashboard/ArchiveTable';
 import { loadRoutes, TicketRouteDefinition } from '../admin/tabs/TicketRoutingTab';
@@ -6,6 +9,7 @@ import { TicketJourneyTimeline } from '../../components/dashboard/TicketJourneyT
 import { MOCK_JOURNEYS } from '../../components/dashboard/mockJourneyData';
 import { TicketCreatorForm } from '../../components/organisms/TicketCreatorForm';
 import { UserTicketTracker } from '../../components/organisms/UserTicketTracker';
+import { useAuth } from '../../engine/auth/AuthContext';
 import { useWorkspaceLayout, CoreRole } from '../../hooks/useWorkspaceLayout';
 
 interface MockTicket {
@@ -31,8 +35,11 @@ const CURRENT_EMPLOYEE_DEPT = 'IT_SUPPORT'; // For Strict Data Isolation
 
 
 
+import { ExternalComponentRenderer } from '../../components/runtime/ExternalComponentRenderer';
 import { UnifiedProfileDropdown } from '../../components/infrastructure/UnifiedProfileDropdown';
 import { NotificationBell } from '../../components/infrastructure/NotificationBell';
+import { SystemModeToggle } from '../../components/molecules/SystemModeToggle';
+import { Plus, LayoutDashboard, Ticket } from 'lucide-react';
 
 export const EmployeeWorkspace: React.FC = () => {
   const theme = useTheme();
@@ -40,10 +47,38 @@ export const EmployeeWorkspace: React.FC = () => {
   const [currentUserRole, setCurrentUserRole] = useState<CoreRole>('OPERATIONAL_MANAGER');
   
   // Custom Hook for layout logic
+  const { systemMode } = useAuth();
   const { schema, customFields, loading, getComponentSettings, isComponentActive } = useWorkspaceLayout(currentUserRole);
 
+  
   const [expandedJourneyTicketId, setExpandedJourneyTicketId] = useState<string | null>(null);
   const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
+  
+  // Phase 3: Runtime Policy Mask
+  const [dynamicPolicy, setDynamicPolicy] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchPolicy = async () => {
+      try {
+        // Fallback for mocked user roles to target an ID, we'll just mock user 1
+        const res = await fetch('/api/v1/auth/user-policy/GLOBAL_POLICY?userId=1', {
+          headers: { 'Authorization': 'Bearer system_token_123' }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.policy) {
+            setDynamicPolicy(JSON.parse(json.policy));
+          } else {
+            setDynamicPolicy(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic policy', err);
+      }
+    };
+    fetchPolicy();
+  }, [currentUserRole]);
+
 
   const [savedRoutes, setSavedRoutes] = useState<TicketRouteDefinition[]>([]);
   const [activeInboxTab, setActiveInboxTab] = useState<MockTicket['status'] | 'all'>('OPEN');
@@ -98,12 +133,34 @@ export const EmployeeWorkspace: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f4f5f7 0%, #e1e5eb 100%)', color: '#172b4d', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", direction: 'rtl' }}>
       
-      {/* Top Header */}
-      <header style={{ ...glassPanel, borderRadius: '0', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid rgba(9,30,66,0.05)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <UnifiedProfileDropdown currentUserRole={currentUserRole} />
-          <NotificationBell />
-          {/* Simulated User Selector */}
+      
+
+      {systemMode === 'work' ? (
+        <>
+        {/* Work Mode Logo Background */}
+        <div
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 0,
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <div style={{ fontSize: '150px', filter: 'drop-shadow(0 0 40px rgba(0, 82, 204, 0.5))' }}>🛡️</div>
+              <h1 style={{ fontSize: '60px', color: '#0052cc', margin: 0, fontWeight: '900', letterSpacing: '4px' }}>LITC</h1>
+              <p style={{ fontSize: '24px', color: '#172b4d', fontWeight: 'bold' }}>OPERATING SYSTEM</p>
+            </div>
+        </>
+      ) : (
+        <>
+          <div style={{ padding: '15px 30px', display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Simulated User Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(9, 30, 66, 0.04)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(9, 30, 66, 0.08)', marginInlineStart: '15px' }}>
             <label style={{ fontSize: '11px', fontWeight: '700', color: '#0052cc', margin: 0 }}>محاكاة موظف النظام:</label>
             <select 
@@ -129,41 +186,36 @@ export const EmployeeWorkspace: React.FC = () => {
               <option value="END_USER">👤 Field Engineer (End User)</option>
             </select>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-
-          
-          {isComponentActive('tool_language_theme') && langSettings?.allowUserSwitch && (
-            <select style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #dfe1e6', background: '#fff', cursor: 'pointer', fontSize: '12px', color: '#172b4d' }}>
-              <option value="ar" selected={langSettings.defaultLang === 'ar'}>العربية</option>
-              <option value="en" selected={langSettings.defaultLang === 'en'}>English</option>
-            </select>
-          )}
-        </div>
-      </header>
-
-      {/* Main Workspace Core */}
-      <div style={{ padding: '30px', display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '30px', maxWidth: '1400px', margin: '0 auto' }}>
+          </div>
+          {/* Main Workspace Core */}
+      <div style={{ padding: '30px', display: 'flex', gap: '30px', maxWidth: '1400px', margin: '0 auto', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         
         {/* Right Sidebar: Ticket Creator */}
-        {isComponentActive('ticket_create') ? (
-          <TicketCreatorForm
-            customFields={customFields}
-            allowedRouteIds={ticketCreateSettings?.destinationRoutes || []}
-            concurrencyPolicy={ticketCreateSettings?.concurrencyPolicy || 'ALLOW_MULTIPLE'}
-            hasActiveTicketInRoute={(routeId) => false} // TODO: Implement open ticket check once global state is available
-            glassPanelStyle={glassPanel}
-            inputStyle={inputStyle}
-          />
-        ) : (
-          <aside style={{ ...glassPanel, alignSelf: 'start', opacity: 0.5, textAlign: 'center' }}>
-            <span style={{ display: 'block', padding: '40px 0' }}>مكون إنشاء التذاكر معطل من قبل النظام.</span>
-          </aside>
-        )}
+        <div 
+              
+              style={{ flex: '1 1 350px', position: 'sticky', top: '90px' }}
+            >
+              {isComponentActive('ticket_create') ? (
+                <TicketCreatorForm
+                  customFields={customFields}
+                  allowedRouteIds={ticketCreateSettings?.destinationRoutes || []}
+                  concurrencyPolicy={ticketCreateSettings?.concurrencyPolicy || 'ALLOW_MULTIPLE'}
+                  hasActiveTicketInRoute={(routeId) => false}
+                  glassPanelStyle={glassPanel}
+                  inputStyle={inputStyle}
+                />
+              ) : (
+                <aside style={{ ...glassPanel, alignSelf: 'start', opacity: 0.5, textAlign: 'center' }}>
+                  <span style={{ display: 'block', padding: '40px 0' }}>مكون إنشاء التذاكر معطل من قبل النظام.</span>
+                </aside>
+              )}
+            </div>
 
         {/* Center: Active Tickets Grid */}
-        <main style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <main 
+              
+              style={{ flex: '3 1 700px', display: 'flex', flexDirection: 'column', gap: '24px' }}
+            >
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ margin: 0, color: '#172b4d', fontSize: '20px' }}>لوحة تتبع البلاغات النشطة</h2>
@@ -185,12 +237,34 @@ export const EmployeeWorkspace: React.FC = () => {
             ].filter(t => tabsConfig[t.key]?.active);
 
             // Filter tickets based on status AND strict data isolation
-            const filteredTickets = MOCK_TICKETS.filter(t => 
+            let filteredTickets = MOCK_TICKETS.filter(t => 
               (activeInboxTab === 'all' || t.status === activeInboxTab) && 
               t.destination_department_ids.includes(CURRENT_EMPLOYEE_DEPT)
             );
 
-            const allowedActionsForCurrentTab = tabsConfig[activeInboxTab]?.actions || [];
+            // Phase 3: Runtime Masking - Data Scope Interception
+            if (dynamicPolicy && dynamicPolicy.archiveScope) {
+              if (dynamicPolicy.archiveScope === 'PERSONAL') {
+                // Personal: strict filtering (mocked as P1 only)
+                filteredTickets = filteredTickets.filter(t => t.priority === 'P1');
+              } else if (dynamicPolicy.archiveScope === 'TEAM') {
+                // Team: broader filtering
+                filteredTickets = filteredTickets.filter(t => ['P1', 'P2'].includes(t.priority));
+              }
+              // DEPARTMENT or GLOBAL_OPERATIONAL allows all
+            }
+
+            let allowedActionsForCurrentTab = tabsConfig[activeInboxTab]?.actions || [];
+
+            // Phase 3: Runtime Masking - Action Interception
+            if (dynamicPolicy && dynamicPolicy.triageSwitches) {
+              if (dynamicPolicy.triageSwitches.canClaimSelf === false) {
+                allowedActionsForCurrentTab = allowedActionsForCurrentTab.filter((a: string) => a !== 'CLAIM');
+              }
+              if (dynamicPolicy.triageSwitches.canForwardInternally === false) {
+                allowedActionsForCurrentTab = allowedActionsForCurrentTab.filter((a: string) => a !== 'TRANSFER');
+              }
+            }
 
             return (
               <>
@@ -702,10 +776,28 @@ export const EmployeeWorkspace: React.FC = () => {
           <DynamicUserProfile />
         </div>
       )}
+        
 
-      {/* Expanded Ticket Journey Modal */}
+
+        
+
+
+        
+ 
+        
+ 
+        
+ 
+        
+ 
+        
+ 
+        
+ 
+        
+{/* Expanded Ticket Journey Modal */}
       {expandedJourneyTicketId && MOCK_JOURNEYS[expandedJourneyTicketId] && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 30, 66, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 30, 66, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000 }}>
           <div style={{ background: '#fff', width: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '12px', boxShadow: '0 8px 30px rgba(9, 30, 66, 0.25)', position: 'relative' }}>
             <button 
               onClick={() => setExpandedJourneyTicketId(null)}
@@ -717,6 +809,8 @@ export const EmployeeWorkspace: React.FC = () => {
           </div>
         </div>
       )}
+          </>
+        )}
     </div>
   );
 };

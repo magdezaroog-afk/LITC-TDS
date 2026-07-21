@@ -45,7 +45,7 @@ export const NeonSignalToast: React.FC = () => {
       bottom: isMobile ? 'auto' : '30px',
       right: isMobile ? '10px' : '30px',
       left: isMobile ? '10px' : 'auto',
-      zIndex: 9999,
+      zIndex: 99999,
       display: 'flex',
       flexDirection: 'column',
       gap: '15px'

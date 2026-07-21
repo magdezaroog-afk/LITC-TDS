@@ -11,6 +11,7 @@ export interface LayoutEngineLandingProps {
   savedInterfaces: SavedInterface[];
   setSavedInterfaces: (val: SavedInterface[]) => void;
   handleLoadInterface: (ui: SavedInterface) => void;
+  handleDeleteInterface?: (id: string) => void;
   onStartNewLayout: (payload: { name: string; roleType: string; config?: any }) => void;
 }
 
@@ -18,6 +19,7 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
   savedInterfaces,
   setSavedInterfaces,
   handleLoadInterface,
+  handleDeleteInterface,
   onStartNewLayout
 }) => {
   const [view, setView] = useState<'LANDING' | 'WIZARD' | 'SAVED'>('LANDING');
@@ -34,6 +36,10 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
   const [manageLayoutId, setManageLayoutId] = useState<string | null>(null);
   const [mockUsers, setMockUsers] = useState<any[]>([]);
   const [newUserEmail, setNewUserEmail] = useState('');
+  
+  // Deletion State
+  const [layoutToDelete, setLayoutToDelete] = useState<SavedInterface | null>(null);
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
   // Fetch users for Staff Management simulation
   useEffect(() => {
@@ -242,7 +248,18 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
                  <h3 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#0f172a' }}>{ui.name}</h3>
                  <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: '12px' }}>{ui.roleType}</span>
                </div>
-               <button onClick={() => handleLoadInterface(ui)} style={{ background: '#f1f5f9', border: 'none', padding: '6px 12px', borderRadius: '6px', color: '#3b82f6', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>تعديل الواجهة</button>
+               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                 <button onClick={() => handleLoadInterface(ui)} style={{ background: '#f1f5f9', border: 'none', padding: '6px 12px', borderRadius: '6px', color: '#3b82f6', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>تعديل الواجهة</button>
+                 <button onClick={() => {
+                   const linkedUsers = mockUsers.filter(u => u.layoutId === ui.id);
+                   if (linkedUsers.length > 0) {
+                     setLayoutToDelete(ui);
+                     setShowDeleteWarning(true);
+                   } else {
+                     handleDeleteInterface && handleDeleteInterface(ui.id);
+                   }
+                 }} style={{ background: '#fee2e2', border: 'none', width: '32px', height: '32px', borderRadius: '50%', color: '#ef4444', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="حذف الواجهة">×</button>
+               </div>
             </div>
 
             <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
@@ -319,6 +336,38 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
       {view === 'LANDING' && renderLanding()}
       {view === 'WIZARD' && renderWizard()}
       {view === 'SAVED' && renderSavedLayouts()}
+
+      {/* Delete Warning Modal */}
+      {showDeleteWarning && layoutToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ color: '#ef4444', marginTop: 0 }}>⚠️ تحذير: مستخدمون مرتبطون بالواجهة</h3>
+            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.6' }}>
+              أنت على وشك حذف الواجهة <strong>{layoutToDelete.name}</strong>.
+            </p>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+              يوجد حالياً <strong>{mockUsers.filter(u => u.layoutId === layoutToDelete.id).length}</strong> مستخدم/موظف مرتبط بهذه الواجهة التشغيلية. إذا قمت بحذفها، سيفقدون الوصول لهذه الواجهة وسيعودون لاستخدام الواجهة الافتراضية للموظف العادي (End User).
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
+              <button onClick={() => {
+                const newUsers = mockUsers.map(u => u.layoutId === layoutToDelete.id ? { ...u, layoutId: null } : u);
+                saveUsersToStorage(newUsers);
+                handleDeleteInterface && handleDeleteInterface(layoutToDelete.id);
+                setShowDeleteWarning(false);
+                setLayoutToDelete(null);
+              }} style={{ flex: 1, padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                موافق، احذف الواجهة
+              </button>
+              <button onClick={() => {
+                setShowDeleteWarning(false);
+                setLayoutToDelete(null);
+              }} style={{ flex: 1, padding: '10px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

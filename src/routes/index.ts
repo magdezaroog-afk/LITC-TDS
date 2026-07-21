@@ -101,6 +101,7 @@ router.delete('/admin/references/:id', authMiddleware, (req, res, next) => Datab
 // Operational Entities (Departments, Teams, Users)
 // =========================================================================
 import { OperationalAdminController } from '../backend/controllers/OperationalAdminController';
+import { UECPValidatorService } from '../backend/services/UECPValidatorService';
 
 router.get('/admin/operational/departments', authMiddleware, OperationalAdminController.getDepartments);
 router.post('/admin/operational/departments', authMiddleware, OperationalAdminController.createDepartment);
@@ -112,5 +113,21 @@ router.delete('/admin/operational/users/:userId/teams/:teamId', authMiddleware, 
 // UI Config Routes
 router.get('/admin/ui-config', authMiddleware, OperationalAdminController.getUIConfig);
 router.post('/admin/ui-config', authMiddleware, OperationalAdminController.saveUIConfig);
+router.post('/admin/operational/user-policy', authMiddleware, OperationalAdminController.updateUserPolicy);
+
+// =========================================================================
+// Admin Supreme Veto Hub
+// =========================================================================
+router.get('/admin/governance/policy/pending', authMiddleware, OperationalAdminController.getPendingPolicies);
+router.post('/admin/governance/policy/approve', authMiddleware, OperationalAdminController.approvePolicy);
+router.post('/admin/governance/policy/veto', authMiddleware, OperationalAdminController.vetoPolicy);
+
+
+
+// =========================================================================
+// Unified External Component Protocol (UECP)
+// =========================================================================
+router.post('/admin/uecp/register', authMiddleware, UECPValidatorService.registerExternalSystem);
+router.get('/admin/uecp/systems', authMiddleware, UECPValidatorService.getAllSystems);
 
 export default router;

@@ -90,7 +90,7 @@ export const ActionModals: React.FC<ActionModalsProps> = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: 90000,
     backdropFilter: 'blur(5px)',
   };
 

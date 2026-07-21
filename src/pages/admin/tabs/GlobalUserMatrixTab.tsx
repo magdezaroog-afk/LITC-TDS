@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../engine/ui-loader/ThemeProvider';
 import { GarbageCollectionCore } from '../../../services/GarbageCollectionCore';
+import { AuditService } from '../../../backend/services/AuditService';
 
 export const GlobalUserMatrixTab: React.FC = () => {
   const theme = useTheme();
@@ -9,6 +10,17 @@ export const GlobalUserMatrixTab: React.FC = () => {
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [selectedDept, setSelectedDept] = useState('');
+
+  // Pseudo logic for current admin context
+  const currentUserRole = 'DIRECT_MANAGER'; // Simulate logged in user role ('SYSTEM_ADMIN' or 'DIRECT_MANAGER')
+  const currentUserDept = 'إدارة تقنية المعلومات';
+
+  const checkPermission = (targetUsers: any[]) => {
+    if (currentUserRole === 'SYSTEM_ADMIN') return true;
+    // Direct Manager logic
+    return targetUsers.every(u => u.departmentName === currentUserDept);
+  };
+
 
   useEffect(() => {
     fetchUsers();
@@ -68,6 +80,11 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
 
   const handleBulkFreeze = async () => {
     if (selectedUserIds.length === 0) return;
+    const targetUsers = users.filter(u => selectedUserIds.includes(u.id));
+    if (!checkPermission(targetUsers)) {
+      alert('ليس لديك صلاحية تجميد موظفين خارج إدارتك.');
+      return;
+    }
     if (!window.confirm(`هل أنت متأكد من تجميد ${selectedUserIds.length} حساب(ات) لحظياً؟`)) return;
     
     // Reactively update UI instantly
@@ -86,6 +103,7 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ userIds: selectedUserIds })
       });
+      AuditService.logSecurityEvent('Admin_Context', 'BULK_FREEZE', { userIds: selectedUserIds });
       // Clear selection after success
       setSelectedUserIds([]);
     } catch (e) {
@@ -95,6 +113,11 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
 
   const handleBulkChangeDept = async () => {
     if (selectedUserIds.length === 0 || !selectedDept) return;
+    const targetUsers = users.filter(u => selectedUserIds.includes(u.id));
+    if (!checkPermission(targetUsers)) {
+      alert('ليس لديك صلاحية نقل موظفين خارج إدارتك.');
+      return;
+    }
     
     // Reactively update UI instantly
     setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, departmentName: selectedDept.split('/')[0], subTeamName: selectedDept.split('/')[1] || '' } : u));
@@ -107,6 +130,7 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ userIds: selectedUserIds, departmentStr: selectedDept })
       });
+      AuditService.logSecurityEvent('Admin_Context', 'BULK_REASSIGN', { userIds: selectedUserIds, newDepartment: selectedDept });
       setShowDeptDropdown(false);
       setSelectedUserIds([]);
       setSelectedDept('');
@@ -116,7 +140,15 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
   };
 
   const handleAction = (userId: number, actionType: string) => {
+    
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser || !checkPermission([targetUser])) {
+      alert('ليس لديك صلاحية تعديل هذا الموظف.');
+      return;
+    }
+    AuditService.logSecurityEvent('Admin_Context', `SINGLE_ACTION_${actionType}`, { targetUserId: userId });
     alert(`تنفيذ إجراء [${actionType}] على المستخدم رقم ${userId} - (قيد التطوير)`);
+    
   };
 
   const tableStyle: React.CSSProperties = {

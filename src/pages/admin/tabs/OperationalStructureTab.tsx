@@ -119,7 +119,11 @@ const initialOperationalUsers: OrgUser[] = [
   { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
   { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' },
   { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' },
-  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
+  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' },
+  { id: 'test1', name: 'مستخدم تشغيلي للاختبار', email: 'test1@litc.ly', employeeId: 'T-001', role: 'OPERATIONAL_USER', departmentId: 'dept_it' },
+  { id: 'test2', name: 'رئيس قسم للاختبار', email: 'test2@litc.ly', employeeId: 'T-002', role: 'SECTION_HEAD', departmentId: 'dept_it' },
+  { id: 'test3', name: 'مدير إدارة للاختبار', email: 'test3@litc.ly', employeeId: 'T-003', role: 'OPERATIONAL_MANAGER', departmentId: 'dept_it' },
+  { id: 'test4', name: 'رئيس فريق للاختبار', email: 'test4@litc.ly', employeeId: 'T-004', role: 'TEAM_LEADER', departmentId: 'dept_it' }
 ];
 
 const initialDepartments: OrgDepartment[] = [
@@ -180,11 +184,19 @@ const initialDepartments: OrgDepartment[] = [
           { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
         ]
       }
+    ],
+    unassignedUsers: [
+      { id: 'test1', name: 'مستخدم تشغيلي للاختبار', email: 'test1@litc.ly', employeeId: 'T-001', role: 'OPERATIONAL_USER', departmentId: 'dept_it' },
+      { id: 'test2', name: 'رئيس قسم للاختبار', email: 'test2@litc.ly', employeeId: 'T-002', role: 'SECTION_HEAD', departmentId: 'dept_it' },
+      { id: 'test3', name: 'مدير إدارة للاختبار', email: 'test3@litc.ly', employeeId: 'T-003', role: 'OPERATIONAL_MANAGER', departmentId: 'dept_it' },
+      { id: 'test4', name: 'رئيس فريق للاختبار', email: 'test4@litc.ly', employeeId: 'T-004', role: 'TEAM_LEADER', departmentId: 'dept_it' }
     ]
   }
 ];
 
-export const OperationalStructureTab: React.FC = () => {
+import { OrgNode } from './orgStructureTypes';
+
+export const OperationalStructureTab: React.FC<{ orgTree: OrgNode }> = ({ orgTree }) => {
   const [operationalUsers, setOperationalUsers] = useState<OrgUser[]>(() => {
     const saved = localStorage.getItem('mockOperationalUsers');
     return saved ? JSON.parse(saved) : initialOperationalUsers;
@@ -220,6 +232,9 @@ export const OperationalStructureTab: React.FC = () => {
   const [assignUsersModalOpen, setAssignUsersModalOpen] = useState<boolean>(false);
   
   // --- Universal Edit Entity Modal States ---
+  const [addEntityModalOpen, setAddEntityModalOpen] = useState<{ type: 'DEPARTMENT' | 'DIVISION' | 'TEAM', parentId?: string, parentName?: string, availableNodes: any[] } | null>(null);
+  const [addEntitySelectedNode, setAddEntitySelectedNode] = useState<any>(null);
+
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
   const [editEntityType, setEditEntityType] = useState<'DEPARTMENT' | 'DIVISION' | 'TEAM' | null>(null);
   const [editEntityId, setEditEntityId] = useState<string | null>(null);
@@ -611,6 +626,145 @@ export const OperationalStructureTab: React.FC = () => {
     font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif",
   };
 
+
+  // Helper to extract flat lists from orgTree
+  const getNodesByType = (tree: OrgNode, types: string[]): OrgNode[] => {
+    let result: OrgNode[] = [];
+    if (types.includes(tree.type)) result.push(tree);
+    for (const child of tree.children) {
+      result = result.concat(getNodesByType(child, types));
+    }
+    return result;
+  };
+
+  const getChildNodesByType = (parentId: string, tree: OrgNode, types: string[]): OrgNode[] => {
+    const findNode = (n: OrgNode): OrgNode | null => {
+      if (n.name === parentId || n.id === parentId) return n; // Match by name or ID
+      for (const c of n.children) {
+        const found = findNode(c);
+        if (found) return found;
+      }
+      return null;
+    };
+    const parentNode = findNode(tree);
+    if (!parentNode) return [];
+    return parentNode.children.filter(c => types.includes(c.type));
+  };
+
+  const handleAddDepartment = () => {
+    const availableNodes = getNodesByType(orgTree, ['إدارة', 'مكتب']);
+    if (availableNodes.length === 0) {
+      alert('لا توجد إدارات أو مكاتب في الهيكل المؤسسي لإضافتها.');
+      return;
+    }
+    const existingDeptNames = departments.map(d => d.name);
+    const nodesToAdd = availableNodes.filter(n => !existingDeptNames.includes(n.name));
+    
+    if (nodesToAdd.length === 0) {
+      alert('جميع الإدارات في الهيكل المؤسسي تم إضافتها مسبقاً.');
+      return;
+    }
+
+    setAddEntityModalOpen({ type: 'DEPARTMENT', availableNodes: nodesToAdd });
+    setAddEntitySelectedNode(nodesToAdd[0]);
+  };
+
+  const handleAddDivision = (deptId: string, deptName: string) => {
+    const availableNodes = getChildNodesByType(deptName, orgTree, ['قسم']);
+    if (availableNodes.length === 0) {
+      alert(`لا توجد أقسام متفرعة من "${deptName}" في الهيكل المؤسسي.`);
+      return;
+    }
+
+    const dept = departments.find(d => d.id === deptId);
+    if (!dept) return;
+
+    const existingDivNames = dept.divisions.map(d => d.name);
+    const nodesToAdd = availableNodes.filter(n => !existingDivNames.includes(n.name));
+
+    if (nodesToAdd.length === 0) {
+      alert('تم إضافة جميع الأقسام المتاحة لهذه الإدارة.');
+      return;
+    }
+
+    const optionsText = nodesToAdd.map((n, i) => `${i + 1}- ${n.name}`).join('\n');
+    const selectedIdx = window.prompt(`اختر القسم لإنشائه تحت ${deptName}:\n${optionsText}`);
+    
+    if (!selectedIdx) return;
+    const idx = parseInt(selectedIdx) - 1;
+    if (nodesToAdd[idx]) {
+      const newNode = nodesToAdd[idx];
+      setDepartments(prev => prev.map(d => {
+        if (d.id === deptId) {
+          return {
+            ...d,
+            divisions: [...d.divisions, {
+              id: `div_${Date.now()}`,
+              name: newNode.name,
+              isIndependent: false,
+              teams: [],
+              unassignedUsers: [],
+              expanded: false
+            }]
+          };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleAddTeam = (deptId: string, divId: string, divName: string) => {
+    const availableNodes = getChildNodesByType(divName, orgTree, ['فريق', 'وحدة']);
+    if (availableNodes.length === 0) {
+      alert(`لا توجد وحدات أو فرق متفرعة من القسم "${divName}" في الهيكل المؤسسي.`);
+      return;
+    }
+
+    const dept = departments.find(d => d.id === deptId);
+    if (!dept) return;
+    const div = dept.divisions.find(d => d.id === divId);
+    if (!div) return;
+
+    const existingTeamNames = div.teams.map(t => t.name);
+    const nodesToAdd = availableNodes.filter(n => !existingTeamNames.includes(n.name));
+
+    if (nodesToAdd.length === 0) {
+      alert('تم إضافة جميع الوحدات والفرق المتاحة لهذا القسم.');
+      return;
+    }
+
+    const optionsText = nodesToAdd.map((n, i) => `${i + 1}- ${n.name} (${n.type})`).join('\n');
+    const selectedIdx = window.prompt(`اختر الوحدة/الفريق لإنشائه تحت ${divName}:\n${optionsText}`);
+    
+    if (!selectedIdx) return;
+    const idx = parseInt(selectedIdx) - 1;
+    if (nodesToAdd[idx]) {
+      const newNode = nodesToAdd[idx];
+      setDepartments(prev => prev.map(d => {
+        if (d.id === deptId) {
+          return {
+            ...d,
+            divisions: d.divisions.map(dv => {
+              if (dv.id === divId) {
+                return {
+                  ...dv,
+                  teams: [...dv.teams, {
+                    id: `team_${Date.now()}`,
+                    name: newNode.name,
+                    users: [],
+                    expanded: false
+                  }]
+                };
+              }
+              return dv;
+            })
+          };
+        }
+        return d;
+      }));
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', textAlign: 'start', fontFamily: OA.font, color: OA.text }}>
       
@@ -630,7 +784,7 @@ export const OperationalStructureTab: React.FC = () => {
               <span style={{ background: `${OA.blue}15`, color: OA.blue, width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '15px' }}>⬡</span>
               شجرة الإدارات التشغيلية
             </h3>
-            <button style={{ background: OA.blue, color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: `0 2px 8px ${OA.blue}40`, fontFamily: OA.font }}>+ إضافة إدارة جديدة</button>
+            <button onClick={handleAddDepartment} style={{ background: OA.blue, color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: `0 2px 8px ${OA.blue}40`, fontFamily: OA.font }}>+ إضافة إدارة جديدة</button>
           </div>
           
           <div style={{ flex: 1, overflowY: 'auto' }} className="admin-scroll">
@@ -677,7 +831,7 @@ export const OperationalStructureTab: React.FC = () => {
                           </div>
                           <div style={{ display: 'flex', gap: '5px' }} onClick={e => e.stopPropagation()}>
                              <button onClick={() => handleOpenEditModal('DIVISION', div, dept)} style={{ background: OA.bg, border: `1px solid ${OA.sep}`, color: OA.textSub, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>تعديل</button>
-                             <button style={{ background: `${OA.green}10`, border: `1px solid ${OA.green}20`, color: OA.green, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>+ فريق</button>
+                             <button onClick={() => handleAddTeam(dept.id, div.id, div.name)} style={{ background: `${OA.green}10`, border: `1px solid ${OA.green}20`, color: OA.green, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>+ فريق</button>
                              <button onClick={() => handleDeleteEntity('DIVISION', div.id, div.name)} style={{ background: `${OA.red}10`, border: `1px solid ${OA.red}20`, color: OA.red, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontFamily: OA.font }}>حذف</button>
                           </div>
                         </div>
@@ -743,7 +897,7 @@ export const OperationalStructureTab: React.FC = () => {
                         )}
                       </div>
                     ))}
-                    <button style={{ alignSelf: 'flex-start', background: `${OA.blue}10`, border: `1px dashed ${OA.blue}40`, color: OA.blue, padding: '8px 14px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: '600', fontFamily: OA.font }}>+ إضافة قسم فرعي</button>
+                    <button onClick={() => handleAddDivision(dept.id, dept.name)} style={{ alignSelf: 'flex-start', background: `${OA.blue}10`, border: `1px dashed ${OA.blue}40`, color: OA.blue, padding: '8px 14px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: '600', fontFamily: OA.font }}>+ إضافة قسم فرعي</button>
                   </div>
                 )}
               </div>
@@ -854,7 +1008,7 @@ export const OperationalStructureTab: React.FC = () => {
                       <td style={{ padding: '12px 15px', fontSize: '14px', fontWeight: 'bold', color: OA.text, cursor: 'pointer' }} onClick={() => handleOpenProfile(user)}>{user.name}</td>
                       <td style={{ padding: '12px 15px', fontSize: '13px', color: OA.textSub }}>{user.email}</td>
                       <td style={{ padding: '12px 15px', fontSize: '12px' }}>
-                        <span style={{ background: user.role === 'OPERATIONAL_MANAGER' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(2, 132, 199, 0.2)', color: user.role === 'OPERATIONAL_MANAGER' ? '#c4b5fd' : '#bae6fd', padding: '4px 8px', borderRadius: '4px', border: user.role === 'OPERATIONAL_MANAGER' ? '1px solid #8b5cf6' : '1px solid #0284c7' }}>
+                        <span style={{ background: user.role === 'OPERATIONAL_MANAGER' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(2, 132, 199, 0.2)', color: '#000000', padding: '4px 8px', borderRadius: '4px', border: user.role === 'OPERATIONAL_MANAGER' ? '1px solid #8b5cf6' : '1px solid #0284c7' }}>
                           {user.role === 'OPERATIONAL_MANAGER' ? 'مسؤول تشغيلي' : 'مستخدم تشغيلي'}
                         </span>
                       </td>
@@ -883,7 +1037,7 @@ export const OperationalStructureTab: React.FC = () => {
       {/* --- MODALS --- */}
       {/* 🪪 Killer Super Profile Modal */}
       {profileModalUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: OA.surface, padding: '30px', borderRadius: '16px', width: '500px', border: profileEditData.status === 'BLOCKED' ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
             
             {/* Header */}
@@ -1015,8 +1169,42 @@ export const OperationalStructureTab: React.FC = () => {
         </div>
       )}
       {/* Universal Edit Entity Modal */}
+      
+      {addEntityModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'right', direction: 'rtl' }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#172b4d' }}>
+              {addEntityModalOpen.type === 'DEPARTMENT' ? 'إضافة إدارة تشغيلية جديدة' : 
+               addEntityModalOpen.type === 'DIVISION' ? `إضافة قسم تشغيلي تحت ${addEntityModalOpen.parentName}` : 
+               `إضافة فريق عمل تحت ${addEntityModalOpen.parentName}`}
+            </h3>
+            
+            <p style={{ fontSize: '13px', color: '#5e6c84', marginBottom: '16px' }}>
+              اختر الكيان من الهيكل المؤسسي ليتم إضافته إلى الهيكل التشغيلي:
+            </p>
+
+            <select 
+              value={addEntitySelectedNode ? addEntitySelectedNode.id : ''} 
+              onChange={e => {
+                const node = addEntityModalOpen.availableNodes.find(n => n.id === e.target.value);
+                setAddEntitySelectedNode(node);
+              }}
+              style={{ width: '100%', padding: '10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #dfe1e6', outline: 'none', marginBottom: '24px' }}
+            >
+              {addEntityModalOpen.availableNodes.map(node => (
+                <option key={node.id} value={node.id}>{node.name} ({node.type})</option>
+              ))}
+            </select>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+              <button onClick={() => setAddEntityModalOpen(null)} style={{ flex: 1, background: '#f4f5f7', color: '#172b4d', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+              <button onClick={commitAddEntity} style={{ flex: 1, background: '#0052cc', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>إضافة</button>
+            </div>
+          </div>
+        </div>
+      )}
       {editModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, background: 'rgba(241, 245, 249, 0.9)', backdropFilter: 'blur(8px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: 'rgba(241, 245, 249, 0.9)', backdropFilter: 'blur(8px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             <h3 style={{ color: OA.text, fontSize: '20px', marginBottom: '20px', borderBottom: `1px solid ${OA.sep}`, paddingBottom: '10px' }}>
               ✏️ تعديل {editEntityType === 'DEPARTMENT' ? 'إدارة' : editEntityType === 'DIVISION' ? 'قسم' : 'فريق'}
@@ -1124,7 +1312,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Warning Modal for Reassignment */}
       {pendingReassignment && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: '1px solid rgba(239, 68, 68, 0.5)', boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)' }}>
             <h3 style={{ color: OA.red, fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: شاغر تشغيلي محتمل!
@@ -1149,7 +1337,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Delete Team Advanced Modal */}
       {deleteTeamModalOpen && teamToDelete && divisionOfTeamToDelete && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(239, 68, 68, 0.5)', boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)' }}>
             <h3 style={{ color: OA.red, fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> خيارات حذف فريق ({teamToDelete.name})
@@ -1212,7 +1400,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Conflict Modal */}
       {conflictModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '550px', border: '1px solid rgba(245, 158, 11, 0.5)', boxShadow: '0 25px 50px -12px rgba(245, 158, 11, 0.3)' }}>
             <h3 style={{ color: '#fcd34d', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚠️</span> تحذير: ارتباطات تشغيلية متعارضة
@@ -1269,7 +1457,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Bulk Assign Destination Modal */}
       {bulkAssignModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '500px', border: '1px solid rgba(56, 189, 248, 0.5)', boxShadow: '0 25px 50px -12px rgba(56, 189, 248, 0.3)' }}>
             <h3 style={{ color: '#6366f1', fontSize: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>🎯</span> تحديد وجهة النقل لـ ({bulkAssignUsers.length}) مستخدم
@@ -1321,7 +1509,7 @@ export const OperationalStructureTab: React.FC = () => {
 
       {/* Single Move / Manage Modal for Division Unassigned */}
       {singleMoveModalOpen && singleMoveUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90000, background: OA.bg, backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'rgba(255, 255, 255, 0.97)', padding: '30px', borderRadius: '16px', width: '450px', border: `1px solid ${OA.sep}`, boxShadow: '0 16px 40px rgba(0,0,0,0.08)' }}>
             <h3 style={{ color: OA.text, fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>⚙️</span> خيارات العضو ({singleMoveUser.name})

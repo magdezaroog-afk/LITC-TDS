@@ -1,0 +1,21 @@
+{
+  "systemName": "LITC_Asset_Manager",
+  "displayMode": "IFRAME_CARD",
+  "uiSchema": {
+    "configurableProps": {
+      "showAnalytics": {
+        "type": "boolean",
+        "label": "عرض الرسم البياني للأصول"
+      },
+      "maxItems": {
+        "type": "string",
+        "label": "الحد الأقصى للأصول المعروضة"
+      },
+      "accentColor": {
+        "type": "dropdown",
+        "label": "اللون المميز لواجهة الأصول",
+        "options": ["#8B5CF6", "#10B981", "#3B82F6"]
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@
  */
 
 import { SecurityUtils } from '../../utils/SecurityUtils';
+import { RealTimeSynchronizer } from '../../services/RealTimeSynchronizer';
 
 export type TicketStatus = 'new' | 'in-progress' | 'transferred' | 'resolved' | 'closed';
 export type WorkflowAction = 'open' | 'transfer' | 'assign' | 'resolve' | 'close';
@@ -273,7 +274,7 @@ export class SLABackgroundWorkerClass {
     activeChecking = true;
 
     try {
-      const { RealTimeSynchronizer } = await import('../../services/RealTimeSynchronizer');
+      
 
       // [TODO/API Blueprint] Future Escalation Offloading (Server-Side Cron Job):
       // هذه الفئة (SLABackgroundWorkerClass) بالكامل عبارة عن محاكاة في بيئة المتصفح.

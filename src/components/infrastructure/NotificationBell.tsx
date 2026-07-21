@@ -39,7 +39,7 @@ export const NotificationBell: React.FC = () => {
   };
 
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', zIndex: 9999 }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '8px', padding: '6px 10px', fontSize: '18px', cursor: 'pointer', position: 'relative', color: 'inherit' }}
@@ -63,7 +63,7 @@ export const NotificationBell: React.FC = () => {
           position: 'absolute', top: '100%', left: 0,
           width: '320px', background: '#ffffff',
           boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-          borderRadius: '12px', zIndex: 100000,
+          borderRadius: '12px', zIndex: 80000,
           border: '1px solid #e2e8f0',
           maxHeight: '400px', overflowY: 'auto',
           marginTop: '10px', direction: 'rtl', color: '#0f172a'
