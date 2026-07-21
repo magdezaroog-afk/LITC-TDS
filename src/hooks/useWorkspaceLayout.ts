@@ -93,69 +93,31 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
         }
       } catch(e) {}
 
-      // Perform cascading merge
-      const baseList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
-      const activeLayout = baseList.filter((c: any) => c.isActive);
+      // 3. Strict Role-based Layout Selection
+      let activeList: any[] = [];
+      if (currentUserRole === 'IT_ADMIN') {
+        activeList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
+      } else if (currentUserRole === 'OPERATIONAL_MANAGER') {
+        activeList = managerList;
+      } else if (currentUserRole === 'SECTION_HEAD') {
+        activeList = sectionHeadList;
+      } else if (currentUserRole === 'TEAM_LEADER') {
+        activeList = teamLeaderList;
+      } else if (currentUserRole === 'OPERATIONAL_USER') {
+        activeList = userList;
+      } else if (currentUserRole === 'END_USER') {
+        activeList = endUserList;
+      }
 
-      let finalLayoutConfig = activeLayout.map((c: any) => {
-        const mergedProps = { ...c.properties };
+      let finalLayoutConfig = activeList.filter((c: any) => c.isActive).map((c: any) => ({
+        componentId: c.id,
+        name: c.name,
+        settings: c.properties
+      }));
 
-        // A. Apply Operational Manager overrides if role allows
-        const managerComp = managerList.find((mc: any) => mc.id === c.id);
-        if (managerComp && (currentUserRole === 'OPERATIONAL_MANAGER' || currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
-          Object.keys(managerComp.properties || {}).forEach(key => {
-            const rule = c.delegationConfig?.[key];
-            const ceiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (rule && rule.allow_override) || (ceiling && !ceiling.adminAbsoluteOverride && ceiling.allowedRoles?.includes('OPERATIONAL_MANAGER'));
-            if (isAllowedByAdmin) {
-              mergedProps[key] = managerComp.properties[key];
-            }
-          });
-        }
-
-        // B. Apply Operational User (Section Head) overrides
-        const userComp = userList.find((uc: any) => uc.id === c.id);
-        if (userComp && (currentUserRole === 'OPERATIONAL_USER' || currentUserRole === 'END_USER')) {
-          Object.keys(userComp.properties || {}).forEach(key => {
-            const adminRule = c.delegationConfig?.[key];
-            const adminCeiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && (adminCeiling.allowedRoles?.includes('OPERATIONAL_USER') || adminCeiling.allowedRoles?.includes('OPERATIONAL_MANAGER')));
-            
-            const managerCompObj = managerList.find((mc: any) => mc.id === c.id);
-            const managerRule = managerCompObj?.delegationConfig?.[key];
-            const isAllowedByManager = !managerCompObj || (managerRule && managerRule.allow_override);
-
-            if (isAllowedByAdmin && isAllowedByManager) {
-              mergedProps[key] = userComp.properties[key];
-            }
-          });
-        }
-
-        // C. Apply End User (Field Engineer) overrides
-        const endUserComp = endUserList.find((ec: any) => ec.id === c.id);
-        if (endUserComp && currentUserRole === 'END_USER') {
-          Object.keys(endUserComp.properties || {}).forEach(key => {
-            const adminRule = c.delegationConfig?.[key];
-            const adminCeiling = c.strict_ceiling_props?.[key];
-            const isAllowedByAdmin = (adminRule && adminRule.allow_override) || (adminCeiling && !adminCeiling.adminAbsoluteOverride && adminCeiling.allowedRoles?.includes('END_USER'));
-            if (isAllowedByAdmin) {
-              mergedProps[key] = endUserComp.properties[key];
-            }
-          });
-        }
-
-        return {
-          componentId: c.id,
-          name: c.name,
-          settings: mergedProps
-        };
-      });
-
-      // Ensure basic system utilities are present
+      // We only force invisible core system settings. All visible components MUST be explicitly added by the Admin.
       const systemUtils = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
-        { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
-        { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
+        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } }
       ];
       
       const combined = [...systemUtils];
@@ -165,7 +127,7 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
         }
       });
 
-      // Override with Submission Template components
+      // Override with Submission Template components if active
       submissionLayout.forEach((subItem: any) => {
         const existingIdx = combined.findIndex(c => c.componentId === subItem.id);
         const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };

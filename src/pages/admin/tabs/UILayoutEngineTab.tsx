@@ -573,7 +573,7 @@ export function UILayoutEngineTab() {
         setComponents(JSON.parse(saved));
       } else {
         const roleSaved = localStorage.getItem(`litc_layout_components_${ui.roleType}`);
-        setComponents(roleSaved ? JSON.parse(roleSaved) : initialComponents);
+        setComponents(roleSaved ? JSON.parse(roleSaved) : (ui.roleType === 'IT_ADMIN' ? initialComponents : []));
       }
       setIsManagerMode(false);
     };
