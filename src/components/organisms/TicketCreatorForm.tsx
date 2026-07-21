@@ -107,24 +107,37 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
     : activeRoutes;
 
   return (
-    <aside style={{ ...glassPanelStyle, alignSelf: 'start' }}>
+    <aside style={{ ...glassPanelStyle, alignSelf: 'start', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.95)', boxShadow: '0 4px 30px rgba(0,0,0,0.03)' }}>
       {!selectedRouteId ? (
         visibleRoutes.length === 0 ? (
           <div>
-            <h3 style={{ borderBottom: '2px solid #0052cc', display: 'inline-block', paddingBottom: '5px', marginBottom: '20px', color: '#0052cc', fontSize: '16px' }}>إنشاء بلاغ جديد</h3>
-            <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>عنوان البلاغ</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📝</div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 800 }}>إنشاء بلاغ جديد</h3>
+                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>أرسل بلاغك مباشرة</p>
+              </div>
+            </div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '6px', fontWeight: 700 }}>عنوان البلاغ</label>
             <input type="text" style={inputStyle} placeholder="وصف موجز للمشكلة..." />
-            <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل البلاغ</label>
+            <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '6px', fontWeight: 700 }}>تفاصيل البلاغ</label>
             <textarea style={{ ...inputStyle, height: '100px', resize: 'none' }} placeholder="الرجاء وصف المشكلة بدقة..." />
-            <button style={{ width: '100%', padding: '12px', background: 'linear-gradient(90deg, #0052cc 0%, #0065ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px rgba(37,99,235,0.3)', transition: 'all 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               إرسال البلاغ فوراً
             </button>
           </div>
         ) : (
           <div>
-            <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
-            <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: '0 4px 12px rgba(37,99,235,0.2)' }}>🚀</div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 800 }}>إنشاء طلب جديد</h3>
+              </div>
+            </div>
+            <p style={{ margin: '0 0 18px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {visibleRoutes.map(route => {
                 const isLocked = concurrencyPolicy === 'PREVENT_CONCURRENT' && hasActiveTicketInRoute && hasActiveTicketInRoute(route.id);
                 
@@ -142,21 +155,21 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                       setRouteSubmitSuccess(false); 
                       setSelectedFiles([]); 
                     }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${route.color}44`, background: isLocked ? '#f4f5f7' : `${route.color}0A`, cursor: isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.6 : 1, transition: 'all 0.2s' }}
-                    onMouseEnter={e => !isLocked && (e.currentTarget.style.transform = 'translateX(-3px)')}
-                    onMouseLeave={e => !isLocked && (e.currentTarget.style.transform = 'translateX(0)')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', borderRadius: '14px', border: `1.5px solid ${isLocked ? '#e2e8f0' : route.color + '30'}`, background: isLocked ? '#f8fafc' : `${route.color}08`, cursor: isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.6 : 1, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                    onMouseEnter={e => { if(!isLocked) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 20px ${route.color}15`; e.currentTarget.style.borderColor = route.color + '60'; } }}
+                    onMouseLeave={e => { if(!isLocked) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = route.color + '30'; } }}
                   >
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: isLocked ? '#dfe1e6' : route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: isLocked ? '#e2e8f0' : `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0, boxShadow: isLocked ? 'none' : `0 4px 12px ${route.color}30` }}>
                       {isLocked ? '🔒' : route.icon}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? '#5e6c84' : '#172b4d' }}>{route.name}</div>
-                      {route.description && <div style={{ fontSize: 11, color: '#5e6c84', marginTop: 2 }}>{route.description}</div>}
-                      <div style={{ fontSize: 10, color: isLocked ? '#5e6c84' : route.color, marginTop: 3, fontWeight: 600 }}>
-                        {isLocked ? 'لديك طلب مفتوح مسبقاً' : `→ ${route.targetDepartmentName}`}
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: isLocked ? '#94a3b8' : '#1e293b' }}>{route.name}</div>
+                      {route.description && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px', lineHeight: 1.4 }}>{route.description}</div>}
+                      <div style={{ fontSize: '10px', color: isLocked ? '#94a3b8' : route.color, marginTop: '4px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isLocked ? '⛔ لديك طلب مفتوح' : <><span>←</span> {route.targetDepartmentName}</>}
                       </div>
                     </div>
-                    <div style={{ color: isLocked ? '#5e6c84' : route.color, fontSize: 18 }}>{isLocked ? '⛔' : '›'}</div>
+                    <div style={{ color: isLocked ? '#cbd5e1' : route.color, fontSize: '20px', fontWeight: 300, transition: 'transform 0.2s' }}>‹</div>
                   </div>
                 );
               })}
@@ -170,13 +183,15 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
 
         if (routeSubmitSuccess) {
           return (
-            <div style={{ textAlign: 'center', padding: '30px 10px' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#172b4d', marginBottom: 6 }}>تم إرسال طلبك بنجاح!</div>
-              <div style={{ fontSize: 12, color: '#5e6c84', marginBottom: 20 }}>تم توجيه طلبك إلى {route.targetDepartmentName}</div>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 16px', boxShadow: '0 8px 20px rgba(16,185,129,0.3)' }}>✓</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>تم إرسال طلبك بنجاح!</div>
+              <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '24px', lineHeight: 1.5 }}>تم توجيه طلبك إلى <strong style={{ color: '#334155' }}>{route.targetDepartmentName}</strong></div>
               <button onClick={() => { setSelectedRouteId(null); setRouteSubmitSuccess(false); }}
-                style={{ padding: '10px 20px', borderRadius: 10, background: route.color, color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                إرسال طلب آخر
+                style={{ padding: '12px 28px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 4px 14px ${route.color}30`, transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                ← إرسال طلب آخر
               </button>
             </div>
           );
@@ -184,13 +199,15 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
 
         return (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <button onClick={() => setSelectedRouteId(null)}
-                style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.05)', border: 'none', fontSize: 12, cursor: 'pointer', color: '#5e6c84' }}>← رجوع</button>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: route.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{route.icon}</div>
+                style={{ padding: '6px 12px', borderRadius: '10px', background: '#f1f5f9', border: '1px solid #e2e8f0', fontSize: '12px', cursor: 'pointer', color: '#64748b', fontWeight: 600, transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>← رجوع</button>
+              <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: `0 4px 10px ${route.color}25` }}>{route.icon}</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: route.color }}>{route.name}</div>
-                <div style={{ fontSize: 10, color: '#5e6c84' }}>→ {route.targetDepartmentName}{route.targetDivisionName ? ` › ${route.targetDivisionName}` : ''}</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{route.name}</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>← {route.targetDepartmentName}{route.targetDivisionName ? ` › ${route.targetDivisionName}` : ''}</div>
               </div>
             </div>
 
@@ -341,7 +358,9 @@ export const TicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                 console.log('✅ Route Ticket Submitted:', { routeId: route.id, targetDept: route.targetDepartmentId, title: generatedTitle, description: routeDescription, customFields: routeFieldValues, attachments: selectedFiles.map(f => f.name), captured_historical_data: historicalSnapshot });
                 setRouteSubmitSuccess(true);
               }}
-              style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', boxShadow: `0 4px 15px ${route.color}44`, fontSize: 14, marginTop: 4 }}
+              style={{ width: '100%', padding: '14px', background: `linear-gradient(135deg, ${route.color} 0%, ${route.color}CC 100%)`, color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', boxShadow: `0 6px 20px ${route.color}30`, fontSize: '14px', marginTop: '8px', transition: 'all 0.3s', letterSpacing: '0.3px' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${route.color}40`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 6px 20px ${route.color}30`; }}
             >
               إرسال الطلب {route.icon}
             </button>
