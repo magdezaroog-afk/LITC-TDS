@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DynamicCustomField } from '../pages/admin/tabs/DynamicFieldsTab';
 
-export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'OPERATIONAL_MANAGER' | 'IT_ADMIN';
+export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'TEAM_LEADER' | 'SECTION_HEAD' | 'OPERATIONAL_MANAGER' | 'IT_ADMIN';
 
 interface SchemaComponent {
   componentId: string;
@@ -32,6 +32,8 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
       // 1. Load layouts from localStorage for each role level
       const adminLayout = localStorage.getItem('litc_layout_components_IT_ADMIN') || localStorage.getItem('litc_layout_components');
       const managerLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_MANAGER');
+      const sectionHeadLayout = localStorage.getItem('litc_layout_components_SECTION_HEAD');
+      const teamLeaderLayout = localStorage.getItem('litc_layout_components_TEAM_LEADER');
       const userLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_USER');
       const endUserLayout = localStorage.getItem('litc_layout_components_END_USER');
 
@@ -41,6 +43,12 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
 
       let managerList: any[] = [];
       try { managerList = managerLayout ? JSON.parse(managerLayout) : []; } catch (e) {}
+      
+      let sectionHeadList: any[] = [];
+      try { sectionHeadList = sectionHeadLayout ? JSON.parse(sectionHeadLayout) : []; } catch (e) {}
+
+      let teamLeaderList: any[] = [];
+      try { teamLeaderList = teamLeaderLayout ? JSON.parse(teamLeaderLayout) : []; } catch (e) {}
 
       let userList: any[] = [];
       try { userList = userLayout ? JSON.parse(userLayout) : []; } catch (e) {}

@@ -201,10 +201,11 @@ export const EmployeeWorkspace: React.FC = () => {
                 }} 
                 style={{ background: 'transparent', border: 'none', color: '#0f172a', fontSize: '13px', fontWeight: '700', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
               >
-                <option value="IT_ADMIN">💻 IT Admin</option>
-                <option value="OPERATIONAL_MANAGER">📊 Dept Head (Manager)</option>
-                <option value="OPERATIONAL_USER">🛠️ Section Head (User)</option>
-                <option value="END_USER">👤 Field Engineer (End User)</option>
+                <option value="IT_ADMIN">💻 السوبر أدمن (IT Admin)</option>
+                <option value="OPERATIONAL_MANAGER">📊 مدير إدارة (Dept Head)</option>
+                <option value="SECTION_HEAD">🛠️ رئيس قسم (Section Head)</option>
+                <option value="TEAM_LEADER">👥 رئيس فريق/وحدة (Team Leader)</option>
+                <option value="OPERATIONAL_USER">👤 مستخدم تشغيلي (Operational User)</option>
               </select>
             </div>
           </header>
