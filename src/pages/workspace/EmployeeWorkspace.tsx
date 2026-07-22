@@ -170,43 +170,40 @@ export const EmployeeWorkspace: React.FC = () => {
               <h1 style={{ fontSize: '72px', color: '#1e40af', margin: 0, fontWeight: '900', letterSpacing: '6px' }}>LITC</h1>
               <p style={{ fontSize: '28px', color: '#334155', fontWeight: '800', letterSpacing: '2px' }}>OPERATING SYSTEM</p>
             </div>
+            {/* Overlay if locked */}
+            {(!schema?.layoutConfig || schema.layoutConfig.filter(c => c.componentId !== 'tool_language_theme').length === 0) && (
+              <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+                <div style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
+                  <h2 style={{ color: '#0f172a', fontWeight: '900', marginBottom: '10px' }}>الواجهة مقفلة</h2>
+                  <p style={{ color: '#64748b', fontWeight: '600', lineHeight: 1.6 }}>لم يتم تخصيص أي واجهة لهذا الدور بعد. يرجى مراجعة مدير النظام (السوبر أدمن) لإعداد المكونات التشغيلية.</p>
+                </div>
+              </div>
+            )}
         </>
       ) : (
         <>
+          {(!schema?.layoutConfig || schema.layoutConfig.filter(c => c.componentId !== 'tool_language_theme').length === 0) ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', position: 'relative', zIndex: 10 }}>
+              <div style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', padding: '40px', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
+                <h2 style={{ color: '#0f172a', fontWeight: '900', marginBottom: '10px' }}>الواجهة مقفلة</h2>
+                <p style={{ color: '#64748b', fontWeight: '600', lineHeight: 1.6 }}>لم يتم تخصيص أي واجهة لهذا الدور بعد. يرجى مراجعة مدير النظام (السوبر أدمن) لإعداد المكونات التشغيلية.</p>
+              </div>
+            </div>
+          ) : (
+            <>
           <header style={{ padding: '15px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', position: 'sticky', top: 0, zIndex: 100 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)' }}>م</div>
               <div>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'block' }}>مرحباً، مجدي</span>
+                <span style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'block' }}>مرحباً</span>
                 <span style={{ fontSize: '12px', color: '#64748b' }}>مساحة عمل الموظف</span>
               </div>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f8fafc', padding: '6px 16px', borderRadius: '24px', border: '1px solid #e2e8f0', transition: 'all 0.2s hover:border-blue-300' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', margin: 0 }}>محاكاة الدور:</label>
-              <select 
-                value={currentUserRole} 
-                onChange={(e) => {
-                  const role = e.target.value as CoreRole;
-                  setCurrentUserRole(role);
-                  if (role === 'IT_ADMIN') {
-                    setCurrentUserDept('IT_SUPPORT');
-                  } else if (role === 'OPERATIONAL_MANAGER') {
-                    setCurrentUserDept('IT_SUPPORT');
-                  } else if (role === 'OPERATIONAL_USER') {
-                    setCurrentUserDept('IT_SUPPORT');
-                  } else {
-                    setCurrentUserDept('MAINTENANCE');
-                  }
-                }} 
-                style={{ background: 'transparent', border: 'none', color: '#0f172a', fontSize: '13px', fontWeight: '700', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                <option value="IT_ADMIN">💻 السوبر أدمن (IT Admin)</option>
-                <option value="OPERATIONAL_MANAGER">📊 مدير إدارة (Dept Head)</option>
-                <option value="SECTION_HEAD">🛠️ رئيس قسم (Section Head)</option>
-                <option value="TEAM_LEADER">👥 رئيس فريق/وحدة (Team Leader)</option>
-                <option value="OPERATIONAL_USER">👤 مستخدم تشغيلي (Operational User)</option>
-              </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <SystemModeToggle />
             </div>
           </header>
 
@@ -811,10 +808,48 @@ export const EmployeeWorkspace: React.FC = () => {
                 </div>
               </div>
             )}
-            
           </div>
+          </>
+          )}
         </>
       )}
+
+      {/* Floating Horizontal Role Switcher */}
+      <div style={{ position: 'fixed', bottom: '20px', right: '20px', display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(16px)', padding: '10px 16px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.6)', zIndex: 9999, boxShadow: '0 10px 30px rgba(0,0,0,0.08)', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', marginLeft: '10px' }}>وضع المحاكاة:</span>
+        {[
+          { id: 'IT_ADMIN', name: 'سوبر أدمن', role: '💻' },
+          { id: 'OPERATIONAL_MANAGER', name: 'م. مجدي الزروق', role: 'مدير إدارة' },
+          { id: 'SECTION_HEAD', name: 'أحمد النكوع', role: 'رئيس قسم' },
+          { id: 'TEAM_LEADER', name: 'نضال أبو غامجة', role: 'رئيس فريق' },
+          { id: 'OPERATIONAL_USER', name: 'محمد الزياني', role: 'مستخدم تشغيلي' }
+        ].map(r => (
+          <button 
+            key={r.id} 
+            onClick={() => setCurrentUserRole(r.id as CoreRole)}
+            style={{ 
+              padding: '8px 16px', 
+              background: currentUserRole === r.id ? 'rgba(37, 99, 235, 0.9)' : 'rgba(255,255,255,0.5)', 
+              color: currentUserRole === r.id ? '#fff' : '#334155', 
+              border: 'none', 
+              borderRadius: '16px', 
+              cursor: 'pointer', 
+              fontWeight: '700', 
+              display: 'flex', 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              gap: '8px', 
+              transition: 'all 0.2s',
+              boxShadow: currentUserRole === r.id ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none'
+            }}
+            onMouseOver={(e) => { if(currentUserRole !== r.id) e.currentTarget.style.background = 'rgba(255,255,255,0.8)' }}
+            onMouseOut={(e) => { if(currentUserRole !== r.id) e.currentTarget.style.background = 'rgba(255,255,255,0.5)' }}
+          >
+            <span style={{ fontSize: '14px' }}>{r.role}</span>
+            <span style={{ fontSize: '12px' }}>{r.name}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
