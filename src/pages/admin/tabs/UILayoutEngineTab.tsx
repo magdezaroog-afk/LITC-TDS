@@ -555,10 +555,10 @@ export function UILayoutEngineTab() {
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
   const [savedInterfaces, setSavedInterfaces] = useState<SavedInterface[]>([
     { id: 'ui_5', name: 'واجهة السوبر أدمن', roleType: 'IT_ADMIN', lastUpdated: '2023-10-05' },
-    { id: 'ui_op_manager', name: 'واجهة مدير إدارة', roleType: 'OPERATIONAL_MANAGER', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_sec_head', name: 'واجهة رئيس قسم', roleType: 'SECTION_HEAD', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_team_lead', name: 'واجهة رئيس فريق/وحدة', roleType: 'TEAM_LEADER', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_op_user', name: 'واجهة مستخدم تشغيلي', roleType: 'OPERATIONAL_USER', lastUpdated: new Date().toISOString().split('T')[0] }
+    { id: 'ui_op_manager', name: 'م. مجدي الزروق (مدير إدارة)', roleType: 'OPERATIONAL_MANAGER', lastUpdated: new Date().toISOString().split('T')[0] },
+    { id: 'ui_sec_head', name: 'أحمد النكوع (رئيس قسم)', roleType: 'SECTION_HEAD', lastUpdated: new Date().toISOString().split('T')[0] },
+    { id: 'ui_team_lead', name: 'نضال أبو غامجة (رئيس فريق)', roleType: 'TEAM_LEADER', lastUpdated: new Date().toISOString().split('T')[0] },
+    { id: 'ui_op_user', name: 'محمد الزياني (مستخدم تشغيلي)', roleType: 'OPERATIONAL_USER', lastUpdated: new Date().toISOString().split('T')[0] }
   ]);
 
 
@@ -2856,11 +2856,11 @@ export function UILayoutEngineTab() {
               <label style={{ fontSize: '14px', fontWeight: '700', color: '#1D1D1F', marginBottom: '12px', display: 'block' }}>1. أولاً: اختر التصنيف المعماري (Role / Persona):</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {[
-                  { id: 'IT_ADMIN', label: 'مسؤول نظام (سوبر أدمن)', icon: '💻' },
-                  { id: 'OPERATIONAL_MANAGER', label: 'مدير إدارة', icon: '📊' },
-                  { id: 'SECTION_HEAD', label: 'رئيس قسم', icon: '🛠️' },
-                  { id: 'TEAM_LEADER', label: 'رئيس فريق/وحدة', icon: '👥' },
-                  { id: 'OPERATIONAL_USER', label: 'مستخدم تشغيلي', icon: '👤' },
+                  { id: 'IT_ADMIN', label: 'السوبر أدمن', icon: '💻' },
+                  { id: 'OPERATIONAL_MANAGER', label: 'م. مجدي الزروق (مدير إدارة)', icon: '📊' },
+                  { id: 'SECTION_HEAD', label: 'أحمد النكوع (رئيس قسم)', icon: '🛠️' },
+                  { id: 'TEAM_LEADER', label: 'نضال أبو غامجة (رئيس فريق)', icon: '👥' },
+                  { id: 'OPERATIONAL_USER', label: 'محمد الزياني (مستخدم تشغيلي)', icon: '👤' },
                   { id: 'END_USER', label: 'مستخدم عادي', icon: '🌍' }
                 ].map(role => (
                   <div 
