@@ -31,11 +31,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [systemMode, setSystemMode] = useState<'employee' | 'work'>('employee');
   const [user, setUser] = useState<User | null>(() => {
     const params = new URLSearchParams(window.location.search);
-    const loginAs = params.get('login_as');
-    if (loginAs === 'employee') return { id: 'test1', name: 'مستخدم تشغيلي للاختبار', role: 'employee', email: 'test1@litc.ly', department: 'dept_it' };
-    if (loginAs === 'dept_head') return { id: 'test2', name: 'رئيس قسم للاختبار', role: 'dept_head', email: 'test2@litc.ly', department: 'dept_it' };
-    if (loginAs === 'tech_director') return { id: 'test3', name: 'مدير إدارة للاختبار', role: 'tech_director', email: 'test3@litc.ly', department: 'dept_it' };
-    if (loginAs === 'team_leader') return { id: 'test4', name: 'رئيس فريق للاختبار', role: 'team_leader', email: 'test4@litc.ly', department: 'dept_it' };
+    const loginAsUser = params.get('login_as_user');
+    const loginAsRole = params.get('login_as');
+    
+    if (loginAsUser) {
+      try {
+        const storedUsers = localStorage.getItem('litc_operational_users');
+        if (storedUsers) {
+          const usersList = JSON.parse(storedUsers);
+          const found = usersList.find((u: any) => u.id === loginAsUser);
+          if (found) {
+            // Map the internal CoreRole to the AuthContext Role
+            let mappedRole: Role = 'employee';
+            if (found.role === 'OPERATIONAL_MANAGER') mappedRole = 'tech_director'; // Using tech_director temporarily to map to Auth
+            else if (found.role === 'SECTION_HEAD') mappedRole = 'dept_head';
+            else if (found.role === 'TEAM_LEADER') mappedRole = 'team_leader';
+            
+            return {
+              id: found.id,
+              name: found.name,
+              role: mappedRole,
+              email: found.email,
+              department: found.departmentId || 'unassigned'
+            };
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load user from operational users");
+      }
+    }
+    
+    // Legacy support
+    if (loginAsRole === 'employee') return { id: 'test1', name: 'مستخدم تشغيلي للاختبار', role: 'employee', email: 'test1@litc.ly', department: 'dept_it' };
+    if (loginAsRole === 'dept_head') return { id: 'test2', name: 'رئيس قسم للاختبار', role: 'dept_head', email: 'test2@litc.ly', department: 'dept_it' };
+    if (loginAsRole === 'tech_director') return { id: 'test3', name: 'مدير إدارة للاختبار', role: 'tech_director', email: 'test3@litc.ly', department: 'dept_it' };
+    if (loginAsRole === 'team_leader') return { id: 'test4', name: 'رئيس فريق للاختبار', role: 'team_leader', email: 'test4@litc.ly', department: 'dept_it' };
     return null;
   });
   const [loading] = useState<boolean>(false);
