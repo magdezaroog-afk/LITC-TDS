@@ -3,15 +3,21 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { Fingerprint, Power } from 'lucide-react';
 
-export const SystemModeToggle: React.FC = () => {
+interface Props {
+  isLocked?: boolean;
+}
+
+export const SystemModeToggle: React.FC<Props> = ({ isLocked }) => {
   const { systemMode, setSystemMode, user } = useAuth();
 
   const handleToggle = () => {
-    if (user?.role === 'IT_Admin' || user?.role === 'admin' || user?.role === 'Department_Head') {
-      setSystemMode(systemMode === 'employee' ? 'work' : 'employee');
-    } else {
-      alert("ليس لديك الصلاحية لتغيير وضع النظام.");
+    if (isLocked) {
+      alert("وضع العمل غير متاح لك حالياً. يرجى مراجعة مسؤول النظام لتخصيص واجهة تشغيلية.");
+      return;
     }
+    
+    // Allow any user that has a layout to toggle work mode
+    setSystemMode(systemMode === 'employee' ? 'work' : 'employee');
   };
 
   const isWorkMode = systemMode === 'work';
@@ -27,9 +33,10 @@ export const SystemModeToggle: React.FC = () => {
         color: isWorkMode ? '#ef4444' : '#10b981',
         padding: '6px 12px',
         borderRadius: '8px',
-        cursor: 'pointer',
+        cursor: isLocked ? 'not-allowed' : 'pointer',
         fontWeight: '600',
         fontSize: '13px',
+        opacity: isLocked ? 0.5 : 1,
         display: 'flex',
         alignItems: 'center',
         gap: '6px',

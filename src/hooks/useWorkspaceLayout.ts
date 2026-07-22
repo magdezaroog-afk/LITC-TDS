@@ -15,9 +15,11 @@ export interface UiSchema {
 }
 
 export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
-  const [schema, setSchema] = useState<UiSchema | null>(null);
+  const [submissionSchema, setSubmissionSchema] = useState<UiSchema | null>(null);
+  const [workSchema, setWorkSchema] = useState<UiSchema | null>(null);
   const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isWorkModeLocked, setIsWorkModeLocked] = useState(true);
 
   useEffect(() => {
     const fetchSchema = async () => {
@@ -93,7 +95,16 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
         }
       } catch(e) {}
 
-      // 3. Strict Role-based Layout Selection
+      // The Base Employee Interface (واجهة الارسال الرئيسية)
+      let baseEmployeeLayout: any[] = [];
+      try {
+        const baseSaved = localStorage.getItem('litc_layout_components_MAIN_SUBMISSION_INTERFACE');
+        if (baseSaved) {
+          baseEmployeeLayout = JSON.parse(baseSaved);
+        }
+      } catch (e) {}
+
+      // Role-based Layout Selection
       let activeList: any[] = [];
       if (currentUserRole === 'IT_ADMIN') {
         activeList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
@@ -109,57 +120,68 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
         activeList = endUserList;
       }
 
-      let finalLayoutConfig = activeList.filter((c: any) => c.isActive).map((c: any) => ({
+      const hasActiveWorkComponents = activeList.some((c: any) => c.isActive);
+      setIsWorkModeLocked(!hasActiveWorkComponents);
+
+      const systemUtils = [
+        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } }
+      ];
+
+      // Build Submission Schema
+      let submissionConfig = baseEmployeeLayout.filter((c: any) => c.isActive).map((c: any) => ({
+        componentId: c.id,
+        name: c.name,
+        settings: c.properties
+      }));
+      
+      const combinedSubmission = [...systemUtils];
+      submissionConfig.forEach((item: any) => {
+        if (!combinedSubmission.some(s => s.componentId === item.componentId)) combinedSubmission.push(item);
+      });
+
+      // Merge components from Submission Templates if they exist
+      submissionLayout.forEach((subItem: any) => {
+        const existingIdx = combinedSubmission.findIndex(c => c.componentId === subItem.id);
+        const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };
+        if (existingIdx >= 0) {
+          combinedSubmission[existingIdx] = transformed;
+        } else {
+          combinedSubmission.push(transformed);
+        }
+      });
+
+      // Build Work Schema
+      let workConfig = activeList.filter((c: any) => c.isActive).map((c: any) => ({
         componentId: c.id,
         name: c.name,
         settings: c.properties
       }));
 
-      // We only force invisible core system settings. All visible components MUST be explicitly added by the Admin.
-      const systemUtils = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } }
-      ];
-      
-      const combined = [...systemUtils];
-      finalLayoutConfig.forEach((item: any) => {
-        if (!combined.some(s => s.componentId === item.componentId)) {
-          combined.push(item);
-        }
+      const combinedWork = [...systemUtils];
+      workConfig.forEach((item: any) => {
+        if (!combinedWork.some(s => s.componentId === item.componentId)) combinedWork.push(item);
       });
 
-      // Override with Submission Template components if active
-      submissionLayout.forEach((subItem: any) => {
-        const existingIdx = combined.findIndex(c => c.componentId === subItem.id);
-        const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };
-        if (existingIdx >= 0) {
-          combined[existingIdx] = transformed;
-        } else {
-          combined.push(transformed);
-        }
-      });
-
-      setSchema({
+      setSubmissionSchema({
         version: "v43.5",
-        layoutConfig: combined
+        layoutConfig: combinedSubmission
       });
+
+      setWorkSchema({
+        version: "v43.5",
+        layoutConfig: combinedWork
+      });
+
       setLoading(false);
     };
     fetchSchema();
   }, [currentUserRole]);
 
-  const getComponentSettings = (id: string) => {
-    return schema?.layoutConfig.find(c => c.componentId === id)?.settings || null;
-  };
-
-  const isComponentActive = (id: string) => {
-    return schema?.layoutConfig.some(c => c.componentId === id) ?? false;
-  };
-
   return {
-    schema,
+    submissionSchema,
+    workSchema,
     customFields,
     loading,
-    getComponentSettings,
-    isComponentActive
+    isWorkModeLocked
   };
 };

@@ -554,6 +554,7 @@ export function UILayoutEngineTab() {
   };
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
   const [savedInterfaces, setSavedInterfaces] = useState<SavedInterface[]>([
+    { id: 'MAIN_SUBMISSION_INTERFACE', name: 'واجهة الارسال الرئيسية', roleType: 'BASE_SUBMISSION', lastUpdated: new Date().toISOString().split('T')[0] },
     { id: 'ui_5', name: 'واجهة السوبر أدمن', roleType: 'IT_ADMIN', lastUpdated: '2023-10-05' },
     { id: 'ui_op_manager', name: 'م. مجدي الزروق (مدير إدارة)', roleType: 'OPERATIONAL_MANAGER', lastUpdated: new Date().toISOString().split('T')[0] },
     { id: 'ui_sec_head', name: 'أحمد النكوع (رئيس قسم)', roleType: 'SECTION_HEAD', lastUpdated: new Date().toISOString().split('T')[0] },
@@ -573,7 +574,11 @@ export function UILayoutEngineTab() {
         setComponents(JSON.parse(saved));
       } else {
         const roleSaved = localStorage.getItem(`litc_layout_components_${ui.roleType}`);
-        setComponents(roleSaved ? JSON.parse(roleSaved) : (ui.roleType === 'IT_ADMIN' ? initialComponents : []));
+        if (roleSaved) {
+            setComponents(JSON.parse(roleSaved));
+        } else {
+            setComponents(ui.roleType === 'IT_ADMIN' ? initialComponents : initialComponents.map(c => ({...c, isActive: false})));
+        }
       }
       setIsManagerMode(false);
     };
@@ -773,16 +778,17 @@ export function UILayoutEngineTab() {
                         { key: 'external_components', label: 'المكونات الخارجية - External Components', color: '#8B5CF6', icon: '🔌' }
                       ].filter(group => {
                           if (showAdvancedComponents) return true;
-                          if (interfaceCategory === 'END_USER') {
+                          if (interfaceCategory === 'END_USER' || interfaceCategory === 'BASE_SUBMISSION') {
                             return group.key === 'employee_workspace';
                           }
-                          if (interfaceCategory === 'OPERATIONAL_USER') {
+                          if (interfaceCategory === 'OPERATIONAL_USER' || interfaceCategory === 'TEAM_LEADER' || interfaceCategory === 'SECTION_HEAD') {
                             return ['employee_workspace', 'technical_support_console'].includes(group.key);
                           }
                           if (interfaceCategory === 'OPERATIONAL_MANAGER' || interfaceCategory === 'IT_ADMIN') {
                             return true; // Managers and Admins can see everything
                           }
-                          return false;
+                          // Fallback
+                          return true;
                         }).map(group => {
                         const groupComponents = inactiveComponents.filter(c => c.category === group.key);
                         if (groupComponents.length === 0) return null;

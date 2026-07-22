@@ -29,7 +29,7 @@ import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
 
 import { EmployeeWorkspace } from './pages/workspace/EmployeeWorkspace';
 import { DepartmentHeadWorkspace } from './pages/management/DepartmentHeadWorkspace';
-import { SystemModeToggle } from './components/molecules/SystemModeToggle';
+
 import { FloatingTaskbar } from './components/runtime/FloatingTaskbar';
 
 // Route Guard Component
@@ -196,7 +196,6 @@ const Navigation: React.FC = () => {
         >
           🌐 {t('nav.language')}
         </button>
-        <SystemModeToggle />
         <NotificationBell />
         <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
       </div>

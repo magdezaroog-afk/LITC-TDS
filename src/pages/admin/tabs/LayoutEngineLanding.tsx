@@ -41,7 +41,13 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
   const [layoutToDelete, setLayoutToDelete] = useState<SavedInterface | null>(null);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
-  // Fetch users for Staff Management simulation
+  // Advanced Filters State
+  const [interfaceCategoryFilter, setInterfaceCategoryFilter] = useState<'ALL' | 'SUBMISSION' | 'OPERATIONAL' | 'LEADERSHIP'>('ALL');
+  const [interfaceSearchQuery, setInterfaceSearchQuery] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [dynamicDepartments, setDynamicDepartments] = useState<any[]>([]);
+
+  // Fetch users for Staff Management simulation & dynamic departments
   useEffect(() => {
     if (manageLayoutId) {
       const stored = localStorage.getItem('litc_operational_users');
@@ -56,6 +62,15 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
       }
     }
   }, [manageLayoutId]);
+
+  useEffect(() => {
+    try {
+      const storedDepts = localStorage.getItem('mockDepartments');
+      if (storedDepts) {
+        setDynamicDepartments(JSON.parse(storedDepts));
+      }
+    } catch (e) {}
+  }, []);
 
   const saveUsersToStorage = (users: any[]) => {
     setMockUsers(users);
@@ -235,13 +250,118 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
     </div>
   );
 
-  const renderSavedLayouts = () => (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '30px' }}>
-      <button onClick={() => setView('LANDING')} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '20px', fontSize: '15px', fontWeight: 'bold' }}>← العودة</button>
-      <h2 style={{ color: '#0f172a', marginBottom: '30px' }}>الواجهات المؤسسية المحفوظة</h2>
+  const getCategoryFromRole = (role: string) => {
+    if (role === 'BASE_SUBMISSION' || role === 'END_USER') return 'SUBMISSION';
+    if (role === 'OPERATIONAL_USER' || role === 'TEAM_LEADER' || role === 'SECTION_HEAD') return 'OPERATIONAL';
+    if (role === 'OPERATIONAL_MANAGER' || role === 'IT_ADMIN') return 'LEADERSHIP';
+    return 'OTHER';
+  };
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-        {savedInterfaces.map(ui => (
+  const filteredInterfaces = savedInterfaces.filter(ui => {
+    // 1. Category Filter
+    if (interfaceCategoryFilter !== 'ALL') {
+      if (getCategoryFromRole(ui.roleType) !== interfaceCategoryFilter) return false;
+    }
+    
+    // 2. Department Filter
+    if (departmentFilter !== 'ALL') {
+       // Check if this layout has any mockUsers assigned that belong to this department
+       const linkedUsers = mockUsers.filter(u => u.layoutId === ui.id);
+       if (linkedUsers.length > 0) {
+           const matchesDept = linkedUsers.some(u => u.departmentId === departmentFilter);
+           if (!matchesDept) return false;
+       } else {
+           // If no users are linked, should we hide it? Usually yes if they want to see ONLY interfaces active in that department.
+           // However, maybe we should also check if the name matches the department name as a fallback?
+           const dept = dynamicDepartments.find(d => d.id === departmentFilter);
+           if (dept && ui.name.includes(dept.name)) {
+               return true;
+           }
+           return false;
+       }
+    }
+    
+    // 3. Search Query
+    if (interfaceSearchQuery.trim() !== '') {
+       const lowerQ = interfaceSearchQuery.toLowerCase();
+       const matchesName = ui.name.toLowerCase().includes(lowerQ);
+       const attachedUsers = mockUsers.filter(u => u.layoutId === ui.id);
+       const matchesUser = attachedUsers.some(u => u.name.toLowerCase().includes(lowerQ));
+       if (!matchesName && !matchesUser) return false;
+    }
+
+    return true;
+  });
+
+  const renderSavedLayouts = () => (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px' }}>
+      <button onClick={() => setView('LANDING')} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '20px', fontSize: '15px', fontWeight: 'bold' }}>← العودة</button>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ color: '#0f172a', margin: 0 }}>الواجهات المؤسسية المحفوظة</h2>
+      </div>
+
+      {/* Advanced Filters Bar */}
+      <div style={{ background: 'white', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', marginBottom: '30px', display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 250px' }}>
+          <input 
+            type="text" 
+            placeholder="بحث باسم الواجهة أو اسم الموظف..." 
+            value={interfaceSearchQuery}
+            onChange={(e) => setInterfaceSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '12px 15px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
+          />
+        </div>
+        
+        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+          {[
+            { id: 'ALL', label: 'الكل' },
+            { id: 'SUBMISSION', label: 'واجهات إرسال الطلبات' },
+            { id: 'OPERATIONAL', label: 'الواجهات التشغيلية' },
+            { id: 'LEADERSHIP', label: 'واجهات القياديين' }
+          ].map(cat => (
+            <button 
+              key={cat.id}
+              onClick={() => setInterfaceCategoryFilter(cat.id as any)}
+              style={{ 
+                padding: '10px 15px', 
+                borderRadius: '8px', 
+                border: 'none', 
+                fontSize: '13px', 
+                fontWeight: 'bold', 
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                background: interfaceCategoryFilter === cat.id ? '#3b82f6' : '#f1f5f9',
+                color: interfaceCategoryFilter === cat.id ? 'white' : '#475569'
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        <div>
+          <select 
+            value={departmentFilter} 
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            style={{ padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '13px', color: '#475569', cursor: 'pointer' }}
+          >
+            <option value="ALL">كل الإدارات</option>
+            {dynamicDepartments.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+        {filteredInterfaces.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#64748b' }}>
+            لا توجد واجهات تطابق معايير البحث والفلترة.
+          </div>
+        )}
+        {filteredInterfaces.map(ui => (
           <div key={ui.id} style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                <div>
