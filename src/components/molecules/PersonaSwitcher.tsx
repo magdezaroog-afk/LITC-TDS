@@ -14,7 +14,7 @@ export const PersonaSwitcher: React.FC = () => {
 
   useEffect(() => {
     // Load all users
-    const storedUsers = localStorage.getItem('litc_operational_users');
+    const storedUsers = localStorage.getItem('mockOperationalUsers');
     if (storedUsers) {
       try {
         setAllSystemUsers(JSON.parse(storedUsers));

@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (loginAsUser) {
       try {
-        const storedUsers = localStorage.getItem('litc_operational_users');
+        const storedUsers = localStorage.getItem('mockOperationalUsers');
         if (storedUsers) {
           const usersList = JSON.parse(storedUsers);
           const found = usersList.find((u: any) => u.id === loginAsUser);
