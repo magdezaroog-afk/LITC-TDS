@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { loadRoutes, TicketRouteDefinition } from './TicketRoutingTab';
+import { TicketCreatorForm } from '../../../components/organisms/TicketCreatorForm';
+import { ShieldCheck, Star } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { LayoutEngineLanding } from './LayoutEngineLanding';
 
 export type ComponentCategory = 'employee_workspace' | 'technical_support_console' | 'operations_and_management' | 'system_admin_control' | 'external_components';
@@ -264,7 +267,8 @@ export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'TEAM_LEADER' | 'SECTIO
 export interface SavedInterface {
   id: string;
   name: string;
-  roleType: CoreRole;
+  interfaceType: 'FUNCTIONAL' | 'OPERATIONAL'; // Added for functional vs operational split
+  roleType?: CoreRole | string; // Optional for functional
   lastUpdated: string;
   associated_dept?: string;
   associated_section?: string;
@@ -317,7 +321,7 @@ export interface CorporateLocation {
   offices: { id: string; name: string }[];
 }
 
-export function UILayoutEngineTab() {
+export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabId: string) => void }) {
   const [corporateLocations, setCorporateLocations] = useState<CorporateLocation[]>([
     {
       id: 'hq',
@@ -551,16 +555,41 @@ export function UILayoutEngineTab() {
     }
     setShowSaveReportModal(false);
     setIsManagerMode(true);
+    
+    // Auto-return navigation if requested
+    const returnPath = localStorage.getItem('litc_ui_return_path');
+    if (returnPath && onNavigateToTab) {
+      localStorage.removeItem('litc_ui_return_path');
+      onNavigateToTab(returnPath);
+    }
   };
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
-  const [savedInterfaces, setSavedInterfaces] = useState<SavedInterface[]>([
-    { id: 'MAIN_SUBMISSION_INTERFACE', name: 'واجهة الارسال الرئيسية', roleType: 'BASE_SUBMISSION', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_5', name: 'واجهة السوبر أدمن', roleType: 'IT_ADMIN', lastUpdated: '2023-10-05' },
-    { id: 'ui_op_manager', name: 'م. مجدي الزروق (مدير إدارة)', roleType: 'OPERATIONAL_MANAGER', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_sec_head', name: 'أحمد النكوع (رئيس قسم)', roleType: 'SECTION_HEAD', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_team_lead', name: 'نضال أبو غامجة (رئيس فريق)', roleType: 'TEAM_LEADER', lastUpdated: new Date().toISOString().split('T')[0] },
-    { id: 'ui_op_user', name: 'محمد الزياني (مستخدم تشغيلي)', roleType: 'OPERATIONAL_USER', lastUpdated: new Date().toISOString().split('T')[0] }
-  ]);
+  const [savedInterfaces, setSavedInterfaces] = useState<SavedInterface[]>(() => {
+    try {
+      const saved = localStorage.getItem('litc_saved_interfaces');
+      if (saved) {
+        let parsed = JSON.parse(saved);
+        parsed = parsed.map((ui: any) => ({
+          ...ui,
+          interfaceType: ui.interfaceType || (ui.roleType === 'BASE_SUBMISSION' ? 'FUNCTIONAL' : 'OPERATIONAL')
+        }));
+        return parsed;
+      }
+    } catch(e) {}
+    
+    return [
+      { id: 'MAIN_SUBMISSION_INTERFACE', name: 'واجهة الارسال الرئيسية', roleType: 'BASE_SUBMISSION', interfaceType: 'FUNCTIONAL', lastUpdated: new Date().toISOString().split('T')[0] },
+      { id: 'ui_5', name: 'واجهة السوبر أدمن', roleType: 'IT_ADMIN', interfaceType: 'OPERATIONAL', lastUpdated: '2023-10-05' },
+      { id: 'ui_op_manager', name: 'م. مجدي الزروق (مدير إدارة)', roleType: 'OPERATIONAL_MANAGER', interfaceType: 'OPERATIONAL', lastUpdated: new Date().toISOString().split('T')[0] },
+      { id: 'ui_sec_head', name: 'أحمد النكوع (رئيس قسم)', roleType: 'SECTION_HEAD', interfaceType: 'OPERATIONAL', lastUpdated: new Date().toISOString().split('T')[0] },
+      { id: 'ui_team_lead', name: 'نضال أبو غامجة (رئيس فريق)', roleType: 'TEAM_LEADER', interfaceType: 'OPERATIONAL', lastUpdated: new Date().toISOString().split('T')[0] },
+      { id: 'ui_op_user', name: 'محمد الزياني (مستخدم تشغيلي)', roleType: 'OPERATIONAL_USER', interfaceType: 'OPERATIONAL', lastUpdated: new Date().toISOString().split('T')[0] }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('litc_saved_interfaces', JSON.stringify(savedInterfaces));
+  }, [savedInterfaces]);
 
 
 
@@ -1055,615 +1084,53 @@ export function UILayoutEngineTab() {
 
                   {selectedComponent.id === 'ticket_inbox' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص وإجراءات التذاكر الواردة:</h5>
-                      {[
-                        { key: 'NEW', label: 'التذاكر الجديدة', actions: ['OPEN', 'RECEIVE', 'PREVIEW'] },
-                        { key: 'OPEN', label: 'التذاكر المفتوحة', actions: ['TRANSFER', 'ASSIGN', 'CLOSE', 'ESCALATE'] },
-                        { key: 'TRANSFERRED', label: 'التذاكر المحولة', actions: ['ACCEPT', 'REJECT', 'REROUTE'] },
-                        { key: 'STUCK', label: 'التذاكر العالقة (SLA)', actions: ['ESCALATE', 'REOPEN', 'FORCE_CLOSE'] },
-                      ].map(tab => {
-                        const tabsConfig = selectedComponent.properties.tabsConfig || {};
-                        const tabCfg = tabsConfig[tab.key] || { active: false, actions: [] };
-                        return (
-                          <div key={tab.key} style={{ background: 'rgba(241,245,249,0.8)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-<>{isPropertyAllowed("tabsConfig", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold', color: tabCfg.active ? '#6366f1' : '#ccc' }}>
-                              <input 
-                                type="checkbox" 
-                                checked={tabCfg.active} 
-                                onChange={e => {
-                                  const newTabsConfig = { ...tabsConfig, [tab.key]: { ...tabCfg, active: e.target.checked } };
-                                  handlePropertyChange(selectedComponent.id, 'tabsConfig', newTabsConfig);
-                                }} 
-                              />
-                              تبويب: {tab.label}
-                            </label>
-</div>
-)}</>
-                            
-                            {tabCfg.active && (
-                              <div style={{ paddingRight: '20px', marginTop: '8px' }}>
-                                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>الإجراءات المتاحة:</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                  {tab.actions.map(action => {
-                                    const currentActions = tabCfg.actions || [];
-                                    const isChecked = currentActions.includes(action);
-                                    const actionLabels: Record<string, string> = {
-                                      'OPEN': 'فتح', 'RECEIVE': 'استلام', 'PREVIEW': 'معاينة',
-                                      'TRANSFER': 'تحويل', 'ASSIGN': 'إسناد', 'CLOSE': 'إغلاق',
-                                      'ESCALATE': 'تصعيد', 'ACCEPT': 'قبول', 'REJECT': 'رفض',
-                                      'REROUTE': 'إعادة توجيه', 'REOPEN': 'إعادة فتح', 'FORCE_CLOSE': 'إغلاق قسري'
-                                    };
-                                    return (
-<>{isPropertyAllowed("tabsConfig", selectedComponent.strict_ceiling_props) && (
-                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={action} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer', padding: '3px 8px', background: isChecked ? 'rgba(0, 229, 255, 0.1)' : 'transparent', border: `1px solid ${isChecked ? 'rgba(0,229,255,0.3)' : 'rgba(99,102,241,0.04)'}`, borderRadius: '6px' }}>
-                                        <input type="checkbox" checked={isChecked} onChange={e => {
-                                          let newActions = [...currentActions];
-                                          if (e.target.checked) newActions.push(action); else newActions = newActions.filter((a: string) => a !== action);
-                                          const newTabsConfig = { ...tabsConfig, [tab.key]: { ...tabCfg, actions: newActions } };
-                                          handlePropertyChange(selectedComponent.id, 'tabsConfig', newTabsConfig);
-                                        }} />
-                                        {actionLabels[action] || action}
-                                      </label>
-</div>
-)}</>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {selectedComponent.id === 'sub_ticket_engine' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص وحوكمة التذاكر الفرعية:</h5>
+                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص وإعدادات تتبع الطلبات النشطة:</h5>
                       
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>1. ضوابط المحتوى</h6>
-<>{isPropertyAllowed("enableDescription", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '5px' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.enableDescription || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'enableDescription', e.target.checked)} />
-                          تفعيل حقل الوصف
+                      
+
+                      {/* 2. Timeline Visibility */}
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>تفاصيل رحلة الطلب للموظف:</h6>
+                        <select 
+                          style={styles.input} 
+                          value={selectedComponent.properties.timelineVisibility || 'ALL_STEPS'}
+                          onChange={e => handlePropertyChange(selectedComponent.id, 'timelineVisibility', e.target.value)}
+                        >
+                          <option value="ALL_STEPS">شفافية تامة (رؤية جميع التحويلات الداخلية)</option>
+                          <option value="MAJOR_MILESTONES">محطات رئيسية فقط (إخفاء التحويلات الداخلية)</option>
+                        </select>
+                      </div>
+
+                      {/* 3. Rating & Closure Governance */}
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>سياسة التقييم وإغلاق الطلب:</h6>
+                        
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.requireRatingToClose ?? true} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'requireRatingToClose', e.target.checked)} />
+                          إلزامية التقييم (لا يُغلق الطلب نهائياً حتى يتم التقييم) ⭐
                         </label>
-</div>
-)}</>
-                        {selectedComponent.properties.enableDescription && (
-                          <div style={{ paddingRight: '20px', marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontSize: '11px', opacity: 0.8, marginBottom: '5px' }}>الحد الأقصى للأحرف (MaxLength):</label>
-                            <input type="number" style={{ ...styles.input, width: '100px', marginBottom: '5px', padding: '5px' }} 
-                              value={selectedComponent.properties.maxDescriptionLength || 500}
-                              onChange={e => handlePropertyChange(selectedComponent.id, 'maxDescriptionLength', parseInt(e.target.value))} />
-                          </div>
-                        )}
-                      </div>
 
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>2. وضع التزامن (Concurrency Mode)</h6>
-<>{isPropertyAllowed("concurrencyMode", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} value={selectedComponent.properties.concurrencyMode || 'SEQUENTIAL'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'concurrencyMode', e.target.value)}>
-                          <option value="SEQUENTIAL">تسلسلي (Sequential)</option>
-                          <option value="PARALLEL">متزامن (Parallel)</option>
-                        </select>
-</div>
-)}</>
-                      </div>
-
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>3. الحد الأقصى للتذاكر الفرعية</h6>
-                        <input type="number" style={{ ...styles.input, width: '80px', padding: '5px' }} 
-                          value={selectedComponent.properties.maxSubTickets || 2}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'maxSubTickets', parseInt(e.target.value))} />
-                      </div>
-
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>4. نطاق التوجيه (Routing Scope)</h6>
-<>{isPropertyAllowed("routingScope", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} value={selectedComponent.properties.routingScope || 'INTERNAL_TEAM'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'routingScope', e.target.value)}>
-                          <option value="INTERNAL_TEAM">الفريق الداخلي فقط</option>
-                          <option value="SAME_DEPARTMENT">نفس القسم</option>
-                          <option value="CROSS_DEPARTMENT">أقسام مختلفة</option>
-                          <option value="GLOBAL">كل الكيانات</option>
-                        </select>
-</div>
-)}</>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedComponent.id === 'tool_roles_perms' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>مستوى الصلاحيات (Access Level):</h5>
-<>{isPropertyAllowed("accessLevel", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select 
-                        style={styles.input} 
-                        value={selectedComponent.properties.accessLevel || 'READ_ONLY'}
-                        onChange={e => handlePropertyChange(selectedComponent.id, 'accessLevel', e.target.value)}
-                      >
-                        <option value="READ_ONLY">قراءة فقط (Read Only)</option>
-                        <option value="EDIT">تعديل (Edit)</option>
-                        <option value="FULL_ACCESS">تحكم كامل (Full Access)</option>
-                      </select>
-</div>
-)}</>
-                    </div>
-                  )}
-
-                  {/* ═══ ticket_create Inspector ═══ */}
-                  {selectedComponent.id === 'ticket_create' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص مكون إنشاء تذكرة:</h5>
-                      
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>المسارات المسموحة (يمكن للموظف اختيارها):</h6>
-                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>ملاحظة: المرفقات والمستدلات تتم إدارتها من (تبويب مسارات التذاكر). هنا نحدد فقط المسارات التي ستظهر للموظف.</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                          {(selectedComponent.properties.destinationRoutes || []).map((route: string, idx: number) => {
-                            const rDef = savedRoutes.find(r => r.id === route);
-                            return (
-                              <span key={idx} style={{backgroundColor: '#312e81', color: '#a5b4fc', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                                {rDef ? rDef.name : route}
-                                <span style={{ cursor: 'pointer', color: '#f87171' }} onClick={() => {
-                                  const routes = selectedComponent.properties.destinationRoutes.filter((r: string) => r !== route);
-                                  handlePropertyChange(selectedComponent.id, 'destinationRoutes', routes);
-                                }}>x</span>
-                              </span>
-                            );
-                          })}
-                        </div>
-<>{isPropertyAllowed("destinationRoutes", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} onChange={e => {
-                          const routes = selectedComponent.properties.destinationRoutes || [];
-                          if (!routes.includes(e.target.value) && e.target.value !== '') {
-                            handlePropertyChange(selectedComponent.id, 'destinationRoutes', [...routes, e.target.value]);
-                          }
-                          e.target.value = ''; // reset
-                        }}>
-                          <option value="">إضافة مسار مسموح...</option>
-                          {savedRoutes.filter(r => r.isActive).length > 0 
-                            ? savedRoutes.filter(r => r.isActive).map((r, i) => <option key={i} value={r.id}>{r.name}</option>)
-                            : <option value="support">الدعم الفني (افتراضي)</option>
-                          }
-                        </select>
-</div>
-)}</>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ admin_analytics Inspector ═══ */}
-                  {selectedComponent.id === 'admin_analytics' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>📈 إعدادات التحليل المركزي (Analytics)</h5>
-                      
-                      {/* Data Query Scope */}
-                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>نطاق الاستعلام (Data Scope):</h6>
-                      {isPropertyAllowed("dataScope", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                          {['PERSONAL', 'TEAM', 'SPECIFIC_EMPLOYEE'].map(scope => (
-                            <div key={scope} style={{ display: 'flex', flexDirection: 'column' }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                                <input 
-                                  type="radio" 
-                                  name="dataScope" 
-                                  checked={selectedComponent.properties.dataScope === scope}
-                                  onChange={() => handlePropertyChange(selectedComponent.id, 'dataScope', scope)}
-                                />
-                                {scope === 'PERSONAL' ? 'شخصي (Personal)' : scope === 'TEAM' ? 'الفريق (Team)' : 'موظف محدد (Specific)'}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Filters */}
-                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>الفلاتر المتاحة في الواجهة:</h6>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {[
-                          { id: 'BUILDING', label: 'فلتر حسب المبنى' },
-                          { id: 'ISSUE_TYPE', label: 'فلتر حسب نوع المشكلة' },
-                          { id: 'DEPARTMENT', label: 'فلتر حسب القسم' }
-                        ].map(f => {
-                          const filters = selectedComponent.properties.enabledUIFilters || [];
-                          return (
-                            <div key={f.id}>
-                              {isPropertyAllowed("enabledUIFilters", selectedComponent.strict_ceiling_props) && (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={filters.includes(f.id)} onChange={e => {
-                                      let nf = [...filters];
-                                      if (e.target.checked) nf.push(f.id); else nf = nf.filter((x: string) => x !== f.id);
-                                      handlePropertyChange(selectedComponent.id, 'enabledUIFilters', nf);
-                                    }} />
-                                    {f.label}
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Active Charts */}
-                      <h6 style={{ fontSize: '12px', color: '#0052cc', marginBottom: '8px', fontWeight: 'bold' }}>الرسوم البيانية المفعلة:</h6>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {[
-                          { id: 'kpi_cards', label: 'بطاقات KPI' },
-                          { id: 'line_chart', label: 'رسم خطي (Line)' },
-                          { id: 'bar_chart', label: 'رسم عمودي (Bar)' },
-                          { id: 'pie_chart', label: 'رسم دائري (Pie)' }
-                        ].map(c => {
-                          const charts = selectedComponent.properties.activeCharts || [];
-                          return (
-                            <div key={c.id}>
-                              {isPropertyAllowed("activeCharts", selectedComponent.strict_ceiling_props) && (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={charts.includes(c.id)} onChange={e => {
-                                      let nc = [...charts];
-                                      if (e.target.checked) nc.push(c.id); else nc = nc.filter((x: string) => x !== c.id);
-                                      handlePropertyChange(selectedComponent.id, 'activeCharts', nc);
-                                    }} />
-                                    {c.label}
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Manager Controls (IT_ADMIN only) */}
-                      {currentBuilderRole === 'IT_ADMIN' && (
-                        <div style={{ padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', border: '1px solid rgba(88,86,214,0.15)', marginTop: '15px' }}>
-                          <h6 style={{ fontSize: '12px', color: '#5856D6', margin: '0 0 10px 0', fontWeight: 'bold' }}>صلاحيات مدير الإدارة (Manager Analytics Control)</h6>
-                          {[
-                            { key: 'allowEngineerDrilldown', label: 'السماح برؤية أداء المهندسين بالاسم (Drilldown)' },
-                            { key: 'allowLocationFilter', label: 'السماح بمقارنة وفلترة المباني والمكاتب' },
-                            { key: 'allowTaxonomyFilter', label: 'السماح بفلترة تصنيفات المشاكل' }
-                          ].map(ctrl => {
-                            const val = selectedComponent.properties.managerAnalyticsControl?.[ctrl.key] ?? false;
-                            return (
-                              <div key={ctrl.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '11px', color: '#475569' }}>{ctrl.label}</span>
-                                <div
-                                  style={val ? styles.switchTrue : styles.switchFalse}
-                                  onClick={() => {
-                                    const mac = { ...(selectedComponent.properties.managerAnalyticsControl || {}) };
-                                    mac[ctrl.key] = !val;
-                                    handlePropertyChange(selectedComponent.id, 'managerAnalyticsControl', mac);
-                                  }}
-                                >
-                                  <div style={val ? styles.knobTrue : styles.knobFalse}></div>
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '10px' }}>
-                            <div>
-                              <span style={{ fontSize: '11px', color: '#D32F2F', display: 'block', fontWeight: 'bold' }}>تجاوز الأدمين (Admin Absolute Override)</span>
-                            </div>
-                            <div
-                              style={selectedComponent.properties.adminOverride ? styles.switchTrue : styles.switchFalse}
-                              onClick={() => handlePropertyChange(selectedComponent.id, 'adminOverride', !selectedComponent.properties.adminOverride)}
-                            >
-                              <div style={selectedComponent.properties.adminOverride ? styles.knobTrue : styles.knobFalse}></div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* ═══ admin_leaderboard Inspector ═══ */}
-                  {selectedComponent.id === 'admin_leaderboard' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>⚖️ المقارنات واللوحات القيادية (Leaderboard & Comparison)</h5>
-                      
-                      {/* Max comparison elements */}
-                      <div style={{ marginBottom: '15px' }}>
-                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '5px' }}>الحد الأقصى لعناصر المقارنة (N-Elements):</label>
-                        <input 
-                          type="number" 
-                          min={2} max={10}
-                          value={selectedComponent.properties.maxComparisonElements || 3}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'maxComparisonElements', parseInt(e.target.value))}
-                          style={{ ...styles.input, width: '80px', padding: '6px' }}
-                        />
-                      </div>
-
-                      {/* Dimensions */}
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>محاور المقارنة المتاحة (Dimensions):</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {[
-                          { id: 'ENGINEERS', label: 'مقارنة الكوادر (أداء المهندسين)' },
-                          { id: 'LOCATIONS', label: 'مقارنة المواقع والمباني' },
-                          { id: 'PROBLEMS', label: 'مقارنة أنواع المشاكل والتصنيفات' }
-                        ].map(d => {
-                          const dims = selectedComponent.properties.allowedDimensions || [];
-                          return (
-                            <div key={d.id}>
-                              {isPropertyAllowed("allowedDimensions", selectedComponent.strict_ceiling_props) && (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={dims.includes(d.id)} onChange={e => {
-                                      let nd = [...dims];
-                                      if (e.target.checked) nd.push(d.id); else nd = nd.filter((x: string) => x !== d.id);
-                                      handlePropertyChange(selectedComponent.id, 'allowedDimensions', nd);
-                                      handlePropertyChange(selectedComponent.id, 'allowedComparisonTypes', nd);
-                                    }} />
-                                    {d.label}
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Metrics */}
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>مقاييس الأداء (Metrics):</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {[
-                          { id: 'VOLUME', label: 'حجم التذاكر (Volume)' },
-                          { id: 'SPEED', label: 'سرعة الإغلاق (Speed)' },
-                          { id: 'SLA', label: 'نسبة خرق الـ SLA' }
-                        ].map(m => {
-                          const metrics = selectedComponent.properties.allowedMetrics || [];
-                          return (
-                            <div key={m.id}>
-                              {isPropertyAllowed("allowedMetrics", selectedComponent.strict_ceiling_props) && (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={metrics.includes(m.id)} onChange={e => {
-                                      let nm = [...metrics];
-                                      if (e.target.checked) nm.push(m.id); else nm = nm.filter((x: string) => x !== m.id);
-                                      handlePropertyChange(selectedComponent.id, 'allowedMetrics', nm);
-                                    }} />
-                                    {m.label}
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* ═══ admin_archive Inspector ═══ */}
-                  {selectedComponent.id === 'admin_archive' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>نطاق الوصول (Archive Scope):</h5>
-<>{isPropertyAllowed("archiveScope", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {['Personal_Only', 'Department_Only', 'Building_Only', 'Global_Access'].map(scope => (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={scope} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                            <input type="radio" name="archiveScope" checked={selectedComponent.properties.archiveScope === scope}
-                              onChange={() => handlePropertyChange(selectedComponent.id, 'archiveScope', scope)} />
-                            {scope.replace(/_/g, ' ')}
-                          </label>
-</div>
-                        ))}
-                      </div>
-)}</>
-
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>أنواع التذاكر المسموحة:</h5>
-<>{isPropertyAllowed("allowCompletedClosedTickets", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-                        <input type="checkbox" checked={selectedComponent.properties.allowCompletedClosedTickets || false}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'allowCompletedClosedTickets', e.target.checked)} />
-                        التذاكر المنجزة والمغلقة (Completed/Closed)
-                      </label>
-</div>
-)}</>
-<>{isPropertyAllowed("allowSupplementaryAdditionalTickets", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '15px' }}>
-                        <input type="checkbox" checked={selectedComponent.properties.allowSupplementaryAdditionalTickets || false}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'allowSupplementaryAdditionalTickets', e.target.checked)} />
-                        التذاكر الفرعية/الإضافية (Supplementary)
-                      </label>
-</div>
-)}</>
-
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>فلاتر الواجهة المتاحة للمستخدم:</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {[
-                          { id: 'operator_name', label: 'تصفية باسم الموظف (Operator)' },
-                          { id: 'end_user_name', label: 'تصفية باسم المستخدم النهائي' },
-                          { id: 'issue_type', label: 'تصفية بنوع المشكلة' },
-                          { id: 'building_location', label: 'تصفية بالمبنى/الموقع' }
-                        ].map(f => {
-                          const filters = selectedComponent.properties.enabledUIFilters || [];
-                          return (
-<>{isPropertyAllowed("enabledUIFilters", selectedComponent.strict_ceiling_props) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={filters.includes(f.id)} onChange={e => {
-                                let nf = [...filters];
-                                if (e.target.checked) nf.push(f.id); else nf = nf.filter((x: string) => x !== f.id);
-                                handlePropertyChange(selectedComponent.id, 'enabledUIFilters', nf);
-                              }} />
-                              {f.label}
-                            </label>
-</div>
-)}</>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ admin_profile Inspector ═══ */}
-                  {selectedComponent.id === 'admin_profile' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص الملف الشخصي الديناميكي:</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-<>{isPropertyAllowed("allowThemeCustomization", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.allowThemeCustomization || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'allowThemeCustomization', e.target.checked)} />
-                          السماح بتخصيص المظهر (Theme Customization)
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.preventNewTicketIfPendingRating ?? false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'preventNewTicketIfPendingRating', e.target.checked)} />
+                          منع إنشاء طلب جديد في نفس المسار إذا كان هناك طلب ينتظر التقييم 🛡️
                         </label>
-</div>
-)}</>
-<>{isPropertyAllowed("manualInputFallback", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.manualInputFallback || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'manualInputFallback', e.target.checked)} />
-                          تفعيل الإدخال اليدوي كبديل (Manual Input Fallback)
+                      </div>
+
+                      {/* 4. Cancellation */}
+                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px' }}>
+                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>صلاحيات إضافية:</h6>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selectedComponent.properties.allowCancellation ?? false} 
+                            onChange={e => handlePropertyChange(selectedComponent.id, 'allowCancellation', e.target.checked)} />
+                          السماح للموظف بإلغاء الطلب (فقط عندما يكون في حالة 'جديد') ❌
                         </label>
-</div>
-)}</>
-                      </div>
-                      
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>مزود الهوية (Identity Provider):</h6>
-<>{isPropertyAllowed("identityProvider", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} value={selectedComponent.properties.identityProvider || 'Microsoft_SSO'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'identityProvider', e.target.value)}>
-                          <option value="Microsoft_SSO">Microsoft SSO</option>
-                          <option value="Google_Workspace">Google Workspace</option>
-                          <option value="Active_Directory">Active Directory On-Premise</option>
-                          <option value="Internal_DB">قاعدة البيانات الداخلية</option>
-                        </select>
-</div>
-)}</>
                       </div>
 
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>لوحة الألوان المضيئة (Neon Palette):</h6>
-<>{isPropertyAllowed("neonPalette", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} value={selectedComponent.properties.neonPalette || 'Cyber Blue'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'neonPalette', e.target.value)}>
-                          <option value="Cyber Blue">Cyber Blue</option>
-                          <option value="Emerald Green">Emerald Green</option>
-                          <option value="Neon Purple">Neon Purple</option>
-                          <option value="Crimson Red">Crimson Red</option>
-                        </select>
-</div>
-)}</>
-                      </div>
-
-                      <div>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>شفافية المظهر الزجاجي (Glass Opacity):</h6>
-                        <input type="range" min="0.1" max="1.0" step="0.1" style={{ width: '100%' }}
-                          value={selectedComponent.properties.glassOpacity || 0.6}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'glassOpacity', parseFloat(e.target.value))} />
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>{selectedComponent.properties.glassOpacity || 0.6}</span>
-                      </div>
                     </div>
                   )}
 
-                  {/* ═══ tool_language_theme Inspector ═══ */}
-                  {selectedComponent.id === 'tool_language_theme' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>خصائص اللغات والمظهر:</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-<>{isPropertyAllowed("allowUserSwitch", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.allowUserSwitch || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'allowUserSwitch', e.target.checked)} />
-                          السماح للمستخدم بتغيير اللغة (User Switch)
-                        </label>
-</div>
-)}</>
-<>{isPropertyAllowed("darkModeEnabled", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedComponent.properties.darkModeEnabled || false} 
-                            onChange={e => handlePropertyChange(selectedComponent.id, 'darkModeEnabled', e.target.checked)} />
-                          تفعيل النمط الداكن الافتراضي (Dark Mode)
-                        </label>
-</div>
-)}</>
-                      </div>
-                      
-                      <div style={{ marginBottom: '15px' }}>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>اللغة الافتراضية (Default Language):</h6>
-<>{isPropertyAllowed("defaultLanguage", selectedComponent.strict_ceiling_props) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-<select style={styles.input} value={selectedComponent.properties.defaultLanguage || 'ar'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'defaultLanguage', e.target.value)}>
-                          <option value="ar">العربية (Arabic)</option>
-                          <option value="en">الإنجليزية (English)</option>
-                        </select>
-</div>
-)}</>
-                      </div>
-
-                      <div>
-                        <h6 style={{ fontSize: '12px', color: '#6366f1', margin: '0 0 10px 0' }}>لون التوهج (Neon Glow Color):</h6>
-                        <input type="color" style={{ width: '100%', height: '40px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                          value={selectedComponent.properties.neonGlowColor || '#6366f1'}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'neonGlowColor', e.target.value)} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ admin_notifications Inspector ═══ */}
-                  {selectedComponent.id === 'admin_notifications' && (
-                    <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-                      <h5 style={{ fontSize: '13px', color: '#f97316', marginBottom: '10px' }}>⚠️ ضوابط الحوكمة السيادية:</h5>
-<>{isPropertyAllowed("forceWhatsappCritical", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-                        <input type="checkbox" checked={selectedComponent.properties.forceWhatsappCritical || false}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'forceWhatsappCritical', e.target.checked)} />
-                        فرض إشعارات WhatsApp للأحداث الحرجة 📱
-                      </label>
-</div>
-)}</>
-<>{isPropertyAllowed("lockSLAThresholds", selectedComponent.strict_ceiling_props) && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', cursor: 'pointer', marginBottom: '15px' }}>
-                        <input type="checkbox" checked={selectedComponent.properties.lockSLAThresholds || false}
-                          onChange={e => handlePropertyChange(selectedComponent.id, 'lockSLAThresholds', e.target.checked)} />
-                        قفل تعديل مدد الـ SLA (منع المدراء من التخفيض) 🔒
-                      </label>
-</div>
-)}</>
-
-                      <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>حدود التصعيد الزمني (SLA Thresholds):</h5>
-                      <div style={{ background: 'rgba(99,102,241,0.04)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {(selectedComponent.properties.SLA_Thresholds || ['15m', '1h', '24h']).map((t: string, i: number) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '11px', color: '#ef4444' }}>⏳ المستوى {i + 1}:</span>
-                            <input style={{ ...styles.input, width: '80px', padding: '4px 8px' }} value={t}
-                              onChange={e => {
-                                const nt = [...(selectedComponent.properties.SLA_Thresholds || ['15m', '1h', '24h'])];
-                                nt[i] = e.target.value;
-                                handlePropertyChange(selectedComponent.id, 'SLA_Thresholds', nt);
-                              }} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══ admin_operational_console Inspector ═══ */}
                   {selectedComponent.id === 'admin_operational_console' && (
                     <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
                       <h5 style={{ fontSize: '13px', color: '#0052cc', marginBottom: '10px' }}>⚡ كونسول الاستقبال والتشغيل (Operational Console)</h5>
@@ -1820,7 +1287,7 @@ export function UILayoutEngineTab() {
                     <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', padding: '20px'}}>لا توجد خصائص إضافية</div>
                   ) : (
                     <div>
-                      {Object.entries(selectedComponent.properties).filter(([k]) => !['destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport', 'issueTypeCustomization', 'injectedDynamicFields', 'attachmentAllowedExtensions', 'routingDestination', 'cascadingDropdowns', 'dependencyMapping', 'maxAttachmentSizeMB', 'allowedExtensions', 'mandatoryDescription', 'targetDestinations', 'maxAttachmentSize', 'descriptionLimit', 'authorizedPathManager', 'enforceAttachments', 'enforceDescription', 'singleTicketRestriction', 'issueTaxonomy'].includes(k)).map(([key, val]) => {
+                      {Object.entries(selectedComponent.properties).filter(([k]) => !['visualStyle', 'timelineVisibility', 'requireRatingToClose', 'preventNewTicketIfPendingRating', 'allowCancellation', 'showStatusBadges', 'destinationRoutes', 'tabsConfig', 'enableDescription', 'maxDescriptionLength', 'accessLevel', 'allowedReportFilters', 'allowedReportColumns', 'allowedFilters', 'activeCharts', 'dataScope', 'filterDestDept', 'allowedDimensions', 'allowedMetrics', 'displayModes', 'archiveScope', 'allowCompletedClosedTickets', 'allowSupplementaryAdditionalTickets', 'enabledUIFilters', 'forceWhatsappCritical', 'lockSLAThresholds', 'SLA_Thresholds', 'allowedViews', 'enableDragAndDrop', 'maxDepth', 'concurrencyMode', 'maxSubTickets', 'routingScope', 'attachmentsEnabled', 'mandatoryAttachments', 'attachmentMaxSizeMB', 'slaConditions', 'voiceToText', 'showPriority', 'allowThemeCustomization', 'manualInputFallback', 'identityProvider', 'neonPalette', 'glassOpacity', 'allowUserSwitch', 'darkModeEnabled', 'defaultLanguage', 'neonGlowColor', 'enableTimelineAuditLog', 'enableHistoricalExport', 'issueTypeCustomization', 'injectedDynamicFields', 'attachmentAllowedExtensions', 'routingDestination', 'cascadingDropdowns', 'dependencyMapping', 'maxAttachmentSizeMB', 'allowedExtensions', 'mandatoryDescription', 'targetDestinations', 'maxAttachmentSize', 'descriptionLimit', 'authorizedPathManager', 'enforceAttachments', 'enforceDescription', 'singleTicketRestriction', 'issueTaxonomy'].includes(k)).map(([key, val]) => {
                         // Boolean toggle
                         if (typeof val === 'boolean') {
                           return (
@@ -2195,185 +1662,162 @@ export function UILayoutEngineTab() {
                     const renderComponent = (c: UIComponentDefinition) => {
                       switch (c.id) {
                                                 case 'ticket_create': {
-                          const tProps = c.properties || {};
-                          const destinationRouteIds: string[] = tProps.destinationRoutes || [];
-                          
-                          const activeRoutes = savedRoutes.filter(r => r.isActive);
-                          const visibleRoutes = destinationRouteIds.length > 0
-                            ? activeRoutes.filter(r => destinationRouteIds.includes(r.id))
-                            : activeRoutes;
-
-                          if (!previewSelectedRouteId) {
+                            const tProps = c.properties || {};
+                            const destinationRouteIds: string[] = tProps.destinationRoutes || [];
+                            
+                            // Mock custom fields parsing just for preview (from localStorage or empty)
+                            let mockCustomFields = [];
+                            try {
+                                const stored = localStorage.getItem('litc_dynamic_fields');
+                                if (stored) mockCustomFields = JSON.parse(stored);
+                            } catch(e) {}
+                            
                             return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                <button 
-                                  onClick={() => {
-                                    if (visibleRoutes.length === 1) {
-                                      setPreviewSelectedRouteId(visibleRoutes[0].id);
-                                    } else {
-                                      setPreviewSelectedRouteId('ROUTE_SELECTION');
-                                    }
-                                  }}
-                                  style={{ width: '100%', padding: '14px', background: '#007AFF', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,122,255,0.3)', transition: 'transform 0.2s' }}>
-                                  + إنشاء تذكرة جديدة
-                                </button>
-                              </div>
-                            );
-                          }
-
-                          if (previewSelectedRouteId === 'ROUTE_SELECTION') {
-                            if (visibleRoutes.length === 0) {
-                              return (
-                                <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                  <div style={{ color: '#FF3B30', fontWeight: 'bold' }}>لا توجد مسارات تذاكر متاحة</div>
-                                  <p style={{ fontSize: '12px', color: '#6E6E73' }}>يرجى إضافة مسارات مسموحة من خصائص المكون.</p>
-                                  <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', marginTop: '10px' }}>← إلغاء</button>
-                                </div>
-                              );
-                            }
-                            return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px' }}>
-                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
-                                <h3 style={{ margin: '0 0 6px', fontSize: '16px', color: '#172b4d', fontWeight: 800 }}>🚀 إنشاء طلب خدمة جديد</h3>
-                                <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#5e6c84' }}>اختر نوع الطلب لتوجيهه للإدارة المختصة</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  {visibleRoutes.map(route => (
-                                    <div key={route.id}
-                                      onClick={() => setPreviewSelectedRouteId(route.id)}
-                                      style={{ padding: '16px', borderRadius: '8px', border: '2px solid transparent', background: 'linear-gradient(to right, rgba(0,82,204,0.02), rgba(0,101,255,0.02))', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-                                    >
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${route.colorCode || '#0052cc'}15`, color: route.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                                          {route.icon || '📄'}
-                                        </div>
-                                        <div>
-                                          <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#172b4d' }}>{route.name}</h4>
-                                          <div style={{ fontSize: '11px', color: '#5e6c84' }}>{route.description || 'اضغط لإنشاء هذا الطلب'}</div>
-                                        </div>
-                                      </div>
+                                <div style={{ display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+                                    <div style={{ width: '100%', maxWidth: '600px', opacity: 0.9 }}>
+                                        <TicketCreatorForm
+                                            customFields={mockCustomFields}
+                                            allowedRouteIds={destinationRouteIds}
+                                            concurrencyPolicy={tProps.concurrencyPolicy || 'ALLOW_MULTIPLE'}
+                                        />
                                     </div>
-                                  ))}
                                 </div>
-                              </div>
                             );
-                          }
-
-                          const routeDef = savedRoutes.find(r => r.id === previewSelectedRouteId);
-                          if (!routeDef) {
-                            return (
-                              <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', textAlign: 'center' }}>
-                                <button onClick={() => setPreviewSelectedRouteId(null)} style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>← العودة</button>
-                                <div style={{ color: '#FF3B30' }}>خطأ: لم يتم العثور على المسار</div>
-                              </div>
-                            );
-                          }
-
-                          const renderDynamicFieldsPreview = () => {
-                            const rdfs = routeDef.formConfig?.routeDynamicFields || (routeDef.formConfig?.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                            const fields = previewDynamicFields.filter(f => rdfs.some(r => r.fieldId === f.id));
-                            if (!fields || fields.length === 0) return null;
-                            return fields.map((f, i) => {
-                              const isReq = rdfs.find(r => r.fieldId === f.id)?.isRequired;
-                              return (
-                                <div key={i} style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>{f.name} {isReq && <span style={{color:'red'}}>*</span>}</label>
-                                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none' }}>
-                                    <option>-- اختر --</option>
-                                    {f.options?.map((o: string, idx: number) => <option key={idx}>{o}</option>)}
-                                  </select>
-                                </div>
-                              );
-                            });
-                          };
-
-                          return (
-                            <div style={{ padding: '20px', background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                              <button 
-                                onClick={() => setPreviewSelectedRouteId(visibleRoutes.length > 1 ? 'ROUTE_SELECTION' : null)}
-                                style={{ background: 'none', border: 'none', color: '#0052cc', fontSize: '12px', cursor: 'pointer', padding: 0, marginBottom: '15px', fontWeight: 'bold' }}>
-                                ← العودة
-                              </button>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #dfe1e6' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: `${routeDef.colorCode || '#0052cc'}15`, color: routeDef.colorCode || '#0052cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{routeDef.icon || '📄'}</div>
-                                <div>
-                                  <h3 style={{ margin: 0, fontSize: '15px', color: '#172b4d' }}>{routeDef.name}</h3>
-                                  <div style={{ fontSize: '11px', color: '#5e6c84' }}>توجيه إلى: {routeDef.targetDepartmentId}</div>
-                                </div>
-                              </div>
-                              
-
-                              {renderDynamicFieldsPreview()}
-
-                              {routeDef.formConfig?.showDescription && (
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>تفاصيل إضافية {routeDef.formConfig?.mandatoryDescription && <span style={{color:'red'}}>*</span>}</label>
-                                  <textarea style={{ width: '100%', padding: '10px 12px', minHeight: '80px', borderRadius: '6px', border: '2px solid #dfe1e6', background: '#fafbfc', outline: 'none', resize: 'vertical' }} placeholder="الرجاء الوصف بدقة..." />
-                                </div>
-                              )}
-                              
-                              {routeDef.formConfig?.showAttachments && (
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{ display: 'block', fontSize: '12px', color: '#5e6c84', marginBottom: '8px', fontWeight: 'bold' }}>المرفقات {routeDef.formConfig?.mandatoryAttachments && <span style={{color:'red'}}>*</span>}</label>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '18px 16px', border: '2px dashed #c1c7d0', borderRadius: '10px', background: '#fafbfc', color: '#5e6c84', fontSize: '13px', fontWeight: 500 }}>
-                                    <span style={{ fontSize: '20px' }}>📁</span> اضغط لاختيار الملفات أو اسحبها هنا
-                                    <span style={{ fontSize: '10px', color: '#AEAEB2' }}>(الحد: {routeDef.formConfig.maxAttachmentSizeMB || 5}MB)</span>
-                                  </div>
-                                </div>
-                              )}
-
-
-                              <button 
-                                onClick={() => {
-                                    alert('تم الإرسال بنجاح (محاكاة)!');
-                                    setPreviewSelectedRouteId(null);
-                                }}
-                                style={{ width: '100%', padding: '12px', background: `linear-gradient(90deg, ${routeDef.colorCode || '#0052cc'} 0%, ${routeDef.colorCode || '#0052cc'}dd 100%)`, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                                إرسال الطلب
-                              </button>
-                            </div>
-                          );
                         }
 
                         case 'ticket_inbox': {
-                          const p = c.properties || {};
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ margin: 0, fontSize: '14px', color: '#1D1D1F', fontWeight: '700' }}>قائمة التذاكر المرسلة</h4>
-                                {p.allowCancellation && (
-                                  <span style={{ fontSize: '11px', color: '#FF3B30', background: '#FFF1F0', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>إمكانية الإلغاء مفعلة</span>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {[
-                                  { id: 'TKT-1002', title: 'شاشة حاسوب معطلة', date: 'منذ ساعتين', status: 'مفتوحة' },
-                                  { id: 'TKT-0994', title: 'طلب صلاحية للشبكة', date: 'أمس', status: 'محلولة' }
-                                ].map(t => (
-                                  <div key={t.id} style={{ padding: '14px', background: '#F5F5F7', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
-                                    <div>
-                                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1D1D1F' }}>{t.title}</div>
-                                      <div style={{ fontSize: '11px', color: '#8E8E93', marginTop: '4px' }}>{t.id} • {t.date}</div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                      <span style={{ 
-                                        padding: '4px 8px', 
-                                        borderRadius: '6px', 
-                                        fontSize: '11px', 
-                                        fontWeight: '700',
-                                        background: t.status === 'مفتوحة' ? '#E5F1FF' : '#E8F5E9',
-                                        color: t.status === 'مفتوحة' ? '#007AFF' : '#34C759'
+                            const p = c.properties || {};
+                            
+                            const timelineVisibility = p.timelineVisibility || 'ALL_STEPS';
+                            const requireRatingToClose = p.requireRatingToClose !== undefined ? p.requireRatingToClose : true;
+                            const allowCancellation = p.allowCancellation || false;
+
+                            // Mock active tickets for the preview
+                            const mockActiveTickets = [
+                              {
+                                id: 'TKT-1002',
+                                title: 'تذكرة عرض توضيحي للوحة الأدمن',
+                                description: 'هذا مجرد عرض توضيحي لكيفية ظهور التذاكر النشطة للموظف بناءً على التصميم الجديد.',
+                                status: 'OPEN',
+                                routeColor: '#3b82f6',
+                                routeIcon: '💻',
+                                routeName: 'الدعم الفني',
+                                currentHandler: 'إدارة أمن المعلومات',
+                                history: [
+                                  { id: '1', title: 'تم رفع الطلب', status: 'COMPLETED', department: 'بواسطتك', timestamp: '09:00 ص' },
+                                  { id: '2', title: 'الاستلام الأولي', status: 'COMPLETED', department: 'مكتب الدعم الفني', timestamp: '09:15 ص' },
+                                  { id: '3', title: 'تحويل داخلي', status: 'COMPLETED', department: 'فريق الشبكات', timestamp: '10:00 ص' },
+                                  { id: '4', title: 'قيد المعالجة', status: 'ACTIVE', department: 'إدارة أمن المعلومات', timestamp: 'الآن' },
+                                  { id: '5', title: 'الإنجاز', status: 'PENDING' }
+                                ]
+                              }
+                            ];
+                            
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', opacity: 0.9 }}>
+                                <div>
+                                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: 0, position: 'relative', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                                    لوحة استعراض التذاكر المرسلة (معاينة حية)
+                                    <div style={{ position: 'absolute', bottom: '-4px', right: 0, width: '40px', height: '4px', background: 'linear-gradient(90deg, #2563eb, transparent)', borderRadius: '2px' }}></div>
+                                  </h2>
+                                </div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', pointerEvents: 'none' }}>
+                                  {mockActiveTickets.map(ticket => {
+                                    let displayHistory = ticket.history || [];
+                                    if (timelineVisibility === 'MAJOR_MILESTONES') {
+                                      displayHistory = displayHistory.filter((n: any, idx: number) => {
+                                        if (idx === 0 || idx === displayHistory.length - 1) return true;
+                                        if (n.status === 'ACTIVE') return true;
+                                        return false;
+                                      });
+                                    }
+
+                                    return (
+                                      <div key={ticket.id} style={{
+                                        background: '#fff', borderRadius: '20px', padding: '24px',
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.04)',
+                                        position: 'relative', overflow: 'hidden'
                                       }}>
-                                        {t.status}
-                                      </span>
-                                      {p.allowCancellation && t.status === 'مفتوحة' && (
-                                        <button style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: '#FF3B30', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>إلغاء ❌</button>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: ticket.routeColor }} />
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${ticket.routeColor}15`, color: ticket.routeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                              {ticket.routeIcon}
+                                            </div>
+                                            <div>
+                                              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{ticket.title}</h4>
+                                              <span style={{ fontSize: '12px', color: '#64748b' }}>مسار: {ticket.routeName} • {ticket.currentHandler}</span>
+                                            </div>
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            {allowCancellation && (
+                                              <button style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                                                إلغاء الطلب ❌
+                                              </button>
+                                            )}
+                                            <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, padding: '4px 10px', borderRadius: '20px', background: 'rgba(0,0,0,0.04)', color: '#475569' }}>
+                                              #{ticket.id}
+                                            </span>
+                                            <span style={{
+                                              fontSize: '11px', fontWeight: 700,
+                                              padding: '4px 10px', borderRadius: '20px',
+                                              background: ticket.status === 'RESOLVED' ? '#e8f5e9' : ticket.status === 'TRANSFERRED' ? '#fff3e0' : '#e0f2fe',
+                                              color: ticket.status === 'RESOLVED' ? '#2e7d32' : ticket.status === 'TRANSFERRED' ? '#ef6c00' : '#0288d1',
+                                            }}>
+                                              {ticket.status === 'NEW' ? '✨ جديد' : ticket.status === 'OPEN' ? '⚙️ قيد المعالجة' : ticket.status === 'TRANSFERRED' ? '↗️ محول' : '🎯 تم الإنجاز'}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ fontSize: '13px', color: '#475569', marginBottom: '20px', lineHeight: 1.5, background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '8px' }}>
+                                          <strong>وصف المشكلة المرفوع:</strong> {ticket.description}
+                                        </div>
+
+                                        <div style={{ padding: '16px', background: '#fafbfc', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                                          <h5 style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              🗺️ رحلة الطلب ومكان المعالجة الحالي:
+                                            </h5>
+                                            
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                                              {displayHistory.map((node: any, idx: number) => {
+                                                const isCompleted = node.status === 'COMPLETED';
+                                                const isActive = node.status === 'ACTIVE';
+                                                return (
+                                                  <React.Fragment key={node.id || idx}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 auto', minWidth: '120px' }}>
+                                                      <div style={{
+                                                        width: '28px', height: '28px', borderRadius: '50%',
+                                                        background: isCompleted ? ticket.routeColor : isActive ? '#ffffff' : '#f1f5f9',
+                                                        border: `2px solid ${isCompleted || isActive ? ticket.routeColor : '#cbd5e1'}`,
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        color: isCompleted ? '#fff' : isActive ? ticket.routeColor : '#94a3b8',
+                                                        fontSize: '12px', fontWeight: 700,
+                                                        boxShadow: isActive ? `0 0 0 4px ${ticket.routeColor}25` : 'none'
+                                                      }}>
+                                                        {isCompleted ? '✓' : idx + 1}
+                                                      </div>
+                                                      <div>
+                                                        <div style={{ fontSize: '12px', fontWeight: 700, color: isCompleted || isActive ? '#1e293b' : '#94a3b8' }}>{node.title}</div>
+                                                        {node.department && <div style={{ fontSize: '10px', color: '#64748b' }}>{node.department}</div>}
+                                                        {node.timestamp && <div style={{ fontSize: '9px', color: '#94a3b8' }}>{node.timestamp}</div>}
+                                                      </div>
+                                                    </div>
+                                                    {idx < displayHistory.length - 1 && (
+                                                      <div style={{ flex: 1, height: '2px', background: isCompleted ? ticket.routeColor : '#e2e8f0', minWidth: '20px' }} />
+                                                    )}
+                                                  </React.Fragment>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          );
+                            );
                         }
 
                         case 'admin_operational_console': {

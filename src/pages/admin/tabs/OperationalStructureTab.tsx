@@ -669,6 +669,23 @@ export const OperationalStructureTab: React.FC<{ orgTree: OrgNode }> = ({ orgTre
     setAddEntitySelectedNode(nodesToAdd[0]);
   };
 
+  const commitAddEntity = () => {
+    if (!addEntityModalOpen || !addEntitySelectedNode) return;
+    
+    if (addEntityModalOpen.type === 'DEPARTMENT') {
+      const newDept: OrgDepartment = {
+        id: `dept_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: addEntitySelectedNode.name,
+        divisions: [],
+        expanded: true
+      };
+      setDepartments(prev => [...prev, newDept]);
+    }
+    
+    setAddEntityModalOpen(null);
+    setAddEntitySelectedNode(null);
+  };
+
   const handleAddDivision = (deptId: string, deptName: string) => {
     const availableNodes = getChildNodesByType(deptName, orgTree, ['قسم']);
     if (availableNodes.length === 0) {

@@ -128,6 +128,9 @@ const DraggableCard: React.FC<{ node: OrgNode, isRoot: boolean, zoom: number, on
     case 'مستطيل بحواف دائرية':
       shapeStyle = { borderRadius: '12px', border: '2px solid #3b82f6' };
       break;
+    case 'دائرة':
+      shapeStyle = { borderRadius: '20px', border: '2px solid #06b6d4', boxShadow: '0 4px 10px rgba(6,182,212,0.1)' };
+      break;
     case 'مكتب':
     case 'ورقة شجر يمين':
       shapeStyle = { borderRadius: '30px 0 30px 0', border: '2px solid #10b981' };
@@ -223,72 +226,83 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
   };
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const viewportRef = React.useRef<HTMLDivElement>(null);
 
-  const handleBgPointerDown = (e: React.PointerEvent) => {
-    if (!isBgEditMode || !bgImage) return;
-    if ((e.target as HTMLElement).closest('.org-tree-container')) return; // Ignore clicks on the tree itself
-    
-    // Ignore clicks on resize handles (bottom left or bottom right)
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const isResizeHandle = e.clientY > rect.bottom - 20 && (e.clientX < rect.left + 20 || e.clientX > rect.right - 20);
-    if (isResizeHandle) return;
+  // --- Proper Pan+Zoom engine ---
+  const [treePanZoom, setTreePanZoom] = useState({ x: 40, y: 40, scale: 1 });
+  const panzoomState = React.useRef({ isPanning: false, startX: 0, startY: 0 });
 
+  const handleViewportPointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('.org-card') || (e.target as HTMLElement).tagName === 'BUTTON') return;
+    if (bgDragState.current.isDragging) return;
     e.preventDefault();
-    bgDragState.current.isDragging = true;
-    bgDragState.current.startX = e.clientX;
-    bgDragState.current.startY = e.clientY;
-    
-    // Parse current bg position
-    const pos = bgSettings.position || 'center';
-    let currX = 50, currY = 50;
-    if (pos === 'center') { currX = 50; currY = 50; }
-    else if (pos.includes('px')) {
-      const parts = pos.split(' ');
-      currX = parseFloat(parts[0]) || 0;
-      currY = parseFloat(parts[1]) || 0;
-    }
-    bgDragState.current.bgX = currX;
-    bgDragState.current.bgY = currY;
-    
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    panzoomState.current = { isPanning: true, startX: e.clientX - treePanZoom.x, startY: e.clientY - treePanZoom.y };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  const handleBgPointerMove = (e: React.PointerEvent) => {
+  const handleViewportPointerMove = (e: React.PointerEvent) => {
+    if (!panzoomState.current.isPanning) return;
+    setTreePanZoom(prev => ({ ...prev, x: e.clientX - panzoomState.current.startX, y: e.clientY - panzoomState.current.startY }));
+  };
+
+  const handleViewportPointerUp = () => { panzoomState.current.isPanning = false; };
+
+  const handleViewportWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.92 : 1.08;
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    setTreePanZoom(prev => {
+      const newScale = Math.min(4, Math.max(0.08, prev.scale * factor));
+      const ratio = newScale / prev.scale;
+      return { x: mx - (mx - prev.x) * ratio, y: my - (my - prev.y) * ratio, scale: newScale };
+    });
+  };
+
+  const handleFitToView = () => setTreePanZoom({ x: 40, y: 40, scale: 1 });
+
+  // --- Background / Logo state ---
+  const [bgMode, setBgMode] = useState<'wallpaper' | 'logo'>('wallpaper');
+  const [bgPanel, setBgPanel] = useState(false);
+  const bgDragState = React.useRef({ isDragging: false, startX: 0, startY: 0, bgX: 0, bgY: 0 });
+
+  const handleBgImgPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation(); e.preventDefault();
+    const isWallpaper = bgMode === 'wallpaper';
+    bgDragState.current = { 
+      isDragging: true, startX: e.clientX, startY: e.clientY, 
+      bgX: isWallpaper ? (bgSettings.wallX ?? 50) : (bgSettings.logoX ?? 5), 
+      bgY: isWallpaper ? (bgSettings.wallY ?? 50) : (bgSettings.logoY ?? 5) 
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const handleBgImgPointerMove = (e: React.PointerEvent) => {
     if (!bgDragState.current.isDragging) return;
-    const dx = e.clientX - bgDragState.current.startX;
-    const dy = e.clientY - bgDragState.current.startY;
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return;
     
-    // Switch position to pixel-based offset for smooth dragging
-    const newX = bgDragState.current.bgX + dx;
-    const newY = bgDragState.current.bgY + dy;
-    updateBgSettings('position', `${newX}px ${newY}px`);
-  };
-
-  const handleBgPointerUp = (e: React.PointerEvent) => {
-    if (bgDragState.current.isDragging) {
-      bgDragState.current.isDragging = false;
-      try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    if (bgMode === 'wallpaper') {
+      updateBgSettings('wallX', bgDragState.current.bgX + ((e.clientX - bgDragState.current.startX) / rect.width) * 100);
+      updateBgSettings('wallY', bgDragState.current.bgY + ((e.clientY - bgDragState.current.startY) / rect.height) * 100);
+    } else {
+      updateBgSettings('logoX', bgDragState.current.bgX + ((e.clientX - bgDragState.current.startX) / rect.width) * 100);
+      updateBgSettings('logoY', bgDragState.current.bgY + ((e.clientY - bgDragState.current.startY) / rect.height) * 100);
     }
   };
+  const handleBgImgPointerUp = () => { bgDragState.current.isDragging = false; };
 
-  const handleBgWheel = (e: React.WheelEvent) => {
-    if (!isBgEditMode || !bgImage) return;
-    e.preventDefault(); // Stop page scroll
-    
-    // Parse current scale
-    let currScale = 100;
-    if (bgSettings.size && bgSettings.size.includes('%')) {
-      currScale = parseFloat(bgSettings.size) || 100;
-    } else if (bgSettings.size === 'cover') {
-      currScale = 100; // base it
-    }
-    
-    const delta = e.deltaY > 0 ? -5 : 5;
-    const newScale = Math.max(10, currScale + delta);
-    updateBgSettings('size', `${newScale}%`);
+  // --- Toolbar style constants ---
+  const toolbarBtn: React.CSSProperties = {
+    width: '32px', height: '32px', border: 'none', background: 'transparent',
+    borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', color: '#334155', transition: 'background 0.15s',
+  };
+  const toolbarSep: React.CSSProperties = {
+    width: '1px', height: '20px', background: 'rgba(0,0,0,0.1)', margin: '0 2px', flexShrink: 0,
   };
 
-  
   const saveNodeStyles = (id: string, x: number, y: number, w: number, h: number) => {
     const saveRec = (n: OrgNode): OrgNode => {
       if (n.id === id) return { ...n, x, y, w, h };
@@ -297,47 +311,84 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
     updateDraft(saveRec(draftOrgTree));
   };
 
-
   // Local draft state for the org tree and save controls
   const [draftOrgTree, setDraftOrgTree] = useState<OrgNode>(orgTree);
   const [isAutoSave, setIsAutoSave] = useState(true);
 
-  // Zoom and Background Edit State
-  const [treeZoom, setTreeZoom] = useState(1);
-  const isPanningTree = React.useRef(false);
-  const panStartPos = React.useRef({ x: 0, y: 0 });
-  const panInitialScroll = React.useRef({ left: 0, top: 0 });
+  // New States: View Mode, Search, Focus, List View Expansion
+  const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [expandedListNodes, setExpandedListNodes] = useState<Set<string>>(new Set([orgTree.id]));
 
-  const handleTreePointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('.org-card') || (e.target as HTMLElement).closest('.org-card-actions') || (e.target as HTMLElement).tagName === 'BUTTON') return;
-    if (isBgEditMode) return;
-    
-    // Middle click or Left click on empty space to pan
-    e.preventDefault();
-    isPanningTree.current = true;
-    panStartPos.current = { x: e.clientX, y: e.clientY };
-    panInitialScroll.current = { left: e.currentTarget.scrollLeft, top: e.currentTarget.scrollTop };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const toggleListExpand = (id: string) => {
+    setExpandedListNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const handleTreePointerMove = (e: React.PointerEvent) => {
-    if (!isPanningTree.current) return;
-    const dx = e.clientX - panStartPos.current.x;
-    const dy = e.clientY - panStartPos.current.y;
-    e.currentTarget.scrollLeft = panInitialScroll.current.left - dx;
-    e.currentTarget.scrollTop = panInitialScroll.current.top - dy;
-  };
-
-  const handleTreePointerUp = (e: React.PointerEvent) => {
-    if (isPanningTree.current) {
-      isPanningTree.current = false;
-      try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch(err) {}
+  // Find a node by ID
+  const findNode = (node: OrgNode, id: string): OrgNode | null => {
+    if (node.id === id) return node;
+    for (const child of node.children) {
+      const found = findNode(child, id);
+      if (found) return found;
     }
+    return null;
   };
-  const [isBgEditMode, setIsBgEditMode] = useState(false);
-  
-  // Background Pan state
-  const bgDragState = React.useRef({ isDragging: false, startX: 0, startY: 0, bgX: 0, bgY: 0, bgScale: 100 });
+
+  const getFocusedTree = () => {
+    if (!focusedNodeId) return draftOrgTree;
+    const focused = findNode(draftOrgTree, focusedNodeId);
+    return focused || draftOrgTree;
+  };
+
+  // Render List View
+  const renderListView = (node: OrgNode, level: number = 0) => {
+    const isExpanded = expandedListNodes.has(node.id);
+    const hasChildren = node.children && node.children.length > 0;
+    
+    return (
+      <div key={node.id} style={{ marginLeft: level === 0 ? 0 : '24px', position: 'relative' }}>
+        {level > 0 && (
+          <div style={{ position: 'absolute', right: '-12px', top: '16px', width: '12px', height: '1px', background: '#cbd5e1' }} />
+        )}
+        <div style={{ 
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px',
+          padding: '10px 16px', marginBottom: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {hasChildren ? (
+              <button onClick={() => toggleListExpand(node.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '14px', color: '#64748b', width: '20px', padding: 0 }}>
+                {isExpanded ? '▼' : '◀'}
+              </button>
+            ) : (
+              <div style={{ width: '20px' }} />
+            )}
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '12px' }}>{node.type}</span>
+            <span style={{ fontWeight: 700, color: '#1e293b' }}>{node.name}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={() => { setAddingToNodeId(node.id); setNewNodeName(''); setNewNodeType('قسم'); setNewNodeShape('افتراضي'); }} title="إضافة فرع" style={{ border: 'none', background: '#f0fdf4', color: '#16a34a', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>+ إضافة</button>
+            <button onClick={() => handleEditNode(node.id, node.name)} title="تعديل" style={{ border: 'none', background: '#f1f5f9', color: '#475569', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>تعديل</button>
+            {node.id !== draftOrgTree.id && (
+              <button onClick={() => handleDeleteNode(node.id)} title="حذف" style={{ border: 'none', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>حذف</button>
+            )}
+          </div>
+        </div>
+        {isExpanded && hasChildren && (
+          <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '12px' }}>
+            {node.children.map(child => renderListView(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
 
   // Inline Add form state
@@ -472,7 +523,7 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
         <DraggableCard 
           node={node} 
           isRoot={node.id === orgTree.id} 
-          zoom={treeZoom}
+          zoom={treePanZoom.scale}
           onEdit={(nodeToEdit) => handleEditNode(nodeToEdit.id, nodeToEdit.name)} 
           onDelete={handleDeleteNode} 
           onAdd={(id) => { setAddingToNodeId(id); setNewNodeName('');
@@ -752,115 +803,307 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
         {/* 3. Tree Builder Section */}
         {activeSubTab === 'spatial' && (
           <div style={{ padding: '30px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                 <div>
                   <h3 style={{ margin: '0 0 5px 0' }}>منشئ شجرة الهيكل التنظيمي 🌳</h3>
                   <p style={{ margin: 0, fontSize: '13px', color: APPLE.textSecondary }}>
-                    مرر الماوس فوق أي كرت لإظهار زر الإضافة (+) تحته، وقم بتفريغ الإدارات والمكاتب المتسلسلة.
+                    مرر الماوس فوق أي كرت أو استخدم القائمة للإضافة والتنظيم السريع.
                   </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-                    <button onClick={() => setTreeZoom(z => Math.max(0.1, z - 0.1))} style={{ border: 'none', background: '#fff', color: '#1e293b', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
-                    <span style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center', color: '#1e293b', fontWeight: 'bold' }}>{Math.round(treeZoom * 100)}%</span>
-                    <button onClick={() => setTreeZoom(z => Math.min(3, z + 0.1))} style={{ border: 'none', background: '#fff', color: '#1e293b', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
-                    <button onClick={() => { setTreeZoom(1); setTreePan({x:0, y:0}); }} style={{ border: "none", background: "transparent", color: APPLE.blue, fontSize: "12px", cursor: "pointer" }}>استعادة</button>
+                  
+                  {/* Search and Focus */}
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                     <input 
+                       type="text" 
+                       placeholder="ابحث عن إدارة أو قسم للتركيز عليه..." 
+                       value={searchQuery}
+                       onChange={e => setSearchQuery(e.target.value)}
+                       style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '300px', fontSize: '13px' }}
+                     />
+                     {searchQuery && (
+                       <div style={{ position: 'absolute', top: '230px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', width: '300px', maxHeight: '200px', overflowY: 'auto', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                         {(() => {
+                           const results: OrgNode[] = [];
+                           const search = (n: OrgNode) => {
+                             if (n.name.toLowerCase().includes(searchQuery.toLowerCase())) results.push(n);
+                             n.children.forEach(search);
+                           };
+                           search(draftOrgTree);
+                           return results.map(r => (
+                             <div key={r.id} onClick={() => { setFocusedNodeId(r.id); setSearchQuery(''); }} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', fontSize: '13px' }}>
+                               {r.name} <span style={{ color: '#94a3b8', fontSize: '11px', marginRight: '4px' }}>({r.type})</span>
+                             </div>
+                           ));
+                         })()}
+                       </div>
+                     )}
+                     {focusedNodeId && (
+                       <button onClick={() => setFocusedNodeId(null)} style={{ padding: '8px 12px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                         إلغاء التركيز ✕
+                       </button>
+                     )}
                   </div>
-
-                  {bgImage && (
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={() => setIsBgEditMode(!isBgEditMode)} style={{ background: isBgEditMode ? '#0052cc' : '#e0e7ff', color: isBgEditMode ? '#fff' : '#0052cc', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>
-                        {isBgEditMode ? '✅ إنهاء وضع تحرير الخلفية' : 'تغيير حجم وموقع الخلفية ✥'}
-                      </button>
-                      <button onClick={() => { setBgImage(null); localStorage.removeItem('litc_org_bg'); }} style={{ background: '#ffebe6', color: '#ff5630', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>حذف ✕</button>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', color: '#1e293b' }}>
-                          الشفافية:
-                          <input type="range" min="0" max="1" step="0.1" value={bgSettings.opacity} onChange={e => updateBgSettings('opacity', parseFloat(e.target.value))} style={{ width: '60px' }} />
-                        </label>
-                        <label style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', color: '#1e293b' }}>
-                          التشويش:
-                          <input type="range" min="0" max="20" step="1" value={bgSettings.blur} onChange={e => updateBgSettings('blur', parseFloat(e.target.value))} style={{ width: '60px' }} />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {!bgImage && (
-                    <label style={{ background: '#e0e7ff', color: '#0052cc', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
-                      صورة خلفية 🖼️
-                      <input type="file" accept="image/*" onChange={handleBgUpload} style={{ display: 'none' }} />
-                    </label>
-                  )}
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: APPLE.text, marginRight: '16px' }}>
-                    <input type="checkbox" checked={isAutoSave} onChange={e => setIsAutoSave(e.target.checked)} style={{ cursor: 'pointer' }}/>
-                    حفظ تلقائي
-                  </label>
-                  {!isAutoSave && (
-                    <button onClick={handleManualSave} style={{ background: '#0052cc', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,82,204,0.2)' }}>
-                      حفظ التغييرات 💾
-                    </button>
-                  )}
                 </div>
-             </div>
+                
+                {/* View Mode Toggle */}
+                <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '4px' }}>
+                  <button onClick={() => setViewMode('visual')} style={{ border: 'none', background: viewMode === 'visual' ? '#fff' : 'transparent', color: viewMode === 'visual' ? '#4f46e5' : '#64748b', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '13px', boxShadow: viewMode === 'visual' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+                    العرض المرئي 🗺️
+                  </button>
+                  <button onClick={() => setViewMode('list')} style={{ border: 'none', background: viewMode === 'list' ? '#fff' : 'transparent', color: viewMode === 'list' ? '#4f46e5' : '#64748b', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '13px', boxShadow: viewMode === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+                    القائمة السريعة 📋
+                  </button>
+                </div>
+              </div>
 
-             <div className="org-tree-wrapper" 
-                  onPointerDown={handleTreePointerDown}
-                  onPointerMove={handleTreePointerMove}
-                  onPointerUp={handleTreePointerUp}
-                  onPointerLeave={handleTreePointerUp}
-                  style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: '12px', border: `1px solid ${APPLE.separator}`, position: 'relative', overflow: 'hidden', cursor: isPanningTree.current ? 'grabbing' : (isBgEditMode ? 'auto' : 'grab') }}>
-               
-               {bgImage && (
-                 <div 
-                   onPointerDown={handleBgPointerDown}
-                   onPointerMove={handleBgPointerMove}
-                   onPointerUp={handleBgPointerUp}
+             {/* --- LIST VIEW --- */}
+             {viewMode === 'list' && (
+               <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', overflowY: 'auto' }}>
+                 {renderListView(getFocusedTree())}
+               </div>
+             )}
+
+             {/* --- VISUAL CANVAS --- */}
+             {viewMode === 'visual' && (
+             <div
+               ref={viewportRef}
+               onPointerDown={handleViewportPointerDown}
+               onPointerMove={handleViewportPointerMove}
+               onPointerUp={handleViewportPointerUp}
+               onPointerLeave={handleViewportPointerUp}
+               onWheel={handleViewportWheel}
+               style={{
+                 flex: 1, minHeight: '600px', position: 'relative', overflow: 'hidden',
+                 background: 'radial-gradient(circle at 25% 25%, #eef2ff 0%, #f8fafc 55%, #f1f5f9 100%)',
+                 borderRadius: '16px', border: '1px solid #e2e8f0',
+                 cursor: panzoomState.current.isPanning ? 'grabbing' : 'grab',
+                 userSelect: 'none',
+               }}
+             >
+               {/* Dot-grid pattern */}
+               <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.3, pointerEvents: 'none', zIndex: 0 }}>
+                 <defs>
+                   <pattern id="org-dot-grid" width="28" height="28" patternUnits="userSpaceOnUse"
+                     patternTransform={`translate(${((treePanZoom.x % 28) + 28) % 28} ${((treePanZoom.y % 28) + 28) % 28})`}>
+                     <circle cx="14" cy="14" r="1" fill="#94a3b8" />
+                   </pattern>
+                 </defs>
+                 <rect width="100%" height="100%" fill="url(#org-dot-grid)" />
+               </svg>
+
+               {/* Wallpaper (Draggable & Resizable) */}
+               {bgImage && bgMode === 'wallpaper' && (
+                 <div
+                   onPointerDown={bgPanel ? handleBgImgPointerDown : undefined}
+                   onPointerMove={bgPanel ? handleBgImgPointerMove : undefined}
+                   onPointerUp={bgPanel ? handleBgImgPointerUp : undefined}
                    style={{
                      position: 'absolute',
-                     left: bgSettings.position?.split(' ')?.[0] || '0px',
-                     top: bgSettings.position?.split(' ')?.[1] || '0px',
-                     width: bgSettings.size?.split(' ')?.[0] || '100%',
-                     height: bgSettings.size?.split(' ')?.[1] || '100%',
-                     minWidth: '100px', minHeight: '100px',
+                     left: `${bgSettings.wallX ?? 50}%`,
+                     top: `${bgSettings.wallY ?? 50}%`,
+                     width: `${bgSettings.wallSize ?? 100}%`,
+                     transform: 'translate(-50%, -50%)',
                      backgroundImage: `url(${bgImage})`,
                      backgroundSize: '100% 100%',
-                     resize: isBgEditMode ? 'both' : 'none',
-                     overflow: 'hidden',
-                     cursor: isBgEditMode ? 'move' : 'auto',
-                     zIndex: 0,
-                     pointerEvents: isBgEditMode ? 'auto' : 'none'
-                   }}
-                   onMouseUp={(e) => {
-                     const el = e.currentTarget;
-                     updateBgSettings('size', `${el.offsetWidth}px ${el.offsetHeight}px`);
-                   }}
-                 >
-                   <div style={{ width: '100%', height: '100%', backgroundColor: `rgba(255,255,255,${bgSettings.opacity})`, backdropFilter: `blur(${bgSettings.blur}px)` }} />
-                 </div>
+                     backgroundRepeat: 'no-repeat',
+                     opacity: bgSettings.opacity ?? 0.15,
+                     filter: `blur(${bgSettings.blur ?? 0}px)`,
+                     pointerEvents: bgPanel ? 'auto' : 'none', 
+                     cursor: bgPanel ? 'move' : 'default',
+                     zIndex: 1,
+                     aspectRatio: '16/9', // fallback ratio
+                   }} />
                )}
 
-               <div className="org-tree-container" 
-                  ref={containerRef} 
-                  style={{ 
-                    position: 'relative', 
-                    minHeight: '600px', 
-                    transform: `scale(${treeZoom})`, 
-                    transformOrigin: 'top center', 
-                    transition: 'transform 0.2s', 
-                    pointerEvents: isBgEditMode ? 'none' : 'auto' 
-                  }}>
-                 <SVGConnections tree={draftOrgTree} containerRef={containerRef} zoom={treeZoom} />
-                 <div className="org-tree" style={{ position: 'relative', zIndex: 1, padding: '20px' }}>
+               {/* Transformable canvas */}
+               <div
+                 ref={containerRef}
+                 style={{
+                   position: 'absolute', top: 0, left: 0,
+                   transform: `translate(${treePanZoom.x}px, ${treePanZoom.y}px) scale(${treePanZoom.scale})`,
+                   transformOrigin: '0 0',
+                   willChange: 'transform',
+                   zIndex: 2,
+                 }}
+               >
+                 <SVGConnections tree={getFocusedTree()} containerRef={containerRef} zoom={treePanZoom.scale} />
+                 <div className="org-tree" style={{ position: 'relative', zIndex: 1, padding: '80px 60px 60px' }}>
                    <ul>
-                     {renderTree(draftOrgTree)}
+                     {renderTree(getFocusedTree())}
                    </ul>
                  </div>
                </div>
-             </div>
 
+               {/* Logo overlay (viewport-pinned, draggable) */}
+               {bgImage && bgMode === 'logo' && (
+                 <img
+                   src={bgImage} alt="logo" draggable={false}
+                   onPointerDown={handleBgImgPointerDown}
+                   onPointerMove={handleBgImgPointerMove}
+                   onPointerUp={handleBgImgPointerUp}
+                   style={{
+                     position: 'absolute',
+                     left: `${bgSettings.logoX ?? 5}%`,
+                     top: `${bgSettings.logoY ?? 5}%`,
+                     width: `${bgSettings.logoSize ?? 120}px`,
+                     opacity: bgSettings.opacity ?? 0.9,
+                     cursor: 'move', zIndex: 10,
+                     borderRadius: '8px',
+                     filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.18))',
+                     userSelect: 'none',
+                   }}
+                 />
+               )}
+
+               {/* --- FLOATING TOOLBAR --- */}
+               <div style={{
+                 position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
+                 display: 'flex', gap: '2px', alignItems: 'center',
+                 background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(24px)',
+                 border: '1px solid rgba(0,0,0,0.07)', borderRadius: '18px', padding: '5px 10px',
+                 boxShadow: '0 8px 40px rgba(0,0,0,0.14)', zIndex: 20,
+               }}>
+                 <button onClick={() => setTreePanZoom(p => ({ ...p, scale: Math.max(0.08, p.scale - 0.1) }))}
+                   title="تصغير" style={{ ...toolbarBtn, fontSize: '18px', fontWeight: 700 }}>-</button>
+                 <span style={{ fontSize: '12px', minWidth: '42px', textAlign: 'center', fontWeight: 700, color: '#334155' }}>
+                   {Math.round(treePanZoom.scale * 100)}%
+                 </span>
+                 <button onClick={() => setTreePanZoom(p => ({ ...p, scale: Math.min(4, p.scale + 0.1) }))}
+                   title="تكبير" style={{ ...toolbarBtn, fontSize: '18px', fontWeight: 700 }}>+</button>
+                 <div style={toolbarSep} />
+                 <button onClick={handleFitToView} title="ملاءمة الشاشة" style={{ ...toolbarBtn, fontSize: '13px' }}>[]</button>
+                 <button onClick={() => setTreePanZoom({ x: 40, y: 40, scale: 1 })} title="100%"
+                   style={{ ...toolbarBtn, fontSize: '11px', fontWeight: 700, minWidth: '36px' }}>100%</button>
+                 <div style={toolbarSep} />
+                 <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', cursor: 'pointer',
+                   color: '#475569', padding: '4px 6px', borderRadius: '8px',
+                   background: isAutoSave ? '#f0fdf4' : 'transparent' }}>
+                   <input type="checkbox" checked={isAutoSave} onChange={e => setIsAutoSave(e.target.checked)}
+                     style={{ cursor: 'pointer', accentColor: '#22c55e' }}/>
+                   حفظ تلقائي
+                 </label>
+                 {!isAutoSave && (
+                   <button onClick={handleManualSave} style={{
+                     border: 'none', background: '#0052cc', color: '#fff', borderRadius: '10px',
+                     padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer'
+                   }}>حفظ</button>
+                 )}
+                 <div style={toolbarSep} />
+                 <button onClick={() => setBgPanel(p => !p)} title="الخلفية / الشعار" style={{
+                   ...toolbarBtn, fontSize: '16px',
+                   background: bgPanel ? '#e0e7ff' : undefined,
+                   color: bgPanel ? '#4f46e5' : undefined,
+                 }}>BG</button>
+               </div>
+
+               {/* --- BACKGROUND / LOGO PANEL --- */}
+               {bgPanel && (
+                 <div style={{
+                   position: 'absolute', bottom: '68px', left: '50%', transform: 'translateX(-50%)',
+                   background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(24px)',
+                   border: '1px solid rgba(0,0,0,0.07)', borderRadius: '20px',
+                   padding: '20px 22px', width: '320px',
+                   boxShadow: '0 24px 60px rgba(0,0,0,0.14)', zIndex: 25, direction: 'rtl',
+                 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                     <span style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>الخلفية / الشعار</span>
+                     <button onClick={() => setBgPanel(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px', color: '#94a3b8', lineHeight: 1 }}>x</button>
+                   </div>
+
+                   {/* Mode toggle */}
+                   <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', background: '#f1f5f9', borderRadius: '10px', padding: '3px' }}>
+                     {(['wallpaper', 'logo'] as const).map(m => (
+                       <button key={m} onClick={() => setBgMode(m)} style={{
+                         flex: 1, padding: '6px 4px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                         background: bgMode === m ? '#fff' : 'transparent',
+                         fontWeight: bgMode === m ? 700 : 500, fontSize: '12px',
+                         color: bgMode === m ? '#4f46e5' : '#64748b',
+                         boxShadow: bgMode === m ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                         transition: 'all 0.2s',
+                       }}>
+                         {m === 'wallpaper' ? 'خلفية كاملة' : 'شعار محدد'}
+                       </button>
+                     ))}
+                   </div>
+
+                   {/* Upload area */}
+                   <label style={{
+                     display: 'flex', alignItems: 'center', gap: '10px',
+                     background: '#f8fafc', border: '1.5px dashed #c7d2fe',
+                     borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', marginBottom: '14px'
+                   }}>
+                     <span style={{ fontSize: '20px' }}>{bgImage ? '*' : '+'}</span>
+                     <span style={{ fontSize: '12px', color: '#4f46e5', fontWeight: 600 }}>
+                       {bgImage ? 'استبدال الصورة' : 'رفع صورة / شعار'}
+                     </span>
+                     <input type="file" accept="image/*" onChange={handleBgUpload} style={{ display: 'none' }} />
+                   </label>
+
+                   {bgImage && (
+                     <>
+                       {/* Opacity slider */}
+                       <div style={{ marginBottom: '12px' }}>
+                         <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                           <span>الشفافية</span><span style={{ color: '#6366f1' }}>{Math.round((bgSettings.opacity ?? 0.5) * 100)}%</span>
+                         </label>
+                         <input type="range" min="0.05" max="1" step="0.05" value={bgSettings.opacity ?? 0.5}
+                           onChange={e => updateBgSettings('opacity', parseFloat(e.target.value))}
+                           style={{ width: '100%', accentColor: '#6366f1' }} />
+                       </div>
+
+                       {/* Blur (wallpaper only) */}
+                       {bgMode === 'wallpaper' && (
+                         <div style={{ marginBottom: '12px' }}>
+                           <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                             <span>تشويش الخلفية</span><span style={{ color: '#6366f1' }}>{bgSettings.blur ?? 0}px</span>
+                           </label>
+                           <input type="range" min="0" max="20" step="1" value={bgSettings.blur ?? 0}
+                             onChange={e => updateBgSettings('blur', parseInt(e.target.value))}
+                             style={{ width: '100%', accentColor: '#6366f1' }} />
+                         </div>
+                       )}
+                       
+                       {/* Wallpaper Size (wallpaper only) */}
+                       {bgMode === 'wallpaper' && (
+                         <div style={{ marginBottom: '12px' }}>
+                           <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                             <span>حجم الخلفية</span><span style={{ color: '#6366f1' }}>{bgSettings.wallSize ?? 100}%</span>
+                           </label>
+                           <input type="range" min="10" max="300" step="10" value={bgSettings.wallSize ?? 100}
+                             onChange={e => updateBgSettings('wallSize', parseInt(e.target.value))}
+                             style={{ width: '100%', accentColor: '#6366f1' }} />
+                           <p style={{ fontSize: '11px', color: '#94a3b8', margin: '5px 0 0 0' }}>
+                             اسحب الخلفية بالماوس لتغيير موضعها
+                           </p>
+                         </div>
+                       )}
+
+                       {/* Logo size (logo mode only) */}
+                       {bgMode === 'logo' && (
+                         <div style={{ marginBottom: '12px' }}>
+                           <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600, display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                             <span>حجم الشعار</span><span style={{ color: '#6366f1' }}>{bgSettings.logoSize ?? 120}px</span>
+                           </label>
+                           <input type="range" min="40" max="400" step="10" value={bgSettings.logoSize ?? 120}
+                             onChange={e => updateBgSettings('logoSize', parseInt(e.target.value))}
+                             style={{ width: '100%', accentColor: '#6366f1' }} />
+                           <p style={{ fontSize: '11px', color: '#94a3b8', margin: '5px 0 0 0' }}>
+                             اسحب الشعار بالماوس لتغيير موضعه
+                           </p>
+                         </div>
+                       )}
+
+                       <button onClick={() => { setBgImage(null); localStorage.removeItem('litc_org_bg'); setBgPanel(false); }} style={{
+                         width: '100%', padding: '9px', background: '#fef2f2', color: '#ef4444',
+                         border: '1px solid #fecaca', borderRadius: '10px', cursor: 'pointer',
+                         fontWeight: 600, fontSize: '12px'
+                       }}>حذف الصورة</button>
+                     </>
+                   )}
+                 </div>
+               )}
+
+             </div>
+             )}
              
              {addingToNodeId && (
                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>

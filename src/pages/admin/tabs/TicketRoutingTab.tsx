@@ -28,7 +28,9 @@ export interface DynamicCustomField {
 
 export interface RouteFormConfig {
   showBuildingField?: boolean;
+  mandatoryBuilding?: boolean;
   showDepartmentField?: boolean;
+  mandatoryDepartment?: boolean;
   showDescription: boolean;
   mandatoryDescription: boolean;
   showAttachments: boolean;
@@ -109,7 +111,8 @@ const injectStyles = () => {
 // Helpers
 // ═══════════════════════════════════════════════════════════
 const defaultFormConfig = (): RouteFormConfig => ({
-  showBuildingField: false, showDepartmentField: false,
+  showBuildingField: false, mandatoryBuilding: false,
+  showDepartmentField: false, mandatoryDepartment: false,
   showDescription: true, mandatoryDescription: true,
   showAttachments: true, mandatoryAttachments: false,
   attachmentTypes: ['PDF','PNG','JPG'], maxAttachmentMB: 5,
@@ -124,6 +127,7 @@ const loadDynamicFields = (): DynamicCustomField[] => {
 };
 const saveDynamicFields = (fields: DynamicCustomField[]) => {
   localStorage.setItem('litc_dynamic_fields', JSON.stringify(fields));
+  window.dispatchEvent(new Event('litc_settings_updated'));
 };
 export const loadRoutes = (): TicketRouteDefinition[] => {
   try { 
@@ -140,6 +144,7 @@ export const loadRoutes = (): TicketRouteDefinition[] => {
 };
 const saveRoutes = (routes: TicketRouteDefinition[]) => {
   localStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
+  window.dispatchEvent(new Event('litc_settings_updated'));
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -487,15 +492,50 @@ export const TicketRoutingTab: React.FC = () => {
         )}
         
         <div style={{ borderTop: `1px solid ${A.sep}`, paddingTop: 20 }}>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 20, padding: 16, background: '#f8fafc', borderRadius: 12, border: `1px solid ${A.sep}` }}>
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, fontWeight:600, color:A.text, cursor:'pointer' }}>
-              <input type="checkbox" className="tr-checkbox" checked={!!wizard.formConfig.showBuildingField} onChange={e => setFC({ showBuildingField: e.target.checked })} />
-              إضافة حقل "المبنى والموقع" في النموذج
-            </label>
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, fontWeight:600, color:A.text, cursor:'pointer' }}>
-              <input type="checkbox" className="tr-checkbox" checked={!!wizard.formConfig.showDepartmentField} onChange={e => setFC({ showDepartmentField: e.target.checked })} />
-              إضافة حقل "الإدارة أو المكتب" في النموذج
-            </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, padding: 16, background: '#f8fafc', borderRadius: 14, border: `1px solid ${A.sep}` }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: A.textSub, marginBottom: 4 }}>حقول الموقع في نموذج الموظف</div>
+            {/* Building field */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 10, border: `1px solid ${!!wizard.formConfig.showBuildingField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🏢</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل "المبنى والموقع"</div>
+                  <div style={{ fontSize: 11, color: A.textTer }}>يطلب من الموظف تحديد مكانه</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {!!wizard.formConfig.showBuildingField && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryBuilding ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryBuilding ? '#fef2f2' : '#f8fafc', padding: '3px 8px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryBuilding ? '#fecaca' : A.sep}`, transition: 'all 0.2s' }}>
+                    <input type="checkbox" style={{ display: 'none' }} checked={!!wizard.formConfig.mandatoryBuilding} onChange={e => setFC({ mandatoryBuilding: e.target.checked })} />
+                    {wizard.formConfig.mandatoryBuilding ? '🔴 إلزامي' : '⚪ اختياري'}
+                  </label>
+                )}
+                <div onClick={() => setFC({ showBuildingField: !wizard.formConfig.showBuildingField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showBuildingField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showBuildingField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                </div>
+              </div>
+            </div>
+            {/* Department field */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 10, border: `1px solid ${!!wizard.formConfig.showDepartmentField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🏛️</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل "الإدارة أو المكتب"</div>
+                  <div style={{ fontSize: 11, color: A.textTer }}>يطلب من الموظف تحديد إدارته</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {!!wizard.formConfig.showDepartmentField && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDepartment ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDepartment ? '#fef2f2' : '#f8fafc', padding: '3px 8px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDepartment ? '#fecaca' : A.sep}`, transition: 'all 0.2s' }}>
+                    <input type="checkbox" style={{ display: 'none' }} checked={!!wizard.formConfig.mandatoryDepartment} onChange={e => setFC({ mandatoryDepartment: e.target.checked })} />
+                    {wizard.formConfig.mandatoryDepartment ? '🔴 إلزامي' : '⚪ اختياري'}
+                  </label>
+                )}
+                <div onClick={() => setFC({ showDepartmentField: !wizard.formConfig.showDepartmentField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDepartmentField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDepartmentField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
@@ -547,7 +587,22 @@ export const TicketRoutingTab: React.FC = () => {
                 attachedMainFields.map(field => (
                   <div key={field.id} className="field-card">
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                      <div style={{ fontWeight:700, fontSize:14, color:A.text }}>{field.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontWeight:700, fontSize:14, color:A.text }}>{field.name}</div>
+                        {/* Required toggle for this dynamic field */}
+                        {(() => {
+                          const rf = (wizard.formConfig.routeDynamicFields || []).find(r => r.fieldId === field.id);
+                          const isReq = rf?.isRequired ?? true;
+                          return (
+                            <div onClick={() => {
+                              const updated = (wizard.formConfig.routeDynamicFields || []).map(r => r.fieldId === field.id ? { ...r, isRequired: !r.isRequired } : r);
+                              setFC({ routeDynamicFields: updated });
+                            }} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 11, color: isReq ? A.red : A.textSub, fontWeight: 600, background: isReq ? '#fef2f2' : '#f8fafc', padding: '2px 8px', borderRadius: 6, border: `1px solid ${isReq ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                              {isReq ? '🔴 إلزامي' : '⚪ اختياري'}
+                            </div>
+                          );
+                        })()}
+                      </div>
                       <div style={{ display:'flex', gap:8 }}>
                         <button onClick={() => startEditingField(field)} style={{ background:'none', border:'none', color:A.blue, fontSize:12, cursor:'pointer', fontWeight:600 }}>تعديل</button>
                         <button onClick={() => unlinkMainField(field.id)} style={{ background:'none', border:'none', color:A.accent, fontSize:12, cursor:'pointer', fontWeight:600 }}>حذف القائمة</button>
@@ -643,32 +698,46 @@ export const TicketRoutingTab: React.FC = () => {
 
   const renderStep3 = () => (
     <div className="wizard-step" style={{ display:'flex', flexDirection:'column', gap:20 }}>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-        <div style={{ padding:14, background:A.bg, borderRadius:A.radiusSm }}>
-          <div style={{ fontSize:12, fontWeight:700, color:A.text, marginBottom:10 }}>📝 الوصف</div>
-          <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, cursor:'pointer', marginBottom:8 }}>
-            <input type="checkbox" className="tr-checkbox" checked={wizard.formConfig.showDescription} onChange={e => setFC({ showDescription:e.target.checked })} />
-            إظهار حقل الوصف
-          </label>
-          {wizard.formConfig.showDescription && (
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, cursor:'pointer' }}>
-              <input type="checkbox" className="tr-checkbox" checked={wizard.formConfig.mandatoryDescription} onChange={e => setFC({ mandatoryDescription:e.target.checked })} />
-              إجباري على الموظف
-            </label>
-          )}
+      <div style={{ display:'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Description Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fff', borderRadius: 12, border: `1px solid ${wizard.formConfig.showDescription ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>📝</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل وصف المشكلة</div>
+              <div style={{ fontSize: 11, color: A.textTer }}>مربع نص يكتب فيه الموظف تفاصيل المشكلة</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {wizard.formConfig.showDescription && (
+              <div onClick={() => setFC({ mandatoryDescription: !wizard.formConfig.mandatoryDescription })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDescription ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDescription ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDescription ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                {wizard.formConfig.mandatoryDescription ? '🔴 إلزامي' : '⚪ اختياري'}
+              </div>
+            )}
+            <div onClick={() => setFC({ showDescription: !wizard.formConfig.showDescription })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDescription ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDescription ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+            </div>
+          </div>
         </div>
-        <div style={{ padding:14, background:A.bg, borderRadius:A.radiusSm }}>
-          <div style={{ fontSize:12, fontWeight:700, color:A.text, marginBottom:10 }}>📎 المرفقات</div>
-          <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, cursor:'pointer', marginBottom:8 }}>
-            <input type="checkbox" className="tr-checkbox" checked={wizard.formConfig.showAttachments} onChange={e => setFC({ showAttachments:e.target.checked })} />
-            إظهار رفع الملفات
-          </label>
-          {wizard.formConfig.showAttachments && (
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, cursor:'pointer' }}>
-              <input type="checkbox" className="tr-checkbox" checked={wizard.formConfig.mandatoryAttachments} onChange={e => setFC({ mandatoryAttachments:e.target.checked })} />
-              إجباري على الموظف
-            </label>
-          )}
+        {/* Attachments Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fff', borderRadius: 12, border: `1px solid ${wizard.formConfig.showAttachments ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>📎</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل رفع المرفقات</div>
+              <div style={{ fontSize: 11, color: A.textTer }}>يتيح للموظف رفع ملفات وصور مع الطلب</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {wizard.formConfig.showAttachments && (
+              <div onClick={() => setFC({ mandatoryAttachments: !wizard.formConfig.mandatoryAttachments })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryAttachments ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryAttachments ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryAttachments ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                {wizard.formConfig.mandatoryAttachments ? '🔴 إلزامي' : '⚪ اختياري'}
+              </div>
+            )}
+            <div onClick={() => setFC({ showAttachments: !wizard.formConfig.showAttachments })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showAttachments ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showAttachments ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+            </div>
+          </div>
         </div>
       </div>
       {wizard.formConfig.showAttachments && (
@@ -687,32 +756,234 @@ export const TicketRoutingTab: React.FC = () => {
           </div>
         </div>
       )}
-      <div style={{ padding:16, background:'#F0F4FF', borderRadius:A.radius, border:'1px solid rgba(88,86,214,0.15)' }}>
-        <div style={{ fontSize:12, fontWeight:700, color:A.purple, marginBottom:12 }}>👁️ معاينة فورم الموظف</div>
-        <div style={{ background:A.surface, borderRadius:10, padding:14, display:'flex', flexDirection:'column', gap:10, boxShadow:A.shadowCard }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, paddingBottom:10, borderBottom:`1px solid ${A.sep}` }}>
-            <div style={{ width:36, height:36, borderRadius:10, background:wizard.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{wizard.icon}</div>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:wizard.color }}>{wizard.name||'اسم المسار'}</div>
-              <div style={{ fontSize:10, color:A.textSub }}>→ {wizard.targetDepartmentName||'الإدارة المستقبلة'}</div>
+      {/* ═══════ INTERACTIVE LIVE PREVIEW ═══════ */}
+      <div style={{ padding:20, background:'linear-gradient(135deg, #667eea15, #764ba220, #f093fb10)', borderRadius:16, border:'1px solid rgba(88,86,214,0.12)', position:'relative', overflow:'hidden' }}>
+        {/* Decorative animated dots */}
+        <div style={{ position:'absolute', top:8, left:16, display:'flex', gap:6 }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#FF5F57' }} />
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#FEBC2E' }} />
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#28C840' }} />
+        </div>
+        <div style={{ fontSize:13, fontWeight:700, color:A.purple, marginBottom:16, textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+          <span style={{ fontSize:18 }}>👁️</span> معاينة تفاعلية مباشرة
+          <span style={{ fontSize:9, padding:'3px 8px', borderRadius:20, background:'rgba(88,86,214,0.1)', color:A.purple, fontWeight:600 }}>LIVE</span>
+        </div>
+
+        {/* Phone-style mockup frame */}
+        <div style={{ maxWidth:380, margin:'0 auto', background:'#FFFFFF', borderRadius:24, boxShadow:'0 20px 60px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08)', overflow:'hidden', border:'1px solid rgba(0,0,0,0.06)' }}>
+          {/* Phone notch bar */}
+          <div style={{ padding:'10px 16px 8px', background:`linear-gradient(135deg, ${wizard.color}, ${wizard.color}CC)`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.25)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>{wizard.icon || '📋'}</div>
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}>{wizard.name || 'اسم المسار'}</div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', marginTop:1 }}>→ {wizard.targetDepartmentName || 'الإدارة المستقبلة'}</div>
+              </div>
+            </div>
+            <div style={{ width:24, height:24, borderRadius:8, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, cursor:'pointer' }}>✕</div>
+          </div>
+
+          {/* Form body */}
+          <div style={{ padding:16, display:'flex', flexDirection:'column', gap:14 }}>
+
+            {/* ── Dynamic Fields with Child Bindings ── */}
+            {(() => {
+              const rdfs = wizard.formConfig.routeDynamicFields || [];
+              if (rdfs.length === 0) return null;
+
+              // Gather all fields and render with interactive child discovery
+              const visitedIds = new Set<string>();
+              const renderFieldChain = (fieldId: string, isRequired: boolean, depth: number = 0): React.ReactNode => {
+                // Guard against circular references and excessive depth
+                if (visitedIds.has(fieldId) || depth > 5) return null;
+                visitedIds.add(fieldId);
+                const field = dynamicFields.find(f => f.id === fieldId);
+                if (!field) return null;
+
+                const activeOpts = field.options.filter(o => o.isActive);
+                const hasChildren = field.childBindings && field.childBindings.length > 0;
+
+                return (
+                  <div key={fieldId} style={{
+                    marginRight: depth > 0 ? 16 : 0,
+                    borderRight: depth > 0 ? `2px solid ${wizard.color}30` : 'none',
+                    paddingRight: depth > 0 ? 12 : 0,
+                    animation: depth > 0 ? 'dftFade 0.3s both' : 'none',
+                  }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                      <div style={{
+                        width:22, height:22, borderRadius:6,
+                        background: depth === 0 ? `${wizard.color}15` : `${A.purple}12`,
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:11
+                      }}>
+                        {depth === 0 ? '📋' : '🔗'}
+                      </div>
+                      <span style={{ fontSize:12, fontWeight:600, color:A.text }}>{field.name}</span>
+                      {isRequired && <span style={{ fontSize:10, color:A.red, fontWeight:700 }}>*</span>}
+                      {hasChildren && (
+                        <span style={{ fontSize:8, padding:'2px 6px', borderRadius:10, background:`${A.blue}15`, color:A.blue, fontWeight:600, marginRight:'auto' }}>
+                          تفرعات
+                        </span>
+                      )}
+                    </div>
+                    <div style={{
+                      padding:'10px 12px', borderRadius:10,
+                      background:'#F8F9FC',
+                      border:'1.5px solid #E8ECF4',
+                      fontSize:12, color:A.textTer,
+                      display:'flex', alignItems:'center', justifyContent:'space-between',
+                      transition:'border-color 0.2s'
+                    }}>
+                      <span>-- اختر {field.name} --</span>
+                      <span style={{ fontSize:10, transform:'rotate(-90deg)', color:'#C0C4CC' }}>‹</span>
+                    </div>
+
+                    {/* Show sample options as chips */}
+                    {activeOpts.length > 0 && (
+                      <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6 }}>
+                        {activeOpts.slice(0, 4).map(opt => (
+                          <span key={opt.id} style={{
+                            fontSize:9, padding:'3px 8px', borderRadius:12,
+                            background:`${wizard.color}08`, color:wizard.color,
+                            border:`1px solid ${wizard.color}20`, fontWeight:500
+                          }}>
+                            {opt.label}
+                          </span>
+                        ))}
+                        {activeOpts.length > 4 && (
+                          <span style={{ fontSize:9, padding:'3px 8px', borderRadius:12, background:'#f0f0f0', color:A.textTer }}>
+                            +{activeOpts.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Render child bindings */}
+                    {hasChildren && (
+                      <div style={{ marginTop:10, display:'flex', flexDirection:'column', gap:10 }}>
+                        {field.childBindings!.map(binding => {
+                          const triggerOpt = activeOpts.find(o => o.id === binding.triggerValue);
+                          return (
+                            <div key={binding.childFieldId}>
+                              <div style={{ fontSize:9, color:A.textTer, marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
+                                <span style={{ color:A.blue }}>↳</span>
+                                عند اختيار: <span style={{ fontWeight:600, color:A.blue }}>{triggerOpt ? triggerOpt.label : binding.triggerValue}</span>
+                              </div>
+                              {renderFieldChain(binding.childFieldId, true, depth + 1)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                    <div style={{ width:18, height:18, borderRadius:5, background:`${wizard.color}15`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10 }}>📊</div>
+                    <span style={{ fontSize:11, fontWeight:700, color:A.text }}>البيانات المطلوبة</span>
+                    <div style={{ flex:1, height:1, background:A.sep, marginRight:4 }} />
+                  </div>
+                  {rdfs.map(rdf => renderFieldChain(rdf.fieldId, rdf.isRequired, 0))}
+                </div>
+              );
+            })()}
+
+            {/* ── Building / Department Fields ── */}
+            {(wizard.formConfig.showBuildingField || wizard.formConfig.showDepartmentField) && (
+              <div style={{ display: 'grid', gridTemplateColumns: wizard.formConfig.showBuildingField && wizard.formConfig.showDepartmentField ? '1fr 1fr' : '1fr', gap: 8 }}>
+                {wizard.formConfig.showBuildingField && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 5, background: '#E3F2FD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🏢</div>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>المبنى والموقع</span>
+                      {wizard.formConfig.mandatoryBuilding && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                    </div>
+                    <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>-- اختر الموقع --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                    </div>
+                  </div>
+                )}
+                {wizard.formConfig.showDepartmentField && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 5, background: '#F3E5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🏛️</div>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>الإدارة</span>
+                      {wizard.formConfig.mandatoryDepartment && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                    </div>
+                    <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>-- اختر الإدارة --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {wizard.formConfig.showDescription && (
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                  <div style={{ width:22, height:22, borderRadius:6, background:'#FFF3E0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11 }}>✏️</div>
+                  <span style={{ fontSize:12, fontWeight:600, color:A.text }}>وصف المشكلة</span>
+                  {wizard.formConfig.mandatoryDescription && <span style={{ fontSize:10, color:A.red, fontWeight:700 }}>*</span>}
+                </div>
+                <div style={{
+                  padding:'10px 12px', borderRadius:10,
+                  background:'#F8F9FC', border:'1.5px solid #E8ECF4',
+                  minHeight:60, fontSize:12, color:A.textTer,
+                  lineHeight:1.6
+                }}>
+                  اكتب وصفاً تفصيلياً للمشكلة...
+                </div>
+              </div>
+            )}
+
+            {/* ── Attachments Field ── */}
+            {wizard.formConfig.showAttachments && (
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                  <div style={{ width:22, height:22, borderRadius:6, background:'#E8F5E9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11 }}>📎</div>
+                  <span style={{ fontSize:12, fontWeight:600, color:A.text }}>المرفقات</span>
+                  {wizard.formConfig.mandatoryAttachments && <span style={{ fontSize:10, color:A.red, fontWeight:700 }}>*</span>}
+                </div>
+                <div style={{
+                  padding:'14px 12px', borderRadius:10,
+                  background:'#FAFBFE',
+                  border:'2px dashed #D0D5E0',
+                  textAlign:'center',
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:6
+                }}>
+                  <div style={{ fontSize:24, opacity:0.5 }}>☁️</div>
+                  <div style={{ fontSize:11, color:A.textSub, fontWeight:500 }}>اسحب الملفات هنا أو انقر للرفع</div>
+                  <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'center', marginTop:4 }}>
+                    {wizard.formConfig.attachmentTypes.map(t => (
+                      <span key={t} style={{ fontSize:8, padding:'2px 6px', borderRadius:6, background:'#E8ECF4', color:A.textSub, fontWeight:600 }}>{t}</span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:9, color:A.textTer }}>الحجم الأقصى: {wizard.formConfig.maxAttachmentMB} MB</div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Submit Button ── */}
+            <div style={{
+              padding:'12px 16px', marginTop:4,
+              background:`linear-gradient(135deg, ${wizard.color}, ${wizard.color}DD)`,
+              borderRadius:12, textAlign:'center',
+              fontSize:13, fontWeight:700, color:'#fff',
+              boxShadow:`0 4px 16px ${wizard.color}40`,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+              cursor:'pointer', transition:'transform 0.15s',
+            }}>
+              <span>إرسال الطلب</span>
+              <span style={{ fontSize:16 }}>🚀</span>
             </div>
           </div>
-          {wizard.formConfig.routeDynamicFields && wizard.formConfig.routeDynamicFields.length>0 && (
-            <div>
-              <div style={{ fontSize:10, color:A.textSub, marginBottom:4, fontWeight:600 }}>بيانات إضافية *</div>
-              <div style={{ padding:'6px 10px', borderRadius:6, background:A.bg, fontSize:12, color:A.textTer }}>-- حقول ديناميكية مخصصة --</div>
-            </div>
-          )}
-          {wizard.formConfig.showDescription && (
-            <div>
-              <div style={{ fontSize:10, color:A.textSub, marginBottom:4, fontWeight:600 }}>وصف المشكلة {wizard.formConfig.mandatoryDescription&&<span style={{ color:A.red }}>*</span>}</div>
-              <div style={{ padding:'6px 10px', borderRadius:6, background:A.bg, minHeight:40, fontSize:12, color:A.textTer }}>اكتب وصف المشكلة...</div>
-            </div>
-          )}
-          {wizard.formConfig.showAttachments && (
-            <div style={{ padding:'8px 10px', border:'2px dashed rgba(0,0,0,0.1)', borderRadius:6, textAlign:'center', fontSize:11, color:A.textTer }}>📎 رفع ملف {wizard.formConfig.mandatoryAttachments&&<span style={{ color:A.red }}>*</span>}</div>
-          )}
-          <div style={{ padding:'8px 14px', background:wizard.color, borderRadius:8, textAlign:'center', fontSize:12, fontWeight:700, color:'#fff' }}>إرسال التذكرة 🚀</div>
+
+          {/* Phone bottom bar */}
+          <div style={{ height:4, width:100, margin:'8px auto 12px', borderRadius:4, background:'rgba(0,0,0,0.12)' }} />
         </div>
       </div>
     </div>

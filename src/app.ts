@@ -2,6 +2,12 @@ import express from 'express';
 import apiRouter from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+const RedisStore = require('connect-redis').default || require('connect-redis');
+import { WAFMiddleware } from './backend/security/WAFMiddleware';
+import { redisManager } from './backend/infrastructure/RedisClient';
 
 const app = express();
 
@@ -25,18 +31,61 @@ const sseLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 app.use('/api/v1/notifications/stream', sseLimiter);
 
+// 1. Security Headers (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: false, // Set to true and configure if needed
+  crossOriginEmbedderPolicy: false
+}));
+
+// 2. WAF Shield
+app.use(WAFMiddleware.shield);
+
+// 3. Decoupled CORS Configuration
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-id, x-role-id');
+  res.setHeader('Access-Control-Allow-Credentials', 'true'); // Required for HttpOnly Cookies
+  
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
   next();
 });
 
-// Global request parsing
+// ==========================================
+// 2. Distributed Session Store (Redis with Memory Fallback)
+// ==========================================
+if (redisManager.client) {
+  app.use(session({
+    store: new RedisStore({ client: redisManager.client }),
+    secret: process.env.SESSION_SECRET || 'LITC_SUPER_SECRET_KEY',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    }
+  }));
+  console.log('[Auth] Distributed Redis Session Store Enabled.');
+} else {
+  // Graceful Degradation: Fallback to MemoryStore if Redis is offline
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'LITC_SUPER_SECRET_KEY_FALLBACK',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly: true }
+  }));
+  console.warn('[Auth] Memory Session Store Enabled (Fallback Mode). Distributed sessions inactive.');
+}
+
+// ==========================================
+// 3. Request Parsing
+// ==========================================
 app.use(express.json());
+app.use(cookieParser());
 
 // Main API Router prefix
 app.use('/api/v1', apiRouter);

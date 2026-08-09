@@ -14,7 +14,7 @@ export interface UiSchema {
   layoutConfig: SchemaComponent[];
 }
 
-export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
+export const useWorkspaceLayout = (currentUserRole: CoreRole, userEmail?: string) => {
   const [submissionSchema, setSubmissionSchema] = useState<UiSchema | null>(null);
   const [workSchema, setWorkSchema] = useState<UiSchema | null>(null);
   const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
@@ -98,7 +98,28 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
       // The Base Employee Interface (واجهة الارسال الرئيسية)
       let baseEmployeeLayout: any[] = [];
       try {
-        const baseSaved = localStorage.getItem('litc_layout_components_MAIN_SUBMISSION_INTERFACE');
+        let assignedLayoutId = 'MAIN_SUBMISSION_INTERFACE';
+        
+        if (userEmail) {
+          const opsUsers = localStorage.getItem('litc_operational_users');
+          if (opsUsers) {
+            const users = JSON.parse(opsUsers);
+            const foundUser = users.find((u: any) => u.email === userEmail);
+            if (foundUser && foundUser.layoutId) {
+               // Check if the assigned layout is a FUNCTIONAL interface
+               const savedInterfaces = localStorage.getItem('litc_saved_interfaces');
+               if (savedInterfaces) {
+                 const interfaces = JSON.parse(savedInterfaces);
+                 const assignedInterface = interfaces.find((ui: any) => ui.id === foundUser.layoutId);
+                 if (assignedInterface && assignedInterface.interfaceType === 'FUNCTIONAL') {
+                    assignedLayoutId = foundUser.layoutId;
+                 }
+               }
+            }
+          }
+        }
+
+        const baseSaved = localStorage.getItem(`litc_layout_components_${assignedLayoutId}`);
         if (baseSaved) {
           baseEmployeeLayout = JSON.parse(baseSaved);
         }
@@ -175,6 +196,16 @@ export const useWorkspaceLayout = (currentUserRole: CoreRole) => {
       setLoading(false);
     };
     fetchSchema();
+
+    // Listen to cross-tab updates (e.g. Admin adding a custom field)
+    window.addEventListener('storage', fetchSchema);
+    // Listen to same-tab custom updates
+    window.addEventListener('litc_settings_updated', fetchSchema);
+
+    return () => {
+      window.removeEventListener('storage', fetchSchema);
+      window.removeEventListener('litc_settings_updated', fetchSchema);
+    };
   }, [currentUserRole]);
 
   return {

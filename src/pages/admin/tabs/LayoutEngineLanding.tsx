@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 export interface SavedInterface {
   id: string;
   name: string;
-  roleType: string;
+  interfaceType: 'FUNCTIONAL' | 'OPERATIONAL';
+  roleType?: string;
   lastUpdated: string;
 }
 
@@ -12,7 +13,7 @@ export interface LayoutEngineLandingProps {
   setSavedInterfaces: (val: SavedInterface[]) => void;
   handleLoadInterface: (ui: SavedInterface) => void;
   handleDeleteInterface?: (id: string) => void;
-  onStartNewLayout: (payload: { name: string; roleType: string; config?: any }) => void;
+  onStartNewLayout: (payload: { name: string; interfaceType: 'FUNCTIONAL' | 'OPERATIONAL'; roleType?: string; config?: any }) => void;
 }
 
 export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
@@ -42,7 +43,7 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
   // Advanced Filters State
-  const [interfaceCategoryFilter, setInterfaceCategoryFilter] = useState<'ALL' | 'SUBMISSION' | 'OPERATIONAL' | 'LEADERSHIP'>('ALL');
+  const [interfaceCategoryFilter, setInterfaceCategoryFilter] = useState<'ALL' | 'FUNCTIONAL' | 'OPERATIONAL'>('ALL');
   const [interfaceSearchQuery, setInterfaceSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [dynamicDepartments, setDynamicDepartments] = useState<any[]>([]);
@@ -112,8 +113,15 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
       'LEADERSHIP': 'OPERATIONAL_MANAGER'
     };
 
+    const interfaceTypeMap = {
+      'FUNCTIONAL': 'FUNCTIONAL',
+      'OPERATOR': 'OPERATIONAL',
+      'LEADERSHIP': 'OPERATIONAL'
+    } as const;
+
     onStartNewLayout({
       name: `تكوين جديد - ${wizardCard}`,
+      interfaceType: interfaceTypeMap[wizardCard || 'FUNCTIONAL'],
       roleType: roleTypeMap[wizardCard || 'FUNCTIONAL'],
       config: { formDept, formSection, formTeam, formRoleTitle, formLeadershipTitle }
     });
@@ -200,10 +208,10 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
               </div>
             )}
 
-            {(wizardCard === 'OPERATOR' || wizardCard === 'LEADERSHIP' || wizardCard === 'FUNCTIONAL') && (
+            {(wizardCard === 'OPERATOR' || wizardCard === 'LEADERSHIP') && (
               <div>
                 <label style={{ display: 'block', fontSize: '13px', color: '#64748b', marginBottom: '8px' }}>
-                  الإدارة التأسيسية {wizardCard !== 'FUNCTIONAL' ? '*' : '(اختياري)'}
+                  الإدارة التأسيسية *
                 </label>
                 <select value={formDept} onChange={e => setFormDept(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <option value="">-- اختر الإدارة --</option>
@@ -250,17 +258,10 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
     </div>
   );
 
-  const getCategoryFromRole = (role: string) => {
-    if (role === 'BASE_SUBMISSION' || role === 'END_USER') return 'SUBMISSION';
-    if (role === 'OPERATIONAL_USER' || role === 'TEAM_LEADER' || role === 'SECTION_HEAD') return 'OPERATIONAL';
-    if (role === 'OPERATIONAL_MANAGER' || role === 'IT_ADMIN') return 'LEADERSHIP';
-    return 'OTHER';
-  };
-
   const filteredInterfaces = savedInterfaces.filter(ui => {
     // 1. Category Filter
     if (interfaceCategoryFilter !== 'ALL') {
-      if (getCategoryFromRole(ui.roleType) !== interfaceCategoryFilter) return false;
+      if (ui.interfaceType !== interfaceCategoryFilter) return false;
     }
     
     // 2. Department Filter
@@ -316,9 +317,8 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
         <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
           {[
             { id: 'ALL', label: 'الكل' },
-            { id: 'SUBMISSION', label: 'واجهات إرسال الطلبات' },
-            { id: 'OPERATIONAL', label: 'الواجهات التشغيلية' },
-            { id: 'LEADERSHIP', label: 'واجهات القياديين' }
+            { id: 'FUNCTIONAL', label: 'الواجهات الوظيفية (الأساسية)' },
+            { id: 'OPERATIONAL', label: 'الواجهات التشغيلية' }
           ].map(cat => (
             <button 
               key={cat.id}
@@ -366,7 +366,9 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                <div>
                  <h3 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#0f172a' }}>{ui.name}</h3>
-                 <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: '12px' }}>{ui.roleType}</span>
+                 <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: '12px' }}>
+                   {ui.interfaceType === 'FUNCTIONAL' ? 'واجهة وظيفية' : `واجهة تشغيلية (${ui.roleType})`}
+                 </span>
                </div>
                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                  <button onClick={() => handleLoadInterface(ui)} style={{ background: '#f1f5f9', border: 'none', padding: '6px 12px', borderRadius: '6px', color: '#3b82f6', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>تعديل الواجهة</button>

@@ -21,7 +21,7 @@ export const ExternalSystemsTab: React.FC = () => {
   const fetchSystems = async () => {
     try {
       // Replace with actual API call once configured, fetching for now
-      const res = await fetch('/admin/uecp/systems', {
+      const res = await fetch('/api/v1/admin/uecp/systems', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('litc_token')}` }
       });
       if (res.ok) {
@@ -43,7 +43,7 @@ export const ExternalSystemsTab: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/admin/uecp/register', {
+      const res = await fetch('/api/v1/admin/uecp/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

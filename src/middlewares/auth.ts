@@ -1,53 +1,56 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { SIEMLogger } from '../backend/security/SIEMLogger';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
     roleId: number;
+    email?: string;
   };
 }
+
+const JWT_SECRET = process.env.JWT_SECRET || 'SUPER_SECRET_LITC_ENTERPRISE_KEY_2026';
 
 export const authMiddleware = (
   req: AuthenticatedRequest, 
   res: Response, 
   next: NextFunction
 ) => {
-  // 1. Support custom headers for easy local testing and script simulations
-  const userIdHeader = req.headers['x-user-id'];
-  const roleIdHeader = req.headers['x-role-id'];
+  const sourceIp = req.ip || req.socket.remoteAddress;
 
-  if (userIdHeader && roleIdHeader) {
+  // 1. Look for token in HttpOnly Cookie (Primary Secure Method)
+  let token = req.cookies?.litc_session;
+
+  // 2. Fallback to Bearer token in Authorization header (For API / Postman)
+  if (!token && req.headers['authorization']?.startsWith('Bearer ')) {
+    token = req.headers['authorization'].substring(7);
+  }
+
+  // 3. System Override for local CLI testing (Optional: disable in production)
+  if (!token && req.headers['x-user-id']) {
     req.user = {
-      id: parseInt(userIdHeader as string, 10),
-      roleId: parseInt(roleIdHeader as string, 10)
+      id: parseInt(req.headers['x-user-id'] as string, 10),
+      roleId: parseInt(req.headers['x-role-id'] as string || '1', 10)
     };
     return next();
   }
 
-  // 2. Standard Bearer JWT token simulation
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    
-    // Simulate token decoding
-    if (token.startsWith('mock_jwt_token_user_')) {
-      const parts = token.split('_');
-      const userId = parseInt(parts[4], 10);
-      const roleId = parseInt(parts[5], 10);
-      req.user = { id: userId, roleId: roleId };
-      return next();
-    }
-    
-    if (token === 'system_token_123') {
-      req.user = { id: 1, roleId: 1 };
-      return next();
-    }
+  if (!token) {
+    SIEMLogger.logEvent('UNAUTHORIZED_ACCESS_ATTEMPT', 'INFO', sourceIp, { url: req.url });
+    return res.status(401).json({ success: false, error: 'Unauthorized: Missing token.' });
   }
 
-  // 3. Reject request if no credentials found
-  return res.status(401).json({
-    status: 'error',
-    statusCode: 401,
-    message: 'Unauthorized: Missing or invalid authentication credentials.'
-  });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.user = {
+      id: decoded.id,
+      roleId: decoded.roleId,
+      email: decoded.email
+    };
+    next();
+  } catch (error) {
+    SIEMLogger.logEvent('INVALID_TOKEN_ATTEMPT', 'WARNING', sourceIp, { url: req.url });
+    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid token.' });
+  }
 };

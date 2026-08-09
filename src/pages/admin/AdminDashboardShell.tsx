@@ -224,8 +224,8 @@ export const AdminDashboardShell: React.FC = () => {
             }}
           >
             {activeTab === 'overview' && <SystemOverviewTab />}
-            {activeTab === 'ui' && <UILayoutEngineTab />}
-            {activeTab === 'operations' && <OperationalStructureTab orgTree={orgTree} />}
+            {activeTab === 'ui' && <UILayoutEngineTab onNavigateToTab={handleTabSwitch} />}
+            {activeTab === 'operations' && <OperationalStructureTab orgTree={orgTree} onNavigateToTab={handleTabSwitch} />}
             
             {activeTab === 'security' && <SecurityControlTab />}
             {activeTab === 'policies' && <NotificationPolicyConsole />}

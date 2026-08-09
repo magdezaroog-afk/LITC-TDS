@@ -222,89 +222,322 @@ export const EmployeeWorkspace: React.FC = () => {
               .map(comp => {
                 switch (comp.componentId) {
                   case 'ticket_create':
-                    const ticketCreateSettings = comp.settings || {};
-                    return (
-                      <div key={comp.componentId} style={{ display: 'flex', justifyContent: 'center' }}>
-                        <div style={{ width: '100%', maxWidth: '600px' }}>
-                          <TicketCreatorForm
-                            customFields={customFields}
-                            allowedRouteIds={ticketCreateSettings?.destinationRoutes || []}
-                            concurrencyPolicy={ticketCreateSettings?.concurrencyPolicy || 'ALLOW_MULTIPLE'}
-                            hasActiveTicketInRoute={(routeId) => false}
-                            glassPanelStyle={glassPanel}
-                            inputStyle={inputStyle}
-                          />
+                      const ticketCreateSettings = comp.settings || {};
+                      
+                      // Find inbox component to read governance settings
+                      const inboxComp = schema.layout.find((c: any) => c.componentId === 'ticket_inbox');
+                      const inboxSettings = inboxComp?.properties || {};
+                      const preventNewTicket = inboxSettings.preventNewTicketIfPendingRating === true;
+                      const preventConcurrent = ticketCreateSettings?.concurrencyPolicy === 'PREVENT_CONCURRENT';
+
+                      const checkActiveTicket = (routeId: string) => {
+                        let lockedReason: boolean | string = false;
+                        for (const t of userActiveTickets) {
+                          if (t.routeId === routeId) {
+                            if (t.status !== 'CLOSED' && t.status !== 'RESOLVED' && preventConcurrent) {
+                              lockedReason = 'لديكم طلب مفتوح';
+                              break;
+                            }
+                            if (t.status === 'RESOLVED' && preventNewTicket) {
+                              if (!t.rating || t.rating === 0) {
+                                lockedReason = 'طلب بانتظار التقييم';
+                                break;
+                              }
+                            }
+                          }
+                        }
+                        return lockedReason;
+                      };
+
+                      return (
+                        <div key={comp.componentId} style={{ display: 'flex', justifyContent: 'center' }}>
+                          <div style={{ width: '100%', maxWidth: '600px' }}>
+                            <TicketCreatorForm
+                              customFields={customFields}
+                              allowedRouteIds={ticketCreateSettings?.destinationRoutes || []}
+                              concurrencyPolicy={ticketCreateSettings?.concurrencyPolicy || 'ALLOW_MULTIPLE'}
+                              hasActiveTicketInRoute={checkActiveTicket}
+                              glassPanelStyle={glassPanel}
+                              inputStyle={inputStyle}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  
-                  case 'ticket_inbox':
-                    const inboxSettings = comp.settings || {};
-                    const tabsConfig = inboxSettings?.tabsConfig || {};
+                      );
                     
-                    const activeTabsMap: { key: 'all' | 'OPEN' | 'NEW' | 'TRANSFERRED' | 'STUCK', label: string }[] = [
-                      { key: 'NEW', label: 'الجديدة' },
-                      { key: 'OPEN', label: 'المفتوحة' },
-                      { key: 'TRANSFERRED', label: 'المحولة' },
-                      { key: 'STUCK', label: 'العالقة' },
-                    ].filter(t => tabsConfig[t.key]?.active);
-
-                    let filteredTickets = MOCK_TICKETS.filter(t => 
-                      (activeInboxTab === 'all' || t.status === activeInboxTab) && 
-                      t.destination_department_ids.includes(CURRENT_EMPLOYEE_DEPT)
-                    );
-
-                    if (dynamicPolicy && dynamicPolicy.archiveScope) {
-                      if (dynamicPolicy.archiveScope === 'PERSONAL') {
-                        filteredTickets = filteredTickets.filter(t => t.priority === 'P1');
-                      } else if (dynamicPolicy.archiveScope === 'TEAM') {
-                        filteredTickets = filteredTickets.filter(t => ['P1', 'P2'].includes(t.priority));
-                      }
-                    }
-
-                    let allowedActionsForCurrentTab = tabsConfig[activeInboxTab]?.actions || [];
-
-                    if (dynamicPolicy && dynamicPolicy.triageSwitches) {
-                      if (dynamicPolicy.triageSwitches.canClaimSelf === false) {
-                        allowedActionsForCurrentTab = allowedActionsForCurrentTab.filter((a: string) => a !== 'CLAIM');
-                      }
-                    }
+case 'ticket_inbox':
+                    const inboxProps = comp.properties || {};
+                    
+                    const timelineVisibility = inboxProps.timelineVisibility || 'ALL_STEPS';
+                    const requireRatingToClose = inboxProps.requireRatingToClose !== undefined ? inboxProps.requireRatingToClose : true;
+                    const allowCancellation = inboxProps.allowCancellation || false;
 
                     return (
                       <div key={comp.componentId} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div>
                           <h2 style={sectionHeaderStyle}>
-                            {comp.name || 'لوحة استعراض التذاكر'}
+                            {comp.name || 'لوحة استعراض التذاكر المرسلة'}
                             <div style={{ position: 'absolute', bottom: '-4px', right: 0, width: '40px', height: '4px', background: 'linear-gradient(90deg, #2563eb, transparent)', borderRadius: '2px' }}></div>
                           </h2>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
-                          <button 
-                            onClick={() => setActiveInboxTab('all')}
-                            style={{ padding: '8px 16px', background: activeInboxTab === 'all' ? '#1e293b' : 'transparent', color: activeInboxTab === 'all' ? '#fff' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-                          >الكل</button>
-                          {activeTabsMap.map(tab => (
-                            <button 
-                              key={tab.key}
-                              onClick={() => setActiveInboxTab(tab.key)}
-                              style={{ padding: '8px 16px', background: activeInboxTab === tab.key ? '#1e293b' : 'transparent', color: activeInboxTab === tab.key ? '#fff' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-                            >{tab.label}</button>
-                          ))}
-                        </div>
-                        {activeInboxTab !== 'all' && allowedActionsForCurrentTab.length > 0 && (
-                          <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>الإجراءات المتاحة لك:</span>
-                            {allowedActionsForCurrentTab.map((act: string) => (
-                              <span key={act} style={{ background: '#e0e7ff', color: '#4338ca', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>{act}</span>
-                            ))}
+                        
+                        {userActiveTickets.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {userActiveTickets.map(ticket => {
+                              // If requireRatingToClose is false and status is RESOLVED but not rated, it could be auto-closed. 
+                              // But for now, let's just honor the property in the rating UI.
+                              if (ticket.status === 'CLOSED') return null;
+
+                              const activeRating = ticket.rating || 0;
+                              const ratingComment = ticket.ratingComment || '';
+                              
+                              // Filter history based on timelineVisibility
+                              let displayHistory = ticket.history || [];
+                              if (timelineVisibility === 'MAJOR_MILESTONES') {
+                                displayHistory = displayHistory.filter((n: any, idx: number) => {
+                                  // Keep first (new), and any pending/completed/active that represent major milestones.
+                                  // Usually we can just hide 'ACTIVE' if it's an internal transfer, but let's just keep the ends and current.
+                                  if (idx === 0 || idx === displayHistory.length - 1) return true;
+                                  if (n.status === 'ACTIVE') return true;
+                                  return false;
+                                });
+                              }
+
+                              return (
+                                <div key={ticket.id} style={{
+                                  background: '#fff', borderRadius: '20px', padding: '24px',
+                                  boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.04)',
+                                  position: 'relative', overflow: 'hidden'
+                                }}>
+                                  {/* Colorful header band */}
+                                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: ticket.routeColor }} />
+
+                                  {/* Top Meta info */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${ticket.routeColor}15`, color: ticket.routeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                        {ticket.routeIcon}
+                                      </div>
+                                      <div>
+                                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{ticket.title}</h4>
+                                        <span style={{ fontSize: '12px', color: '#64748b' }}>مسار: {ticket.routeName} • {ticket.currentHandler}</span>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                      {allowCancellation && ticket.status === 'NEW' && (
+                                        <button 
+                                          onClick={() => {
+                                            ticket.status = 'CLOSED';
+                                            localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                            setUserActiveTickets([...userActiveTickets]);
+                                            window.dispatchEvent(new Event('litc_settings_updated'));
+                                          }}
+                                          style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                                          إلغاء الطلب ❌
+                                        </button>
+                                      )}
+                                      <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, padding: '4px 10px', borderRadius: '20px', background: 'rgba(0,0,0,0.04)', color: '#475569' }}>
+                                        #{ticket.id}
+                                      </span>
+                                      <span style={{
+                                        fontSize: '11px', fontWeight: 700,
+                                        padding: '4px 10px', borderRadius: '20px',
+                                        background: ticket.status === 'RESOLVED' ? '#e8f5e9' : ticket.status === 'TRANSFERRED' ? '#fff3e0' : '#e0f2fe',
+                                        color: ticket.status === 'RESOLVED' ? '#2e7d32' : ticket.status === 'TRANSFERRED' ? '#ef6c00' : '#0288d1',
+                                      }}>
+                                        {ticket.status === 'NEW' ? '✨ جديد' : ticket.status === 'OPEN' ? '⚙️ قيد المعالجة' : ticket.status === 'TRANSFERRED' ? '↗️ محول' : '🎯 تم الإنجاز'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ fontSize: '13px', color: '#475569', marginBottom: '20px', lineHeight: 1.5, background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '8px' }}>
+                                    <strong>وصف المشكلة المرفوع:</strong> {ticket.description}
+                                  </div>
+
+                                  {/* Interactive Timeline Map */}
+                                  <div style={{ marginBottom: '24px', padding: '16px', background: '#fafbfc', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                                    <h5 style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        🗺️ رحلة الطلب ومكان المعالجة الحالي:
+                                      </h5>
+                                      
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                                        {displayHistory.map((node: any, idx: number) => {
+                                          const isCompleted = node.status === 'COMPLETED';
+                                          const isActive = node.status === 'ACTIVE';
+                                          return (
+                                            <React.Fragment key={node.id || idx}>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 auto', minWidth: '120px' }}>
+                                                <div style={{
+                                                  width: '28px', height: '28px', borderRadius: '50%',
+                                                  background: isCompleted ? ticket.routeColor : isActive ? '#ffffff' : '#f1f5f9',
+                                                  border: `2px solid ${isCompleted || isActive ? ticket.routeColor : '#cbd5e1'}`,
+                                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                  color: isCompleted ? '#fff' : isActive ? ticket.routeColor : '#94a3b8',
+                                                  fontSize: '12px', fontWeight: 700,
+                                                  boxShadow: isActive ? `0 0 0 4px ${ticket.routeColor}25` : 'none'
+                                                }}>
+                                                  {isCompleted ? '✓' : idx + 1}
+                                                </div>
+                                                <div>
+                                                  <div style={{ fontSize: '12px', fontWeight: 700, color: isCompleted || isActive ? '#1e293b' : '#94a3b8' }}>{node.title}</div>
+                                                  {node.department && <div style={{ fontSize: '10px', color: '#64748b' }}>{node.department}</div>}
+                                                  {node.timestamp && <div style={{ fontSize: '9px', color: '#94a3b8' }}>{node.timestamp}</div>}
+                                                </div>
+                                              </div>
+                                              {idx < displayHistory.length - 1 && (
+                                                <div style={{ flex: 1, height: '2px', background: isCompleted ? ticket.routeColor : '#e2e8f0', minWidth: '20px' }} />
+                                              )}
+                                            </React.Fragment>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                  {/* Rating Card (Active ONLY when RESOLVED) */}
+                                  {ticket.status === 'RESOLVED' ? (
+                                    <motion.div 
+                                      initial={{ opacity: 0, y: 15 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      style={{
+                                        background: 'linear-gradient(135deg, #10b98108, #3b82f605)',
+                                        border: '1.5px dashed #10b98180',
+                                        borderRadius: '16px',
+                                        padding: '20px',
+                                        textAlign: 'center'
+                                      }}
+                                    >
+                                      <h4 style={{ margin: '0 0 8px 0', color: '#065f46', fontSize: '16px', fontWeight: 800 }}>✨ تم حل المشكلة بنجاح! الرجاء تقييم الخدمة لإغلاق الطلب</h4>
+                                      <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#047857' }}>تقييمك يعزز جودة الخدمة ويسجل مباشرة لجميع الموظفين الذين ساهموا في حل المشكلة.</p>
+
+                                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                          <Star
+                                            key={star}
+                                            size={32}
+                                            onClick={() => {
+                                              ticket.rating = star;
+                                              localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                              setUserActiveTickets([...userActiveTickets]);
+                                            }}
+                                            style={{
+                                              cursor: 'pointer',
+                                              fill: star <= activeRating ? '#fbbf24' : 'none',
+                                              color: star <= activeRating ? '#fbbf24' : '#cbd5e1',
+                                              transition: 'transform 0.2s'
+                                            }}
+                                          />
+                                        ))}
+                                      </div>
+
+                                      <textarea
+                                        placeholder="أضف ملاحظاتك أو كلمة شكر للفريق... (اختياري)"
+                                        value={ratingComment}
+                                        onChange={(e) => {
+                                          ticket.ratingComment = e.target.value;
+                                          localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                          setUserActiveTickets([...userActiveTickets]);
+                                        }}
+                                        style={{
+                                          width: '100%', maxWidth: '400px', height: '60px',
+                                          padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1',
+                                          fontSize: '12px', outline: 'none', resize: 'none', margin: '0 auto 12px', display: 'block'
+                                        }}
+                                      />
+
+                                      <button
+                                        onClick={() => {
+                                          if (requireRatingToClose && activeRating === 0) {
+                                            alert('الرجاء اختيار عدد النجوم للتقييم أولاً.');
+                                            return;
+                                          }
+                                          ticket.status = 'CLOSED';
+                                          localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                          setUserActiveTickets([...userActiveTickets]);
+                                          window.dispatchEvent(new Event('storage'));
+                                          window.dispatchEvent(new Event('litc_settings_updated'));
+                                        }}
+                                        style={{
+                                          background: '#10b981', color: '#fff', border: 'none',
+                                          padding: '10px 24px', borderRadius: '8px', fontWeight: 700, fontSize: '13px',
+                                          cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
+                                          display: 'inline-flex', alignItems: 'center', gap: '6px'
+                                        }}
+                                      >
+                                        <ShieldCheck size={16} /> تقديم التقييم وإغلاق الطلب
+                                      </button>
+                                      
+                                      {!requireRatingToClose && (
+                                        <div style={{ marginTop: '12px' }}>
+                                          <button 
+                                            onClick={() => {
+                                              ticket.status = 'CLOSED';
+                                              localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                              setUserActiveTickets([...userActiveTickets]);
+                                              window.dispatchEvent(new Event('storage'));
+                                              window.dispatchEvent(new Event('litc_settings_updated'));
+                                            }}
+                                            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>
+                                            تخطي وإغلاق الطلب بدون تقييم
+                                          </button>
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  ) : (
+                                    /* Simulator Control Strip */
+                                    <div style={{
+                                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                      padding: '10px 14px', background: 'rgba(0,0,0,0.03)', borderRadius: '10px',
+                                      border: '1px solid rgba(0,0,0,0.04)', flexWrap: 'wrap', gap: '8px'
+                                    }}>
+                                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>🧪 محاكاة:</span>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        {ticket.status === 'NEW' && (
+                                          <button onClick={() => {
+                                            ticket.status = 'OPEN';
+                                            if (ticket.history && ticket.history[1]) ticket.history[1].status = 'COMPLETED';
+                                            if (ticket.history && ticket.history[2]) ticket.history[2].status = 'ACTIVE';
+                                            localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                            setUserActiveTickets([...userActiveTickets]);
+                                            window.dispatchEvent(new Event('litc_settings_updated'));
+                                          }} style={{ padding: '4px 8px', fontSize: '11px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>قبول ومعالجة</button>
+                                        )}
+                                        {ticket.status === 'OPEN' && (
+                                          <button onClick={() => {
+                                            ticket.status = 'TRANSFERRED';
+                                            ticket.currentHandler = "إدارة أمن المعلومات";
+                                            if (ticket.history && ticket.history[2]) {
+                                              ticket.history[2].title = "تحويل";
+                                              ticket.history[2].department = "أمن المعلومات";
+                                            }
+                                            localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                            setUserActiveTickets([...userActiveTickets]);
+                                            window.dispatchEvent(new Event('litc_settings_updated'));
+                                          }} style={{ padding: '4px 8px', fontSize: '11px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>تحويل</button>
+                                        )}
+                                        {(ticket.status === 'OPEN' || ticket.status === 'TRANSFERRED') && (
+                                          <button onClick={() => {
+                                            ticket.status = 'RESOLVED';
+                                            if (ticket.history && ticket.history[2]) ticket.history[2].status = 'COMPLETED';
+                                            if (ticket.history && ticket.history[3]) ticket.history[3].status = 'COMPLETED';
+                                            localStorage.setItem('litc_user_active_tickets', JSON.stringify(userActiveTickets));
+                                            setUserActiveTickets([...userActiveTickets]);
+                                            window.dispatchEvent(new Event('litc_settings_updated'));
+                                          }} style={{ padding: '4px 8px', fontSize: '11px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>حل</button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ padding: '30px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+                            لا توجد تذاكر مرسلة نشطة حالياً.
                           </div>
                         )}
-                        <UserTicketTracker 
-                          tickets={filteredTickets}
-                          onExpandJourney={(id) => setExpandedJourneyTicketId(id)}
-                        />
                       </div>
                     );
+
 
                   case 'admin_archive':
                     const archiveSettings = comp.settings || {};

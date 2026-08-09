@@ -72,6 +72,7 @@ const loadFields = (): DynamicCustomField[] => {
 };
 const persistFields = (fields: DynamicCustomField[]) => {
   localStorage.setItem('litc_dynamic_fields', JSON.stringify(fields));
+  window.dispatchEvent(new Event('litc_settings_updated'));
 };
 
 // --- Soft Delete (Archive) Function for Dynamic Fields ---
@@ -87,6 +88,7 @@ const toggleDynamicFieldOptionStatus = (fieldId: string, optionId: string) => {
       return { ...field, options: updatedOptions };
     });
     localStorage.setItem('litc_dynamic_fields', JSON.stringify(updatedFields));
+    window.dispatchEvent(new Event('litc_settings_updated'));
     // Note: State might need to be refreshed if called from outside, but this encapsulates the local storage update.
   } catch(e) {}
 };
