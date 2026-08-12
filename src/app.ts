@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-const RedisStore = require('connect-redis').default || require('connect-redis');
+const { RedisStore } = require('connect-redis');
 import { WAFMiddleware } from './backend/security/WAFMiddleware';
 import { redisManager } from './backend/infrastructure/RedisClient';
 

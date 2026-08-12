@@ -37,6 +37,7 @@ export const authMiddleware = (
   }
 
   if (!token) {
+    console.error('[Auth] Token missing completely');
     SIEMLogger.logEvent('UNAUTHORIZED_ACCESS_ATTEMPT', 'INFO', sourceIp, { url: req.url });
     return res.status(401).json({ success: false, error: 'Unauthorized: Missing token.' });
   }
@@ -49,7 +50,8 @@ export const authMiddleware = (
       email: decoded.email
     };
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Auth] Token validation failed!', error.message, 'Token received:', token);
     SIEMLogger.logEvent('INVALID_TOKEN_ATTEMPT', 'WARNING', sourceIp, { url: req.url });
     return res.status(401).json({ success: false, error: 'Unauthorized: Invalid token.' });
   }

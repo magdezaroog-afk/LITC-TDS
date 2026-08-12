@@ -129,6 +129,22 @@ model UserTeam {
 
 
 // ==========================================
+// 2.5 Sites and Locations (Physical Origins)
+// ==========================================
+
+model TicketLocation {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  building    String?
+  department  String?
+  office      String?
+  isDeleted   Boolean  @default(false)
+  
+  tickets     Ticket[]
+}
+
+
+// ==========================================
 // 3. محرك الواجهات، التخصيص الديناميكي والإعدادات
 // ==========================================
 model SystemSetting {
@@ -269,6 +285,9 @@ model Ticket {
   parentId     Int?
   parentTicket Ticket?       @relation("SubTickets", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subTickets   Ticket[]      @relation("SubTickets")
+
+  locationId   Int?
+  location     TicketLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -33,7 +33,7 @@ export class AuthController {
       // Set HttpOnly Secure Cookie
       res.cookie('litc_session', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Fix for localhost HTTP testing
         sameSite: 'strict',
         maxAge: 8 * 60 * 60 * 1000 // 8 hours
       });

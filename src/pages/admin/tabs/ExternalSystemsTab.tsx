@@ -4,6 +4,8 @@ import { useLanguage } from '../../../engine/ui-loader/LanguageContext';
 export interface ExternalSystem {
   id: string;
   systemName: string;
+  apiKey: string;
+  sharedSecret?: string;
   manifestUrl: string;
   manifestData: string;
   isActive: boolean;
@@ -22,7 +24,10 @@ export const ExternalSystemsTab: React.FC = () => {
     try {
       // Replace with actual API call once configured, fetching for now
       const res = await fetch('/api/v1/admin/uecp/systems', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('litc_token')}` }
+        headers: { 
+          'x-user-id': '1',
+          'x-role-id': '1'
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -47,7 +52,8 @@ export const ExternalSystemsTab: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('litc_token')}`
+          'x-user-id': '1',
+          'x-role-id': '1'
         },
         body: JSON.stringify({ manifestUrl })
       });
@@ -141,6 +147,22 @@ export const ExternalSystemsTab: React.FC = () => {
                   </div>
                   {expandedId === sys.id && (
                     <div style={{ padding: '16px', background: '#FFFFFF', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>API Key (X-API-Key):</span>
+                          <div style={{ fontSize: '13px', background: '#F3E8FF', color: '#6D28D9', padding: '8px 12px', borderRadius: '8px', marginTop: '4px', fontFamily: 'monospace', fontWeight: '600', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{sys.apiKey}</span>
+                            <button onClick={() => navigator.clipboard.writeText(sys.apiKey)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B5CF6' }}>📋</button>
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>HMAC Secret:</span>
+                          <div style={{ fontSize: '13px', background: '#FFECEB', color: '#C53030', padding: '8px 12px', borderRadius: '8px', marginTop: '4px', fontFamily: 'monospace', fontWeight: '600', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{sys.sharedSecret || 'غير متوفر'}</span>
+                            {sys.sharedSecret && <button onClick={() => navigator.clipboard.writeText(sys.sharedSecret!)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E53E3E' }}>📋</button>}
+                          </div>
+                        </div>
+                      </div>
                       <div style={{ marginBottom: '12px' }}>
                         <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>Manifest URL:</span>
                         <div style={{ fontSize: '13px', background: '#F5F5F7', padding: '8px 12px', borderRadius: '8px', marginTop: '4px', wordBreak: 'break-all' }}>{sys.manifestUrl}</div>

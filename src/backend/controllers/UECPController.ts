@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../db/client';
+import crypto from 'crypto';
 
 export class UECPController {
   
@@ -32,11 +33,13 @@ export class UECPController {
       }
 
       // 2. Save to database using the LEPC schema
+      const sharedSecret = crypto.randomBytes(32).toString('hex');
       const newSystem = await prisma.externalSystemRegistry.create({
         data: {
           systemName: systemName,
           manifestUrl: manifestUrl,
           manifestData: JSON.stringify(manifestData),
+          sharedSecret: sharedSecret,
           isActive: true
         }
       });
