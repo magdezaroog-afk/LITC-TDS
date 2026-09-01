@@ -17,11 +17,10 @@ export const OperationalEntitiesConsole: React.FC = () => {
     const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('litc_token') || 'system_token_123';
-      
+      // Use HttpOnly cookie auth
       const [deptRes, usersRes] = await Promise.all([
-        fetch('/api/v1/admin/operational/departments', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/v1/admin/operational/users', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('/api/v1/admin/operational/departments', { credentials: 'include' }),
+        fetch('/api/v1/admin/operational/users', { credentials: 'include' })
       ]);
 
       const depts = await deptRes.json();
@@ -48,13 +47,10 @@ export const OperationalEntitiesConsole: React.FC = () => {
     if (!userId) return;
 
     try {
-      const token = localStorage.getItem('litc_token') || 'system_token_123';
       await fetch('/api/v1/admin/operational/users/assign', {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, teamId })
       });
       // Optionally fetch data again or optimistic update

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../engine/auth/AuthContext';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const UnifiedProfileDropdown: React.FC<{ currentUserRole?: string }> = ({ currentUserRole = 'EMPLOYEE' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [availability, setAvailability] = useState('AVAILABLE'); // AVAILABLE, BUSY, ON_LEAVE

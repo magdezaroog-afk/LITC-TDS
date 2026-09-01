@@ -1,6 +1,9 @@
 import React from 'react';
 import { FieldDefinition } from '../../types/dynamicFields';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface ActionModalsProps {
   theme: any;
   isSubmitting: boolean;

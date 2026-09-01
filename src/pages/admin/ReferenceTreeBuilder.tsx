@@ -28,9 +28,8 @@ export const ReferenceTreeBuilder: React.FC = () => {
   const fetchReferences = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('litc_token') || 'token123';
       const res = await fetch('/api/v1/admin/references', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       const data = await res.json();
       if (data.status === 'success') {
@@ -47,12 +46,11 @@ export const ReferenceTreeBuilder: React.FC = () => {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      const token = localStorage.getItem('litc_token') || 'token123';
       const res = await fetch('/api/v1/admin/references', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: newName,
@@ -75,10 +73,9 @@ export const ReferenceTreeBuilder: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const token = localStorage.getItem('litc_token') || 'token123';
       const res = await fetch(`/api/v1/admin/references/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         fetchReferences();

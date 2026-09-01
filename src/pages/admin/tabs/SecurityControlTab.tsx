@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../engine/ui-loader/ThemeProvider';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
+
 const A = {
   text: '#1D1D1F', textSub: '#6E6E73', textTer: '#AEAEB2', surface: '#FFFFFF',
   bg: '#F5F5F7', sep: 'rgba(0,0,0,0.08)', radius: '14px', shadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
@@ -57,7 +61,7 @@ export const SecurityControlTab: React.FC = () => {
   }, []);
 
   const handleCreateRule = async () => {
-    if (!newRule.target) return alert('Target cannot be empty');
+    if (!newRule.target) return alertt('admin.security_control.err_target', 'Target cannot be empty');
     setRuleLoading(true);
     await fetch('/api/v1/admin/soc/waf-rules', { 
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-user-id': '1' }, body: JSON.stringify(newRule) 
@@ -72,20 +76,20 @@ export const SecurityControlTab: React.FC = () => {
     fetchSOCData();
   };
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading LITC Enterprise SOC...</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>{t('admin.security_control.loading') || 'Loading LITC Enterprise SOC...'}</div>;
 
   return (
     <div className="admin-scroll" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px', height: '100%', overflowY: 'auto' }}>
       
       {/* 1. Core Telemetry */}
-      <SectionTitle subtitle="قراءة حية للعتاد (Bare-Metal Telemetry)">الموارد الأساسية (Core Resources)</SectionTitle>
+      <SectionTitle subtitle={t('admin.security_control.sub_telemetry') || 'قراءة حية للعتاد (Bare-Metal Telemetry)'}>{t('admin.security_control.title_telemetry') || 'الموارد الأساسية (Core Resources)'}</SectionTitle>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <Card style={{ alignItems: 'center' }}>
-          <div style={{ fontSize: '13px', color: A.textSub }}>المعالج (CPU)</div>
+          <div style={{ fontSize: '13px', color: A.textSub }}>{t('admin.security_control.lbl_cpu') || 'المعالج (CPU)'}</div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: telemetry?.cpu > 80 ? A.red : A.blue }}>{telemetry?.cpu ?? 0}%</div>
         </Card>
         <Card style={{ alignItems: 'center' }}>
-          <div style={{ fontSize: '13px', color: A.textSub }}>الذاكرة (RAM)</div>
+          <div style={{ fontSize: '13px', color: A.textSub }}>{t('admin.security_control.lbl_ram') || 'الذاكرة (RAM)'}</div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: A.blue }}>{telemetry?.memoryUsage ?? 0} MB</div>
         </Card>
       </div>
@@ -94,22 +98,22 @@ export const SecurityControlTab: React.FC = () => {
         
         {/* 2. WAF Rule Builder */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <SectionTitle subtitle="إضافة قواعد WAF للحماية من الهجمات">صانع سياسات الجدار الناري (WAF Rules)</SectionTitle>
+          <SectionTitle subtitle={t('admin.security_control.sub_waf') || 'إضافة قواعد WAF للحماية من الهجمات'}>{t('admin.security_control.title_waf') || 'صانع سياسات الجدار الناري (WAF Rules)'}</SectionTitle>
           <Card>
             <div style={{ display: 'flex', gap: '8px' }}>
               <select value={newRule.ruleType} onChange={e => setNewRule(p => ({...p, ruleType: e.target.value}))} style={{ padding: '8px', borderRadius: '8px', border: `1px solid ${A.sep}` }}>
-                <option value="IP_BLOCK">حظر IP</option>
-                <option value="PAYLOAD_BLOCK">حظر محتوى (Regex)</option>
+                <option value="IP_BLOCK">{t('admin.security_control.opt_ip_block') || 'حظر IP'}</option>
+                <option value="PAYLOAD_BLOCK">{t('admin.security_control.opt_regex_block') || 'حظر محتوى (Regex)'}</option>
               </select>
-              <input type="text" placeholder="مثال: 192.168.1.5 أو DROP TABLE" value={newRule.target} onChange={e => setNewRule(p => ({...p, target: e.target.value}))} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: `1px solid ${A.sep}` }} />
-              <ActionButton label="إضافة" color={A.green} onClick={handleCreateRule} loading={ruleLoading} />
+              <input type="text" placeholder={t('admin.security_control.placeholder_target') || 'مثال: 192.168.1.5 أو DROP TABLE'} value={newRule.target} onChange={e => setNewRule(p => ({...p, target: e.target.value}))} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: `1px solid ${A.sep}` }} />
+              <ActionButton label={t('admin.security_control.btn_add') || 'إضافة'} color={A.green} onClick={handleCreateRule} loading={ruleLoading} />
             </div>
             
             <div style={{ marginTop: '16px', maxHeight: '200px', overflowY: 'auto' }}>
               {rules.map(r => (
                 <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: A.bg, borderRadius: '8px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '13px', fontFamily: 'monospace' }}>[{r.ruleType}] {r.target}</span>
-                  <ActionButton label="حذف" color={A.red} onClick={() => handleDeleteRule(r.id)} />
+                  <ActionButton label={t('admin.security_control.btn_delete') || 'حذف'} color={A.red} onClick={() => handleDeleteRule(r.id)} />
                 </div>
               ))}
             </div>
@@ -118,9 +122,9 @@ export const SecurityControlTab: React.FC = () => {
 
         {/* 3. SIEM Log Explorer */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <SectionTitle subtitle="السجلات الأمنية الحديثة المستخرجة عبر الـ Redis Queue">سجلات SIEM</SectionTitle>
+          <SectionTitle subtitle={t('admin.security_control.sub_siem') || 'السجلات الأمنية الحديثة المستخرجة عبر الـ Redis Queue'}>{t('admin.security_control.title_siem') || 'سجلات SIEM'}</SectionTitle>
           <Card style={{ maxHeight: '330px', overflowY: 'auto', padding: '12px' }}>
-            {logs.length === 0 ? <div style={{color: A.textSub}}>لا توجد سجلات.</div> : logs.map(log => (
+            {logs.length === 0 ? <div style={{color: A.textSub}}>{t('admin.security_control.no_logs') || 'لا توجد سجلات.'}</div> : logs.map(log => (
               <div key={log.id} style={{ padding: '8px', borderBottom: `1px solid ${A.sep}`, fontSize: '12px', display: 'flex', gap: '12px' }}>
                 <div style={{ color: log.severity === 'CRITICAL' ? A.red : log.severity === 'WARNING' ? A.amber : A.blue, fontWeight: 'bold' }}>
                   [{log.severity}]

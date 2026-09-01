@@ -36,8 +36,10 @@ import { ExternalComponentRenderer } from '../../components/runtime/ExternalComp
 import { UnifiedProfileDropdown } from '../../components/infrastructure/UnifiedProfileDropdown';
 import { NotificationBell } from '../../components/infrastructure/NotificationBell';
 import { SystemModeToggle } from '../../components/molecules/SystemModeToggle';
-import { Plus, LayoutDashboard, Ticket } from 'lucide-react';
+import { Plus, LayoutDashboard, Ticket, Star, ShieldCheck } from 'lucide-react';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
 export const EmployeeWorkspace: React.FC = () => {
   const theme = useTheme();
 
@@ -70,18 +72,6 @@ export const EmployeeWorkspace: React.FC = () => {
   const [currentUserDept, setCurrentUserDept] = useState<string>('IT_SUPPORT');
   
   // Phase 3: Runtime Policy Mask
-  const [dynamicPolicy, setDynamicPolicy] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchPolicy = async () => {
-      try {
-        const res = await fetch('/api/v1/auth/user-policy/GLOBAL_POLICY?userId=1', {
-          headers: { 'Authorization': 'Bearer system_token_123' }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json && json.policy) {
-            setDynamicPolicy(JSON.parse(json.policy));
           } else {
             setDynamicPolicy(null);
           }

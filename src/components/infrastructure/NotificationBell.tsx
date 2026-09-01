@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const NotificationBell: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

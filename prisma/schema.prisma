@@ -12,19 +12,19 @@ generator client {
 // ==========================================
 
 model User {
-  id            Int     @id @default(autoincrement())
-  username      String  @unique
-  email         String? @unique
-  phone         String? @unique
+  id              Int     @id @default(autoincrement())
+  username        String  @unique
+  email           String? @unique
+  phone           String?
   externalAliases String?
-  ssoId         String?   @unique
-  ssoProvider   String?
-  password      String?   // Argon2 hashed password for non-SSO login
-  fullName      String?
-  isActive      Boolean   @default(true)
-  isFrozen      Boolean   @default(false)
-  isVip         Boolean @default(false)
-  preferredLang String  @default("ar")
+  ssoId           String?
+  ssoProvider     String?
+  password        String? // Argon2 hashed password for non-SSO login
+  fullName        String?
+  isActive        Boolean @default(true)
+  isFrozen        Boolean @default(false)
+  isVip           Boolean @default(false)
+  preferredLang   String  @default("ar")
 
   mfaEnabled Boolean @default(false)
   mfaSecret  String?
@@ -38,7 +38,7 @@ model User {
 
   failedAttempts        Int       @default(0)
   lockoutEnd            DateTime?
-  resetToken            String?   @unique
+  resetToken            String?
   resetTokenExpires     DateTime?
   totalStorageUsedBytes BigInt    @default(0)
 
@@ -50,67 +50,69 @@ model User {
   roleId Int
   role   Role @relation(fields: [roleId], references: [id])
 
-
   departmentId Int?
   department   Department? @relation("DeptMembers", fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
-  buildingId String?
+  buildingId Int?
+  building   SystemReference? @relation("BuildingUsers", fields: [buildingId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   delegatedUser     User?  @relation("UserDelegation", fields: [delegatedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   delegatesReceived User[] @relation("UserDelegation")
 
-  teams              UserTeam[]
-  assignments        TicketAssignment[]
-  uploadedFiles      TicketFile[]
-  comments           TicketComment[]
-  handledSteps       TicketFlowProgress[]
+  teams             UserTeam[]
+  assignments       TicketAssignment[]
+  uploadedFiles     TicketFile[]
+  comments          TicketComment[]
+  handledSteps      TicketFlowProgress[]
+  createdTickets    Ticket[]              @relation("CreatedTickets")
+  componentPolicies UserComponentPolicy[]
 
   // SSO & Landing Zone
-  avatarUrl          String?
-  jobTitle           String?
-  ssoRole            String   @default("EMPLOYEE")
+  avatarUrl String?
+  jobTitle  String?
+  ssoRole   String  @default("EMPLOYEE")
+
+  @@index([email])
 }
 
 model Role {
-  id                     Int                     @id @default(autoincrement())
-  name                   String                  @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
 
   defaultCanViewInternal Boolean                 @default(false)
   users                  User[]
   allowedTransitions     TicketStateTransition[]
+  dynamicLayout          DynamicLayout?
 }
 
 // ==========================================
 // 2. الهيكل التنظيمي والفرق المتعددة
 // ==========================================
-model CompanyDivision {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  departments Department[]
-}
 
 model Department {
-  id              Int             @id @default(autoincrement())
-  name            String          @unique
-  isDeleted       Boolean         @default(false)
-  assignmentMode  String          @default("PULL")
-  routingStrategy String          @default("POOL")
-  isDelegated     Boolean         @default(false)
-  divisionId      Int
-  division        CompanyDivision @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  isDeleted       Boolean          @default(false)
+  assignmentMode  String           @default("PULL")
+  routingStrategy String           @default("POOL")
+  isDelegated     Boolean          @default(false)
 
-  users       User[]               @relation("DeptMembers")
-  teams       Team[]
+  users      User[]      @relation("DeptMembers")
+  teams      Team[]
+  interfaces Interface[]
+  tickets    Ticket[]    @relation("DepartmentTickets")
+
+  @@index([name])
 }
 
 model Team {
-  id              Int        @id @default(autoincrement())
+  id              Int         @id @default(autoincrement())
   name            String
-  isDeleted       Boolean    @default(false)
-  routingStrategy String     @default("POOL")
-  isDelegated     Boolean    @default(false)
-  departmentId    Int
-  department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isDeleted       Boolean     @default(false)
+  routingStrategy String      @default("POOL")
+  isDelegated     Boolean     @default(false)
+  departmentId    Int?
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
   users       UserTeam[]
   assignments TicketAssignment[]
@@ -127,22 +129,9 @@ model UserTeam {
   @@unique([userId, teamId])
 }
 
-
 // ==========================================
 // 2.5 Sites and Locations (Physical Origins)
 // ==========================================
-
-model TicketLocation {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  building    String?
-  department  String?
-  office      String?
-  isDeleted   Boolean  @default(false)
-  
-  tickets     Ticket[]
-}
-
 
 // ==========================================
 // 3. محرك الواجهات، التخصيص الديناميكي والإعدادات
@@ -155,17 +144,29 @@ model SystemSetting {
   updatedAt    DateTime @updatedAt
 }
 
+model Interface {
+  id            String     @id @default(cuid())
+  name          String
+  interfaceType String     @default("FUNCTIONAL") // "FUNCTIONAL" or "OPERATIONAL"
+  roleType      String?
+  departmentId  Int
+  department    Department @relation(fields: [departmentId], references: [id])
+  configJson    String?    @db.NVarChar(Max)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
 // ==========================================
 // 12. Security Information and Event Management (LITC SIEM)
 // ==========================================
 model SecurityEventLog {
-  id            String   @id @default(cuid())
-  eventType     String   // e.g. WAF_BLOCK, LOGIN_FAILED, PRIVILEGE_ESCALATION
-  severity      String   // INFO, WARNING, CRITICAL
-  sourceIp      String?
-  targetUserId  Int?
-  details       String   // JSON stringified payload of the event
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  eventType    String // e.g. WAF_BLOCK, LOGIN_FAILED, PRIVILEGE_ESCALATION
+  severity     String // INFO, WARNING, CRITICAL
+  sourceIp     String?
+  targetUserId Int?
+  details      String // JSON stringified payload of the event
+  createdAt    DateTime @default(now())
 }
 
 // ==========================================
@@ -181,39 +182,21 @@ model WAFNode {
 }
 
 model WAFRule {
-  id          String   @id @default(cuid())
-  ruleType    String   // IP_BLOCK, PAYLOAD_BLOCK, RATE_LIMIT
-  target      String   // e.g. "192.168.1.1" or "DROP TABLE"
-  action      String   // BLOCK, LOG_ONLY
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  ruleType  String // IP_BLOCK, PAYLOAD_BLOCK, RATE_LIMIT
+  target    String // e.g. "192.168.1.1" or "DROP TABLE"
+  action    String // BLOCK, LOG_ONLY
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ==========================================
 // 4. إدارة الأصول، المعدات والبنية التحتية ونوافذ الصيانة
 // ==========================================
 
-
-
 // ==========================================
 // 5. قاعدة المعرفة، الوسوم، أكواد الإغلاق، الموردين والأولويات
 // ==========================================
-
-
-
-
 
 // ==========================================
 // 6. التذاكر وحوكمة الحالات والتصعيد
@@ -253,15 +236,13 @@ model TicketStateTransition {
   @@unique([fromStateId, toStateId, roleId])
 }
 
-
-
 model Ticket {
-  id              Int     @id @default(autoincrement())
-  title           String
-  description     String
-  ticketType      String  @default("TECHNICAL")
-  channel         String  @default("PORTAL")
-  isVip           Boolean @default(false)
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String
+  ticketType  String  @default("TECHNICAL")
+  channel     String  @default("PORTAL")
+  isVip       Boolean @default(false)
 
   urgency  String @default("MEDIUM")
   impact   String @default("MEDIUM")
@@ -286,31 +267,34 @@ model Ticket {
   parentTicket Ticket?       @relation("SubTickets", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subTickets   Ticket[]      @relation("SubTickets")
 
-  locationId   Int?
-  location     TicketLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  creatorId  Int?
+  creator    User?   @relation("CreatedTickets", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  departmentId Int?
+  departmentObj Department? @relation("DepartmentTickets", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
 
   // Relations
-  slaTrackers      TicketStatusSlaTracker[]
-  assignments      TicketAssignment[]
-  formData         TicketFormData[]
-  flowProgress     TicketFlowProgress[]
-  files            TicketFile[]
-  comments         TicketComment[]
-  rating           TicketRating?
-  externalData     ExternalDataSnapshot[]
+  slaTrackers  TicketStatusSlaTracker[]
+  assignments  TicketAssignment[]
+  formData     TicketFormData[]
+  flowProgress TicketFlowProgress[]
+  files        TicketFile[]
+  comments     TicketComment[]
+  rating       TicketRating?
+  externalData ExternalDataSnapshot[]
+  logs         TicketLog[]
 
   @@index([parentId])
   @@index([stateId])
+  @@index([creatorId])
   @@index([createdAt])
   @@index([flowDefinitionId])
   @@index([priority])
 }
-
-
 
 model TicketAssignment {
   id              Int      @id @default(autoincrement())
@@ -368,11 +352,8 @@ model TicketStatusSlaTracker {
   deadlineDateTime DateTime
   breachedAt       DateTime?
 
-  isPaused         Boolean                    @default(false)
+  isPaused Boolean @default(false)
 }
-
-
-
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
@@ -400,30 +381,17 @@ model SystemReference {
   isActive  Boolean           @default(true) // ????? ??????
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+
+  users     User[]            @relation("BuildingUsers")
 }
 
 // ==========================================
 // 9. Notification Policies (Batch 2)
 // ==========================================
 
-
-
-
-
 // ==========================================
 // 10. Dynamic Component Policies & Governance
 // ==========================================
-
-model PolicyAuditLog {
-  id            String   @id @default(cuid())
-  actorId       Int
-  targetUserId  Int
-  componentKey  String
-  changeSummary String
-  status        String   @default("PENDING_ADMIN_APPROVAL")
-  createdAt     DateTime @default(now())
-}
-
 
 // ==========================================
 // 11. Unified External Component Protocol (UECP)
@@ -444,41 +412,32 @@ model ExternalSystemRegistry {
 model UECPAuditLog {
   id           String   @id @default(cuid())
   systemId     String
-  direction    String   // "INBOUND" | "OUTBOUND"
+  direction    String // "INBOUND" | "OUTBOUND"
   endpoint     String
-  status       Int      // HTTP Status
+  status       Int // HTTP Status
   payload      String?
   errorMessage String?
   timestamp    DateTime @default(now())
-  
+
   @@index([systemId])
   @@index([timestamp])
 }
 
-// ==========================================
-// 12. Security Audit & Incident Logs
-// ==========================================
-model SecurityAuditLog {
-  id         String   @id @default(cuid())
-  timestamp  DateTime @default(now())
-  actorId    String
-  actionType String
-  details    String
-}
+// REMOVED SecurityAuditLog, using SecurityEventLog instead
 
 // ==========================================
 // 13. محرك المسارات الديناميكية (Dynamic Flow Engine)
 // ==========================================
 
 model FormSchema {
-  id          String           @id @default(cuid())
-  name        String           @unique
-  version     Int              @default(1)
-  fieldsJson  String
-  isActive    Boolean          @default(true)
-  flows       FlowDefinition[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  name       String           @unique
+  version    Int              @default(1)
+  fieldsJson String
+  isActive   Boolean          @default(true)
+  flows      FlowDefinition[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@index([isActive])
 }
@@ -518,9 +477,9 @@ model FlowStep {
 }
 
 model TicketFormData {
-  id         String  @id @default(cuid())
+  id         String @id @default(cuid())
   ticketId   Int
-  ticket     Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ticket     Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   fieldKey   String
   fieldValue String
 
@@ -529,17 +488,17 @@ model TicketFormData {
 }
 
 model TicketFlowProgress {
-  id               String    @id @default(cuid())
-  ticketId         Int
-  ticket           Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  stepId           String
-  step             FlowStep  @relation(fields: [stepId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  status           String    @default("PENDING")
-  startedAt        DateTime?
-  completedAt      DateTime?
-  handledByUserId  Int?
-  handledByUser    User?     @relation(fields: [handledByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notes            String?
+  id              String    @id @default(cuid())
+  ticketId        Int
+  ticket          Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stepId          String
+  step            FlowStep  @relation(fields: [stepId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status          String    @default("PENDING")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  handledByUserId Int?
+  handledByUser   User?     @relation(fields: [handledByUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notes           String?
 
   @@index([ticketId, status])
   @@index([stepId])
@@ -613,4 +572,100 @@ model ExternalDataSnapshot {
 
   @@index([ticketId])
   @@index([systemId])
+}
+
+// SaaS White-Label Branding Configuration (Singleton)
+model BrandingConfig {
+  id           Int      @id @default(1)
+  orgName      String   @default("LITC System")
+  orgLogo      String?
+  lightPrimary String   @default("#6366f1")
+  darkPrimary  String   @default("#00a3ff")
+  headerBg     String?
+  fontFamily   String   @default("Inter")
+  updatedAt    DateTime @updatedAt
+}
+
+// ==========================================
+// 18. Dynamic Layouts & Webhooks
+// ==========================================
+model DynamicLayout {
+  id         String   @id @default(cuid())
+  roleId     Int      @unique
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  layoutJson String   @db.NVarChar(Max)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model WebhookSubscription {
+  id          String   @id @default(cuid())
+  systemName  String
+  endpointUrl String
+  secretKey   String?
+  events      String // e.g. 'TICKET_STATE_CHANGED'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 19. سياسات المكونات وحوكمة المشرفين
+// ==========================================
+model UserComponentPolicy {
+  id                      Int      @id @default(autoincrement())
+  userId                  Int
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  componentKey            String
+  policyData              String   @db.NVarChar(Max)
+  archiveScope            String?  @default("PERSONAL")
+  canClaimSelf            Boolean  @default(true)
+  canForwardInternally    Boolean  @default(true)
+  canRejectWithComment    Boolean  @default(false)
+  canInterceptAndReassign Boolean  @default(false)
+  canCommentGlobally      Boolean  @default(false)
+  changeSummary           String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([userId, componentKey])
+  @@index([userId])
+}
+
+model TicketLog {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  action    String   @db.NVarChar(Max)
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model NotificationQueue {
+  id          Int       @id @default(autoincrement())
+  type        String    @default("EMAIL")
+  recipient   String
+  subject     String
+  body        String    @db.NVarChar(Max)
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([status])
+}
+
+// ==========================================
+// 20. Dynamic Fields
+// ==========================================
+model DynamicField {
+  id           String   @id @default(cuid())
+  label        String
+  type         String
+  required     Boolean  @default(false)
+  optionsJson  String?  @db.NVarChar(Max)
+  dependencyId String?
+  defaultValue String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

@@ -15,19 +15,23 @@ async function main() {
     await prisma.ticketLog.deleteMany({ where: { action: { contains: 'state_id=' } } });
     await prisma.auditLog.deleteMany({ where: { action: 'STATE_TRANSITION', userAgent: 'TicketStateService' } });
     await prisma.ticket.deleteMany({ where: { title: 'Database connection delay' } });
-    await prisma.user.deleteMany({ where: { username: { in: ['eng_john', 'user_jane'] } } });
-    await prisma.location.deleteMany({ where: { building: 'LITC HQ' } });
-    await prisma.issueCategory.deleteMany({ where: { name: 'Software Problems' } });
     await prisma.ticketStateTransition.deleteMany({
       where: {
-        triggerEndpoint: 'http://example.com/api/webhooks/status-update'
+        OR: [
+          { fromState: { name: { in: ['TEST_OPEN', 'TEST_IN_PROGRESS'] } } },
+          { toState: { name: { in: ['TEST_OPEN', 'TEST_IN_PROGRESS'] } } },
+          { triggerEndpoint: 'http://example.com/api/webhooks/status-update' }
+        ]
       }
     });
+    await prisma.user.deleteMany({ where: { username: { in: ['eng_john', 'user_jane'] } } });
+    await prisma.ticketLocation.deleteMany({ where: { building: 'LITC HQ' } });
+    await prisma.issueCategory.deleteMany({ where: { name: 'Software Problems' } });
     await prisma.ticketState.deleteMany({ where: { name: { in: ['TEST_OPEN', 'TEST_IN_PROGRESS'] } } });
     await prisma.role.deleteMany({ where: { name: { in: ['Test_Engineer', 'Test_User'] } } });
     console.log('Pre-cleanup completed.');
   } catch (e) {
-    console.log('No stale data found to clean or error ignored:', e);
+    console.log('Pre-cleanup note:', e);
   }
 
   // 1. تهيئة البيانات التجريبية (Setup Test Data)
@@ -66,8 +70,8 @@ async function main() {
     }
   });
 
-  const loc = await prisma.location.create({
-    data: { building: 'LITC HQ', floor: '3rd', office: '304' }
+  const loc = await prisma.ticketLocation.create({
+    data: { name: 'LITC HQ Office 304', building: 'LITC HQ', office: '304' }
   });
 
   const cat = await prisma.issueCategory.create({
@@ -80,7 +84,8 @@ async function main() {
       email: 'john@litc-ts.com',
       fullName: 'Engineer John',
       roleId: roleEng.id,
-      defaultLocationId: loc.id,
+      buildingId: 'LITC HQ',
+      ssoId: 'sso_eng_john',
       resetToken: 'token_eng_john',
       updatedAt: new Date()
     }
@@ -92,7 +97,8 @@ async function main() {
       email: 'jane@litc-ts.com',
       fullName: 'User Jane',
       roleId: roleUser.id,
-      defaultLocationId: loc.id,
+      buildingId: 'LITC HQ',
+      ssoId: 'sso_user_jane',
       resetToken: 'token_user_jane',
       updatedAt: new Date()
     }
@@ -194,7 +200,7 @@ async function main() {
     await prisma.auditLog.deleteMany({ where: { entityId: ticket.id, entity: 'Ticket' } });
     await prisma.ticket.delete({ where: { id: ticket.id } });
     await prisma.user.deleteMany({ where: { id: { in: [userEng.id, userNormal.id] } } });
-    await prisma.location.delete({ where: { id: loc.id } });
+    await prisma.ticketLocation.delete({ where: { id: loc.id } });
     await prisma.issueCategory.delete({ where: { id: cat.id } });
     await prisma.ticketStateTransition.deleteMany({ where: { id: { in: [transition.id, transitionBack.id] } } });
     await prisma.ticketState.deleteMany({ where: { id: { in: [stateOpen.id, stateInProgress.id] } } });

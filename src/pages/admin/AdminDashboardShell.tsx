@@ -11,6 +11,7 @@ import { ExternalSystemsTab } from './tabs/ExternalSystemsTab';
 import { IdentityHubTab } from './tabs/IdentityHubTab';
 import { SystemOverviewTab } from './tabs/SystemOverviewTab';
 import { InstitutionalStructureTab } from './tabs/InstitutionalStructureTab';
+import { SystemAdminsTab } from './tabs/SystemAdminsTab';
 import { OrgNode, initialOrgTree } from './tabs/orgStructureTypes';
 
 /* ─────────────────────────────────────────────────────────────
@@ -42,7 +43,8 @@ const APPLE = {
     routing: { color: '#FF6B35', bg: '#FFF3ED', label: 'مسارات التذاكر', sublabel: 'Ticket Routing Engine', icon: '⟳' },
     uecpHub: { color: '#8B5CF6', bg: '#F3E8FF', label: 'الأنظمة الخارجية', sublabel: 'External Integrations', icon: '🔌' },
     identityHub: { color: '#10B981', bg: '#E6F4EA', label: 'إداراة الهوية والربط', sublabel: 'Identity Federation', icon: '🔑' },
-    institutional: { color: '#8B5CF6', bg: '#F3E8FF', label: 'المباني والمواقع', sublabel: 'Buildings & Locations', icon: '🏢' }
+    institutional: { color: '#8B5CF6', bg: '#F3E8FF', label: 'المباني والمواقع', sublabel: 'Buildings & Locations', icon: '🏢' },
+    admins: { color: '#FF3B30', bg: '#FFF0EF', label: 'حوض مدراء النظام', sublabel: 'System Admins', icon: '🛡️' }
   }
 };
 
@@ -112,7 +114,7 @@ export const AdminDashboardShell: React.FC = () => {
     try { const s = localStorage.getItem('litc_org_tree'); return s ? JSON.parse(s) : initialOrgTree; } catch { return initialOrgTree; }
   });
   useEffect(() => { localStorage.setItem('litc_org_tree', JSON.stringify(orgTree)); }, [orgTree]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins'>('overview');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const startMenuRef = useRef<HTMLDivElement>(null);
@@ -159,10 +161,10 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional'> = [
+  const TAB_KEYS: Array<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins'> = [
     'overview',
     'ui', 'operations', 'security', 'policies', 'routing'
-  , 'uecpHub', 'institutional'];
+  , 'uecpHub', 'institutional', 'admins'];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
@@ -232,6 +234,7 @@ export const AdminDashboardShell: React.FC = () => {
             {activeTab === 'routing' && <TicketRoutingTab />}
             {activeTab === 'uecpHub' && <ExternalSystemsTab />}
             {activeTab === 'institutional' && <InstitutionalStructureTab orgTree={orgTree} setOrgTree={setOrgTree} />}
+            {activeTab === 'admins' && <SystemAdminsTab />}
           </div>
         </main>
       </div>

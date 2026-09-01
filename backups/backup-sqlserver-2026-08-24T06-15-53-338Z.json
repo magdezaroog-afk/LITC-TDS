@@ -1,0 +1,208 @@
+{
+  "timestamp": "2026-08-24T06:15:53.618Z",
+  "database": "SQL_SERVER",
+  "summary": {
+    "usersCount": 17,
+    "rolesCount": 2,
+    "departmentsCount": 1,
+    "ticketsCount": 1,
+    "settingsCount": 0
+  },
+  "data": {
+    "users": [
+      {
+        "id": 3,
+        "username": "OP-101",
+        "email": "majdi.alzarrouk@litc.ly",
+        "roleId": 1,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.585Z"
+      },
+      {
+        "id": 4,
+        "username": "OP-102",
+        "email": "Ahmed.Alnakoua@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.594Z"
+      },
+      {
+        "id": 5,
+        "username": "OP-103",
+        "email": "mahmoud.alahammali@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.607Z"
+      },
+      {
+        "id": 6,
+        "username": "OP-104",
+        "email": "mohammed.alzayani@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.611Z"
+      },
+      {
+        "id": 7,
+        "username": "OP-105",
+        "email": "mohamed.alosta@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.618Z"
+      },
+      {
+        "id": 8,
+        "username": "OP-106",
+        "email": "nidhal.abughamja@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.625Z"
+      },
+      {
+        "id": 9,
+        "username": "OP-107",
+        "email": "nasruldeen.ramadhan@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.630Z"
+      },
+      {
+        "id": 10,
+        "username": "OP-108",
+        "email": "anas.abuzayyan@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.637Z"
+      },
+      {
+        "id": 11,
+        "username": "OP-109",
+        "email": "Ahmed.almajdi@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.641Z"
+      },
+      {
+        "id": 12,
+        "username": "OP-110",
+        "email": "abdalrahman.ragi@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.644Z"
+      },
+      {
+        "id": 13,
+        "username": "T-001",
+        "email": "test1@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.650Z"
+      },
+      {
+        "id": 14,
+        "username": "T-002",
+        "email": "test2@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.653Z"
+      },
+      {
+        "id": 15,
+        "username": "T-003",
+        "email": "test3@litc.ly",
+        "roleId": 1,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.656Z"
+      },
+      {
+        "id": 16,
+        "username": "T-004",
+        "email": "test4@litc.ly",
+        "roleId": 2,
+        "departmentId": 1,
+        "createdAt": "2026-08-14T14:34:26.658Z"
+      },
+      {
+        "id": 18,
+        "username": "qais",
+        "email": "qais@litc.ly",
+        "roleId": 2,
+        "departmentId": null,
+        "createdAt": "2026-08-16T06:16:51.774Z"
+      },
+      {
+        "id": 19,
+        "username": "aws",
+        "email": "aws@litc.ly",
+        "roleId": 2,
+        "departmentId": null,
+        "createdAt": "2026-08-16T06:16:51.779Z"
+      },
+      {
+        "id": 20,
+        "username": "admin",
+        "email": "admin@litc.ly",
+        "roleId": 1,
+        "departmentId": null,
+        "createdAt": "2026-08-24T06:13:05.041Z"
+      }
+    ],
+    "roles": [
+      {
+        "id": 1,
+        "name": "IT_Admin",
+        "defaultCanViewInternal": true
+      },
+      {
+        "id": 2,
+        "name": "Employee",
+        "defaultCanViewInternal": false
+      }
+    ],
+    "departments": [
+      {
+        "id": 1,
+        "name": "إدارة تقنية المعلومات",
+        "isDeleted": false,
+        "assignmentMode": "PULL",
+        "routingStrategy": "POOL",
+        "isDelegated": false,
+        "divisionId": null
+      }
+    ],
+    "tickets": [
+      {
+        "id": 2,
+        "title": "طلب صيانة سيرفر قاعدة البيانات الرئيسي",
+        "description": "فحص دوري لحالة الأقراص والذاكرة وسجلات النظام",
+        "ticketType": "INFRASTRUCTURE",
+        "channel": "PORTAL",
+        "isVip": false,
+        "urgency": "MEDIUM",
+        "impact": "MEDIUM",
+        "priority": "HIGH",
+        "firstResponseTimeMins": null,
+        "version": 0,
+        "resolutionNotes": null,
+        "flowDefinitionId": null,
+        "routeId": null,
+        "routingMetadata": null,
+        "stateId": 1,
+        "categoryId": 1,
+        "parentId": null,
+        "locationId": null,
+        "creatorId": 20,
+        "department": "IT_SUPPORT",
+        "createdAt": "2026-08-24T06:15:34.719Z",
+        "updatedAt": "2026-08-24T06:15:34.719Z",
+        "isDeleted": false,
+        "state": {
+          "id": 1,
+          "name": "NEW",
+          "label": "جديد"
+        }
+      }
+    ],
+    "settings": []
+  }
+}

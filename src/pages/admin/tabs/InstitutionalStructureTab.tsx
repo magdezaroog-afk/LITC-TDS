@@ -14,14 +14,11 @@ const APPLE = {
   font: "-apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif"
 };
 
-const mockUnassignedUsers = [
-  { id: 'u101', name: 'أحمد سالم', email: 'ahmed.s@litc.local', date: '2026-07-18' },
-  { id: 'u102', name: 'سارة محمد', email: 'sara.m@litc.local', date: '2026-07-19' },
-  { id: 'u103', name: 'خالد عمر', email: 'khaled.o@litc.local', date: '2026-07-19' }
-];
+
 
 
 import { OrgNode } from './orgStructureTypes';
+import { AdminAPI } from '../../../services/admin.api';
 
 
 const SVGConnections: React.FC<{ tree: OrgNode, containerRef: React.RefObject<HTMLDivElement>, zoom: number }> = ({ tree, containerRef, zoom }) => {
@@ -175,13 +172,15 @@ const DraggableCard: React.FC<{ node: OrgNode, isRoot: boolean, zoom: number, on
 };
 
 
-export const loadBuildings = (): {id: string, name: string}[] => {
-  try { const s = localStorage.getItem('litc_buildings_tree'); return s ? JSON.parse(s) : [{ id: 'b1', name: 'المبنى الرئيسي (المركز)' }]; } catch { return [{ id: 'b1', name: 'المبنى الرئيسي (المركز)' }]; }
+export const loadBuildings = (): any[] => {
+  return []; // Replaced by API call in component
 };
 
 export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree: React.Dispatch<React.SetStateAction<OrgNode>> }> = ({ orgTree, setOrgTree }) => {
   const [activeSubTab, setActiveSubTab] = useState<'buildings' | 'pool' | 'spatial'>('buildings');
-  const [unassignedUsers, setUnassignedUsers] = useState(mockUnassignedUsers);
+  const [unassignedUsers, setUnassignedUsers] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [poolSearchQuery, setPoolSearchQuery] = useState('');
   
   const findNodeById = (root: OrgNode, id: string): OrgNode | null => {
     if (root.id === id) return root;
@@ -417,28 +416,75 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
 
 
   // Building State (kept simple for physical locations if needed)
-  const [buildings, setBuildings] = useState<{id: string, name: string}[]>(loadBuildings);
+  // Building State
+  const [buildings, setBuildings] = useState<{id: string, globalId: string, name: string, type: 'BUILDING' | 'LOCATION'}[]>(loadBuildings);
   
-  React.useEffect(() => { localStorage.setItem('litc_buildings_tree', JSON.stringify(buildings)); }, [buildings]);
+  React.useEffect(() => {
+    AdminAPI.getBuildings().then(data => {
+      setBuildings(Array.isArray(data) ? data : []);
+    }).catch(err => console.error('Failed to load buildings', err));
+  }, []);
 
-  const handleAssignUser = (userId: string) => {
+    const handleAssignUser = async (userId: string) => {
     if (window.confirm('سيتم نقل هذا المستخدم إلى الهيكل التشغيلي ومنحه رتبة. المتابعة؟')) {
-      setUnassignedUsers(prev => prev.filter(u => u.id !== userId));
-      alert('تم تنسيب المستخدم بنجاح وانتقل إلى الهيكل التشغيلي.');
+      try {
+        await AdminAPI.assignUser(parseInt(userId), null, null, 26);
+        setUnassignedUsers(prev => prev.filter(u => String(u.id) !== String(userId)));
+        alert('تم تنسيب المستخدم بنجاح وانتقل إلى الهيكل التشغيلي.');
+      } catch(e) { console.error(e); alert('حدث خطأ'); }
     }
   };
 
-
-
-  const handleAddBuilding = () => {
-    const name = window.prompt('أدخل اسم المبنى الجديد (مثال: فرع بنغازي):');
-    if (name) setBuildings(prev => [...prev, { id: Date.now().toString(), name }]);
+  const handleAssignSelectedUsers = async () => {
+    if (selectedUsers.size === 0) return;
+    if (window.confirm(`سيتم نقل ${selectedUsers.size} مستخدم(ين) إلى الهيكل التشغيلي. المتابعة؟`)) {
+      try {
+        const promises = Array.from(selectedUsers).map(id => AdminAPI.assignUser(parseInt(id), null, null, 26));
+        await Promise.all(promises);
+        setUnassignedUsers(prev => prev.filter(u => !selectedUsers.has(String(u.id))));
+        setSelectedUsers(new Set());
+        alert('تم التنسيب بنجاح.');
+      } catch (e) {
+        console.error(e); alert('حدث خطأ');
+      }
+    }
   };
 
-  const handleEditBuilding = (id: string, currentName: string) => {
-    const newName = window.prompt('تعديل اسم المبنى:', currentName);
-    if (newName && newName.trim() !== '') {
-      setBuildings(prev => prev.map(b => b.id === id ? { ...b, name: newName.trim() } : b));
+  const filteredPool = unassignedUsers.filter(u => 
+    (u.fullName || u.username || '').toLowerCase().includes(poolSearchQuery.toLowerCase()) || 
+    (u.email || '').toLowerCase().includes(poolSearchQuery.toLowerCase())
+  );
+  
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === filteredPool.length && filteredPool.length > 0) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(filteredPool.map(u => String(u.id))));
+    }
+  };
+
+  const handleAddBuilding = () => {
+    const typeStr = window.prompt('أدخل النوع (1 للمبنى، 2 للموقع الجغرافي/المحطة):', '1');
+    if (!typeStr) return;
+    const type = typeStr === '2' ? 'LOCATION' : 'BUILDING';
+    const bName = window.prompt('أدخل اسم الموقع/المبنى الجديد:');
+    if (bName) {
+      const newB = { id: `b_${Date.now()}`, globalId: `b_${Date.now()}`, name: bName, type };
+      const updated = [...buildings, newB];
+      setBuildings(updated);
+      AdminAPI.saveBuildings(updated).catch(e => console.error(e));
+    }
+  };
+
+  const handleEditBuilding = (id: string, oldName: string, oldType: string) => {
+    const typeStr = window.prompt('أدخل النوع الجديد (1 للمبنى، 2 للموقع الجغرافي/المحطة):', oldType === 'LOCATION' ? '2' : '1');
+    if (!typeStr) return;
+    const type = typeStr === '2' ? 'LOCATION' : 'BUILDING';
+    const bName = window.prompt('تعديل اسم الموقع/المبنى:', oldName);
+    if (bName) {
+      const updated = buildings.map(b => (b.id === id || b.globalId === id) ? { ...b, name: bName, type } : b);
+      setBuildings(updated);
+      AdminAPI.saveBuildings(updated).catch(e => console.error(e));
     }
   };
 
@@ -737,12 +783,15 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
               {buildings.map(b => (
-                <div key={b.id} style={{ background: '#f8fafc', border: `1px solid ${APPLE.separator}`, borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '24px' }}>🏢</div>
-                  <div style={{ fontWeight: '600', color: APPLE.text, flex: 1 }}>{b.name}</div>
+                <div key={b.globalId || b.id} style={{ background: '#f8fafc', border: `1px solid ${APPLE.separator}`, borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ fontSize: '24px' }}>{b.type === 'LOCATION' ? '📍' : '🏢'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', color: APPLE.text, fontSize: '15px' }}>{b.name}</div>
+                    <div style={{ fontSize: '12px', color: APPLE.textSecondary, marginTop: '2px' }}>{b.type === 'LOCATION' ? 'موقع جغرافي / محطة' : 'مبنى / فرع'}</div>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => handleEditBuilding(b.id, b.name)} style={{ background: 'none', border: 'none', color: APPLE.blue, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>تعديل</button>
-                    <button onClick={() => handleDeleteBuilding(b.id)} style={{ background: 'none', border: 'none', color: APPLE.red, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>حذف</button>
+                    <button onClick={() => handleEditBuilding(b.globalId || b.id, b.name, b.type)} style={{ background: 'none', border: 'none', color: APPLE.blue, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>تعديل</button>
+                    <button onClick={() => handleDeleteBuilding(b.globalId || b.id)} style={{ background: 'none', border: 'none', color: APPLE.red, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>حذف</button>
                   </div>
                 </div>
               ))}
@@ -759,15 +808,36 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
         {activeSubTab === 'pool' && (
           <div style={{ padding: '0', flex: 1 }}>
             <div style={{ padding: '20px', borderBottom: `1px solid ${APPLE.separator}`, background: '#f8fafc', borderTopLeftRadius: APPLE.radiusLg, borderTopRightRadius: APPLE.radiusLg }}>
-              <h3 style={{ margin: '0 0 5px 0' }}>حوض الموظفين غير المنسبين</h3>
-              <p style={{ margin: 0, fontSize: '13px', color: APPLE.textSecondary }}>
-                هؤلاء المستخدمون دخلوا للنظام (عبر البريد أو API) ولم يتم دمجهم في الهيكل بعد.
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0' }}>حوض الموظفين غير المنسبين</h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: APPLE.textSecondary }}>
+                    هؤلاء المستخدمون دخلوا للنظام ولم يتم دمجهم في الهيكل بعد.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="ابحث بالاسم أو البريد..." 
+                    value={poolSearchQuery} 
+                    onChange={e => setPoolSearchQuery(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', width: '250px' }}
+                  />
+                  {selectedUsers.size > 0 && (
+                    <button onClick={handleAssignSelectedUsers} style={{ background: APPLE.blue, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                      تنسيب المحددين ({selectedUsers.size})
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
             
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: APPLE.bg, borderBottom: `1px solid ${APPLE.separator}` }}>
                 <tr>
+                  <th style={{ padding: '12px 20px', textAlign: 'right', width: '50px' }}>
+                    <input type="checkbox" checked={selectedUsers.size > 0 && selectedUsers.size === filteredPool.length} onChange={toggleSelectAll} />
+                  </th>
                   <th style={{ padding: '12px 20px', textAlign: 'right', color: APPLE.textSecondary, fontSize: '13px', fontWeight: '600' }}>الاسم</th>
                   <th style={{ padding: '12px 20px', textAlign: 'right', color: APPLE.textSecondary, fontSize: '13px', fontWeight: '600' }}>البريد الإلكتروني</th>
                   <th style={{ padding: '12px 20px', textAlign: 'right', color: APPLE.textSecondary, fontSize: '13px', fontWeight: '600' }}>تاريخ الانضمام</th>
@@ -775,21 +845,29 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
                 </tr>
               </thead>
               <tbody>
-                {unassignedUsers.length === 0 ? (
+                {filteredPool.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: APPLE.textSecondary }}>
-                      الحوض فارغ حالياً.
+                    <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: APPLE.textSecondary }}>
+                      {poolSearchQuery ? 'لا توجد نتائج بحث تطابق مدخلاتك.' : 'الحوض فارغ حالياً.'}
                     </td>
                   </tr>
                 ) : (
-                  unassignedUsers.map(user => (
-                    <tr key={user.id} style={{ borderBottom: `1px solid ${APPLE.separator}` }}>
-                      <td style={{ padding: '16px 20px', fontWeight: 'bold' }}>{user.name}</td>
+                  filteredPool.map((user: any) => (
+                    <tr key={user.id} style={{ borderBottom: `1px solid ${APPLE.separator}`, background: selectedUsers.has(String(user.id)) ? '#f0f9ff' : 'transparent' }}>
+                      <td style={{ padding: '16px 20px' }}>
+                        <input type="checkbox" checked={selectedUsers.has(String(user.id))} onChange={() => {
+                          const newSet = new Set(selectedUsers);
+                          if (newSet.has(String(user.id))) newSet.delete(String(user.id));
+                          else newSet.add(String(user.id));
+                          setSelectedUsers(newSet);
+                        }} />
+                      </td>
+                      <td style={{ padding: '16px 20px', fontWeight: 'bold' }}>{user.fullName || user.username}</td>
                       <td style={{ padding: '16px 20px', color: APPLE.textSecondary }}>{user.email}</td>
-                      <td style={{ padding: '16px 20px', color: APPLE.textSecondary }}>{user.date}</td>
+                      <td style={{ padding: '16px 20px', color: APPLE.textSecondary }}>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar-LY') : '-'}</td>
                       <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                        <button onClick={() => handleAssignUser(user.id)} style={{ background: '#e0e7ff', color: '#4f46e5', border: '1px solid #c7d2fe', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          تنسيب للهيكل التشغيلي ➔
+                        <button onClick={() => handleAssignUser(String(user.id))} style={{ background: '#e0e7ff', color: '#4f46e5', border: '1px solid #c7d2fe', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                          تنسيب ➔
                         </button>
                       </td>
                     </tr>

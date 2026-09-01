@@ -119,32 +119,40 @@ const defaultFormConfig = (): RouteFormConfig => ({
   taxonomy: [], customFieldIds: [], routeDynamicFields: [],
 });
 
-const loadDepartments = (): OrgDepartment[] => {
-  try { const s = localStorage.getItem('mockDepartments'); return s ? JSON.parse(s) : []; } catch { return []; }
-};
-const loadDynamicFields = (): DynamicCustomField[] => {
-  try { const s = localStorage.getItem('litc_dynamic_fields'); return s ? JSON.parse(s) : []; } catch { return []; }
-};
-const saveDynamicFields = (fields: DynamicCustomField[]) => {
-  localStorage.setItem('litc_dynamic_fields', JSON.stringify(fields));
-  window.dispatchEvent(new Event('litc_settings_updated'));
-};
-export const loadRoutes = (): TicketRouteDefinition[] => {
-  try { 
-    const s = localStorage.getItem(ROUTES_KEY); 
-    if (!s) return [];
-    return JSON.parse(s).map((r: any) => ({
-      ...r,
-      formConfig: {
-        ...r.formConfig,
-        routeDynamicFields: r.formConfig.routeDynamicFields || (r.formConfig.customFieldIds || []).map((id: string) => ({ fieldId: id, isRequired: true }))
-      }
-    }));
+const loadDynamicFields = async (): Promise<DynamicCustomField[]> => {
+  try {
+    const { AdminAPI } = await import('../../../services/admin.api');
+    const res = await AdminAPI.getDynamicFields();
+    return res.success && res.fields ? res.fields : [];
   } catch { return []; }
 };
-const saveRoutes = (routes: TicketRouteDefinition[]) => {
-  localStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
-  window.dispatchEvent(new Event('litc_settings_updated'));
+const saveDynamicFields = async (fields: DynamicCustomField[]) => {
+  try {
+    const { AdminAPI } = await import('../../../services/admin.api');
+    await AdminAPI.saveDynamicFields(fields);
+    window.dispatchEvent(new Event('litc_settings_updated'));
+  } catch (e) {
+    console.error("Failed to save dynamic fields", e);
+  }
+};
+export const loadRoutes = async (): Promise<TicketRouteDefinition[]> => {
+  try {
+    const AdminAPI = (await import('../../../services/admin.api')).AdminAPI;
+    const res = await AdminAPI.getRoutes();
+    if (res.success && res.routes) {
+      return res.routes;
+    }
+    return [];
+  } catch { return []; }
+};
+const saveRoutes = async (routes: TicketRouteDefinition[]) => {
+  try {
+    const { AdminAPI } = await import('../../../services/admin.api');
+    await AdminAPI.saveRoutesSnapshot(routes);
+    window.dispatchEvent(new Event('litc_settings_updated'));
+  } catch(e) {
+    console.error("Failed to save routes", e);
+  }
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -185,9 +193,20 @@ export const TicketRoutingTab: React.FC = () => {
   const [showSubFieldModal, setShowSubFieldModal] = useState(false); // When choosing existing or new
 
   useEffect(() => {
-    setRoutes(loadRoutes());
-    setDepartments(loadDepartments());
-    setDynamicFields(loadDynamicFields());
+    loadRoutes().then(setRoutes);
+    
+    // Fetch departments securely via API to avoid missing/invalid localStorage data
+    import('../../../services/admin.api').then(mod => {
+      mod.AdminAPI.getOperationalDepartments().then(res => {
+        if (res && res.departments && Array.isArray(res.departments)) {
+          setDepartments(res.departments);
+        } else {
+          setDepartments([]);
+        }
+      }).catch(() => setDepartments([]));
+    });
+
+    loadDynamicFields().then(setDynamicFields);
   }, []);
 
   const setW = (upd: Partial<WizardState>) => setWizard(p => ({ ...p, ...upd }));

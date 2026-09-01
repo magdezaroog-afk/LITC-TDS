@@ -5,6 +5,9 @@ import { DynamicCustomField } from '../../pages/admin/tabs/DynamicFieldsTab';
 import { loadRoutes, TicketRouteDefinition } from '../../pages/admin/tabs/TicketRoutingTab';
 import { Robot3D } from './Robot3D';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface GlassSelectProps {
   value: string;
   onChange: (val: string) => void;

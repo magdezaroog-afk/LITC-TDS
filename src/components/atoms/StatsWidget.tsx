@@ -5,6 +5,9 @@ import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { EventBus } from '../../engine/events/EventBus'; // استيراد ناقل الأحداث
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface StatsProps {
   title: string;
   value: string | number;

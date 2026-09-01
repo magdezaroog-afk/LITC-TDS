@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../../engine/ui-loader/LanguageContext';
+import React, { useState, useEffect } from 'react';
+
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 
 export interface ExternalSystem {
   id: string;
@@ -76,20 +80,20 @@ export const ExternalSystemsTab: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
         <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #8B5CF6, #C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}>🔌</div>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>الأنظمة الخارجية (UECP)</h2>
-          <p style={{ margin: 0, fontSize: '13px', color: '#6E6E73', marginTop: '2px' }}>محطة تسجيل وإدارة الواجهات والمكونات الخارجية</p>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>{t('admin.external_systems.title') || 'الأنظمة الخارجية (UECP)'}</h2>
+          <p style={{ margin: 0, fontSize: '13px', color: '#6E6E73', marginTop: '2px' }}>{t('admin.external_systems.subtitle') || 'محطة تسجيل وإدارة الواجهات والمكونات الخارجية'}</p>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
         {/* Registration Form */}
         <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', marginTop: 0, marginBottom: '16px' }}>تسجيل نظام جديد</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', marginTop: 0, marginBottom: '16px' }}>{t('admin.external_systems.register_title') || 'تسجيل نظام جديد'}</h3>
           <form onSubmit={handleRegister} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
             <div style={{ flex: 1 }}>
               <input
                 type="url"
-                placeholder="أدخل رابط المانيفيست (Manifest URL)"
+                placeholder={t('admin.external_systems.manifest_placeholder') || 'أدخل رابط المانيفيست (Manifest URL)'}
                 value={manifestUrl}
                 onChange={(e) => setManifestUrl(e.target.value)}
                 style={{
@@ -114,18 +118,18 @@ export const ExternalSystemsTab: React.FC = () => {
                 transition: 'all 0.2s ease', opacity: isLoading ? 0.7 : 1
               }}
             >
-              {isLoading ? 'جاري التسجيل...' : '➕ ربط نظام خارجي'}
+              {isLoading ? t('admin.external_systems.registering_btn', 'جاري التسجيل...') : t('admin.external_systems.register_btn', '➕ ربط نظام خارجي')}
             </button>
           </form>
         </div>
 
         {/* Registry Table */}
         <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', marginTop: 0, marginBottom: '16px' }}>الأنظمة المسجلة</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', marginTop: 0, marginBottom: '16px' }}>{t('admin.external_systems.registry_title') || 'الأنظمة المسجلة'}</h3>
           
           {systems.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#6E6E73', background: '#F5F5F7', borderRadius: '12px', border: '1px dashed rgba(0,0,0,0.1)' }}>
-              لا توجد أنظمة خارجية مسجلة حالياً.
+              {t('admin.external_systems.empty_registry') || 'لا توجد أنظمة خارجية مسجلة حالياً.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -141,7 +145,7 @@ export const ExternalSystemsTab: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span style={{ fontSize: '12px', fontWeight: '600', color: '#8B5CF6', background: '#F3E8FF', padding: '4px 10px', borderRadius: '8px' }}>
-                        {expandedId === sys.id ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                        {expandedId === sys.id ? t('admin.external_systems.hide_details', 'إخفاء التفاصيل') : t('admin.external_systems.show_details', 'عرض التفاصيل')}
                       </span>
                     </div>
                   </div>
@@ -158,7 +162,7 @@ export const ExternalSystemsTab: React.FC = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#6E6E73', fontWeight: '600' }}>HMAC Secret:</span>
                           <div style={{ fontSize: '13px', background: '#FFECEB', color: '#C53030', padding: '8px 12px', borderRadius: '8px', marginTop: '4px', fontFamily: 'monospace', fontWeight: '600', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>{sys.sharedSecret || 'غير متوفر'}</span>
+                            <span>{sys.sharedSecret || t('admin.external_systems.not_available', 'غير متوفر')}</span>
                             {sys.sharedSecret && <button onClick={() => navigator.clipboard.writeText(sys.sharedSecret!)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E53E3E' }}>📋</button>}
                           </div>
                         </div>

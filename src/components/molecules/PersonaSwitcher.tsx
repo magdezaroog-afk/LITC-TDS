@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../engine/auth/AuthContext';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const PersonaSwitcher: React.FC = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);

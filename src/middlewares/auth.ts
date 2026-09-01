@@ -27,15 +27,6 @@ export const authMiddleware = (
     token = req.headers['authorization'].substring(7);
   }
 
-  // 3. System Override for local CLI testing (Optional: disable in production)
-  if (!token && req.headers['x-user-id']) {
-    req.user = {
-      id: parseInt(req.headers['x-user-id'] as string, 10),
-      roleId: parseInt(req.headers['x-role-id'] as string || '1', 10)
-    };
-    return next();
-  }
-
   if (!token) {
     console.error('[Auth] Token missing completely');
     SIEMLogger.logEvent('UNAUTHORIZED_ACCESS_ATTEMPT', 'INFO', sourceIp, { url: req.url });

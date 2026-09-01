@@ -2,6 +2,9 @@ import React from 'react';
 import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { EventBus } from '../../engine/events/EventBus'; // استيراد ناقل الأحداث
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface ButtonProps {
   label: string;
   onClick: () => void;

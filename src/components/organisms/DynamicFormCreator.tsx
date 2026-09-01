@@ -12,6 +12,9 @@ import { BaseCard } from '../atoms/BaseCard';
 import { BaseInput } from '../atoms/BaseInput';
 import { BaseButton } from '../atoms/BaseButton';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 // قائمة التصنيفات والأقسام الفرعية التبعية
 const subCategoriesByDept: Record<string, string[]> = {
   IT: ['مشكلة بالشبكة (Network)', 'خلل برمجيات (Software)', 'صيانة عتاد (Hardware)'],

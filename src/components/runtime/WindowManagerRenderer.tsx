@@ -9,6 +9,9 @@ import { ArchiveTable } from '../dashboard/ArchiveTable';
 import { UnifiedSmartAnalytics } from '../analytics/UnifiedSmartAnalytics';
 import { MOCK_JOURNEYS } from '../dashboard/mockJourneyData';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const WindowManagerRenderer: React.FC = () => {
   const { activeWindows, closeWindow } = useWindowManager();
 

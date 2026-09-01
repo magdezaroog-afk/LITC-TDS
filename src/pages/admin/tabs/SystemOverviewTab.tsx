@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
+
 const APPLE = {
   bg: '#F5F5F7',
   surface: '#FFFFFF',
@@ -55,84 +59,84 @@ export const SystemOverviewTab: React.FC = () => {
       
       <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: APPLE.text, margin: '0 0 8px 0' }}>اللوحة المركزية (Overview)</h2>
-          <p style={{ color: APPLE.textSecondary, margin: 0, fontSize: '15px' }}>مراقبة حية للأداء، الأمن، والمستخدمين النشطين (Live Telemetry)</p>
+          <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: APPLE.text, margin: '0 0 8px 0' }}>{t('admin.overview.title') || 'اللوحة المركزية (Overview)'}</h2>
+          <p style={{ color: APPLE.textSecondary, margin: 0, fontSize: '15px' }}>{t('admin.overview.subtitle') || 'مراقبة حية للأداء، الأمن، والمستخدمين النشطين (Live Telemetry)'}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#e6f4ea', color: '#10b981', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', opacity: pulse ? 1 : 0.4, transition: 'opacity 0.5s' }} />
-          النظام يعمل بكفاءة
+          {t('admin.overview.status_ok') || 'النظام يعمل بكفاءة'}
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         
         {/* DB & Core Health */}
-        <Card title="نبض النظام (Core & DB Health)" icon="🗄️" color="#3b82f6">
+        <Card title={t('admin.overview.db_health') || "نبض النظام (Core & DB Health)"} icon="🗄️" color="#3b82f6">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>حالة قاعدة البيانات:</span>
-              <span style={{ fontWeight: 'bold', color: '#10b981' }}>متصل (Healthy)</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.db_status') || 'حالة قاعدة البيانات:'}</span>
+              <span style={{ fontWeight: 'bold', color: '#10b981' }}>{t('admin.overview.db_healthy') || 'متصل (Healthy)'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>زمن الاستجابة (Latency):</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.latency') || 'زمن الاستجابة (Latency):'}</span>
               <span style={{ fontWeight: 'bold', color: APPLE.text }}>24 ms</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>مدة التشغيل (Uptime):</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.uptime') || 'مدة التشغيل (Uptime):'}</span>
               <span style={{ fontWeight: 'bold', color: APPLE.text }}>99.98% (45 Days)</span>
             </div>
             <div style={{ marginTop: '10px', height: '4px', background: '#f1f5f9', borderRadius: '2px', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: '90%', background: '#3b82f6', borderRadius: '2px' }} />
             </div>
-            <span style={{ fontSize: '11px', color: APPLE.textSecondary }}>استهلاك الموارد: 90% استقرار</span>
+            <span style={{ fontSize: '11px', color: APPLE.textSecondary }}>{t('admin.overview.resource_usage') || 'استهلاك الموارد: 90% استقرار'}</span>
           </div>
         </Card>
 
         {/* Active Sessions */}
-        <Card title="المستخدمون النشطون (Active Sessions)" icon="👥" color="#8b5cf6">
+        <Card title={t('admin.overview.active_sessions') || "المستخدمون النشطون (Active Sessions)"} icon="👥" color="#8b5cf6">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '8px' }}>
               <span style={{ fontSize: '36px', fontWeight: '800', color: APPLE.text, lineHeight: '1' }}>124</span>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px', paddingBottom: '4px' }}>مستخدم متصل</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px', paddingBottom: '4px' }}>{t('admin.overview.online_users') || 'مستخدم متصل'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-              <span style={{ color: APPLE.textSecondary }}>مدراء النظام:</span>
+              <span style={{ color: APPLE.textSecondary }}>{t('admin.overview.sys_admins') || 'مدراء النظام:'}</span>
               <span style={{ fontWeight: 'bold' }}>4</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-              <span style={{ color: APPLE.textSecondary }}>رؤساء الأقسام:</span>
+              <span style={{ color: APPLE.textSecondary }}>{t('admin.overview.dept_heads') || 'رؤساء الأقسام:'}</span>
               <span style={{ fontWeight: 'bold' }}>12</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-              <span style={{ color: APPLE.textSecondary }}>الموظفون:</span>
+              <span style={{ color: APPLE.textSecondary }}>{t('admin.overview.employees') || 'الموظفون:'}</span>
               <span style={{ fontWeight: 'bold' }}>108</span>
             </div>
           </div>
         </Card>
 
         {/* Security Radar */}
-        <Card title="مراقبة الأمن (Security Radar)" icon="🛡️" color="#ef4444">
+        <Card title={t('admin.overview.security_radar') || "مراقبة الأمن (Security Radar)"} icon="🛡️" color="#ef4444">
            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>محاولات دخول فاشلة:</span>
-              <span style={{ fontWeight: 'bold', color: '#ef4444' }}>3 (اليوم)</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.failed_logins') || 'محاولات دخول فاشلة:'}</span>
+              <span style={{ fontWeight: 'bold', color: '#ef4444' }}>3 {t('admin.overview.today') || '(اليوم)'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>معدل طلبات API:</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.api_rate') || 'معدل طلبات API:'}</span>
               <span style={{ fontWeight: 'bold', color: APPLE.text }}>450 req/s</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>جدار الحماية (WAF):</span>
-              <span style={{ fontWeight: 'bold', color: '#10b981' }}>نشط وفعال</span>
+              <span style={{ color: APPLE.textSecondary, fontSize: '14px' }}>{t('admin.overview.waf') || 'جدار الحماية (WAF):'}</span>
+              <span style={{ fontWeight: 'bold', color: '#10b981' }}>{t('admin.overview.waf_active') || 'نشط وفعال'}</span>
             </div>
             <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: '8px', marginTop: '5px' }}>
-              <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '500' }}>⚠️ تم حظر 2 IP من خارج المنطقة</span>
+              <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: '500' }}>{t('admin.overview.blocked_ips') || '⚠️ تم حظر 2 IP من خارج المنطقة'}</span>
             </div>
           </div>
         </Card>
 
         {/* External Integrations */}
-        <Card title="الأنظمة الخارجية (Integrations)" icon="🔌" color="#f59e0b">
+        <Card title={t('admin.overview.integrations') || "الأنظمة الخارجية (Integrations)"} icon="🔌" color="#f59e0b">
            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: APPLE.textSecondary, fontSize: '14px', display: 'flex', gap: '6px', alignItems:'center' }}>
@@ -156,7 +160,7 @@ export const SystemOverviewTab: React.FC = () => {
               <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#ef4444' }}>Retrying...</span>
             </div>
             <button style={{ marginTop: '10px', width: '100%', padding: '8px', background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.background='#fef3c7'} onMouseOut={e=>e.currentTarget.style.background='#fffbeb'}>
-              إعادة المزامنة الآن
+              {t('admin.overview.sync_now') || 'إعادة المزامنة الآن'}
             </button>
           </div>
         </Card>

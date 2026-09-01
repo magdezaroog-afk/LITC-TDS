@@ -7,6 +7,9 @@ import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { SystemObserver, RenderLog, ErrorLog } from '../../engine/monitoring/SystemObserver';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const SystemHealthWidget: React.FC = () => {
   const theme = useTheme();
   const { hasPermission } = useAuth();

@@ -1,6 +1,9 @@
 import React from 'react';
 import { JourneyNode } from './mockJourneyData';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface TicketJourneyTimelineProps {
   ticketId: string;
   nodes: JourneyNode[];

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface Props {
   deadline: string; // ISO String
 }

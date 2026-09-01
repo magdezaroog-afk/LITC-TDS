@@ -1,6 +1,9 @@
 import React from 'react';
 import { TicketJourneyTimeline } from '../dashboard/TicketJourneyTimeline';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export interface UserTicket {
   id: string;
   title: string;

@@ -12,28 +12,28 @@ export type OrgNode = {
 
 export const initialOrgTree: OrgNode = {
   id: 'root-1',
-  name: 'مجلس الإدارة',
-  type: 'إدارة عليا',
+  name: 'mock.board_of_directors',
+  type: 'mock.top_management',
   children: [
     {
       id: 'n-2',
-      name: 'مكتب شؤون مجلس الإدارة',
-      type: 'مكتب',
+      name: 'mock.board_office',
+      type: 'mock.office',
       children: []
     },
     {
       id: 'n-3',
-      name: 'مكتب المراجعة الداخلية',
-      type: 'مكتب',
+      name: 'mock.internal_audit',
+      type: 'mock.office',
       children: []
     },
     {
       id: 'n-4',
-      name: 'المدير العام',
-      type: 'إدارة عليا',
+      name: 'mock.general_manager',
+      type: 'mock.top_management',
       children: [
-        { id: 'n-5', name: 'إدارة الموارد البشرية', type: 'إدارة', children: [] },
-        { id: 'n-6', name: 'إدارة تقنية المعلومات', type: 'إدارة', children: [] }
+        { id: 'n-5', name: 'mock.hr_dept', type: 'mock.dept', children: [] },
+        { id: 'n-6', name: 'mock.it_dept', type: 'mock.dept', children: [] }
       ]
     }
   ]

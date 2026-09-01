@@ -33,7 +33,15 @@ app.use('/api/v1/notifications/stream', sseLimiter);
 
 // 1. Security Headers (Helmet)
 app.use(helmet({
-  contentSecurityPolicy: false, // Set to true and configure if needed
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false
 }));
 

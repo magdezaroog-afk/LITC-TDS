@@ -12,6 +12,9 @@ import { UnifiedSmartAnalytics } from './components/analytics/UnifiedSmartAnalyt
 import { AdminGovernanceConsole } from './pages/admin/AdminGovernanceConsole';
 import { AdminDashboardShell } from './pages/admin/AdminDashboardShell';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
 import { Login } from './pages/auth/Login';

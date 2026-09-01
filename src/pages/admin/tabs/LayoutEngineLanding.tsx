@@ -51,32 +51,61 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
   // Fetch users for Staff Management simulation & dynamic departments
   useEffect(() => {
     if (manageLayoutId) {
-      const stored = localStorage.getItem('litc_operational_users');
-      if (stored) {
-        setMockUsers(JSON.parse(stored));
-      } else {
-        // Mock fallback
-        setMockUsers([
-          { id: '1', name: 'أحمد الموظف', email: 'ahmad@litc.ly', ssoRole: 'EMPLOYEE', layoutId: 'ui_2' },
-          { id: '2', name: 'خالد المدير', email: 'khalid@litc.ly', ssoRole: 'OPERATIONAL_MANAGER', layoutId: 'ui_3' }
-        ]);
-      }
+      import('../../../services/admin.api').then(mod => {
+        mod.AdminAPI.getUserPool()
+          .then(res => {
+            if (res && res.users) {
+              const mappedUsers = res.users.map((u: any) => ({
+                id: u.id.toString(),
+                name: u.fullName || u.username || 'مستخدم',
+                email: u.email || '',
+                ssoRole: u.ssoRole || 'EMPLOYEE',
+                layoutId: u.role?.dynamicLayout?.id || null, // Best effort mapping
+                departmentId: u.departmentId?.toString() || null
+              }));
+              setMockUsers(mappedUsers);
+            }
+          })
+          .catch(e => {
+            console.error(e);
+            setMockUsers([]);
+          });
+      });
     }
   }, [manageLayoutId]);
 
   useEffect(() => {
-    try {
-      const storedDepts = localStorage.getItem('mockDepartments');
-      if (storedDepts) {
-        setDynamicDepartments(JSON.parse(storedDepts));
-      }
-    } catch (e) {}
+    import('../../../services/admin.api').then(mod => {
+      mod.AdminAPI.getOperationalDepartments()
+        .then(res => {
+          if (res && res.departments && Array.isArray(res.departments)) {
+            setDynamicDepartments(res.departments);
+          }
+        })
+        .catch(e => console.error(e));
+    });
   }, []);
 
-  const saveUsersToStorage = (users: any[]) => {
+  const saveUsersToStorage = async (users: any[], assignedUserId?: string, targetLayoutId?: string | null) => {
     setMockUsers(users);
-    localStorage.setItem('litc_operational_users', JSON.stringify(users));
-    // Dispatch custom event to simulate atomic DB sync
+    
+    // Attempt real API sync if layout assigning
+    if (assignedUserId) {
+      try {
+        const { AdminAPI } = await import('../../../services/admin.api');
+        // Note: Real backend uses roles for layouts. assignLayoutToUser is a mock endpoint in AdminAPI for this demo.
+        if (targetLayoutId) {
+           await AdminAPI.assignLayoutToUser(parseInt(assignedUserId), targetLayoutId);
+        } else {
+           // Unassign fallback handling if backend supports it (or do nothing)
+           // await AdminAPI.assignLayoutToUser(parseInt(assignedUserId), 'default_layout');
+        }
+      } catch(e) {
+        console.error("Failed to sync layout assignment with backend", e);
+      }
+    }
+
+    // Dispatch custom event to simulate atomic DB sync for other UI parts listening to this
     window.dispatchEvent(new Event('litc_users_updated'));
   };
 
@@ -406,7 +435,7 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
                              <div style={{ fontSize: '10px', color: '#64748b' }}>{user.email}</div>
                            </div>
                            <button 
-                             onClick={() => saveUsersToStorage(mockUsers.map(u => u.id === user.id ? { ...u, layoutId: null } : u))}
+                             onClick={() => saveUsersToStorage(mockUsers.map(u => u.id === user.id ? { ...u, layoutId: null } : u), user.id, null)}
                              style={{ background: '#fee2e2', border: 'none', color: '#ef4444', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
                            >
                              سحب الصلاحية
@@ -429,10 +458,9 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
                          if (!newUserEmail) return;
                          const existingUser = mockUsers.find(u => u.email === newUserEmail);
                          if (existingUser) {
-                           saveUsersToStorage(mockUsers.map(u => u.id === existingUser.id ? { ...u, layoutId: ui.id } : u));
+                           saveUsersToStorage(mockUsers.map(u => u.id === existingUser.id ? { ...u, layoutId: ui.id } : u), existingUser.id, ui.id);
                          } else {
-                           const newUser = { id: Date.now().toString(), name: 'مستخدم جديد', email: newUserEmail, ssoRole: 'EMPLOYEE', layoutId: ui.id };
-                           saveUsersToStorage([...mockUsers, newUser]);
+                           alert('هذا الموظف غير مسجل في النظام. يرجى إضافته من إدارة الموارد البشرية أولاً.');
                          }
                          setNewUserEmail('');
                        }}
@@ -473,6 +501,7 @@ export const LayoutEngineLanding: React.FC<LayoutEngineLandingProps> = ({
             <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
               <button onClick={() => {
                 const newUsers = mockUsers.map(u => u.layoutId === layoutToDelete.id ? { ...u, layoutId: null } : u);
+                // Call save for all affected users (simplified for bulk)
                 saveUsersToStorage(newUsers);
                 handleDeleteInterface && handleDeleteInterface(layoutToDelete.id);
                 setShowDeleteWarning(false);

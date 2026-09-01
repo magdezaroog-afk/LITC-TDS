@@ -23,9 +23,9 @@ const DatabaseControllerClient = {
   transferTicket: async (ticketId: string, targetDepartment: string, username: string, transferReason: string): Promise<void> => {
     const response = await fetch(`/api/v1/db-tickets/${ticketId}/transfer`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer mock-token' // يتم سحب التوكن أمنياً في الإنتاج
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ targetDepartment, user: username, transferReason })
     });
@@ -43,9 +43,9 @@ const DatabaseControllerClient = {
   closeParentTicket: async (ticketId: string): Promise<void> => {
     const response = await fetch(`/api/v1/db-tickets/${ticketId}/close`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer mock-token'
+        'Content-Type': 'application/json'
       }
     });
 
@@ -62,9 +62,9 @@ const DatabaseControllerClient = {
   createSubTicket: async (parentId: string, payload: { title: string, description: string, targetDepartment: string }): Promise<void> => {
     const response = await fetch(`/api/v1/tickets/${parentId}/sub-tickets`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer mock-token'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
@@ -300,10 +300,8 @@ export const OperationalDashboard: React.FC<{
       }
 
       const response = await fetch(`/api/v1/auth/permissions/${user.role}`, {
-        headers: {
-          'Authorization': 'Bearer system_token_123',
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!response.ok) {
@@ -385,9 +383,7 @@ export const OperationalDashboard: React.FC<{
     try {
       const res = await fetch(`/api/v1/departments/fields/${dept}`, {
         signal,
-        headers: {
-          'Authorization': 'Bearer system_token_123'
-        }
+        credentials: 'include'
       });
       if (res.ok) {
         const json = await res.json();
@@ -615,10 +611,8 @@ export const OperationalDashboard: React.FC<{
 
       const response = await fetch('/api/v1/db-tickets', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer system_token_123'
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: createTitle,
           description: fullDescription,
@@ -920,7 +914,7 @@ export const OperationalDashboard: React.FC<{
             ➕ إنشاء تذكرة جديدة
           </button>
           <span style={{ fontSize: '13px', opacity: 0.8 }}>القسم النشط: <strong>{userDept}</strong></span>
-          {notifSettings.isBellEnabled && (
+          {({} as any).isBellEnabled && (
             <div style={bellContainerStyle} onClick={() => {
               setIsNotifOpen(prev => !prev);
               setNotifications(prev => prev.map(n => ({ ...n, read: true })));

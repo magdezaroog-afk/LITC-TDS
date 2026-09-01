@@ -55,9 +55,7 @@ export const useRealTimeConnection = ({ user, userDept, fetchPermissions }: Real
     if (!userDept) return;
     try {
       const response = await fetch(`/api/v1/admin/notification-config/${userDept}`, {
-        headers: {
-          'Authorization': 'Bearer system_token_123'
-        }
+        credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();

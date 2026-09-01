@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../engine/ui-loader/ThemeProvider';
 import { GarbageCollectionCore } from '../../../services/GarbageCollectionCore';
 import { AuditService } from '../../../backend/services/AuditService';
+import { AdminAPI } from '../../../services/admin.api';
 
 export const GlobalUserMatrixTab: React.FC = () => {
   const theme = useTheme();
@@ -29,30 +30,14 @@ export const GlobalUserMatrixTab: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('litc_token') || 'system_token_123';
-      const res = await fetch('/api/v1/admin/operational/users', { 
-        headers: { 'Authorization': `Bearer ${token}` } 
-      });
-      const data = await res.json();
+      const data = await AdminAPI.getUserPool();
       
-      // Inject mock data for UI testing if backend doesn't provide it yet
-      const mockUsersData = [
-  { id: 101, username: 'OP-101', fullName: 'م. مجدي الزروق', email: 'majdi.alzarrouk@litc.ly', role: 'مسؤول تشغيلي', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'الإدارة العليا' },
-  { id: 102, username: 'OP-102', fullName: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', role: 'رئيس قسم', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'قسم الدعم الفني' },
-  { id: 103, username: 'OP-103', fullName: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', role: 'رئيس فريق', departmentName: 'قسم الدعم الفني', subTeamName: 'فريق الدعم الميداني' },
-  { id: 104, username: 'OP-104', fullName: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', role: 'مستخدم تشغيلي', departmentName: 'قسم الدعم الفني', subTeamName: 'فريق الدعم الميداني' },
-  { id: 105, username: 'OP-105', fullName: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', role: 'مستخدم تشغيلي', departmentName: 'قسم الدعم الفني', subTeamName: 'فريق الدعم الميداني' },
-  { id: 106, username: 'OP-106', fullName: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', role: 'رئيس فريق', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'فريق التقييم' },
-  { id: 107, username: 'OP-107', fullName: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', role: 'مستخدم تشغيلي', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'فريق التقييم' },
-  { id: 108, username: 'OP-108', fullName: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', role: 'رئيس قسم', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'قسم الشبكات' },
-  { id: 109, username: 'OP-109', fullName: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', role: 'رئيس فريق', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'فريق الصيانة الخارجية' },
-  { id: 110, username: 'OP-110', fullName: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', role: 'مستخدم تشغيلي', departmentName: 'إدارة تقنية المعلومات', subTeamName: 'فريق الصيانة الخارجية' }
-];
-const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersData).map((u: any) => ({
+      const mappedData = (Array.isArray(data.users) ? data.users : []).map((u: any) => ({
         ...u,
-        departmentName: u.departmentName || 'تقنية المعلومات',
-        subTeamName: u.subTeamName || 'فريق الدعم',
-        status: u.status || 'ACTIVE' // 'ACTIVE' | 'FROZEN'
+        departmentName: u.department?.name || 'غير منسب',
+        subTeamName: u.teams && u.teams.length > 0 ? u.teams[0].team.name : 'غير منسب',
+        status: u.isFrozen ? 'FROZEN' : 'ACTIVE',
+        role: u.role?.name || 'مستخدم عادي'
       }));
       setUsers(mappedData);
       setSelectedUserIds([]);
@@ -95,12 +80,12 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
       GarbageCollectionCore.flushUserSessions(id.toString());
     });
 
-    // Mock backend call
+    // API call using HttpOnly cookie auth
     try {
-      const token = localStorage.getItem('litc_token') || 'system_token_123';
       await fetch('/api/v1/admin/operational/users/bulk-freeze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userIds: selectedUserIds })
       });
       AuditService.logSecurityEvent('Admin_Context', 'BULK_FREEZE', { userIds: selectedUserIds });
@@ -122,12 +107,12 @@ const mappedData = (Array.isArray(data) && data.length > 0 ? data : mockUsersDat
     // Reactively update UI instantly
     setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, departmentName: selectedDept.split('/')[0], subTeamName: selectedDept.split('/')[1] || '' } : u));
     
-    // Mock backend call
+    // API call using HttpOnly cookie auth
     try {
-      const token = localStorage.getItem('litc_token') || 'system_token_123';
       await fetch('/api/v1/admin/operational/users/bulk-reassign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userIds: selectedUserIds, departmentStr: selectedDept })
       });
       AuditService.logSecurityEvent('Admin_Context', 'BULK_REASSIGN', { userIds: selectedUserIds, newDepartment: selectedDept });

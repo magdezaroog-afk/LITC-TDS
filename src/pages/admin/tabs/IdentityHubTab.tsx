@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuditService } from '../../../backend/services/AuditService';
+import { AdminAPI } from '../../../services/admin.api';
 
 interface MockUser {
   id: number;
@@ -17,8 +18,14 @@ const mockUsers: MockUser[] = [
 ];
 
 export const IdentityHubTab: React.FC = () => {
-  const [users, setUsers] = useState<MockUser[]>(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    AdminAPI.getUserPool().then(data => {
+      setUsers(data.users || []);
+    }).catch(console.error);
+  }, []);
   
   // Patching Form State
   const [patchEmail, setPatchEmail] = useState('');
@@ -147,7 +154,7 @@ export const IdentityHubTab: React.FC = () => {
                     {user.phone ? <span style={{ color: '#334155' }}>{user.phone}</span> : <span style={{ color: '#f59e0b', fontSize: '11px', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>مفقود</span>}
                   </td>
                   <td style={{ padding: '15px' }}>
-                    <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0284c7', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>{user.ssoProvider}</span>
+                    <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0284c7', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold' }}>{user.ssoProvider || 'LITC DB'}</span>
                   </td>
                   <td style={{ padding: '15px', textAlign: 'center' }}>
                     <button 

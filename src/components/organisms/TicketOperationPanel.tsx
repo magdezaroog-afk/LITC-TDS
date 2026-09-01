@@ -10,6 +10,9 @@ import { WorkflowEngine, Ticket, TicketStatus, UserRole } from '../../engine/wor
 import { BaseCard } from '../atoms/BaseCard';
 import { BaseButton } from '../atoms/BaseButton';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface PanelProps {
   ticketId: string;
 }

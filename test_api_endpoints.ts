@@ -14,32 +14,22 @@ async function main() {
     await prisma.ticketLog.deleteMany({ where: { action: { contains: 'state_id=' } } });
     await prisma.auditLog.deleteMany({ where: { userAgent: 'TicketStateService' } });
     await prisma.ticket.deleteMany({ where: { title: 'API Test Ticket' } });
-    await prisma.user.deleteMany({ where: { username: { in: ['api_eng', 'api_user'] } } });
-    await prisma.location.deleteMany({ where: { building: 'LITC API HQ' } });
-    await prisma.issueCategory.deleteMany({ where: { name: 'API Support Category' } });
     await prisma.ticketStateTransition.deleteMany({ where: { triggerEndpoint: 'api-test-webhook' } });
+    await prisma.user.deleteMany({ where: { username: { in: ['api_eng', 'api_user'] } } });
+    await prisma.ticketLocation.deleteMany({ where: { building: 'LITC API HQ' } });
+    await prisma.issueCategory.deleteMany({ where: { name: 'API Support Category' } });
     await prisma.ticketState.deleteMany({ where: { name: { in: ['API_OPEN', 'API_PROCESSING'] } } });
     await prisma.role.deleteMany({ where: { name: { in: ['API_ENG_ROLE', 'API_USER_ROLE'] } } });
-    await prisma.uITemplate.deleteMany({ where: { name: 'API Test Template' } });
-    await prisma.uITheme.deleteMany({ where: { themeName: 'API Test Theme' } });
   } catch (e) {
     console.log('Pre-cleanup error (ignored):', e);
   }
 
-  const theme = await prisma.uITheme.create({
-    data: { themeName: 'API Test Theme', primaryColor: '#ff0055', secondaryColor: '#fff0f5' }
-  });
-
-  const template = await prisma.uITemplate.create({
-    data: { name: 'API Test Template', themeId: theme.id }
-  });
-
   const roleEng = await prisma.role.create({
-    data: { name: 'API_ENG_ROLE', templateId: template.id }
+    data: { name: 'API_ENG_ROLE' }
   });
 
   const roleUser = await prisma.role.create({
-    data: { name: 'API_USER_ROLE', templateId: template.id }
+    data: { name: 'API_USER_ROLE' }
   });
 
   const stateOpen = await prisma.ticketState.create({
@@ -68,8 +58,8 @@ async function main() {
     }
   });
 
-  const loc = await prisma.location.create({
-    data: { building: 'LITC API HQ', floor: '1st', office: '101' }
+  const loc = await prisma.ticketLocation.create({
+    data: { name: 'LITC API HQ Office 101', building: 'LITC API HQ', office: '101' }
   });
 
   const cat = await prisma.issueCategory.create({
@@ -82,7 +72,8 @@ async function main() {
       email: 'api_eng@litc-ts.com',
       fullName: 'API Engineer John',
       roleId: roleEng.id,
-      defaultLocationId: loc.id,
+      buildingId: 'LITC API HQ',
+      ssoId: 'sso_api_eng',
       resetToken: 'token_api_eng',
       updatedAt: new Date()
     }
@@ -94,7 +85,8 @@ async function main() {
       email: 'api_user@litc-ts.com',
       fullName: 'API User Jane',
       roleId: roleUser.id,
-      defaultLocationId: loc.id,
+      buildingId: 'LITC API HQ',
+      ssoId: 'sso_api_user',
       resetToken: 'token_api_user',
       updatedAt: new Date()
     }
@@ -258,13 +250,11 @@ async function main() {
       await prisma.ticket.delete({ where: { id: testTicket.id } });
     }
     await prisma.user.deleteMany({ where: { id: { in: [userEng.id, userNormal.id] } } });
-    await prisma.location.delete({ where: { id: loc.id } });
-    await prisma.issueCategory.delete({ where: { id: cat.id } });
     await prisma.ticketStateTransition.deleteMany({ where: { id: { in: [transition.id, transitionBack.id] } } });
+    await prisma.ticketLocation.delete({ where: { id: loc.id } });
+    await prisma.issueCategory.delete({ where: { id: cat.id } });
     await prisma.ticketState.deleteMany({ where: { id: { in: [stateOpen.id, stateProcessing.id] } } });
     await prisma.role.deleteMany({ where: { id: { in: [roleEng.id, roleUser.id] } } });
-    await prisma.uITemplate.delete({ where: { id: template.id } });
-    await prisma.uITheme.delete({ where: { id: theme.id } });
     console.log('Cleanup completed. Database is pristine.');
   }
 

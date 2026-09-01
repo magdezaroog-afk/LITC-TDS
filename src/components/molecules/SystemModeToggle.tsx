@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { Fingerprint, Power } from 'lucide-react';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface Props {
   isLocked?: boolean;
 }

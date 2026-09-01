@@ -67,19 +67,14 @@ const injectStyles = () => {
 // ═══════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════
-const loadFields = (): DynamicCustomField[] => {
-  try { const s = localStorage.getItem('litc_dynamic_fields'); return s ? JSON.parse(s) : []; } catch { return []; }
-};
-const persistFields = (fields: DynamicCustomField[]) => {
-  localStorage.setItem('litc_dynamic_fields', JSON.stringify(fields));
-  window.dispatchEvent(new Event('litc_settings_updated'));
-};
+// Removed loadFields and persistFields - use AdminAPI instead
 
 // --- Soft Delete (Archive) Function for Dynamic Fields ---
-const toggleDynamicFieldOptionStatus = (fieldId: string, optionId: string) => {
+const toggleDynamicFieldOptionStatus = async (fieldId: string, optionId: string) => {
   try {
-    const s = localStorage.getItem('litc_dynamic_fields');
-    const fields = s ? JSON.parse(s) : [];
+    const { AdminAPI } = await import('../../../services/admin.api');
+    const res = await AdminAPI.getDynamicFields();
+    let fields = res?.fields || [];
     const updatedFields = fields.map((field: DynamicCustomField) => {
       if (field.id !== fieldId) return field;
       const updatedOptions = field.options.map((opt: DynamicFieldOption) => 
@@ -87,9 +82,8 @@ const toggleDynamicFieldOptionStatus = (fieldId: string, optionId: string) => {
       );
       return { ...field, options: updatedOptions };
     });
-    localStorage.setItem('litc_dynamic_fields', JSON.stringify(updatedFields));
+    await AdminAPI.saveDynamicFields(updatedFields);
     window.dispatchEvent(new Event('litc_settings_updated'));
-    // Note: State might need to be refreshed if called from outside, but this encapsulates the local storage update.
   } catch(e) {}
 };
 // ---------------------------------------------------------
@@ -110,7 +104,17 @@ const OptionTag: React.FC<{ label: string; onRemove: () => void; color?: string 
 export const DynamicFieldsTab: React.FC = () => {
   useEffect(() => { injectStyles(); }, []);
 
-  const [fields, setFields] = useState<DynamicCustomField[]>(loadFields);
+  const [fields, setFields] = useState<DynamicCustomField[]>([]);
+
+  useEffect(() => {
+    import('../../../services/admin.api').then(({ AdminAPI }) => {
+      AdminAPI.getDynamicFields().then(res => {
+        if (res && res.fields) {
+          setFields(res.fields);
+        }
+      }).catch(console.error);
+    });
+  }, []);
   const [view, setView] = useState<'LIST' | 'CREATE' | 'DETAIL'>('LIST');
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -129,7 +133,14 @@ export const DynamicFieldsTab: React.FC = () => {
   // ── Delete confirm ──
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const save = (updated: DynamicCustomField[]) => { setFields(updated); persistFields(updated); };
+  const save = (updated: DynamicCustomField[]) => { 
+    setFields(updated); 
+    import('../../../services/admin.api').then(({ AdminAPI }) => {
+      AdminAPI.saveDynamicFields(updated).then(() => {
+        window.dispatchEvent(new Event('litc_settings_updated'));
+      }).catch(console.error);
+    });
+  };
 
   // ── Helpers ──
   const addOption = () => {

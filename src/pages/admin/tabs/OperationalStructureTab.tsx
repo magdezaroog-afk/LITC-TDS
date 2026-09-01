@@ -108,111 +108,60 @@ export const resolveEffectiveSettings = (
   return { effectiveInterfaceId: gpId, isLocked: false, source: 'GRANDPARENT' };
 };
 
-// ─── Mock Data for Org Structure ───
-const initialOperationalUsers: OrgUser[] = [
-  { id: 'op1', name: 'م. مجدي الزروق', email: 'majdi.alzarrouk@litc.ly', employeeId: 'OP-101', role: 'OPERATIONAL_MANAGER', positionTitle: 'مدير إدارة', departmentId: 'dept_it' },
-  { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
-  { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-  { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-  { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-  { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
-  { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
-  { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' },
-  { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' },
-  { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' },
-  { id: 'test1', name: 'مستخدم تشغيلي للاختبار', email: 'test1@litc.ly', employeeId: 'T-001', role: 'OPERATIONAL_USER', departmentId: 'dept_it' },
-  { id: 'test2', name: 'رئيس قسم للاختبار', email: 'test2@litc.ly', employeeId: 'T-002', role: 'SECTION_HEAD', departmentId: 'dept_it' },
-  { id: 'test3', name: 'مدير إدارة للاختبار', email: 'test3@litc.ly', employeeId: 'T-003', role: 'OPERATIONAL_MANAGER', departmentId: 'dept_it' },
-  { id: 'test4', name: 'رئيس فريق للاختبار', email: 'test4@litc.ly', employeeId: 'T-004', role: 'TEAM_LEADER', departmentId: 'dept_it' }
-];
-
-const initialDepartments: OrgDepartment[] = [
-  {
-    id: 'dept_it',
-    name: 'إدارة تقنية المعلومات',
-    managerId: 'op1',
-    expanded: true,
-    divisions: [
-      {
-        id: 'sec_networking',
-        name: 'قسم الشبكات',
-        isIndependent: false,
-        expanded: true,
-        headId: 'op8',
-        teams: [],
-        unassignedUsers: [
-           { id: 'op8', name: 'أنس بوزيان', email: 'anas.abuzayyan@litc.ly', employeeId: 'OP-108', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_networking' }
-        ]
-      },
-      {
-        id: 'sec_tech_support',
-        name: 'قسم الدعم الفني',
-        isIndependent: false,
-        expanded: true,
-        headId: 'op2',
-        teams: [
-          { 
-            id: 'team_field_support', 
-            name: 'فريق الدعم الميداني', 
-            leaderId: 'op3',
-            users: [
-              { id: 'op4', name: 'محمد الزياني', email: 'mohammed.alzayani@litc.ly', employeeId: 'OP-104', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-              { id: 'op5', name: 'محمد الأسطى', email: 'mohamed.alosta@litc.ly', employeeId: 'OP-105', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' }
-            ]
-          },
-          {
-            id: 'team_evaluation_sub',
-            name: 'فريق التقييم',
-            leaderId: 'op6',
-            users: [
-              { id: 'op7', name: 'نصر الدين رمضان', email: 'nasruldeen.ramadhan@litc.ly', employeeId: 'OP-107', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' }
-            ]
-          },
-          {
-            id: 'team_external_sub',
-            name: 'فريق الصيانة الخارجية',
-            leaderId: 'op9',
-            users: [
-              { id: 'op10', name: 'عبد الرحمن راجي', email: 'abdalrahman.ragi@litc.ly', employeeId: 'OP-110', role: 'OPERATIONAL_USER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
-            ]
-          }
-        ],
-        unassignedUsers: [
-          { id: 'op2', name: 'أحمد النكوع', email: 'Ahmed.Alnakoua@litc.ly', employeeId: 'OP-102', role: 'SECTION_HEAD', departmentId: 'dept_it', divisionId: 'sec_tech_support' },
-          { id: 'op3', name: 'محمود الحمالي', email: 'mahmoud.alahammali@litc.ly', employeeId: 'OP-103', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_field_support' },
-          { id: 'op6', name: 'نضال أبو غامجة', email: 'nidhal.abughamja@litc.ly', employeeId: 'OP-106', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_evaluation_sub' },
-          { id: 'op9', name: 'أحمد المجدي', email: 'Ahmed.almajdi@litc.ly', employeeId: 'OP-109', role: 'TEAM_LEADER', departmentId: 'dept_it', divisionId: 'sec_tech_support', teamId: 'team_external_sub' }
-        ]
-      }
-    ],
-    unassignedUsers: [
-      { id: 'test1', name: 'مستخدم تشغيلي للاختبار', email: 'test1@litc.ly', employeeId: 'T-001', role: 'OPERATIONAL_USER', departmentId: 'dept_it' },
-      { id: 'test2', name: 'رئيس قسم للاختبار', email: 'test2@litc.ly', employeeId: 'T-002', role: 'SECTION_HEAD', departmentId: 'dept_it' },
-      { id: 'test3', name: 'مدير إدارة للاختبار', email: 'test3@litc.ly', employeeId: 'T-003', role: 'OPERATIONAL_MANAGER', departmentId: 'dept_it' },
-      { id: 'test4', name: 'رئيس فريق للاختبار', email: 'test4@litc.ly', employeeId: 'T-004', role: 'TEAM_LEADER', departmentId: 'dept_it' }
-    ]
-  }
-];
-
+import { AdminAPI } from '../../../services/admin.api';
 import { OrgNode } from './orgStructureTypes';
 
 export const OperationalStructureTab: React.FC<{ orgTree: OrgNode }> = ({ orgTree }) => {
-  const [operationalUsers, setOperationalUsers] = useState<OrgUser[]>(() => {
-    const saved = localStorage.getItem('mockOperationalUsers');
-    return saved ? JSON.parse(saved) : initialOperationalUsers;
-  });
-  const [departments, setDepartments] = useState<OrgDepartment[]>(() => {
-    const saved = localStorage.getItem('mockDepartments');
-    return saved ? JSON.parse(saved) : initialDepartments;
-  });
+  const [operationalUsers, setOperationalUsers] = useState<OrgUser[]>([]);
+  const [departments, setDepartments] = useState<OrgDepartment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
-    localStorage.setItem('mockOperationalUsers', JSON.stringify(operationalUsers));
-  }, [operationalUsers]);
+    Promise.all([
+      AdminAPI.getUserPool().catch(() => ({ users: [] })),
+      AdminAPI.getOperationalDepartments().catch(() => ({ departments: [] }))
+    ]).then(([poolRes, deptRes]) => {
+      if (poolRes.users && Array.isArray(poolRes.users)) {
+        const mappedUsers: OrgUser[] = poolRes.users
+          .filter((u: any) => u.role?.name !== 'Employee' && u.role?.name !== 'System_Admin')
+          .map((u: any) => ({
+            id: String(u.id),
+            name: u.fullName || u.username,
+            email: u.email,
+            employeeId: `EMP-${u.id}`,
+            role: (u.role?.name || 'OPERATIONAL_USER') as CoreRole,
+            departmentId: u.departmentId ? String(u.departmentId) : undefined,
+            positionTitle: u.jobTitle
+          }));
+        setOperationalUsers(mappedUsers);
+      } else {
+        setOperationalUsers([]);
+      }
+
+      if (deptRes.departments && Array.isArray(deptRes.departments) && deptRes.departments.length > 0) {
+        const sanitized = deptRes.departments.map((dept: any) => ({
+          ...dept,
+          divisions: (dept.divisions || []).map((div: any) => ({
+            ...div,
+            teams: div.teams || [],
+            unassignedUsers: div.unassignedUsers || [],
+            users: div.users || []
+          })),
+          unassignedUsers: dept.unassignedUsers || [],
+          teams: dept.teams || []
+        }));
+        setDepartments(sanitized);
+      } else {
+        setDepartments([]);
+      }
+    }).finally(() => setIsLoading(false));
+  }, []);
 
   React.useEffect(() => {
-    localStorage.setItem('mockDepartments', JSON.stringify(departments));
-  }, [departments]);
+    if (!isLoading && departments.length > 0) {
+      AdminAPI.saveDepartmentsSnapshot(departments).catch(err => console.error(err));
+    }
+  }, [departments, isLoading]);
   
   // --- Org Structure Advanced V2 States ---
   const [poolSearchQuery, setPoolSearchQuery] = useState<string>('');
@@ -1577,3 +1526,4 @@ export const OperationalStructureTab: React.FC<{ orgTree: OrgNode }> = ({ orgTre
     </div>
   );
 };
+

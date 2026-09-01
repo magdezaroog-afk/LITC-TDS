@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface AuditLog {
   id: number;
   actorId: number;
@@ -18,17 +21,18 @@ export const PolicyVetoTab: React.FC = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true);
+      // Use HttpOnly cookie auth — credentials: 'include' sends the cookie automatically
       const res = await fetch('/api/v1/admin/governance/policy/pending', {
-        headers: { 'Authorization': 'Bearer system_token_123' }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
         setLogs(data);
       } else {
-        setError('Failed to load pending policies.');
+        setError(t('admin.policy_veto.err_load', 'Failed to load pending policies.'));
       }
     } catch (err) {
-      setError('Network error loading pending policies.');
+      setError(t('admin.policy_veto.err_network', 'Network error loading pending policies.'));
     } finally {
       setLoading(false);
     }
@@ -42,20 +46,18 @@ export const PolicyVetoTab: React.FC = () => {
     try {
       const res = await fetch(`/api/v1/admin/governance/policy/${action}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer system_token_123'
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logId })
       });
       if (res.ok) {
         if (navigator.vibrate) navigator.vibrate(50);
         setLogs(prev => prev.filter(l => l.id !== logId));
       } else {
-        alert(`Failed to ${action} policy override.`);
+        alert(`${t('admin.policy_veto.err_action') || 'Failed to '}${action}`);
       }
     } catch (err) {
-      alert(`Error processing ${action}.`);
+      alert(`${t('admin.policy_veto.err_process') || 'Error processing '}${action}.`);
     }
   };
 
@@ -73,7 +75,7 @@ export const PolicyVetoTab: React.FC = () => {
     <div style={{ padding: '20px', direction: 'rtl', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
       <div style={{ ...glassPanel, marginBottom: '20px' }}>
         <h2 style={{ margin: '0 0 10px 0', color: '#172b4d', fontSize: '22px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span>🚨 Admin Supreme Veto Hub</span>
+          <span>{t('admin.policy_veto.title') || '🚨 Admin Supreme Veto Hub'}</span>
         </h2>
         <p style={{ margin: 0, color: '#5e6c84', fontSize: '14px' }}>
           مراقبة ونقض الاستثناءات المخصصة لصلاحيات الموظفين من قبل المشرفين قبل اعتمادها بشكل نهائي.
@@ -82,7 +84,7 @@ export const PolicyVetoTab: React.FC = () => {
 
       <div style={glassPanel}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#0052cc' }}>جاري التحميل...</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#0052cc' }}>{t('admin.policy_veto.loading') || 'جاري التحميل...'}</div>
         ) : error ? (
           <div style={{ color: '#ff5630', padding: '20px', textAlign: 'center' }}>{error}</div>
         ) : logs.length === 0 ? (
@@ -93,12 +95,12 @@ export const PolicyVetoTab: React.FC = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid rgba(9,30,66,0.1)', color: '#5e6c84' }}>
-                <th style={{ padding: '15px', textAlign: 'right' }}>المعرف</th>
-                <th style={{ padding: '15px', textAlign: 'right' }}>المشرف (Actor)</th>
-                <th style={{ padding: '15px', textAlign: 'right' }}>الموظف (Target)</th>
-                <th style={{ padding: '15px', textAlign: 'right' }}>التفاصيل</th>
-                <th style={{ padding: '15px', textAlign: 'center' }}>التاريخ</th>
-                <th style={{ padding: '15px', textAlign: 'center' }}>الإجراءات</th>
+                <th style={{ padding: '15px', textAlign: 'right' }}>{t('admin.policy_veto.col_id') || 'المعرف'}</th>
+                <th style={{ padding: '15px', textAlign: 'right' }}>{t('admin.policy_veto.col_actor') || 'المشرف (Actor)'}</th>
+                <th style={{ padding: '15px', textAlign: 'right' }}>{t('admin.policy_veto.col_target') || 'الموظف (Target)'}</th>
+                <th style={{ padding: '15px', textAlign: 'right' }}>{t('admin.policy_veto.col_details') || 'التفاصيل'}</th>
+                <th style={{ padding: '15px', textAlign: 'center' }}>{t('admin.policy_veto.col_date') || 'التاريخ'}</th>
+                <th style={{ padding: '15px', textAlign: 'center' }}>{t('admin.policy_veto.col_actions') || 'الإجراءات'}</th>
               </tr>
             </thead>
             <tbody>
@@ -116,13 +118,13 @@ export const PolicyVetoTab: React.FC = () => {
                   </td>
                   <td style={{ padding: '15px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                      <button 
+                      <button
                         onClick={() => handleAction('approve', log.id)}
                         style={{ padding: '8px 12px', background: '#e3fcef', color: '#006644', border: '1px solid #79f2c0', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
                       >
                         ✅ اعتماد الاستثناء
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleAction('veto', log.id)}
                         style={{ padding: '8px 12px', background: '#ffebe6', color: '#ff5630', border: '1px solid #ffbdad', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
                       >

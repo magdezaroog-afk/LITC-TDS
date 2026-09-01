@@ -1,6 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AuditService } from '../../backend/services/AuditService';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export interface ExternalComponentRendererProps {
   entryUrl: string;
   displayMode: string;
@@ -30,9 +33,8 @@ export const ExternalComponentRenderer: React.FC<ExternalComponentRendererProps>
   const secureUrl = useMemo(() => {
     try {
       const url = new URL(entryUrl);
-      const token = localStorage.getItem('litc_token') || 'mocked_jwt_token';
       
-      url.searchParams.append('token', token);
+      // Rely on secure HttpOnly cookies for authentication, removed token param
       url.searchParams.append('userId', userContext.userId);
       url.searchParams.append('role', userContext.role);
       if (userContext.email) url.searchParams.append('email', userContext.email);

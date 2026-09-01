@@ -3,6 +3,9 @@ import { useTheme } from '../../engine/ui-loader/ThemeProvider';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { EventBus } from '../../engine/events/EventBus';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export const UnifiedSmartAnalytics: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -15,24 +18,16 @@ export const UnifiedSmartAnalytics: React.FC = () => {
   const isAdmin = role === 'admin' || role === 'IT_Admin' || role === 'manager';
   const isHead = role === 'head' || role === 'Head';
 
-  // [TODO/Blueprint] API Migration:
-  // currently we fetch from universal-cube mock. In production with SQL Server,
-  // we will pass the user's UUID and taxonomy constraints as Query Parameters
-  // to fetch precisely filtered analytics without client-side heavy lifting.
   const fetchUniversalData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      // Use HttpOnly cookie auth — credentials: 'include' sends the cookie automatically
       const response = await fetch('/api/v1/analytics/universal-cube', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer system_token_123'
-        },
-        body: JSON.stringify({
-          startDate: '2026-01-01',
-          endDate: new Date().toISOString()
-        })
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: '2026-01-01', endDate: new Date().toISOString() })
       });
       if (!response.ok) throw new Error('فشل جلب سياق التحاليل الموحد');
       const res = await response.json();
@@ -158,7 +153,7 @@ export const UnifiedSmartAnalytics: React.FC = () => {
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
-        <span>🧊</span> 
+        <span>🧊</span>
         <span>منصة التحليلات الموحدة (Unified Smart Analytics)</span>
       </div>
 
@@ -173,7 +168,6 @@ export const UnifiedSmartAnalytics: React.FC = () => {
           <div style={{ marginBottom: '20px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'inline-block' }}>
             تم تكييف نطاق الرؤية لصلاحية: <strong style={{ color: '#00ffcc' }}>{role}</strong>
           </div>
-          
           {isAdmin && <RenderAdminMatrix context={data?.context || {}} />}
           {(!isAdmin && isHead) && <RenderDepartmentHeatmap context={data?.context || {}} />}
           {(!isAdmin && !isHead) && <RenderFieldOps context={data?.context || {}} />}

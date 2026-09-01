@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useMobileViewport } from '../../mobile/hooks/useMobileViewport';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 export interface SignalEvent {
   type: 'SUCCESS' | 'INFO' | 'WARNING' | 'DANGER';
   message: string;
@@ -11,15 +14,14 @@ export const NeonSignalToast: React.FC = () => {
   const isMobile = useMobileViewport();
 
   useEffect(() => {
-    // Open SSE connection
-    const token = localStorage.getItem('token') || 'system_token_123';
-    const eventSource = new EventSource('/api/v1/notifications/stream?token=' + token);
+    // Open SSE connection — uses HttpOnly cookie for auth automatically
+    // EventSource sends cookies with withCredentials: true
+    const eventSource = new EventSource('/api/v1/notifications/stream', { withCredentials: true });
 
     eventSource.onmessage = (event) => {
       try {
         const data: SignalEvent = JSON.parse(event.data);
         const newSignal = { ...data, id: Date.now() };
-        
         setSignals((prev) => [...prev, newSignal]);
 
         // Auto-remove after 5 seconds

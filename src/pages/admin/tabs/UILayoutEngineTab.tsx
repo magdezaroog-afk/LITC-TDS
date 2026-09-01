@@ -342,14 +342,18 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
     }
   ]);
   const [selectedBuildingForPreview, setSelectedBuildingForPreview] = useState<string>('');
-  const [components, setComponents] = useState<UIComponentDefinition[]>(() => {
-    const saved = localStorage.getItem('litc_layout_components');
-    try {
-      return saved ? JSON.parse(saved) : initialComponents;
-    } catch (e) {
-      return initialComponents;
-    }
-  });
+  const [components, setComponents] = useState<UIComponentDefinition[]>(initialComponents);
+
+  useEffect(() => {
+    fetch('/api/v1/layouts', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setComponents(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [showAdvancedComponents, setShowAdvancedComponents] = useState(false);
 
@@ -406,40 +410,54 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
   // --- Submission Templates & Builder Modes ---
   const [builderMode, setBuilderMode] = useState<'OPERATIONAL' | 'SUBMISSION_TEMPLATE'>('OPERATIONAL');
   
-  const loadSubmissionTemplates = (): SubmissionTemplate[] => {
-    try {
-      const data = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
-      if (data) return JSON.parse(data);
-    } catch(e) {}
-    return [{
-      id: 'template_standard_1',
-      name: 'القالب القياسي (Standard)',
-      lastUpdated: new Date().toISOString(),
-      isDefault: true,
-      components: [] // will be filled or kept empty meaning default fallback
-    }];
-  };
-
-  const loadRoleTemplateMappings = (): RoleToTemplateMapping[] => {
-    try {
-      const data = localStorage.getItem('ROLE_SUBMISSION_MAPPINGS');
-      if (data) return JSON.parse(data);
-    } catch(e) {}
-    return [];
-  };
-
-  const [submissionTemplates, setSubmissionTemplates] = useState<SubmissionTemplate[]>(loadSubmissionTemplates);
-  const [roleTemplateMappings, setRoleTemplateMappings] = useState<RoleToTemplateMapping[]>(loadRoleTemplateMappings);
+  const [submissionTemplates, setSubmissionTemplates] = useState<SubmissionTemplate[]>([{
+    id: 'template_standard_1',
+    name: 'القالب القياسي (Standard)',
+    lastUpdated: new Date().toISOString(),
+    isDefault: true,
+    components: []
+  }]);
+  const [roleTemplateMappings, setRoleTemplateMappings] = useState<RoleToTemplateMapping[]>([]);
   const [currentTemplateId, setCurrentTemplateId] = useState<string>('template_standard_1');
-
-  // When saving submission templates
-  useEffect(() => {
-    localStorage.setItem('SUBMISSION_TEMPLATES_SCHEMA', JSON.stringify(submissionTemplates));
-  }, [submissionTemplates]);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('ROLE_SUBMISSION_MAPPINGS', JSON.stringify(roleTemplateMappings));
-  }, [roleTemplateMappings]);
+    Promise.all([
+      fetch('/api/v1/admin/settings/SUBMISSION_TEMPLATES_SCHEMA', { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      fetch('/api/v1/admin/settings/ROLE_SUBMISSION_MAPPINGS', { credentials: 'include' }).then(r => r.ok ? r.json() : null)
+    ]).then(([tData, mData]) => {
+      if (tData?.settingValue) {
+        try { setSubmissionTemplates(JSON.parse(tData.settingValue)); } catch (e) {}
+      }
+      if (mData?.settingValue) {
+        try { setRoleTemplateMappings(JSON.parse(mData.settingValue)); } catch (e) {}
+      }
+      setSettingsLoaded(true);
+    }).catch(e => {
+      console.error(e);
+      setSettingsLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    fetch('/api/v1/admin/settings', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settingKey: 'SUBMISSION_TEMPLATES_SCHEMA', settingValue: JSON.stringify(submissionTemplates) })
+    }).catch(console.error);
+  }, [submissionTemplates, settingsLoaded]);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    fetch('/api/v1/admin/settings', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settingKey: 'ROLE_SUBMISSION_MAPPINGS', settingValue: JSON.stringify(roleTemplateMappings) })
+    }).catch(console.error);
+  }, [roleTemplateMappings, settingsLoaded]);
 
 
   // --- Interactive Live Sandbox States ---
@@ -459,7 +477,7 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
     const fetchExternalSystems = async () => {
       try {
         const res = await fetch('/admin/uecp/systems', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('litc_token')}` }
+          credentials: 'include'
         });
         if (res.ok) {
           const data = await res.json();
@@ -549,9 +567,12 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
       });
     } else {
       const activeInterface = savedInterfaces.find(ui => ui.name === interfaceName) || { id: 'ui_' + (interfaceCategory || 'default'), roleType: interfaceCategory || 'IT_ADMIN' };
-      localStorage.setItem(`litc_layout_components_${activeInterface.id}`, JSON.stringify(components));
-      localStorage.setItem(`litc_layout_components_${activeInterface.roleType}`, JSON.stringify(components));
-      localStorage.setItem('litc_layout_components', JSON.stringify(components));
+      fetch('/api/v1/layouts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ components, interfaceId: activeInterface.id, roleType: activeInterface.roleType })
+      }).catch(console.error);
     }
     setShowSaveReportModal(false);
     setIsManagerMode(true);
@@ -597,18 +618,19 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
     const loadData = () => {
       setInterfaceName(ui.name);
       setInterfaceCategory(ui.roleType);
-      const key = `litc_layout_components_${ui.id}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        setComponents(JSON.parse(saved));
-      } else {
-        const roleSaved = localStorage.getItem(`litc_layout_components_${ui.roleType}`);
-        if (roleSaved) {
-            setComponents(JSON.parse(roleSaved));
-        } else {
+      fetch(`/api/v1/layouts?interfaceId=${ui.id}&roleType=${ui.roleType}`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data && Array.isArray(data) && data.length > 0) {
+                setComponents(data);
+            } else {
+                setComponents(ui.roleType === 'IT_ADMIN' ? initialComponents : initialComponents.map(c => ({...c, isActive: false})));
+            }
+        })
+        .catch(err => {
+            console.error(err);
             setComponents(ui.roleType === 'IT_ADMIN' ? initialComponents : initialComponents.map(c => ({...c, isActive: false})));
-        }
-      }
+        });
       setIsManagerMode(false);
     };
 

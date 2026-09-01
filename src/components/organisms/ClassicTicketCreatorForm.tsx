@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { DynamicCustomField } from '../../pages/admin/tabs/DynamicFieldsTab';
 import { loadRoutes, TicketRouteDefinition } from '../../pages/admin/tabs/TicketRoutingTab';
 
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 interface TicketCreatorFormProps {
   customFields: DynamicCustomField[];
   allowedRouteIds?: string[]; // Allowed Workflows

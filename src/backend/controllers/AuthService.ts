@@ -41,8 +41,7 @@ export class AuthService {
       id: user.id,
       email: user.email!,
       fullName: user.fullName!,
-      mfaEnabled: user.mfaEnabled,
-      mfaSecret: user.mfaSecret
+      mfaEnabled: user.mfaEnabled
     };
 
     return { token, user: sanitizedUser };
