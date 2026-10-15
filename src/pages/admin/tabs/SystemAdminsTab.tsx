@@ -23,7 +23,9 @@ export const SystemAdminsTab: React.FC = () => {
     try {
       setIsLoading(true);
       const data = await AdminAPI.getUserPool();
-      const adminUsers = data.users.filter((u: any) => u.role?.name === 'System_Admin' || u.role?.name === 'IT_Admin');
+      const adminUsers = data.users.filter((u: any) => 
+        u.role?.name === 'System_Admin' || u.role?.name === 'SYSTEM_ADMIN' || u.role?.name === 'IT_Admin'
+      );
       setAdmins(adminUsers);
     } catch (err) {
       console.error(err);

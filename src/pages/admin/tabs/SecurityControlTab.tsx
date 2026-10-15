@@ -61,7 +61,7 @@ export const SecurityControlTab: React.FC = () => {
   }, []);
 
   const handleCreateRule = async () => {
-    if (!newRule.target) return alertt('admin.security_control.err_target', 'Target cannot be empty');
+    if (!newRule.target) return alert(t('admin.security_control.err_target', 'Target cannot be empty'));
     setRuleLoading(true);
     await fetch('/api/v1/admin/soc/waf-rules', { 
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-user-id': '1' }, body: JSON.stringify(newRule) 

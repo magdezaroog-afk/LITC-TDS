@@ -1,4 +1,4 @@
-import { useLanguage } from '..\..\engine\ui-loader\LanguageContext';
+import { useLanguage } from '../../engine/ui-loader/LanguageContext';
 import React from 'react';
 import { motion } from 'framer-motion';
 

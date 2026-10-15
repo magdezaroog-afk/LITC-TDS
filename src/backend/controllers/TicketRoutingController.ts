@@ -1,18 +1,36 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../db/client';
-import { Logger } from '../infrastructure/Logger';
 
-/**
- * TicketRoutingController (Enhanced)
- * 
- * يدير مسارات الطلبات (Ticket Routes) بالكامل في قاعدة البيانات.
- * كل مسار مرتبط بإدارة تشغيلية حقيقية من DB.
- */
+// Helper: Sync a route object to FlowDefinition table
+async function syncRouteToFlowDefinition(route: any) {
+  if (!route?.id) return;
+  const deptId = isNaN(Number(route.targetDepartmentId)) ? undefined : Number(route.targetDepartmentId);
+  const managerId = route.managerId && !isNaN(Number(route.managerId)) ? Number(route.managerId) : null;
+  await prisma.flowDefinition.upsert({
+    where: { id: route.id },
+    update: {
+      name: route.name,
+      description: route.description,
+      icon: route.icon,
+      isActive: route.isActive !== false,
+      departmentId: deptId,
+      managerId: managerId,
+    },
+    create: {
+      id: route.id,
+      name: route.name,
+      description: route.description,
+      icon: route.icon,
+      isActive: route.isActive !== false,
+      departmentId: deptId,
+      managerId: managerId,
+    }
+  }).catch(err => console.error('[TicketRoutingController] syncRouteToFlowDefinition error:', err));
+}
+
 export class TicketRoutingController {
-
-  // ─── Routes CRUD ──────────────────────────────────────────────────────────
-
-  /** GET /api/v1/routing/routes - جلب جميع المسارات */
+  
+  /** GET /api/v1/routing/routes - Fetch all routes from DB */
   static async getRoutes(req: Request, res: Response) {
     try {
       const { departmentId } = req.query;
@@ -23,41 +41,42 @@ export class TicketRoutingController {
 
       let routes = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
 
-      // Filter by department if requested
       if (departmentId) {
-        routes = routes.filter((r: any) => r.targetDepartmentId === departmentId || r.targetDepartmentId === parseInt(departmentId as string));
+        routes = routes.filter((r: any) => 
+          String(r.targetDepartmentId) === String(departmentId)
+        );
       }
 
-      res.json({ success: true, routes });
+      return res.json({ success: true, routes });
     } catch (error) {
-      Logger.error(`[TicketRoutingController] getRoutes error: ${error}`);
-      res.status(500).json({ error: 'Failed to fetch routes' });
+      console.error(`[TicketRoutingController] getRoutes error: ${error}`);
+      return res.status(500).json({ error: 'Failed to fetch routes' });
     }
   }
 
-  /** POST /api/v1/routing/routes - حفظ المسارات كاملة */
+  /** GET /api/v1/routing/routes/public - Fetch active routes for employee portal */
+  static async getPublicRoutes(req: Request, res: Response) {
+    try {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { settingKey: 'litc_ticket_routes' }
+      });
+
+      let routes = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
+      routes = routes.filter((r: any) => r.isActive !== false);
+
+      return res.json({ success: true, routes });
+    } catch (error) {
+      console.error(`[TicketRoutingController] getPublicRoutes error: ${error}`);
+      return res.status(500).json({ error: 'Failed to fetch public routes' });
+    }
+  }
+
+  /** POST /api/v1/routing/routes - Save snapshot of all routes to DB */
   static async saveRoutes(req: Request, res: Response) {
     try {
       const { routes } = req.body;
-      if (!Array.isArray(routes)) return res.status(400).json({ error: 'routes array required' });
-
-      // Validate each route has a target department that exists in DB
-      const deptIds = [...new Set(routes.map((r: any) => r.targetDepartmentId).filter(Boolean))];
-      
-      for (const deptId of deptIds) {
-        const deptExists = await prisma.department.findFirst({
-          where: {
-            OR: [
-              { id: typeof deptId === 'number' ? deptId : undefined },
-              { name: typeof deptId === 'string' ? deptId : undefined }
-            ],
-            isDeleted: false
-          }
-        });
-        if (!deptExists) {
-          Logger.warn(`[TicketRoutingController] Route references unknown dept: ${deptId}`);
-          // Don't block - just log warning, dept might be a new one being created
-        }
+      if (!Array.isArray(routes)) {
+        return res.status(400).json({ error: 'routes array required' });
       }
 
       await prisma.systemSetting.upsert({
@@ -70,15 +89,20 @@ export class TicketRoutingController {
         update: { settingValue: JSON.stringify(routes) }
       });
 
-      Logger.info(`[TicketRoutingController] Saved ${routes.length} routes to DB`);
-      res.json({ success: true, message: `تم حفظ ${routes.length} مسار بنجاح` });
+      // Sync all routes to FlowDefinition table
+      for (const r of routes) {
+        await syncRouteToFlowDefinition(r);
+      }
+
+      console.log(`[TicketRoutingController] Saved and synced ${routes.length} routes to DB`);
+      return res.json({ success: true, message: `تم حفظ ${routes.length} مسار بنجاح`, routes });
     } catch (error) {
-      Logger.error(`[TicketRoutingController] saveRoutes error: ${error}`);
-      res.status(500).json({ error: 'Failed to save routes' });
+      console.error(`[TicketRoutingController] saveRoutes error: ${error}`);
+      return res.status(500).json({ error: 'Failed to save routes' });
     }
   }
 
-  /** POST /api/v1/routing/routes/single - إضافة مسار واحد جديد */
+  /** POST /api/v1/routing/routes/single - Add a single route */
   static async createRoute(req: Request, res: Response) {
     try {
       const newRoute = req.body;
@@ -87,13 +111,11 @@ export class TicketRoutingController {
         return res.status(400).json({ error: 'targetDepartmentId is required' });
       }
 
-      // Get existing routes
       const setting = await prisma.systemSetting.findUnique({
         where: { settingKey: 'litc_ticket_routes' }
       });
       const routes = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
 
-      // Check for duplicate
       if (routes.find((r: any) => r.id === newRoute.id)) {
         return res.status(409).json({ error: 'Route with this ID already exists' });
       }
@@ -110,14 +132,16 @@ export class TicketRoutingController {
         update: { settingValue: JSON.stringify(routes) }
       });
 
-      res.status(201).json({ success: true, route: newRoute });
+      await syncRouteToFlowDefinition(newRoute);
+
+      return res.status(201).json({ success: true, route: newRoute });
     } catch (error) {
-      Logger.error(`[TicketRoutingController] createRoute error: ${error}`);
-      res.status(500).json({ error: 'Failed to create route' });
+      console.error(`[TicketRoutingController] createRoute error: ${error}`);
+      return res.status(500).json({ error: 'Failed to create route' });
     }
   }
 
-  /** PUT /api/v1/routing/routes/:id - تعديل مسار */
+  /** PUT /api/v1/routing/routes/:id - Update single route */
   static async updateRoute(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -138,14 +162,16 @@ export class TicketRoutingController {
         data: { settingValue: JSON.stringify(routes) }
       });
 
-      res.json({ success: true, route: routes[index] });
+      await syncRouteToFlowDefinition(routes[index]);
+
+      return res.json({ success: true, route: routes[index] });
     } catch (error) {
-      Logger.error(`[TicketRoutingController] updateRoute error: ${error}`);
-      res.status(500).json({ error: 'Failed to update route' });
+      console.error(`[TicketRoutingController] updateRoute error: ${error}`);
+      return res.status(500).json({ error: 'Failed to update route' });
     }
   }
 
-  /** DELETE /api/v1/routing/routes/:id - حذف مسار */
+  /** DELETE /api/v1/routing/routes/:id - Delete single route */
   static async deleteRoute(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -165,29 +191,33 @@ export class TicketRoutingController {
         data: { settingValue: JSON.stringify(filtered) }
       });
 
-      res.json({ success: true, message: 'تم حذف المسار بنجاح' });
+      await prisma.flowDefinition.update({
+        where: { id },
+        data: { isActive: false }
+      }).catch(() => {});
+
+      return res.json({ success: true, message: 'تم حذف المسار بنجاح' });
     } catch (error) {
-      Logger.error(`[TicketRoutingController] deleteRoute error: ${error}`);
-      res.status(500).json({ error: 'Failed to delete route' });
+      console.error(`[TicketRoutingController] deleteRoute error: ${error}`);
+      return res.status(500).json({ error: 'Failed to delete route' });
     }
   }
 
-  // ─── Dynamic Fields ────────────────────────────────────────────────────────
-
-  /** GET /api/v1/routing/dynamic-fields - جلب الحقول الديناميكية */
+  /** GET /api/v1/routing/dynamic-fields - Fetch custom dynamic fields */
   static async getDynamicFields(req: Request, res: Response) {
     try {
       const setting = await prisma.systemSetting.findUnique({
         where: { settingKey: 'litc_dynamic_fields' }
       });
       const fields = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
-      res.json({ success: true, fields });
+      return res.json({ success: true, fields });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch dynamic fields' });
+      console.error(`[TicketRoutingController] getDynamicFields error: ${error}`);
+      return res.status(500).json({ error: 'Failed to fetch dynamic fields' });
     }
   }
 
-  /** POST /api/v1/routing/dynamic-fields - حفظ الحقول الديناميكية */
+  /** POST /api/v1/routing/dynamic-fields - Save custom dynamic fields */
   static async saveDynamicFields(req: Request, res: Response) {
     try {
       const { fields } = req.body;
@@ -203,9 +233,11 @@ export class TicketRoutingController {
         update: { settingValue: JSON.stringify(fields) }
       });
 
-      res.json({ success: true, message: `تم حفظ ${fields.length} حقل ديناميكي` });
+      return res.json({ success: true, fields, message: `تم حفظ ${fields.length} حقل ديناميكي` });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to save dynamic fields' });
+      console.error(`[TicketRoutingController] saveDynamicFields error: ${error}`);
+      return res.status(500).json({ error: 'Failed to save dynamic fields' });
     }
   }
 }
+

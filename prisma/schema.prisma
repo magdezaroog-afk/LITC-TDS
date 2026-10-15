@@ -54,10 +54,16 @@ model User {
   department   Department? @relation("DeptMembers", fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   buildingId Int?
+  // ⚠️ ARCH-NOTE: buildingId references SystemReference.id (INT auto-increment).
+  // SystemReference uses globalId (UUID) as the upsert key.
+  // If a building is deleted and re-created with the same globalId, the INT id changes → FK breaks silently.
+  // FUTURE MIGRATION REQUIRED: Change FK to reference globalId (unique) instead of id.
   building   SystemReference? @relation("BuildingUsers", fields: [buildingId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   delegatedUser     User?  @relation("UserDelegation", fields: [delegatedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   delegatesReceived User[] @relation("UserDelegation")
+
+  interfaces Interface[] @relation("UserInterfaces")
 
   teams             UserTeam[]
   assignments       TicketAssignment[]
@@ -67,10 +73,52 @@ model User {
   createdTickets    Ticket[]              @relation("CreatedTickets")
   componentPolicies UserComponentPolicy[]
 
+  // Analytics Permissions
+  analyticsPermissions        AnalyticsPermission[] @relation("UserAnalyticsPermissions")
+  grantedAnalyticsPermissions AnalyticsPermission[] @relation("AdminGrantedAnalytics")
+
   // SSO & Landing Zone
   avatarUrl String?
   jobTitle  String?
   ssoRole   String  @default("EMPLOYEE")
+
+  // Entra ID & Gamification Fields
+  points             Int       @default(0)
+  appCoins           Int       @default(0)
+  employeeId         String?
+  company            String?
+  businessPhone      String?
+  officeLocation     String?
+  city               String?
+  country            String?
+  hireDate           DateTime?
+  directReportsCount Int       @default(0)
+  entraObjectId      String?
+  tenantDomain       String?
+  syncStatus         String    @default("synced") // synced, overridden, syncing
+  lastSyncedAt       DateTime?
+  presence           String    @default("Offline")
+  workStatus         String    @default("AVAILABLE") // AVAILABLE, IN_MEETING, DO_NOT_DISTURB, OFFLINE
+  isSocialBanned     Boolean   @default(false)
+
+  // Social & Gamification Relations
+  officialNews           OfficialNews[]
+  employeePosts          EmployeePost[]
+  postReactions          PostReaction[]
+  postComments           PostComment[]
+  mediaReels             MediaReel[]
+  ReelReaction           ReelReaction[]
+  ReelComment            ReelComment[]
+  ChallengeParticipation ChallengeParticipation[]
+  ChallengeCompletion    ChallengeCompletion[]
+  AppPerkUnlock          AppPerkUnlock[]
+
+  // Flow Management & Permissions
+  managedFlows           FlowDefinition[]     @relation("FlowManagers")
+  flowPermissions        FlowUserPermission[]
+  grantedFlowPermissions FlowUserPermission[] @relation("GrantedFlowPermissions")
+  flowAuditLogs          FlowAuditLog[]       @relation("FlowAuditActors")
+  calibratedTickets      Ticket[]             @relation("TicketCalibrator")
 
   @@index([email])
 }
@@ -90,17 +138,23 @@ model Role {
 // ==========================================
 
 model Department {
-  id              Int              @id @default(autoincrement())
-  name            String           @unique
-  isDeleted       Boolean          @default(false)
-  assignmentMode  String           @default("PULL")
-  routingStrategy String           @default("POOL")
-  isDelegated     Boolean          @default(false)
+  id              Int     @id @default(autoincrement())
+  name            String  @unique
+  isDeleted       Boolean @default(false)
+  assignmentMode  String  @default("PULL")
+  routingStrategy String  @default("POOL")
+  isDelegated     Boolean @default(false)
 
   users      User[]      @relation("DeptMembers")
   teams      Team[]
   interfaces Interface[]
   tickets    Ticket[]    @relation("DepartmentTickets")
+
+  publishingAuthority  PublishingAuthority?
+  officialNews         OfficialNews[]
+  challenges           Challenge[]
+  flows                FlowDefinition[]      @relation("DepartmentFlows")
+  analyticsPermissions AnalyticsPermission[] @relation("DepartmentAnalyticsPermissions")
 
   @@index([name])
 }
@@ -116,6 +170,7 @@ model Team {
 
   users       UserTeam[]
   assignments TicketAssignment[]
+  interfaces  Interface[]        @relation("TeamInterfaces")
 }
 
 model UserTeam {
@@ -139,21 +194,31 @@ model UserTeam {
 model SystemSetting {
   id           Int      @id @default(autoincrement())
   settingKey   String   @unique
-  settingValue String
+  settingValue String   @db.NVarChar(Max)
   description  String?
   updatedAt    DateTime @updatedAt
 }
 
 model Interface {
-  id            String     @id @default(cuid())
+  id            String  @id @default(cuid())
   name          String
-  interfaceType String     @default("FUNCTIONAL") // "FUNCTIONAL" or "OPERATIONAL"
+  interfaceType String  @default("FUNCTIONAL") // "FUNCTIONAL" or "OPERATIONAL"
   roleType      String?
-  departmentId  Int
-  department    Department @relation(fields: [departmentId], references: [id])
-  configJson    String?    @db.NVarChar(Max)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  teamId Int?
+  team   Team? @relation("TeamInterfaces", fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  userId Int?
+  user   User? @relation("UserInterfaces", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isAutoGenerated Boolean @default(false)
+
+  configJson String?  @db.NVarChar(Max)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ==========================================
@@ -248,6 +313,13 @@ model Ticket {
   impact   String @default("MEDIUM")
   priority String @default("MEDIUM")
 
+  // Dual-Priority Calibration
+  requesterPriority String    @default("MEDIUM")
+  businessPriority  String?
+  calibratedById    Int?
+  calibratedBy      User?     @relation("TicketCalibrator", fields: [calibratedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  calibratedAt      DateTime?
+
   firstResponseTimeMins Int?
   version               Int  @default(0)
 
@@ -267,10 +339,10 @@ model Ticket {
   parentTicket Ticket?       @relation("SubTickets", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subTickets   Ticket[]      @relation("SubTickets")
 
-  creatorId  Int?
-  creator    User?   @relation("CreatedTickets", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  departmentId Int?
+  creatorId Int?
+  creator   User? @relation("CreatedTickets", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  departmentId  Int?
   departmentObj Department? @relation("DepartmentTickets", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   createdAt DateTime @default(now())
@@ -382,7 +454,7 @@ model SystemReference {
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
-  users     User[]            @relation("BuildingUsers")
+  users User[] @relation("BuildingUsers")
 }
 
 // ==========================================
@@ -443,19 +515,89 @@ model FormSchema {
 }
 
 model FlowDefinition {
-  id           String     @id @default(cuid())
-  name         String     @unique
-  description  String?
-  icon         String?
-  isActive     Boolean    @default(true)
-  formSchemaId String
-  formSchema   FormSchema @relation(fields: [formSchemaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  steps        FlowStep[]
-  tickets      Ticket[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                 String               @id @default(cuid())
+  name               String               @unique
+  description        String?
+  icon               String?
+  isActive           Boolean              @default(true)
+  departmentId       Int?
+  department         Department?          @relation("DepartmentFlows", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  managerId          Int?
+  manager            User?                @relation("FlowManagers", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formSchemaId       String?
+  formSchema         FormSchema?          @relation(fields: [formSchemaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  priorityConfigJson String?              @db.NVarChar(Max)
+  steps              FlowStep[]
+  tickets            Ticket[]
+  userPermissions    FlowUserPermission[]
+  rules              FlowRoutingRule[]
+  auditLogs          FlowAuditLog[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   @@index([isActive])
+}
+
+model FlowUserPermission {
+  id     String         @id @default(cuid())
+  userId Int
+  user   User           @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  flowId String
+  flow   FlowDefinition @relation(fields: [flowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // الركيزة الأولى: الصلاحيات التشغيلية
+  canViewPool         Boolean @default(true)
+  canPull             Boolean @default(false)
+  canTransferInternal Boolean @default(false)
+  canTransferExternal Boolean @default(false)
+  canResolve          Boolean @default(false)
+  canReopen           Boolean @default(false)
+  canAddInternalNotes Boolean @default(true)
+
+  // الركيزة الثالثة: معايرة أولوية الإدارة
+  canCalibratePriority Boolean @default(false)
+
+  grantedById Int?
+  grantedBy   User? @relation("GrantedFlowPermissions", fields: [grantedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, flowId])
+  @@index([flowId])
+  @@index([userId])
+}
+
+model FlowRoutingRule {
+  id                 String         @id @default(cuid())
+  flowId             String
+  flow               FlowDefinition @relation(fields: [flowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name               String
+  ruleOrder          Int            @default(0)
+  isActive           Boolean        @default(true)
+  conditionsJson     String         @db.NVarChar(Max)
+  actionType         String         // VISIBILITY_FILTER, DIRECT_ASSIGN, ROUND_ROBIN
+  targetUserIds      String         @db.NVarChar(Max)
+  lastAssignedUserId Int?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([flowId])
+  @@index([isActive])
+}
+
+model FlowAuditLog {
+  id         String         @id @default(cuid())
+  flowId     String
+  flow       FlowDefinition @relation(fields: [flowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  actorId    Int
+  actor      User           @relation("FlowAuditActors", fields: [actorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  actionType String         // PERMISSION_UPDATE, RULE_CREATE, RULE_TOGGLE, RULE_DELETE, PRIORITY_CONFIG
+  details    String         @db.NVarChar(Max)
+  createdAt  DateTime       @default(now())
+
+  @@index([flowId])
+  @@index([actorId])
 }
 
 model FlowStep {
@@ -668,4 +810,209 @@ model DynamicField {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ==========================================
+// 21. Social & Gamification (AI Studio Functional UI)
+// ==========================================
+
+model OfficialNews {
+  id           Int         @id @default(autoincrement())
+  title        String
+  body         String      @db.NVarChar(Max)
+  coverImage   String?
+  authorId     Int
+  author       User        @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  isPublished  Boolean     @default(false)
+  isPinned     Boolean     @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model EmployeePost {
+  id         String    @id @default(cuid())
+  authorId   Int
+  author     User      @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content    String    @db.NVarChar(Max)
+  mediaUrls  String?   @db.NVarChar(Max)
+  postType   String    @default("TEXT")
+  visibility String    @default("ALL")
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  reactions PostReaction[]
+  comments  PostComment[]
+}
+
+model PostReaction {
+  id     String       @id @default(cuid())
+  postId String
+  post   EmployeePost @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId Int
+  user   User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type   String
+
+  @@unique([postId, userId])
+}
+
+model PostComment {
+  id        String       @id @default(cuid())
+  postId    String
+  post      EmployeePost @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  authorId  Int
+  author    User         @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  body      String       @db.NVarChar(Max)
+  createdAt DateTime     @default(now())
+}
+
+model MediaReel {
+  id           String   @id @default(cuid())
+  authorId     Int
+  author       User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  videoUrl     String
+  thumbnailUrl String?
+  caption      String?
+  duration     Int?
+  viewCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  reactions ReelReaction[]
+  comments  ReelComment[]
+}
+
+model ReelReaction {
+  id     String    @id @default(cuid())
+  reelId String
+  reel   MediaReel @relation(fields: [reelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId Int
+  user   User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type   String
+
+  @@unique([reelId, userId])
+}
+
+model ReelComment {
+  id        String    @id @default(cuid())
+  reelId    String
+  reel      MediaReel @relation(fields: [reelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  body      String    @db.NVarChar(Max)
+  createdAt DateTime  @default(now())
+}
+
+model AppCoinQuest {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  category    String  @default("daily")
+  coinReward  Int     @default(10)
+  targetCount Int     @default(1)
+  iconName    String
+  actionType  String
+  isActive    Boolean @default(true)
+}
+
+model AppPerk {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  coinCost    Int
+  iconName    String
+  category    String
+  isActive    Boolean @default(true)
+
+  unlocks AppPerkUnlock[]
+}
+
+model AppPerkUnlock {
+  id         String   @id @default(cuid())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  perkId     String
+  perk       AppPerk  @relation(fields: [perkId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, perkId])
+}
+
+model Challenge {
+  id             String      @id @default(cuid())
+  title          String
+  description    String
+  category       String
+  departmentId   Int?
+  department     Department? @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  challengeType  String
+  deadline       DateTime
+  rewardPoints   Int
+  firstTryBonus  Int?
+  earlyBirdQuota Int?
+  earlyBirdBonus Int?
+  badge          String
+  iconName       String?
+  isActive       Boolean     @default(true)
+
+  participations ChallengeParticipation[]
+  completions    ChallengeCompletion[]
+}
+
+model ChallengeParticipation {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([challengeId, userId])
+}
+
+model ChallengeCompletion {
+  id            String    @id @default(cuid())
+  challengeId   String
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  completedAt   DateTime  @default(now())
+  pointsAwarded Int       @default(0)
+  isEarlyBird   Boolean   @default(false)
+  isFirstTry    Boolean   @default(false)
+
+  @@unique([challengeId, userId])
+}
+
+model PublishingAuthority {
+  id                   Int        @id @default(autoincrement())
+  departmentId         Int        @unique
+  department           Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  canPublishNews       Boolean    @default(false)
+  canPublishChallenges Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+// ==========================================
+// 22. حوكمة صلاحيات التحليلات المتقاطعة (Cross-Department Analytics Governance)
+// ==========================================
+model AnalyticsPermission {
+  id           String     @id @default(cuid())
+  userId       Int
+  user         User       @relation("UserAnalyticsPermissions", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  departmentId Int
+  department   Department @relation("DepartmentAnalyticsPermissions", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  routeId      String?
+  canExport    Boolean    @default(true)
+  canCompare   Boolean    @default(true)
+  grantedById  Int?
+  grantedBy    User?      @relation("AdminGrantedAnalytics", fields: [grantedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, departmentId, routeId])
+  @@index([userId])
+  @@index([departmentId])
 }

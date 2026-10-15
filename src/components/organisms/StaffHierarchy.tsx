@@ -10,13 +10,14 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+// Dummy t function to prevent crash
+const t = (key: any, fallback?: any) => fallback || key;
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 
 import {
 
-// Dummy t function to prevent crash
-const t = (key: any, fallback?: any) => fallback || key;
   Search, ChevronLeft, Users, Building2, GitBranch,
   BarChart2, Shield, Phone, Mail, X,
   Plus, Edit2, Trash2, Filter, RefreshCw,

@@ -79,7 +79,7 @@ export class SlaMonitorJob {
             email: 'system@litc-ts.com',
             fullName: 'System Engine',
             roleId: defaultRole.id,
-            resetToken: 'system_token_123',
+            resetToken: 'system_token_' + Date.now(),
             updatedAt: new Date()
           }
         });

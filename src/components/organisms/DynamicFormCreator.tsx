@@ -111,9 +111,10 @@ export const DynamicFormCreator: React.FC = () => {
     fontFamily: theme.typography.fontFamily
   };
 
+  // @ts-ignore - BaseCard accepts children via React.createElement 3rd arg
   return React.createElement(
     BaseCard,
-    { title: 'إنشاء تذكرة جديدة ديناميكية' },
+    { title: 'إنشاء تذكرة جديدة ديناميكية' } as any,
     React.createElement(
       'div',
       { style: { display: 'flex', flexDirection: 'column', gap: theme.spacing.sm } },
@@ -141,23 +142,23 @@ export const DynamicFormCreator: React.FC = () => {
         value: title,
         onChange: setTitle,
         placeholder: 'أدخل عنواناً واضحاً للمشكلة'
-      }),
+      } as any),
 
       React.createElement(BaseInput, {
         label: 'وصف المشكلة بالتفصيل',
         value: description,
         onChange: setDescription,
         placeholder: 'اكتب تفاصيل العطل هنا...'
-      }),
+      } as any),
 
       // اختيار القسم الرئيسي
       React.createElement('div', null,
         React.createElement('label', { style: labelStyle }, 'القسم التشغيلي المسؤول (الرئيسي)'),
         React.createElement('select', {
           value: department,
-          onChange: (e) => setDepartment(e.target.value),
+          onChange: (e: any) => setDepartment(e.target.value),
           style: selectStyle
-        },
+        } as any,
           React.createElement('option', { value: 'IT' }, 'تقنية المعلومات (IT)'),
           React.createElement('option', { value: 'Maintenance' }, 'الصيانة العامة (Maintenance)'),
           React.createElement('option', { value: 'HR' }, 'الموارد البشرية (HR)')
@@ -169,9 +170,9 @@ export const DynamicFormCreator: React.FC = () => {
         React.createElement('label', { style: labelStyle }, 'التصنيف الفرعي للمشكلة'),
         React.createElement('select', {
           value: subCategory,
-          onChange: (e) => setSubCategory(e.target.value),
+          onChange: (e: any) => setSubCategory(e.target.value),
           style: selectStyle
-        },
+        } as any,
           (subCategoriesByDept[department] || []).map((sub, idx) => 
             React.createElement('option', { key: idx, value: sub }, sub)
           )

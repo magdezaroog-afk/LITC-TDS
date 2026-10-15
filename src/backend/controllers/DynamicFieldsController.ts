@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../db/client';
-import Logger from '../infrastructure/Logger';
+import { Logger } from '../infrastructure/Logger';
 import { redisManager } from '../infrastructure/RedisClient';
 
 import { getCache, setCache, invalidateCache } from '../infrastructure/CacheManager';

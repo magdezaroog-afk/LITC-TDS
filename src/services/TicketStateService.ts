@@ -83,18 +83,18 @@ export class TicketStateService {
         throw new NotFoundError(`Ticket with ID ${ticketId} not found.`);
       }
 
-      // 1.5 Check Parent-Child Governance if Target is CLOSED
+      // 1.5 Check Parent-Child Governance if Target is CLOSED or RESOLVED
       const targetState = await tx.ticketState.findUnique({ where: { id: targetStateId } });
-      if (targetState?.name === 'CLOSED') {
-        const openSubTickets = ticket.subTickets.filter((st: any) => st.state?.name !== 'CLOSED');
+      if (targetState?.name === 'CLOSED' || targetState?.name === 'RESOLVED') {
+        const openSubTickets = ticket.subTickets.filter((st: any) => !['CLOSED', 'RESOLVED'].includes(st.state?.name) && !st.isDeleted);
         if (openSubTickets.length > 0) {
           const { NotificationEngine } = require('../backend/services/NotificationEngine');
           NotificationEngine.broadcast({
             type: 'DANGER',
-            message: `مخالفة تشغيلية: محاولة إغلاق التذكرة الأم (${ticketId}) بينما يوجد تذاكر فرعية مفتوحة!`,
+            message: `مخالفة تشغيلية: محاولة إغلاق أو اعتماد التذكرة الأم (${ticketId}) بينما يوجد (${openSubTickets.length}) تذاكر فرعية مفتوحة!`,
             targetRole: 'IT_Admin'
           });
-          throw new UnauthorizedTransitionError(`Governance Violation: Cannot close Parent Ticket ${ticketId} with open Sub-Tickets.`);
+          throw new UnauthorizedTransitionError(`لا يمكن إغلاق أو اعتماد اكتمال التذكرة الأم (${ticketId}) لوجود (${openSubTickets.length}) تذاكر فرعية ما زالت قيد المعالجة ولم يتم قفلها بعد.`);
         }
       }
 

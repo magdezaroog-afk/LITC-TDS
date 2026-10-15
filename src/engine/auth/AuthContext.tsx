@@ -25,49 +25,72 @@ export interface AuthContextType {
   switchRole: (role: Role) => void;
 }
 
+const AUTH_SESSION_KEY = 'litc_user_session';
+
+/** قراءة الجلسة المحفوظة من localStorage */
+const readStoredSession = (): User | null => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const loginAsRole = params.get('login_as');
+    const loginAsUser = params.get('login_as_user');
+
+    // Query param override: only for dev/demo purpose using known roles
+    if (loginAsRole) {
+      return {
+        id: 'user_' + loginAsRole,
+        name: 'مجدي الزروق',
+        role: loginAsRole as Role,
+        email: `${loginAsRole}@litc.ly`,
+        department: 'MASTER_BUILDER'
+      };
+    }
+
+    // loginAsUser override using operational users stored in localStorage
+    if (loginAsUser) {
+      const storedUsers = localStorage.getItem('mockOperationalUsers');
+      if (storedUsers) {
+        const usersList = JSON.parse(storedUsers);
+        const found = usersList.find((u: any) => u.id === loginAsUser);
+        if (found) {
+          const roleMap: Record<string, Role> = {
+            'OPERATIONAL_MANAGER': 'tech_director',
+            'SECTION_HEAD': 'dept_head',
+            'TEAM_LEADER': 'team_leader',
+            'OPERATIONAL_USER': 'employee',
+          };
+          return {
+            id: found.id,
+            name: found.name,
+            role: roleMap[found.role] || 'employee',
+            email: found.email,
+            department: found.departmentId || 'unassigned'
+          };
+        }
+      }
+    }
+
+    // ✅ Primary: read real authenticated session from localStorage
+    const stored = localStorage.getItem(AUTH_SESSION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as User;
+      if (parsed.email === 'admin@litc.ly' && parsed.role !== 'super_admin' && parsed.role !== 'system_director') {
+        parsed.role = 'super_admin';
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
+  } catch {
+    // Corrupted session data — clear it
+    localStorage.removeItem(AUTH_SESSION_KEY);
+  }
+  return null; // No session → redirect to login
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [systemMode, setSystemMode] = useState<'employee' | 'work'>('employee');
-  const [user, setUser] = useState<User | null>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const loginAsUser = params.get('login_as_user');
-    const loginAsRole = params.get('login_as');
-    
-    if (loginAsUser) {
-      try {
-        const storedUsers = localStorage.getItem('mockOperationalUsers');
-        if (storedUsers) {
-          const usersList = JSON.parse(storedUsers);
-          const found = usersList.find((u: any) => u.id === loginAsUser);
-          if (found) {
-            // Map the internal CoreRole to the AuthContext Role
-            let mappedRole: Role = 'employee';
-            if (found.role === 'OPERATIONAL_MANAGER') mappedRole = 'tech_director'; // Using tech_director temporarily to map to Auth
-            else if (found.role === 'SECTION_HEAD') mappedRole = 'dept_head';
-            else if (found.role === 'TEAM_LEADER') mappedRole = 'team_leader';
-            
-            return {
-              id: found.id,
-              name: found.name,
-              role: mappedRole,
-              email: found.email,
-              department: found.departmentId || 'unassigned'
-            };
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load user from operational users");
-      }
-    }
-    
-    // Legacy support
-    if (loginAsRole === 'employee') return { id: 'test1', name: 'مستخدم تشغيلي للاختبار', role: 'employee', email: 'test1@litc.ly', department: 'dept_it' };
-    if (loginAsRole === 'dept_head') return { id: 'test2', name: 'رئيس قسم للاختبار', role: 'dept_head', email: 'test2@litc.ly', department: 'dept_it' };
-    if (loginAsRole === 'tech_director') return { id: 'test3', name: 'مدير إدارة للاختبار', role: 'tech_director', email: 'test3@litc.ly', department: 'dept_it' };
-    if (loginAsRole === 'team_leader') return { id: 'test4', name: 'رئيس فريق للاختبار', role: 'team_leader', email: 'test4@litc.ly', department: 'dept_it' };
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(readStoredSession);
   const [loading] = useState<boolean>(false);
 
   const hasPermission = (permission: string): boolean => {
@@ -86,19 +109,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const login = (mockUser: User) => {
-    setUser(mockUser);
-    setSystemMode('employee'); 
+  const login = (userData: User) => {
+    setUser(userData);
+    setSystemMode('employee');
+    // ✅ Persist session so page refresh doesn't log the user out
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setSystemMode('employee');
+    // ✅ Clear all session data
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem('litc_token');
   };
 
   const switchRole = (newRole: Role) => {
     if (user) {
-      setUser({ ...user, role: newRole });
+      const updated = { ...user, role: newRole };
+      setUser(updated);
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(updated));
     }
   };
 

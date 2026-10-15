@@ -45,16 +45,19 @@ const DynamicFormCreator = React.lazy(() =>
   import('../../components/organisms/DynamicFormCreator').then(m => ({ default: m.DynamicFormCreator }))
 );
 
-const OperationalDashboard = React.lazy(() => 
-  import('../../components/dashboard/OperationalDashboard').then(m => ({ default: m.OperationalDashboard }))
+// OperationalDashboard — stub until component is implemented
+const OperationalDashboard = React.lazy(() =>
+  Promise.resolve({ default: () => React.createElement('div', { style: { padding: 24 } }, 'OperationalDashboard — قيد التطوير') })
 );
 
-const AdminGovernanceConsole = React.lazy(() => 
-  import('../../components/admin/AdminGovernanceConsole').then(m => ({ default: m.AdminGovernanceConsole }))
+// AdminGovernanceConsole — stub until component is implemented
+const AdminGovernanceConsole = React.lazy(() =>
+  Promise.resolve({ default: () => React.createElement('div', { style: { padding: 24 } }, 'AdminGovernanceConsole — قيد التطوير') })
 );
 
-const GovernanceAnalytics = React.lazy(() => 
-  import('../../components/admin/GovernanceAnalytics').then(m => ({ default: m.GovernanceAnalytics }))
+// GovernanceAnalytics — محرك التحليلات والمقارنة الذكي الفعلي
+const GovernanceAnalytics = React.lazy(() =>
+  import('../../components/analytics/DynamicFormAwareAnalytics').then(m => ({ default: m.DynamicFormAwareAnalytics }))
 );
 
 // سجل المكونات المتاح للوصول السريع

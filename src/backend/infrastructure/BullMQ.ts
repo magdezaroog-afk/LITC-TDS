@@ -1,4 +1,4 @@
-import { Queue, Worker, QueueScheduler, Job } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
 import { redisManager } from './RedisClient';
 import { Logger } from './Logger';
 import { SlaMonitorJob } from '../../jobs/SlaMonitorJob';
@@ -37,9 +37,10 @@ export const initializeQueues = async () => {
 
   // Run SLA monitor every 60 seconds (1 minute)
   await slaQueue.add('check-sla-breaches', {}, {
-    repeat: {
-      pattern: '* * * * *' // Every minute
-    }
+    jobId: 'sla-monitor-repeatable',
+    ...({
+      repeat: { pattern: '* * * * *' }
+    } as any)
   });
 
   Logger.info('[BullMQ] Initialized repeatable jobs.');

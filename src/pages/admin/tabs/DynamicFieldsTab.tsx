@@ -21,8 +21,7 @@ export interface DynamicFieldOption {
 export interface DynamicCustomField {
   id: string;
   name: string;
-  /** خيارات المستدلة المستقلة */
-  options: DynamicFieldOption[]; // تحويل من نصوص لكائنات
+  options: any[];
   // ── نظام قديم (للتوافق) ──
   dependsOn?: string;
   dependencyMap?: Record<string, string[]>;
@@ -173,11 +172,12 @@ export const DynamicFieldsTab: React.FC = () => {
 
   // ── Save child field bound to a specific parent option ──
   const handleSaveChildField = () => {
-    if (!bindingParentId || !bindTriggerValue || !bindChildName.trim() || bindChildOptions.length === 0) return;
+    if (!bindingParentId || !bindTriggerValue || bindChildOptions.length === 0) return;
     const childId = `field_${Date.now()}`;
+    const childName = (bindChildName || bindTriggerValue).trim();
     const childField: DynamicCustomField = {
       id: childId,
-      name: bindChildName.trim(),
+      name: childName,
       options: bindChildOptions,
       childBindings: [],
       // نحتفظ بـ dependsOn للتوافق مع الكود القديم
@@ -271,7 +271,7 @@ export const DynamicFieldsTab: React.FC = () => {
                   <button className="dft-btn dft-chip"
                     onClick={() => {
                       if (isAddingHere) { resetBinding(); }
-                      else { resetBinding(); setBindingParentId(field.id); setBindTriggerValue(opt); }
+                      else { resetBinding(); setBindingParentId(field.id); setBindTriggerValue(opt); setBindChildName(opt); }
                     }}
                     style={{ background: isAddingHere ? `${A.red}15` : `${A.green}15`, color: isAddingHere ? A.red : A.green }}>
                     {isAddingHere ? '× إلغاء' : '+ إضافة مستدلة فرعية'}
@@ -304,14 +304,17 @@ export const DynamicFieldsTab: React.FC = () => {
 
                 {/* Add Child Form */}
                 {isAddingHere && (
-                  <div style={{ padding: '16px 18px', background: `${A.green}06`, borderTop: `1px solid ${A.green}20` }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: A.green, marginBottom: 12 }}>
-                      ✚ مستدلة فرعية جديدة عند اختيار «{opt}»
+                  <div style={{ padding: '16px 18px', background: `${A.green}06`, borderTop: `1px solid ${A.green}20`, borderRadius: '0 0 12px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: `${A.green}12`, borderRadius: 10, border: `1px solid ${A.green}30`, marginBottom: 12 }}>
+                      <span style={{ fontSize: 16 }}>↳</span>
+                      <div>
+                        <div style={{ fontSize: 11, color: A.textSub, fontWeight: 600 }}>المستدلة الفرعية ترث اسم الخيار تلقائياً:</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: A.green }}>{opt}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <input className="dft-inp" placeholder="اسم المستدلة الفرعية (مثال: تصنيف العطل)" value={bindChildName} onChange={e => setBindChildName(e.target.value)} />
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input className="dft-inp" placeholder="اكتب خياراً واضغط Enter للإضافة..." value={bindChildOptionInput}
+                        <input className="dft-inp" placeholder="اكتب خياراً فرعياً واضغط Enter للإضافة..." value={bindChildOptionInput}
                           onChange={e => setBindChildOptionInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addBindChildOption(); } }}
                           style={{ flex: 1 }} />
@@ -327,9 +330,9 @@ export const DynamicFieldsTab: React.FC = () => {
                       )}
                       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                         <button className="dft-btn"
-                          disabled={!bindChildName.trim() || bindChildOptions.length === 0}
+                          disabled={bindChildOptions.length === 0}
                           onClick={handleSaveChildField}
-                          style={{ padding: '9px 20px', borderRadius: 9, background: (bindChildName.trim() && bindChildOptions.length > 0) ? A.green : A.textTer, color: '#fff', border: 'none', fontSize: 13, fontWeight: 700 }}>
+                          style={{ padding: '9px 20px', borderRadius: 9, background: bindChildOptions.length > 0 ? A.green : A.textTer, color: '#fff', border: 'none', fontSize: 13, fontWeight: 700 }}>
                           ✓ حفظ المستدلة الفرعية
                         </button>
                         <button className="dft-btn" onClick={resetBinding}

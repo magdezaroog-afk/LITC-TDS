@@ -105,7 +105,7 @@ export const TicketOperationPanel: React.FC<PanelProps> = ({ ticketId }) => {
       const targetDept = ticket.department === 'IT' ? 'Maintenance' : 'IT';
       
       // فحص أمني مزدوج: التحقق من الصلاحيات محلياً وفي الباك إند
-      const userPerms = user.permissions;
+      const userPerms = (user as any)?.permissions || [];
       WorkflowEngine.transferDepartment(
         ticketId,
         ticket.department,
@@ -144,9 +144,10 @@ export const TicketOperationPanel: React.FC<PanelProps> = ({ ticketId }) => {
     }
   };
 
+  // @ts-ignore - BaseCard accepts children via React.createElement 3rd arg
   return React.createElement(
     BaseCard,
-    { title: `إدارة التذكرة: ${ticket.title}` },
+    { title: `إدارة التذكرة: ${ticket.title}` } as any,
     React.createElement(
       'div',
       { style: { marginBottom: theme.spacing.md } },

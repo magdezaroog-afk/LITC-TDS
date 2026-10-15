@@ -275,29 +275,235 @@ export class FlowEngineService {
 
   /**
    * جلب خريطة رحلة التذكرة الكاملة (Journey Map)
+   * تشمل دورة حياة الطلب كاملة، التذاكر الفرعية المحالة للأقسام، وإشعار الإنجاز والعودة للمستلم الرئيسي
    */
   async getTicketJourney(ticketId: number) {
-    const progress = await prisma.ticketFlowProgress.findMany({
-      where: { ticketId },
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
       include: {
-        step: { select: { stepName: true, stepOrder: true, assignToType: true, assignToId: true, slaMinutes: true } },
-        handledByUser: { select: { id: true, fullName: true, jobTitle: true, avatarUrl: true } },
-      },
-      orderBy: { step: { stepOrder: 'asc' } },
+        creator: { select: { id: true, fullName: true, department: { select: { name: true } } } },
+        departmentObj: { select: { id: true, name: true } },
+        state: { select: { id: true, name: true, label: true } },
+        assignments: {
+          where: { isCurrentActive: true },
+          include: { assignedTech: { select: { id: true, fullName: true, department: { select: { name: true } } } } }
+        },
+        subTickets: {
+          where: { isDeleted: false },
+          include: {
+            state: { select: { id: true, name: true, label: true } },
+            departmentObj: { select: { id: true, name: true } },
+            creator: { select: { id: true, fullName: true } },
+            assignments: {
+              where: { isCurrentActive: true },
+              include: { assignedTech: { select: { id: true, fullName: true } } }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        flowProgress: {
+          include: {
+            step: { select: { stepName: true, stepOrder: true, assignToType: true, assignToId: true, slaMinutes: true } },
+            handledByUser: { select: { id: true, fullName: true, jobTitle: true, avatarUrl: true } },
+          },
+          orderBy: { step: { stepOrder: 'asc' } },
+        },
+        logs: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
     });
 
-    return progress.map(p => ({
-      stepOrder: p.step.stepOrder,
-      stepName: p.step.stepName,
-      assignToType: p.step.assignToType,
-      assignToId: p.step.assignToId,
-      slaMinutes: p.step.slaMinutes,
-      status: p.status,
-      startedAt: p.startedAt,
-      completedAt: p.completedAt,
-      handledBy: p.handledByUser,
-      notes: p.notes,
-    }));
+    if (!ticket) return [];
+
+    const primaryAssignee = ticket.assignments?.[0]?.assignedTech?.fullName || ticket.departmentObj?.name || 'مستلم الطلب الرئيسي';
+    const isMainClosed = ticket.state?.name === 'CLOSED';
+    const isMainResolved = ticket.state?.name === 'RESOLVED';
+
+    const steps: any[] = [];
+    let order = 1;
+
+    // 1. مرحلة التقديم والتسجيل
+    steps.push({
+      id: 'step-creation',
+      stepOrder: order++,
+      stepName: 'تقديم الطلب',
+      label: 'تم تقديم الطلب واعتماده بالمنظومة',
+      labelEn: 'Request Submitted & Registered',
+      action: 'تم تقديم الطلب واعتماده بالمنظومة',
+      status: 'completed',
+      actorName: ticket.creator?.fullName || 'مقدم الطلب',
+      actor: ticket.creator?.fullName || 'مقدم الطلب',
+      timestamp: ticket.createdAt.toISOString(),
+      notes: `تم توجيه المعاملة إلى: ${ticket.departmentObj?.name || 'الجهة المختصة'}`
+    });
+
+    // 2. مرحلة استلام المستلم الرئيسي وبدء المعالجة
+    const isAccepted = ticket.state?.name !== 'OPEN' || ticket.assignments?.length > 0;
+    if (isAccepted) {
+      steps.push({
+        id: 'step-acceptance',
+        stepOrder: order++,
+        stepName: 'استلام الطلب الرئيسي',
+        label: `استلام وبدء المعالجة لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+        labelEn: `Under Processing by Primary Handler (${primaryAssignee})`,
+        action: `استلام وبدء المعالجة لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+        status: 'completed',
+        actorName: primaryAssignee,
+        actor: primaryAssignee,
+        timestamp: ticket.createdAt.toISOString(),
+        notes: `المعاملة قيد المتابعة والإشراف المباشر من قبل: ${primaryAssignee}.`
+      });
+    }
+
+    // 3. مسار التذاكر والمهام الفرعية المحالة
+    const subTickets = ticket.subTickets || [];
+    for (const sub of subTickets) {
+      const targetDept = sub.departmentObj?.name || 'الجهة المستلمة للمهمة الفرعية';
+      const cleanTitle = sub.title.replace(/^\[مهمة فرعية\]\s*/, '');
+      const subTech = sub.assignments?.[0]?.assignedTech?.fullName;
+      const isSubDone = ['CLOSED', 'RESOLVED'].includes(sub.state?.name);
+
+      // أ) محطة إحالة المهمة الفرعية للطرف المستلم
+      steps.push({
+        id: `sub-dispatch-${sub.id}`,
+        stepOrder: order++,
+        stepName: 'إحالة مهمة فرعية',
+        label: `إحالة مهمة فرعية إلى (${targetDept}): ${cleanTitle}`,
+        labelEn: `Sub-ticket Dispatched to (${targetDept}): ${cleanTitle}`,
+        action: `إحالة مهمة فرعية إلى (${targetDept}): ${cleanTitle}`,
+        status: isSubDone ? 'completed' : 'current',
+        actorName: sub.creator?.fullName || primaryAssignee,
+        actor: sub.creator?.fullName || primaryAssignee,
+        timestamp: sub.createdAt.toISOString(),
+        notes: isSubDone 
+          ? `تمت إحالة المهمة مسبقاً إلى: ${targetDept}`
+          : `المهمة قيد التنفيذ حالياً لدى الطرف المستلم: ${targetDept}${subTech ? ` (${subTech})` : ''}`,
+        isSubTicketStep: true,
+        isReturnToPrimary: false,
+        subTicket: {
+          id: sub.id,
+          title: cleanTitle,
+          department: targetDept,
+          assignedTech: subTech,
+          status: sub.state?.label || sub.state?.name,
+          isClosed: isSubDone
+        }
+      });
+
+      // ب) محطة إنجاز المهمة الفرعية وعودتها للمستلم الرئيسي
+      if (isSubDone) {
+        steps.push({
+          id: `sub-complete-${sub.id}`,
+          stepOrder: order++,
+          stepName: 'إنجاز المهمة الفرعية',
+          label: `تم إنجاز المهمة الفرعية لدى (${targetDept}) — المعاملة الآن لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+          labelEn: `Sub-ticket Completed by (${targetDept}) — Handed Back to Primary Handler (${primaryAssignee})`,
+          action: `تم إنجاز المهمة الفرعية لدى (${targetDept}) — المعاملة الآن لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+          status: 'completed',
+          actorName: subTech || targetDept,
+          actor: subTech || targetDept,
+          timestamp: sub.updatedAt.toISOString(),
+          notes: `أنجز الطرف المستلم (${targetDept}) المهمة بنجاح وأقفلها من جهته. عادت المعاملة الآن لمتابعة مستلم الطلب الرئيسي (${primaryAssignee}).`,
+          isSubTicketStep: true,
+          isReturnToPrimary: true,
+          subTicket: {
+            id: sub.id,
+            title: cleanTitle,
+            department: targetDept,
+            assignedTech: subTech,
+            status: 'مكتملة ومقفلة',
+            isClosed: true
+          }
+        });
+      }
+    }
+
+    // 4. دمج خطوات محرك المسارات TicketFlowProgress (إن وجدت)
+    if (ticket.flowProgress && ticket.flowProgress.length > 0) {
+      for (const p of ticket.flowProgress) {
+        steps.push({
+          id: `flow-progress-${p.id}`,
+          stepOrder: order++,
+          stepName: p.step.stepName,
+          label: p.step.stepName,
+          labelEn: p.step.stepName,
+          action: p.step.stepName,
+          status: p.status === 'COMPLETED' ? 'completed' : p.status === 'IN_PROGRESS' ? 'current' : 'pending',
+          actorName: p.handledByUser?.fullName || primaryAssignee,
+          actor: p.handledByUser?.fullName || primaryAssignee,
+          timestamp: (p.completedAt || p.startedAt || ticket.updatedAt).toISOString(),
+          notes: p.notes,
+        });
+      }
+    }
+
+    // 5. الحالة الختامية والجارية للمعاملة
+    const hasOpenSubs = subTickets.some((s: any) => !['CLOSED', 'RESOLVED'].includes(s.state?.name));
+
+    if (isMainClosed) {
+      steps.push({
+        id: 'step-final-closed',
+        stepOrder: order++,
+        stepName: 'الإغلاق والاعتماد النهائي',
+        label: 'تم إنجاز الطلب وإغلاقه نهائياً',
+        labelEn: 'Ticket Successfully Resolved & Closed',
+        action: 'تم إنجاز الطلب وإغلاقه نهائياً',
+        status: 'completed',
+        actorName: primaryAssignee,
+        actor: primaryAssignee,
+        timestamp: ticket.updatedAt.toISOString(),
+        notes: ticket.resolutionNotes || 'تم استيفاء جميع المتطلبات وإقفال التذكرة بالكامل.'
+      });
+    } else if (isMainResolved) {
+      steps.push({
+        id: 'step-final-resolved',
+        stepOrder: order++,
+        stepName: 'بانتظار الاعتماد النهائي',
+        label: 'تم إنجاز الأعمال الفنية — بانتظار الاعتماد النهائي للإغلاق',
+        labelEn: 'Pending Final Closure Approval',
+        action: 'تم إنجاز الأعمال الفنية — بانتظار الاعتماد النهائي للإغلاق',
+        status: 'current',
+        actorName: primaryAssignee,
+        actor: primaryAssignee,
+        timestamp: ticket.updatedAt.toISOString(),
+        notes: 'الطلب بانتظار مراجعة واعتماد الإغلاق من المخولين.'
+      });
+    } else {
+      if (hasOpenSubs) {
+        steps.push({
+          id: 'step-waiting-subs',
+          stepOrder: order++,
+          stepName: 'بانتظار إنجاز المهام الفرعية',
+          label: 'المعاملة معلقة بانتظار قفل المهام الفرعية من الأطراف المستلمة',
+          labelEn: 'Waiting on Recipient Parties to Complete Sub-tickets',
+          action: 'المعاملة معلقة بانتظار قفل المهام الفرعية من الأطراف المستلمة',
+          status: 'current',
+          actorName: primaryAssignee,
+          actor: primaryAssignee,
+          timestamp: ticket.updatedAt.toISOString(),
+          notes: 'لا يمكن إقفال التذكرة حتى يقوم كل طرف مستلم للمهام الفرعية بإغلاقها من جهته أولاً.'
+        });
+      } else {
+        steps.push({
+          id: 'step-active-processing',
+          stepOrder: order++,
+          stepName: 'قيد المتابعة والإجراء النهائي',
+          label: subTickets.length > 0 
+            ? `اكتملت كافة المهام الفرعية — المعاملة الآن لدى مستلم الطلب الرئيسي (${primaryAssignee}) للإجراء النهائي`
+            : `المعاملة قيد المعالجة الفنية لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+          labelEn: `Active Processing by Primary Handler (${primaryAssignee})`,
+          action: `المعاملة لدى مستلم الطلب الرئيسي (${primaryAssignee})`,
+          status: 'current',
+          actorName: primaryAssignee,
+          actor: primaryAssignee,
+          timestamp: ticket.updatedAt.toISOString(),
+          notes: 'جاري العمل على إتمام متطلبات الطلب.'
+        });
+      }
+    }
+
+    return steps;
   }
 
   /**

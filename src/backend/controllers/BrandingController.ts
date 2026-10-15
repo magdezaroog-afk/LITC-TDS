@@ -12,18 +12,25 @@ const BRANDING_ID = 1; // Singleton row (one config per tenant)
 
 export const getBranding = async (_req: Request, res: Response): Promise<void> => {
   try {
-    let config = await (prisma as unknown as { brandingConfig: { findFirst: () => Promise<unknown> } }).brandingConfig.findFirst();
+    let config = await (prisma as unknown as { brandingConfig: { findFirst: () => Promise<any>; update: (args: any) => Promise<any> } }).brandingConfig.findFirst();
     if (!config) {
       // Auto-seed defaults on first request
       config = await (prisma as unknown as { brandingConfig: { create: (args: unknown) => Promise<unknown> } }).brandingConfig.create({
         data: {
           id: BRANDING_ID,
-          orgName: 'LITC System',
+          orgName: 'TdS',
           lightPrimary: '#6366f1',
           darkPrimary: '#00a3ff',
-          fontFamily: 'Inter',
+          fontFamily: 'Cairo',
         },
       });
+    } else if (config.orgName === 'LITC System') {
+      try {
+        config = await (prisma as any).brandingConfig.update({
+          where: { id: config.id },
+          data: { orgName: 'TdS' }
+        });
+      } catch {}
     }
     res.json(config);
   } catch (err: unknown) {

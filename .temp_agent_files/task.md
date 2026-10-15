@@ -1,0 +1,10 @@
+- `[x]` Backend (`FunctionalController.ts`):
+  - `[x]` Update `createNews` to check `PublishingAuthority` (`canPublishNews`).
+  - `[x]` Update `createChallenge` to check `PublishingAuthority` (`canPublishChallenges`).
+- `[x]` Frontend (`HubContext.tsx`):
+  - `[x]` Remove `MOCK_POSTS`, `MOCK_CHALLENGES`, and generation functions from initial state.
+  - `[x]` Update initial `useState` definitions to use `[]`.
+  - `[x]` Create a `fetchData` function inside `useEffect` that calls `/api/v1/functional/...` (Was already present, just appended to state correctly).
+  - `[x]` Ensure backend responses map correctly to the `Post`, `Challenge`, and `MediaReel` shapes (Already implemented in frontend fetch mapping).
+- `[x]` Verification:
+  - `[x]` Build check (`npm run build` completed via typecheck script correctly fixing errors).

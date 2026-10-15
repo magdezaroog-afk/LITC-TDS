@@ -42,7 +42,7 @@ export const PageRenderer: React.FC<{ layout: PageLayout }> = ({ layout }) => {
     layout.components.map((config) => {
       return React.createElement(
         ErrorBoundary,
-        { key: config.id, componentId: config.id }, // تمرير معرف المكون لـ ErrorBoundary
+        { key: config.id, componentId: config.id } as any, // تمرير معرف المكون لـ ErrorBoundary
         (() => {
           // 1. منطق التحقق من القائمة البيضاء (White-listing Verification)
           // يمنع استدعاء أو تمرير أي مكونات غير مسجلة رسمياً عبر الـ API Payload

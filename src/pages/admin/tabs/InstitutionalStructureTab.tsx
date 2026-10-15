@@ -173,7 +173,11 @@ const DraggableCard: React.FC<{ node: OrgNode, isRoot: boolean, zoom: number, on
 
 
 export const loadBuildings = (): any[] => {
-  return []; // Replaced by API call in component
+  try {
+    const cached = localStorage.getItem('litc_buildings');
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return [];
 };
 
 export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree: React.Dispatch<React.SetStateAction<OrgNode>> }> = ({ orgTree, setOrgTree }) => {
@@ -181,6 +185,14 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
   const [unassignedUsers, setUnassignedUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [poolSearchQuery, setPoolSearchQuery] = useState('');
+
+  React.useEffect(() => {
+    AdminAPI.getUserPool().then(data => {
+      if (Array.isArray(data)) {
+        setUnassignedUsers(data);
+      }
+    }).catch(err => console.error('Failed to load user pool:', err));
+  }, []);
   
   const findNodeById = (root: OrgNode, id: string): OrgNode | null => {
     if (root.id === id) return root;
@@ -398,30 +410,68 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
   
   const [editingNodeInfo, setEditingNodeInfo] = useState<{ id: string, name: string, type: string, shape: string } | null>(null);
 
+  // Smart Deletion Wizard State
+  const [smartDeleteWizard, setSmartDeleteWizard] = useState<{
+    isOpen: boolean;
+    nodeId: string | null;
+    nodeName: string | null;
+    isLoading: boolean;
+    error: string | null;
+    data: any | null;
+    userAction: 'pool' | 'reassign' | null;
+    targetDeptIdForUsers: string | null;
+    flowAction: 'deactivate' | 'reroute' | null;
+    targetDeptIdForFlows: string | null;
+  }>({
+    isOpen: false, nodeId: null, nodeName: null, isLoading: false, error: null, data: null,
+    userAction: null, targetDeptIdForUsers: null, flowAction: null, targetDeptIdForFlows: null
+  });
+
   React.useEffect(() => {
     setDraftOrgTree(orgTree);
   }, [orgTree]);
 
-  const updateDraft = (newTree: OrgNode) => {
+  const updateDraft = async (newTree: OrgNode) => {
     setDraftOrgTree(newTree);
     if (isAutoSave) {
-      setOrgTree(newTree);
+      try {
+        await AdminAPI.saveInstitutionalTree(newTree);
+        setOrgTree(newTree);
+      } catch (err: any) {
+        console.error('Auto-save org tree failed:', err);
+        setSaveMsg('ERR: ' + (err.message || 'فشل الحفظ'));
+        setTimeout(() => setSaveMsg(null), 8000);
+      }
     }
   };
 
-  const handleManualSave = () => {
-    setOrgTree(draftOrgTree);
-    alert('تم حفظ الهيكل التنظيمي بنجاح!');
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [saveMsg, setSaveMsg] = React.useState<string | null>(null);
+
+  const handleManualSave = async () => {
+    setIsSaving(true);
+    setSaveMsg(null);
+    try {
+      await AdminAPI.saveInstitutionalTree(draftOrgTree);
+      setOrgTree(draftOrgTree);
+      setSaveMsg('OK: تم حفظ الهيكل التنظيمي بنجاح في قاعدة البيانات!');
+    } catch (e: any) {
+      setSaveMsg('ERR: ' + (e.message || 'فشل حفظ الهيكل. تأكد من اتصال الخادم.'));
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMsg(null), 8000);
+    }
   };
 
 
   // Building State (kept simple for physical locations if needed)
-  // Building State
-  const [buildings, setBuildings] = useState<{id: string, globalId: string, name: string, type: 'BUILDING' | 'LOCATION'}[]>(loadBuildings);
+  const [buildings, setBuildings] = useState<{id: string | number, globalId: string, name: string, type: 'BUILDING' | 'LOCATION'}[]>(loadBuildings);
   
   React.useEffect(() => {
     AdminAPI.getBuildings().then(data => {
-      setBuildings(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : (data?.buildings || []);
+      setBuildings(list);
+      localStorage.setItem('litc_buildings', JSON.stringify(list));
     }).catch(err => console.error('Failed to load buildings', err));
   }, []);
 
@@ -463,34 +513,62 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
     }
   };
 
+  const [buildingModal, setBuildingModal] = useState<{isOpen: boolean, isEdit: boolean, id?: string, name: string, type: 'BUILDING' | 'LOCATION'}>({isOpen: false, isEdit: false, name: '', type: 'BUILDING'});
+
   const handleAddBuilding = () => {
-    const typeStr = window.prompt('أدخل النوع (1 للمبنى، 2 للموقع الجغرافي/المحطة):', '1');
-    if (!typeStr) return;
-    const type = typeStr === '2' ? 'LOCATION' : 'BUILDING';
-    const bName = window.prompt('أدخل اسم الموقع/المبنى الجديد:');
-    if (bName) {
-      const newB = { id: `b_${Date.now()}`, globalId: `b_${Date.now()}`, name: bName, type };
-      const updated = [...buildings, newB];
-      setBuildings(updated);
-      AdminAPI.saveBuildings(updated).catch(e => console.error(e));
-    }
+    setBuildingModal({ isOpen: true, isEdit: false, name: '', type: 'BUILDING' });
   };
 
-  const handleEditBuilding = (id: string, oldName: string, oldType: string) => {
-    const typeStr = window.prompt('أدخل النوع الجديد (1 للمبنى، 2 للموقع الجغرافي/المحطة):', oldType === 'LOCATION' ? '2' : '1');
-    if (!typeStr) return;
-    const type = typeStr === '2' ? 'LOCATION' : 'BUILDING';
-    const bName = window.prompt('تعديل اسم الموقع/المبنى:', oldName);
-    if (bName) {
-      const updated = buildings.map(b => (b.id === id || b.globalId === id) ? { ...b, name: bName, type } : b);
+  const handleEditBuilding = (id: string, oldName: string, oldType?: 'BUILDING' | 'LOCATION') => {
+    setBuildingModal({ isOpen: true, isEdit: true, id, name: oldName, type: oldType || 'BUILDING' });
+  };
+
+  const saveBuildingModal = () => {
+    if (!buildingModal.name.trim()) return;
+    if (buildingModal.isEdit && buildingModal.id) {
+      const updated = buildings.map(b => (String(b.id) === String(buildingModal.id) || b.globalId === buildingModal.id) ? { ...b, name: buildingModal.name.trim(), type: buildingModal.type } : b);
       setBuildings(updated);
-      AdminAPI.saveBuildings(updated).catch(e => console.error(e));
+      AdminAPI.saveBuildings(updated).then((res: any) => {
+        if (res && Array.isArray(res.buildings)) {
+          setBuildings(res.buildings);
+          localStorage.setItem('litc_buildings', JSON.stringify(res.buildings));
+        }
+      }).catch(e => {
+        console.error(e);
+        alert('حدث خطأ أثناء حفظ التعديل: ' + (e.message || ''));
+      });
+    } else {
+      const newB: { id: string; globalId: string; name: string; type: 'BUILDING' | 'LOCATION' } = { 
+        id: `b_${Date.now()}`, globalId: `b_${Date.now()}`, name: buildingModal.name.trim(), type: buildingModal.type 
+      };
+      const updated = [...buildings, newB];
+      setBuildings(updated);
+      AdminAPI.saveBuildings(updated).then((res: any) => {
+        if (res && Array.isArray(res.buildings)) {
+          setBuildings(res.buildings);
+          localStorage.setItem('litc_buildings', JSON.stringify(res.buildings));
+        }
+      }).catch(e => {
+        console.error(e);
+        alert('حدث خطأ أثناء حفظ المبنى الجديد: ' + (e.message || ''));
+      });
     }
+    setBuildingModal({ isOpen: false, isEdit: false, name: '', type: 'BUILDING' });
   };
 
   const handleDeleteBuilding = (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا المبنى؟')) {
-      setBuildings(prev => prev.filter(b => b.id !== id));
+    if (window.confirm('هل أنت متأكد من حذف هذا المبنى/الموقع؟ سيتم حفظ التغيير نهائياً.')) {
+      const updated = buildings.filter(b => String(b.id) !== String(id) && b.globalId !== id);
+      setBuildings(updated);
+      AdminAPI.saveBuildings(updated).then((res: any) => {
+        if (res && Array.isArray(res.buildings)) {
+          setBuildings(res.buildings);
+          localStorage.setItem('litc_buildings', JSON.stringify(res.buildings));
+        }
+      }).catch(e => {
+        console.error('[Buildings] Failed to sync delete with backend:', e);
+        alert('حدث خطأ أثناء حذف المبنى: ' + (e.message || ''));
+      });
     }
   };
 
@@ -543,13 +621,30 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
     }
   };
 
-  const handleDeleteNode = (nodeId: string) => {
+  const handleDeleteNode = async (nodeId: string) => {
     if (nodeId === orgTree.id) {
       alert('لا يمكن حذف الجذر الرئيسي للمؤسسة!');
       return;
     }
-    if (!window.confirm('سيتم حذف هذا الكيان وجميع الإدارات المتفرعة منه. هل أنت متأكد؟')) return;
+    const node = findNodeById(draftOrgTree, nodeId);
+    if (!node) return;
 
+    // Open Wizard
+    setSmartDeleteWizard(prev => ({ ...prev, isOpen: true, nodeId, nodeName: node.name, isLoading: true, error: null, data: null, userAction: 'pool', flowAction: 'deactivate', targetDeptIdForUsers: '', targetDeptIdForFlows: '' }));
+    
+    try {
+      const res = await AdminAPI.checkDepartmentDependencies(node.name);
+      setSmartDeleteWizard(prev => ({ ...prev, isLoading: false, data: res }));
+    } catch (err: any) {
+      setSmartDeleteWizard(prev => ({ ...prev, isLoading: false, error: err.message || 'فشل الفحص' }));
+    }
+  };
+
+  const executeSmartDelete = async () => {
+    if (!smartDeleteWizard.nodeId || !smartDeleteWizard.nodeName || !smartDeleteWizard.data) return;
+
+    const { data, userAction, targetDeptIdForUsers, flowAction, targetDeptIdForFlows, nodeId } = smartDeleteWizard;
+    
     const deleteRecursive = (node: OrgNode): OrgNode | null => {
       if (node.id === nodeId) return null;
       return {
@@ -559,7 +654,36 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
     };
 
     const newTree = deleteRecursive(draftOrgTree);
-    if (newTree) updateDraft(newTree);
+    if (!newTree) return;
+
+    if (!data.hasOperational) {
+      // Fast path: no operational dependencies
+      updateDraft(newTree);
+      setSmartDeleteWizard(prev => ({ ...prev, isOpen: false }));
+      return;
+    }
+
+    // Has operational dependencies, call backend smart delete
+    setSmartDeleteWizard(prev => ({ ...prev, isLoading: true }));
+    try {
+      await AdminAPI.smartDeleteDepartment({
+        deptId: data.deptId,
+        nodeName: smartDeleteWizard.nodeName,
+        treeWithoutNode: newTree,
+        userAction,
+        targetDeptIdForUsers,
+        flowAction,
+        targetDeptIdForFlows
+      });
+      // Success! Update local tree state completely (backend already saved it)
+      setDraftOrgTree(newTree);
+      setOrgTree(newTree);
+      setSmartDeleteWizard(prev => ({ ...prev, isOpen: false, isLoading: false }));
+      setSaveMsg('تم تنفيذ المعالج الذكي وتفكيك الإدارة بنجاح.');
+      setTimeout(() => setSaveMsg(null), 5000);
+    } catch (err: any) {
+      setSmartDeleteWizard(prev => ({ ...prev, isLoading: false, error: err.message || 'فشلت العملية' }));
+    }
   };
 
   // Recursive render component for the Tree
@@ -790,8 +914,8 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
                     <div style={{ fontSize: '12px', color: APPLE.textSecondary, marginTop: '2px' }}>{b.type === 'LOCATION' ? 'موقع جغرافي / محطة' : 'مبنى / فرع'}</div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => handleEditBuilding(b.globalId || b.id, b.name, b.type)} style={{ background: 'none', border: 'none', color: APPLE.blue, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>تعديل</button>
-                    <button onClick={() => handleDeleteBuilding(b.globalId || b.id)} style={{ background: 'none', border: 'none', color: APPLE.red, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>حذف</button>
+                    <button onClick={() => handleEditBuilding(b.globalId || String(b.id), b.name, b.type)} style={{ background: 'none', border: 'none', color: APPLE.blue, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>تعديل</button>
+                    <button onClick={() => handleDeleteBuilding(b.globalId || String(b.id))} style={{ background: 'none', border: 'none', color: APPLE.red, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', padding: 0 }}>حذف</button>
                   </div>
                 </div>
               ))}
@@ -1060,10 +1184,18 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
                    حفظ تلقائي
                  </label>
                  {!isAutoSave && (
-                   <button onClick={handleManualSave} style={{
-                     border: 'none', background: '#0052cc', color: '#fff', borderRadius: '10px',
-                     padding: '5px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer'
-                   }}>حفظ</button>
+                   <button onClick={handleManualSave} disabled={isSaving} style={{
+                     border: 'none', background: isSaving ? '#94a3b8' : '#0052cc', color: '#fff', borderRadius: '10px',
+                     padding: '5px 12px', fontSize: '12px', fontWeight: 700,
+                     cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'background 0.2s'
+                   }}>{isSaving ? 'جارٍ الحفظ...' : 'حفظ في DB'}</button>
+                 )}
+                 {saveMsg && (
+                   <span style={{
+                     fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '8px',
+                     color: saveMsg.startsWith('OK') ? '#15803d' : '#dc2626',
+                     background: saveMsg.startsWith('OK') ? '#f0fdf4' : '#fef2f2'
+                   }}>{saveMsg}</span>
                  )}
                  <div style={toolbarSep} />
                  <button onClick={() => setBgPanel(p => !p)} title="الخلفية / الشعار" style={{
@@ -1263,6 +1395,245 @@ export const InstitutionalStructureTab: React.FC<{ orgTree: OrgNode, setOrgTree:
                  </div>
                </div>
              )}
+          </div>
+        )}
+
+        {/* Smart Deletion Wizard Modal */}
+        {smartDeleteWizard.isOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div style={{ background: '#fff', borderRadius: '16px', width: '500px', maxWidth: '90vw', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', direction: 'rtl', display: 'flex', flexDirection: 'column', animation: 'appleReveal 0.3s ease' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '24px' }}>🛡️</span> معالج التفكيك الذكي
+                </h3>
+                <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '14px' }}>
+                  تأكيد حذف: <strong style={{ color: '#0f172a' }}>{smartDeleteWizard.nodeName}</strong>
+                </p>
+              </div>
+
+              <div style={{ padding: '24px', flex: 1, overflowY: 'auto', maxHeight: '60vh' }}>
+                {smartDeleteWizard.isLoading && (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#6366f1', fontWeight: 600 }}>جاري فحص التبعيات والتشغيلات...</div>
+                )}
+                
+                {smartDeleteWizard.error && (
+                  <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', color: '#991b1b', marginBottom: '16px' }}>
+                    {smartDeleteWizard.error}
+                  </div>
+                )}
+
+                {!smartDeleteWizard.isLoading && smartDeleteWizard.data && (
+                  <div>
+                    {!smartDeleteWizard.data.hasOperational ? (
+                      <div style={{ padding: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', marginBottom: '16px' }}>
+                        هذه الإدارة ليس لها وجود تشغيلي فعلي (لا موظفين ولا مسارات). الحذف آمن تماماً.
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+                          <div style={{ padding: '12px', background: '#f1f5f9', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 800, color: '#3b82f6' }}>{smartDeleteWizard.data.userCount}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>الموظفين</div>
+                          </div>
+                          <div style={{ padding: '12px', background: '#f1f5f9', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 800, color: '#eab308' }}>{smartDeleteWizard.data.activeFlowsCount}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>المسارات النشطة</div>
+                          </div>
+                          <div style={{ padding: '12px', background: '#f1f5f9', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 800, color: '#ef4444' }}>{smartDeleteWizard.data.openTicketsCount}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>تذاكر مفتوحة</div>
+                          </div>
+                        </div>
+
+                        {smartDeleteWizard.data.openTicketsCount > 0 ? (
+                          <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c' }}>
+                            <h4 style={{ margin: '0 0 8px 0', fontSize: '15px' }}>🚫 لا يمكن المتابعة</h4>
+                            <p style={{ margin: 0, fontSize: '13px' }}>
+                              هذه الإدارة تمتلك تذاكر مفتوحة، يرجى معالجتها أو تحويلها من لوحة العمليات التشغيلية أولاً.
+                            </p>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* Users Action */}
+                            {smartDeleteWizard.data.userCount > 0 && (
+                              <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#334155' }}>معالجة الكادر الوظيفي</h4>
+                                <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="radio" name="userAction" checked={smartDeleteWizard.userAction === 'pool'} onChange={() => setSmartDeleteWizard(prev => ({...prev, userAction: 'pool'}))} />
+                                    إرجاع للهيكل بدون تنسيب
+                                  </label>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="radio" name="userAction" checked={smartDeleteWizard.userAction === 'reassign'} onChange={() => setSmartDeleteWizard(prev => ({...prev, userAction: 'reassign'}))} />
+                                    نقل لإدارة أخرى
+                                  </label>
+                                </div>
+                                {smartDeleteWizard.userAction === 'reassign' && (
+                                  <select 
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                    value={smartDeleteWizard.targetDeptIdForUsers || ''}
+                                    onChange={(e) => setSmartDeleteWizard(prev => ({...prev, targetDeptIdForUsers: e.target.value}))}
+                                  >
+                                    <option value="" disabled>اختر الإدارة البديلة...</option>
+                                    {smartDeleteWizard.data.allDepts.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                  </select>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Flows Action */}
+                            {smartDeleteWizard.data.activeFlowsCount > 0 && (
+                              <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#334155' }}>معالجة المسارات ({smartDeleteWizard.data.activeFlowsCount})</h4>
+                                <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="radio" name="flowAction" checked={smartDeleteWizard.flowAction === 'deactivate'} onChange={() => setSmartDeleteWizard(prev => ({...prev, flowAction: 'deactivate'}))} />
+                                    إيقاف / تعطيل المسارات
+                                  </label>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="radio" name="flowAction" checked={smartDeleteWizard.flowAction === 'reroute'} onChange={() => setSmartDeleteWizard(prev => ({...prev, flowAction: 'reroute'}))} />
+                                    توجيه لإدارة أخرى
+                                  </label>
+                                </div>
+                                {smartDeleteWizard.flowAction === 'reroute' && (
+                                  <select 
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                    value={smartDeleteWizard.targetDeptIdForFlows || ''}
+                                    onChange={(e) => setSmartDeleteWizard(prev => ({...prev, targetDeptIdForFlows: e.target.value}))}
+                                  >
+                                    <option value="" disabled>اختر الإدارة البديلة للمسارات...</option>
+                                    {smartDeleteWizard.data.allDepts.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                  </select>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button onClick={() => setSmartDeleteWizard(prev => ({...prev, isOpen: false}))} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#e2e8f0', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>إلغاء</button>
+                
+                <button 
+                  onClick={executeSmartDelete} 
+                  disabled={
+                    smartDeleteWizard.isLoading || 
+                    (smartDeleteWizard.data && smartDeleteWizard.data.openTicketsCount > 0) ||
+                    (smartDeleteWizard.userAction === 'reassign' && !smartDeleteWizard.targetDeptIdForUsers) ||
+                    (smartDeleteWizard.flowAction === 'reroute' && !smartDeleteWizard.targetDeptIdForFlows)
+                  }
+                  style={{ 
+                    padding: '10px 24px', borderRadius: '8px', border: 'none', 
+                    background: (smartDeleteWizard.data?.openTicketsCount > 0) ? '#94a3b8' : '#ef4444', 
+                    color: '#fff', fontWeight: 600, cursor: (smartDeleteWizard.data?.openTicketsCount > 0) ? 'not-allowed' : 'pointer',
+                    opacity: (smartDeleteWizard.isLoading || (smartDeleteWizard.data && smartDeleteWizard.data.openTicketsCount > 0) || (smartDeleteWizard.userAction === 'reassign' && !smartDeleteWizard.targetDeptIdForUsers) || (smartDeleteWizard.flowAction === 'reroute' && !smartDeleteWizard.targetDeptIdForFlows)) ? 0.6 : 1
+                  }}>
+                  {smartDeleteWizard.isLoading ? 'جاري التنفيذ...' : 'تأكيد التفكيـك الذكي'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Building Modal */}
+        {buildingModal.isOpen && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+          }}>
+            <div style={{
+              background: '#fff', borderRadius: '16px', padding: '30px',
+              width: '400px', maxWidth: '90%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              animation: 'appleReveal 0.3s ease'
+            }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#1e293b' }}>
+                {buildingModal.isEdit ? 'تعديل بيانات المبنى / الموقع' : 'إضافة مبنى أو موقع جديد'}
+              </h3>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>
+                  نوع المنشأة
+                </label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBuildingModal(prev => ({ ...prev, type: 'BUILDING' }))}
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                      borderColor: buildingModal.type === 'BUILDING' ? '#3b82f6' : '#cbd5e1',
+                      background: buildingModal.type === 'BUILDING' ? '#eff6ff' : '#fff',
+                      color: buildingModal.type === 'BUILDING' ? '#1d4ed8' : '#475569',
+                      fontWeight: buildingModal.type === 'BUILDING' ? 700 : 500,
+                      cursor: 'pointer', fontSize: '13px'
+                    }}
+                  >
+                    🏢 مبنى / فرع
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBuildingModal(prev => ({ ...prev, type: 'LOCATION' }))}
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                      borderColor: buildingModal.type === 'LOCATION' ? '#3b82f6' : '#cbd5e1',
+                      background: buildingModal.type === 'LOCATION' ? '#eff6ff' : '#fff',
+                      color: buildingModal.type === 'LOCATION' ? '#1d4ed8' : '#475569',
+                      fontWeight: buildingModal.type === 'LOCATION' ? 700 : 500,
+                      cursor: 'pointer', fontSize: '13px'
+                    }}
+                  >
+                    📍 موقع جغرافي / محطة
+                  </button>
+                </div>
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: '#475569' }}>
+                  الاسم
+                </label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={buildingModal.name}
+                  onChange={e => setBuildingModal(prev => ({...prev, name: e.target.value}))}
+                  onKeyDown={e => { if (e.key === 'Enter') saveBuildingModal(); }}
+                  placeholder="مثال: المبنى الرئيسي، فرع طرابلس..."
+                  style={{
+                    width: '100%', padding: '12px 16px', borderRadius: '10px',
+                    border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={() => setBuildingModal({ isOpen: false, isEdit: false, name: '', type: 'BUILDING' })}
+                  style={{
+                    padding: '10px 16px', borderRadius: '8px', border: 'none',
+                    background: '#f1f5f9', color: '#475569', fontWeight: 600,
+                    cursor: 'pointer', fontSize: '14px'
+                  }}>
+                  إلغاء
+                </button>
+                <button 
+                  onClick={saveBuildingModal}
+                  disabled={!buildingModal.name.trim()}
+                  style={{
+                    padding: '10px 20px', borderRadius: '8px', border: 'none',
+                    background: buildingModal.name.trim() ? '#3b82f6' : '#94a3b8', 
+                    color: '#fff', fontWeight: 600,
+                    cursor: buildingModal.name.trim() ? 'pointer' : 'not-allowed', 
+                    fontSize: '14px'
+                  }}>
+                  حفظ
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

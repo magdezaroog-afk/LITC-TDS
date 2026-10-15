@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { WorkflowViolationError } from '../controllers/DatabaseController';
+import { WorkflowViolationError } from '../controllers/Database/DatabaseCore';
 
 /**
  * وسيط معالجة الأخطاء الشامل والمجمد أمنياً

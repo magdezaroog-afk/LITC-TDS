@@ -1,14 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useThemeEngine } from '../../engine/ui-loader/ThemeProvider';
 import { useAuth } from '../../engine/auth/AuthContext';
-
-
 
 /* ─────────────────────────────────────────────────────────────
    Mobile Bottom Navigation Bar — Premium Floating Island 2026
    بيل فلوتينج آيلاند — أسلوب ديناميكي مع أنيميشن ناعم
    ───────────────────────────────────────────────────────────── */
+
+// Fallback translation helper (until i18n is fully integrated)
+const t = (key: string, fallback?: string): string => fallback || key;
 
 const STYLES_ID = 'litc-bottomnav-v2';
 
@@ -18,9 +19,6 @@ const injectStyles = () => {
   s.id = STYLES_ID;
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap');
-
-// Dummy t function to prevent crash
-const t = (key: any, fallback?: any) => fallback || key;
 
     @keyframes litcNavIslandIn {
       from { opacity: 0; transform: translateY(40px) scale(0.92); }
@@ -56,7 +54,7 @@ const t = (key: any, fallback?: any) => fallback || key;
       padding-bottom: max(env(safe-area-inset-bottom, 10px), 10px);
       pointer-events: none;
       background: linear-gradient(to top, var(--bg-main, rgba(5,5,7,0.9)) 0%, rgba(5,5,7,0) 100%);
-      padding-top: 40px; /* Give space for gradient fade */
+      padding-top: 40px;
     }
 
     [data-theme='light'] .litc-bnav-wrap {
@@ -155,7 +153,6 @@ const t = (key: any, fallback?: any) => fallback || key;
       animation: litcNavLabelSlide 0.3s ease 0.05s both;
     }
 
-    /* Active dot indicator */
     .litc-bnav-dot {
       position: absolute;
       bottom: 5px;
@@ -172,7 +169,6 @@ const t = (key: any, fallback?: any) => fallback || key;
       animation: litcNavGlow 2s ease-in-out infinite;
     }
 
-    /* Ripple on tap */
     .litc-bnav-ripple {
       position: absolute;
       width: 40px; height: 40px;
@@ -196,10 +192,10 @@ interface NavItem {
 export const MobileBottomNav: React.FC = () => {
 
   const ALL_NAV_ITEMS: NavItem[] = [
-    { icon: '🏠', label: t('ui.home'),  path: '/' },
-    { icon: '📊', label: t('ui.auto_1252', 'التحليلات'), path: '/mobile/analytics' },
-    { icon: '🔔', label: t('notifications.title'), path: '/notifications' },
-    { icon: '🛡️', label: t('ui.auto_1253', 'الحوكمة'),   path: '/admin', roles: ['super_admin', 'co_admin', 'system_director'] },
+    { icon: '🏠', label: t('ui.home', 'الرئيسية'),  path: '/' },
+    { icon: '📊', label: t('ui.analytics', 'التحليلات'), path: '/mobile/analytics' },
+    { icon: '🔔', label: t('notifications.title', 'الإشعارات'), path: '/notifications' },
+    { icon: '🛡️', label: t('ui.governance', 'الحوكمة'),   path: '/admin', roles: ['super_admin', 'co_admin', 'system_director'] },
   ];
 
   injectStyles();
@@ -212,7 +208,6 @@ export const MobileBottomNav: React.FC = () => {
   const isDark  = mode === 'dark';
   const primary = `var(--litc-primary, ${isDark ? '#00a3ff' : '#6366f1'})`;
 
-  /* ── Design tokens per mode ── */
   const tok = isDark
     ? {
         island:   'rgba(18, 18, 30, 0.92)',
@@ -229,7 +224,6 @@ export const MobileBottomNav: React.FC = () => {
         pillBg:   'rgba(99,102,241,0.08)',
       };
 
-  /* Filter by role */
   const items = ALL_NAV_ITEMS.filter(item =>
     !item.roles || (user?.role && item.roles.includes(user.role))
   );
@@ -237,7 +231,6 @@ export const MobileBottomNav: React.FC = () => {
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
-  /* Ripple effect */
   const addRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
     const ripple = document.createElement('span');
@@ -252,7 +245,7 @@ export const MobileBottomNav: React.FC = () => {
       <nav
         className="litc-bnav-island"
         role="navigation"
-        aria-label={t('ui.auto_1254') || 'القائمة الرئيسية'}
+        aria-label={t('ui.main_nav', 'القائمة الرئيسية')}
         style={{
           background: tok.island,
           backdropFilter: 'blur(32px) saturate(180%)',
@@ -274,35 +267,24 @@ export const MobileBottomNav: React.FC = () => {
               aria-current={active ? 'page' : undefined}
               style={{ flex: 1 }}
             >
-              {/* Active pill background */}
               <span
                 className="litc-bnav-pill"
                 style={{ background: active ? tok.pillBg : 'transparent' }}
               />
-
-              {/* Icon container */}
               <span className="litc-bnav-icon-wrap">
                 <span
                   className="litc-bnav-icon"
-                  style={{
-                    filter: active
-                      ? 'none'
-                      : 'grayscale(60%) opacity(0.55)',
-                  }}
+                  style={{ filter: active ? 'none' : 'grayscale(60%) opacity(0.55)' }}
                 >
                   {item.icon}
                 </span>
               </span>
-
-              {/* Label — only shows when active */}
               <span
                 className="litc-bnav-label"
                 style={{ color: active ? primary : tok.textMute }}
               >
                 {item.label}
               </span>
-
-              {/* Glowing dot */}
               <span
                 className="litc-bnav-dot"
                 style={{ background: primary }}

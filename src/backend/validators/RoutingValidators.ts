@@ -1,30 +1,116 @@
 import { z } from 'zod';
 
-// Routing Rules
+// ─── Dynamic Field Option ─────────────────────────────────────────────────────
+const dynamicFieldOptionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  isActive: z.boolean().default(true),
+});
+
+// ─── Child Field Binding ───────────────────────────────────────────────────────
+const childFieldBindingSchema = z.object({
+  childFieldId: z.string().min(1),
+  triggerValue: z.string().min(1),
+});
+
+// ─── Dynamic Custom Field (stored globally, referenced by routes) ──────────────
+const dynamicCustomFieldSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  options: z.array(dynamicFieldOptionSchema),
+  childBindings: z.array(childFieldBindingSchema).optional(),
+});
+
+// ─── Save Dynamic Fields ──────────────────────────────────────────────────────
+export const saveDynamicFieldsSchema = z.object({
+  fields: z.array(dynamicCustomFieldSchema),
+});
+
+// ─── Route Form Config ────────────────────────────────────────────────────────
+const routeFormConfigSchema = z.object({
+  showBuildingField: z.boolean().optional().default(false),
+  mandatoryBuilding: z.boolean().optional().default(false),
+  showDepartmentField: z.boolean().optional().default(false),
+  mandatoryDepartment: z.boolean().optional().default(false),
+  departmentSelectionLevel: z.enum(['DEPT_ONLY', 'DEPT_AND_DIV', 'FULL_HIERARCHY']).optional().default('DEPT_ONLY'),
+  mandatoryDivision: z.boolean().optional().default(false),
+  mandatoryTeam: z.boolean().optional().default(false),
+  showDescription: z.boolean().default(true),
+  mandatoryDescription: z.boolean().default(true),
+  showAttachments: z.boolean().default(true),
+  mandatoryAttachments: z.boolean().default(false),
+  attachmentTypes: z.array(z.string()).default(['PDF', 'PNG', 'JPG']),
+  maxAttachmentMB: z.number().int().min(1).max(500).default(5),
+  taxonomy: z.array(z.any()).default([]),
+  customFieldIds: z.array(z.string()).default([]),
+  routeDynamicFields: z.array(
+    z.object({
+      fieldId: z.string(),
+      isRequired: z.boolean().default(true),
+    })
+  ).default([]),
+  // ─── Smart Time & Scheduling Engine (نظام الجدولة والوقت الذكي) ───
+  showScheduleEngine: z.boolean().optional().default(false),
+  mandatorySchedule: z.boolean().optional().default(false),
+  scheduleLabel: z.string().optional().default('الجدولة الزمنية / فترة الطلب'),
+  scheduleMode: z.enum(['ANY', 'DATE_RANGE', 'DISCRETE_DAYS', 'HOURLY_WINDOW', 'SINGLE_DATE']).optional().default('ANY'),
+
+  // ─── Delegate Colleague (الموظف البديل / تسليم المهام) ───
+  showDelegateUser: z.boolean().optional().default(false),
+  mandatoryDelegateUser: z.boolean().optional().default(false),
+  delegateUserLabel: z.string().optional().default('الموظف البديل / تسليم المهام'),
+
+  // ─── Compatibility Fields ───
+  showDateRange: z.boolean().optional().default(false),
+  mandatoryDateRange: z.boolean().optional().default(false),
+  dateRangeType: z.string().optional().default('DATE_ONLY'),
+  dateRangeLabel: z.string().optional().default('الفترة الزمنية / التاريخ'),
+  showVehicleField: z.boolean().optional().default(false),
+  mandatoryVehicle: z.boolean().optional().default(false),
+  vehicleFieldLabel: z.string().optional().default(''),
+  showAmountField: z.boolean().optional().default(false),
+  mandatoryAmount: z.boolean().optional().default(false),
+  amountFieldLabel: z.string().optional().default(''),
+  showHealthField: z.boolean().optional().default(false),
+  mandatoryHealth: z.boolean().optional().default(false),
+  healthFieldLabel: z.string().optional().default(''),
+}).passthrough();
+
+// ─── Ticket Route Definition (بنية Frontend الحقيقية) ───────────────────────
 export const routeSchema = z.object({
   id: z.string().optional(),
-  ruleName: z.string().min(1, 'Rule name is required'),
-  conditionField: z.string().min(1, 'Condition field is required'),
-  conditionOperator: z.enum(['EQUALS', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH', 'GREATER_THAN', 'LESS_THAN', 'IN']),
-  conditionValue: z.string().min(1, 'Condition value is required'),
-  targetDepartment: z.number().int().positive('Target Department ID is required'),
-  priority: z.number().int().optional()
-});
+  name: z.string().min(1, 'Route name is required'),
+  description: z.string().default(''),
+  icon: z.string().default('ClipboardList'),
+  color: z.string().default('#007AFF'),
+  targetDepartmentId: z.union([z.string(), z.number()]).transform(v => String(v)),
+  targetDepartmentName: z.string().default(''),
+  targetDivisionId: z.union([z.string(), z.number()]).optional().transform(v => v !== undefined && v !== null ? String(v) : ''),
+  targetDivisionName: z.string().optional().default(''),
+  targetTeamId: z.union([z.string(), z.number()]).optional().transform(v => v !== undefined && v !== null ? String(v) : ''),
+  targetTeamName: z.string().optional().default(''),
+  managerId: z.union([z.string(), z.number()]).optional().nullable().transform(v => v !== undefined && v !== null && v !== '' ? String(v) : undefined),
+  managerName: z.string().optional().nullable().default(''),
+  formConfig: routeFormConfigSchema.default(() => routeFormConfigSchema.parse({})),
+  isActive: z.boolean().default(true),
+  captured_historical_data: z.any().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+}).passthrough();
 
+// ─── Save Routes Snapshot ─────────────────────────────────────────────────────
 export const saveRoutesSnapshotSchema = z.object({
-  routes: z.array(routeSchema)
+  routes: z.array(routeSchema),
 });
 
-// Dynamic Fields
-export const saveDynamicFieldsSchema = z.object({
-  fields: z.array(
-    z.object({
-      id: z.string().min(1, 'Field ID is required'),
-      name: z.string().min(1, 'Field name is required'),
-      type: z.enum(['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'SELECT', 'MULTI_SELECT', 'CHECKBOX', 'RADIO']),
-      label: z.string().min(1, 'Field label is required'),
-      required: z.boolean().default(false),
-      options: z.array(z.string()).optional()
-    })
-  )
+// ─── Ticket Submission (POST /api/v1/tickets) ──────────────────────────────────
+export const ticketSubmitSchema = z.object({
+  routeId: z.string().min(1, 'routeId مطلوب'),
+  title: z.string().min(1, 'عنوان الطلب مطلوب'),
+  description: z.string().optional().default(''),
+  taxonomyMain: z.string().optional(),
+  taxonomySub: z.string().optional(),
+  buildingId: z.string().optional(),
+  departmentId: z.union([z.string(), z.number()]).optional(),
+  fields: z.record(z.string(), z.any()).optional(),
 });

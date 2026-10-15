@@ -37,8 +37,18 @@ export class UECPMiddleware {
       .update(payload)
       .digest('hex');
 
-    if (signature !== expectedSignature) {
-      return res.status(403).json({ error: 'HMAC Signature Mismatch. Payload may have been tampered.' });
+    // Use timing-safe comparison to prevent Timing Attacks (OWASP requirement)
+    try {
+      const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+      const receivedBuffer  = Buffer.from(signature, 'hex');
+      if (
+        expectedBuffer.length !== receivedBuffer.length ||
+        !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+      ) {
+        return res.status(403).json({ error: 'HMAC Signature Mismatch. Payload may have been tampered.' });
+      }
+    } catch {
+      return res.status(403).json({ error: 'HMAC Signature Invalid format.' });
     }
 
     next();

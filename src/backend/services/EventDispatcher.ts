@@ -9,8 +9,10 @@ class EventDispatcher extends EventEmitter {
 
   private setupRedisListener() {
     if (redisManager.sub) {
-      redisManager.sub.subscribe('LITC_SYSTEM_EVENTS', (err) => {
-        if (err) console.error('[EventDispatcher] Failed to subscribe to Redis', err);
+      redisManager.sub.on('ready', () => {
+        redisManager.sub?.subscribe('LITC_SYSTEM_EVENTS', (err) => {
+          if (err) console.error('[EventDispatcher] Failed to subscribe to Redis', err);
+        });
       });
 
       redisManager.sub.on('message', (channel, message) => {

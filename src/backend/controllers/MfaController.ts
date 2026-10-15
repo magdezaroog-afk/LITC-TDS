@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import Logger from '../infrastructure/Logger';
+import { Logger } from '../infrastructure/Logger';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 

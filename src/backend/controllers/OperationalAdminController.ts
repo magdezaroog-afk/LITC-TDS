@@ -1,52 +1,60 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../db/client';
+import { InterfaceService } from '../services/InterfaceService';
 
 export class OperationalAdminController {
 
   // ==========================================
   // Admin Supreme Veto Hub (Phase 3)
+  // NOTE: policyAuditLog is not in schema — we use SystemSetting as a lightweight audit store
   // ==========================================
   static async getPendingPolicies(req: Request, res: Response, next: NextFunction) {
     try {
-      const logs = await prisma.policyAuditLog.findMany({
-        where: { status: 'PENDING_ADMIN_APPROVAL' },
-        orderBy: { createdAt: 'desc' }
+      // Fetch pending policy change records stored as JSON in SystemSetting
+      const setting = await prisma.systemSetting.findUnique({
+        where: { settingKey: 'policy_audit_log' }
       });
-      res.json(logs);
+      const logs: any[] = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
+      const pending = logs.filter((l: any) => l.status === 'PENDING_ADMIN_APPROVAL');
+      res.json(pending);
     } catch (err) { next(err); }
   }
 
   static async approvePolicy(req: Request, res: Response, next: NextFunction) {
     try {
       const { logId } = req.body;
-      const log = await prisma.policyAuditLog.update({
-        where: { id: Number(logId) },
-        data: { status: 'APPROVED' }
+      const setting = await prisma.systemSetting.findUnique({ where: { settingKey: 'policy_audit_log' } });
+      const logs: any[] = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
+      const updated = logs.map((l: any) => l.id === logId ? { ...l, status: 'APPROVED' } : l);
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'policy_audit_log' },
+        create: { settingKey: 'policy_audit_log', settingValue: JSON.stringify(updated), description: 'Policy Audit Log' },
+        update: { settingValue: JSON.stringify(updated) }
       });
-      res.json({ success: true, log });
+      res.json({ success: true, log: updated.find((l: any) => l.id === logId) });
     } catch (err) { next(err); }
   }
 
   static async vetoPolicy(req: Request, res: Response, next: NextFunction) {
     try {
       const { logId } = req.body;
-      
-      const log = await prisma.policyAuditLog.findUnique({ where: { id: Number(logId) } });
-      if (!log) {
-        return res.status(404).json({ error: 'Audit log not found' });
-      }
 
-      await prisma.$transaction(async (tx) => {
-        // 1. Update log status to rejected
-        await tx.policyAuditLog.update({
-          where: { id: Number(logId) },
-          data: { status: 'REJECTED_BY_ADMIN' }
-        });
+      const setting = await prisma.systemSetting.findUnique({ where: { settingKey: 'policy_audit_log' } });
+      const logs: any[] = setting?.settingValue ? JSON.parse(setting.settingValue) : [];
+      const log = logs.find((l: any) => l.id === logId);
+      if (!log) return res.status(404).json({ error: 'Audit log not found' });
 
-        // 2. Veto: Delete the overridden policy so it falls back to defaults
-        await tx.userComponentPolicy.deleteMany({
-          where: { userId: log.targetUserId, componentKey: log.componentKey }
-        });
+      // Mark as rejected
+      const updatedLogs = logs.map((l: any) => l.id === logId ? { ...l, status: 'REJECTED_BY_ADMIN' } : l);
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'policy_audit_log' },
+        create: { settingKey: 'policy_audit_log', settingValue: JSON.stringify(updatedLogs), description: 'Policy Audit Log' },
+        update: { settingValue: JSON.stringify(updatedLogs) }
+      });
+
+      // Veto: Delete the overridden policy
+      await prisma.userComponentPolicy.deleteMany({
+        where: { userId: Number(log.targetUserId), componentKey: log.componentKey }
       });
 
       res.json({ success: true, message: 'Policy override vetoed and reset successfully.' });
@@ -70,6 +78,10 @@ export class OperationalAdminController {
     try {
       const { name } = req.body;
       const dept = await prisma.department.create({ data: { name } });
+      
+      // Auto-generate default UI interfaces for this department
+      await InterfaceService.generateDefaultInterfacesForDepartment(dept.id, dept.name);
+      
       res.status(201).json(dept);
     } catch (err) { next(err); }
   }
@@ -148,52 +160,62 @@ export class OperationalAdminController {
 
   // ==========================================
   // Component Policies (Phase 2)
+  // Uses policyData field (actual schema column name)
   // ==========================================
-  static async updateUserPolicy(req: Request, res: Response, next: NextFunction) {
+  static async saveUserPolicy(req: Request, res: Response, next: NextFunction) {
     try {
       const { targetUserId, componentKey, policyData, changeSummary } = req.body;
-      const actorId = (req as any).user?.id || 1; // Fallback to 1 if not authenticated for testing
-      
+      const actorId = (req as any).user?.id || 1;
+
       const policyString = JSON.stringify(policyData);
 
-      // Dual Write Transaction
-      await prisma.$transaction(async (tx) => {
-        // 1. Upsert Policy
-        const existingPolicy = await tx.userComponentPolicy.findFirst({
-          where: { userId: Number(targetUserId), componentKey }
-        });
-
-        if (existingPolicy) {
-          await tx.userComponentPolicy.update({
-            where: { id: existingPolicy.id },
-            data: { policy: policyString, updatedById: actorId }
-          });
-        } else {
-          await tx.userComponentPolicy.create({
-            data: {
-              userId: Number(targetUserId),
-              componentKey,
-              policy: policyString,
-              updatedById: actorId
-            }
-          });
-        }
-
-        // 2. Audit Log
-        await tx.policyAuditLog.create({
-          data: {
-            actorId,
-            targetUserId: Number(targetUserId),
-            componentKey,
-            changeSummary,
-            status: "PENDING_ADMIN_APPROVAL"
-          }
-        });
+      // Upsert Policy
+      const existingPolicy = await prisma.userComponentPolicy.findFirst({
+        where: { userId: Number(targetUserId), componentKey }
       });
 
-      res.status(200).json({ success: true, message: "Policy updated successfully." });
+      if (existingPolicy) {
+        await prisma.userComponentPolicy.update({
+          where: { id: existingPolicy.id },
+          data: { policyData: policyString, changeSummary }
+        });
+      } else {
+        await prisma.userComponentPolicy.create({
+          data: {
+            userId: Number(targetUserId),
+            componentKey,
+            policyData: policyString,
+            changeSummary
+          }
+        });
+      }
+
+      // Audit log via SystemSetting JSON store
+      const auditSetting = await prisma.systemSetting.findUnique({ where: { settingKey: 'policy_audit_log' } });
+      const auditLogs: any[] = auditSetting?.settingValue ? JSON.parse(auditSetting.settingValue) : [];
+      auditLogs.push({
+        id: `audit_${Date.now()}`,
+        actorId,
+        targetUserId: Number(targetUserId),
+        componentKey,
+        changeSummary,
+        status: 'PENDING_ADMIN_APPROVAL',
+        createdAt: new Date().toISOString()
+      });
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'policy_audit_log' },
+        create: { settingKey: 'policy_audit_log', settingValue: JSON.stringify(auditLogs), description: 'Policy Audit Log' },
+        update: { settingValue: JSON.stringify(auditLogs) }
+      });
+
+      res.status(200).json({ success: true, message: 'Policy updated successfully.' });
     } catch (err) {
       next(err);
     }
+  }
+
+  // Keep old name for backward compat with routes
+  static async updateUserPolicy(req: Request, res: Response, next: NextFunction) {
+    return OperationalAdminController.saveUserPolicy(req, res, next);
   }
 }

@@ -41,7 +41,7 @@ export class UECPValidatorService {
       if (!validationResult.success) {
         return res.status(400).json({
           error: 'Manifest failed UECP validation',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         });
       }
 

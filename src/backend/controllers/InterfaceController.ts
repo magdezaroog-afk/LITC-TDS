@@ -3,6 +3,16 @@ import { InterfaceService } from '../services/InterfaceService';
 import { Logger } from '../infrastructure/Logger';
 
 export class InterfaceController {
+  async getAllInterfaces(req: Request, res: Response, next: NextFunction) {
+    try {
+      const interfaces = await InterfaceService.listAllInterfaces();
+      res.json({ success: true, interfaces });
+    } catch (error) {
+      Logger.error('[InterfaceController] getAllInterfaces error', error);
+      res.status(500).json({ success: false, message: 'فشل استرجاع الواجهات', error: (error as Error).message });
+    }
+  }
+
   async getInterfaces(req: Request, res: Response, next: NextFunction) {
     try {
       const { departmentId, interfaceType } = req.query;

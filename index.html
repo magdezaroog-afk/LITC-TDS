@@ -3,10 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LITC-TS v43.5 - Command Center</title>
+    <title>TdS - منظومة إدارة الخدمات والعمليات | LITC</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.process = window.process || { env: { NODE_ENV: 'development' }, cwd: () => '/' };
+      window.global = window;
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

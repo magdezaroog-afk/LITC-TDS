@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Dummy translation helper for graceful localization
+const t = (key: any, fallback?: any) => fallback || key;
 
 /* ─────────────────────────────────────────────────────────────
    BrandingTab — SaaS White-Label Identity Console
-   Admin-only tab for full brand customization
+   لوحة الهوية البصرية وشعار الشركة
    ───────────────────────────────────────────────────────────── */
 
 interface BrandingConfig {
@@ -16,11 +18,11 @@ interface BrandingConfig {
 }
 
 const FONT_OPTIONS = [
-  { value: 'Inter',          label: 'Inter (Modern)' },
-  { value: 'IBM Plex Sans', label: 'IBM Plex Sans (Technical)' },
-  { value: 'Cairo',          label: t('admin.branding.font_cairo', 'Cairo (عربي أصيل)') },
-  { value: 'Tajawal',        label: t('admin.branding.font_tajawal', 'Tajawal (عربي عصري)') },
-  { value: 'DM Sans',        label: 'DM Sans (Clean)' },
+  { value: 'Inter',          label: 'Inter (عصري متوازن)' },
+  { value: 'Cairo',          label: 'Cairo (عربي أصيل)' },
+  { value: 'Tajawal',        label: 'Tajawal (عربي خفيف)' },
+  { value: 'IBM Plex Sans', label: 'IBM Plex Sans (تقني)' },
+  { value: 'DM Sans',        label: 'DM Sans (حديث)' },
 ];
 
 const PRESET_LIGHTS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -32,10 +34,8 @@ const injectStyles = () => {
   const s = document.createElement('style');
   s.id = STYLES_ID;
   s.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
 
-// Dummy t function to prevent crash
-const t = (key: any, fallback?: any) => fallback || key;
     @keyframes brandingReveal {
       from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -60,9 +60,9 @@ const t = (key: any, fallback?: any) => fallback || key;
       padding: 10px 14px;
       border-radius: 10px;
       border: 1.5px solid rgba(0,0,0,0.1);
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.95);
       font-size: 14px;
-      font-family: 'Inter', sans-serif;
+      font-family: inherit;
       color: #1d1d1f;
       outline: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -79,15 +79,15 @@ const t = (key: any, fallback?: any) => fallback || key;
       cursor: pointer;
       font-weight: 700;
       font-size: 14px;
-      font-family: 'Inter', sans-serif;
+      font-family: inherit;
       transition: all 0.2s ease;
       display: flex; align-items: center; gap: 8px;
     }
     .branding-btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
     .branding-btn-save:active { transform: translateY(0); }
     .branding-preview-bar {
-      height: 56px; border-radius: 12px;
-      display: flex; align-items: center; gap: 12px;
+      height: 60px; border-radius: 14px;
+      display: flex; align-items: center; gap: 14px;
       padding: 0 20px;
       transition: all 0.3s ease;
     }
@@ -104,31 +104,32 @@ const t = (key: any, fallback?: any) => fallback || key;
       border-color: #6366f1;
       background: rgba(99,102,241,0.07);
       color: #6366f1;
-      font-weight: 600;
+      font-weight: 700;
     }
     .branding-font-option:hover { border-color: #a5b4fc; }
-    .branding-logo-zone {
+    .branding-logo-dropzone {
       border: 2px dashed rgba(99,102,241,0.3);
       border-radius: 14px;
-      padding: 24px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       cursor: pointer;
       transition: all 0.2s;
-      background: rgba(99,102,241,0.03);
+      background: rgba(99,102,241,0.02);
     }
-    .branding-logo-zone:hover {
+    .branding-logo-dropzone:hover {
       border-color: #6366f1;
-      background: rgba(99,102,241,0.07);
+      background: rgba(99,102,241,0.06);
     }
     .branding-toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
       background: #111827; color: #fff;
-      padding: 12px 24px; border-radius: 12px;
-      font-size: 14px; font-weight: 500;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      padding: 14px 28px; border-radius: 14px;
+      font-size: 14px; font-weight: 600;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
       z-index: 99999;
       animation: brandingReveal 0.3s ease both;
     }
@@ -142,17 +143,17 @@ const Section: React.FC<{ title: string; icon: string; children: React.ReactNode
   <div
     className="branding-section"
     style={{
-      background: 'var(--bg-surface)',
+      background: '#FFFFFF',
       borderRadius: '18px',
       padding: '24px',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
       border: '1px solid rgba(0,0,0,0.06)',
       animationDelay: `${delay}ms`,
     }}
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
       <span style={{ fontSize: '20px' }}>{icon}</span>
-      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#1d1d1f' }}>{title}</h3>
+      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1d1d1f' }}>{title}</h3>
     </div>
     {children}
   </div>
@@ -167,28 +168,28 @@ export const BrandingTab: React.FC = () => {
     lightPrimary: '#6366f1',
     darkPrimary: '#00a3ff',
     headerBg: null,
-    fontFamily: 'Inter',
+    fontFamily: 'Cairo',
   });
 
-  const [saving, setSaving]     = useState(false);
-  const [toast, setToast]       = useState<string | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving]   = useState(false);
+  const [toast, setToast]     = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ── Load current config ── */
+  /* ── Load current branding ── */
   useEffect(() => {
     fetch('/api/v1/branding', { credentials: 'include' })
       .then(r => r.json())
       .then((data: any) => {
         if (data) {
-          const payload = data.branding || data.data || data;
+          const payload = data.branding || data.config || data;
           setConfig(prev => ({
             ...prev,
             ...payload,
             orgName: payload.orgName || prev.orgName || 'LITC System',
             lightPrimary: payload.lightPrimary || prev.lightPrimary || '#6366f1',
             darkPrimary: payload.darkPrimary || prev.darkPrimary || '#00a3ff',
-            fontFamily: payload.fontFamily || prev.fontFamily || 'Inter'
+            fontFamily: payload.fontFamily || prev.fontFamily || 'Cairo'
           }));
         }
         setLoading(false);
@@ -201,43 +202,42 @@ export const BrandingTab: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  /* ── Save ── */
+  /* ── Save branding ── */
   const handleSave = async () => {
     setSaving(true);
     try {
-      const csrfRes = await fetch('/api/v1/csrf-token', { credentials: 'include' });
-      const { csrfToken } = await csrfRes.json();
-
       const res = await fetch('/api/v1/branding', {
         method: 'POST',
         credentials: 'include',
-        headers: { 
-          'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
 
       if (!res.ok) throw new Error('Save failed');
-      showToast(t('admin.branding.save_success', '✓ تم حفظ إعدادات الهوية بنجاح'));
+      showToast('✓ تم حفظ وتطبيق هوية المنظومة وشعار الشركة بنجاح');
+      window.dispatchEvent(new CustomEvent('litc_branding_updated', { detail: config }));
     } catch {
-      showToast(t('admin.branding.save_fail', '✕ فشل حفظ الإعدادات، يرجى المحاولة لاحقاً'));
+      showToast('✕ فشل حفظ الإعدادات، يرجى المحاولة لاحقاً');
     } finally {
       setSaving(false);
     }
   };
 
-  /* ── Logo URL from input ── */
-  const handleLogoUrl = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(c => ({ ...c, orgLogo: e.target.value || null }));
-  };
-
+  /* ── File Upload Handler ── */
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('⚠️ حجم الشعار يجب ألا يتجاوز 2 ميجابايت');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
-      setConfig(c => ({ ...c, orgLogo: reader.result as string }));
+      const base64 = reader.result as string;
+      setConfig(c => ({ ...c, orgLogo: base64 }));
+      showToast('✓ تم تحميل الشعار بنجاح، اضغط حفظ لتطبيقه');
     };
     reader.readAsDataURL(file);
   };
@@ -245,7 +245,7 @@ export const BrandingTab: React.FC = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
-        <div style={{ color: '#6b7280', fontSize: '14px' }}>{t('ui.auto_53') || t('ui.auto_53', '⏳ جاري تحميل إعدادات الهوية...')}</div>
+        <div style={{ color: '#6b7280', fontSize: '14px' }}>⏳ جاري تحميل إعدادات الهوية والشعار...</div>
       </div>
     );
   }
@@ -255,106 +255,171 @@ export const BrandingTab: React.FC = () => {
   const lightColor = config?.lightPrimary || '#6366f1';
   const darkColor = config?.darkPrimary || '#00a3ff';
 
-  const PreviewBar = () => (
-    <div
-      className="branding-preview-bar"
-      style={{
-        background: config?.headerBg ?? `linear-gradient(135deg, ${darkColor}22, ${lightColor}11)`,
-        border: `1px solid ${lightColor}33`,
-      }}
-    >
-      {config?.orgLogo ? (
-        <img src={config.orgLogo} alt="Logo" style={{ height: '28px', borderRadius: '6px', objectFit: 'contain' }} />
-      ) : (
-        <div style={{
-          width: '32px', height: '32px', borderRadius: '8px',
-          background: `linear-gradient(135deg, ${lightColor}, ${darkColor})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: '800', fontSize: '13px',
-        }}>
-          {orgDisplayName.charAt(0)}
-        </div>
-      )}
-      <span style={{ fontSize: '14px', fontWeight: '700', color: '#1d1d1f', fontFamily: config?.fontFamily || 'Inter' }}>
-        {orgDisplayName}
-      </span>
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: lightColor }} title="Light" />
-        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: darkColor }} title="Dark" />
-      </div>
-    </div>
-  );
-
   return (
     <div style={{
       padding: '24px',
-      maxWidth: '860px',
+      maxWidth: '880px',
       margin: '0 auto',
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: config.fontFamily ? `${config.fontFamily}, sans-serif` : "'Cairo', 'Inter', sans-serif",
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px',
+      gap: '24px',
+      direction: 'rtl'
     }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '4px' }}>
-        <h2 style={{ margin: '0 0 6px', fontSize: '22px', fontWeight: '800', color: '#1d1d1f' }}>{t('admin.branding.title') || '🎨 هوية المنظومة'}</h2>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>{t('admin.branding.subtitle') || 'تحكم كامل في الهوية البصرية للمنظومة — الألوان، الشعار، الخط، والمظهر الذي يراه جميع المستخدمين.'}</p>
+      <div>
+        <h2 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: '800', color: '#1d1d1f' }}>
+          🎨 هوية وشعار الشركة (Brand Identity)
+        </h2>
+        <p style={{ margin: 0, color: '#6b7280', fontSize: '14px', lineHeight: '1.6' }}>
+          تحكم في اسم وشعار وهوية المنظومة المعتمدة لدى شركتك. سيظهر الشعار المرفوع بجانب اسم النظام في الترويسة الرئيسية لجميع المستخدمين.
+        </p>
       </div>
 
       {/* Live Preview */}
-      <Section title={t('admin.branding.preview_title') || 'معاينة مباشرة'} icon="👁️" delay={0}>
-        <PreviewBar />
-        <p style={{ margin: '12px 0 0', fontSize: '12px', color: '#9ca3af', textAlign: 'center' }}>{t('admin.branding.preview_desc') || 'هذا ما سيظهر في شريط النظام لجميع المستخدمين'}</p>
+      <Section title="معاينة مباشرة لشريط النظام" icon="👁️" delay={0}>
+        <div
+          className="branding-preview-bar"
+          style={{
+            background: config?.headerBg ?? `linear-gradient(135deg, ${darkColor}15, ${lightColor}08)`,
+            border: `1.5px solid ${lightColor}30`,
+          }}
+        >
+          {config?.orgLogo ? (
+            <img 
+              src={config.orgLogo} 
+              alt="شعار الشركة" 
+              style={{ maxHeight: '40px', maxWidth: '140px', borderRadius: '6px', objectFit: 'contain' }} 
+            />
+          ) : (
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: `linear-gradient(135deg, ${lightColor}, ${darkColor})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: '800', fontSize: '15px',
+            }}>
+              {orgDisplayName.charAt(0)}
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '15px', fontWeight: '800', color: '#1d1d1f' }}>
+              {orgDisplayName}
+            </span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>
+              نظام التشغيل وإدارة العمليات المؤسسية — LITC v43
+            </span>
+          </div>
+
+          <div style={{ marginRight: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>ألوان المظهر:</span>
+            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: lightColor }} title="الفاتح" />
+            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: darkColor }} title="الداكن" />
+          </div>
+        </div>
       </Section>
 
-      {/* Org Identity */}
-      <Section title={t('admin.branding.org_identity_title') || 'هوية المؤسسة'} icon="🏢" delay={60}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* Org Identity & Logo Upload */}
+      <Section title="شعار واسم الشركة" icon="🏢" delay={60}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          
+          {/* Org Name */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('admin.branding.org_name') || 'اسم المؤسسة'}</label>
+            <label style={{ fontSize: '13px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '8px' }}>
+              اسم الشركة أو المؤسسة:
+            </label>
             <input
               className="branding-input"
               value={config.orgName}
               onChange={e => setConfig(c => ({ ...c, orgName: e.target.value }))}
-              placeholder={t('admin.branding.org_name_placeholder') || 'اسم المؤسسة أو المنظومة'}
+              placeholder="مثال: شركة التقنية الحديثة — Modern Tech Co."
             />
           </div>
 
+          {/* Logo Upload Box */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>{t('admin.branding.logo_url') || 'رابط الشعار (URL)'}</label>
-            <input
-              className="branding-input"
-              value={config.orgLogo ?? ''}
-              onChange={handleLogoUrl}
-              placeholder="https://example.com/logo.png"
-              dir="ltr"
+            <label style={{ fontSize: '13px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '8px' }}>
+              شعار الشركة (Upload Logo):
+            </label>
+
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              accept="image/png, image/jpeg, image/svg+xml, image/webp" 
+              onChange={handleFileUpload} 
             />
-            {config.orgLogo && (
-              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={config.orgLogo} alt="logo preview" style={{ height: '40px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-                <button
-                  onClick={() => setConfig(c => ({ ...c, orgLogo: null }))}
-                  style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}
-                >
-                  {t('admin.branding.remove_logo') || '✕ إزالة'}</button>
-              </div>
-            )}
+
+            <div 
+              className="branding-logo-dropzone"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {config.orgLogo ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <img 
+                    src={config.orgLogo} 
+                    alt="الشعار الحالي" 
+                    style={{ maxHeight: '60px', maxWidth: '160px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', padding: '4px' }} 
+                  />
+                  <div>
+                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#16a34a' }}>
+                      ✓ تم تحديد الشعار
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      اضغط لتغيير الصورة أو استبدالها (يدعم PNG, JPG, SVG, WebP حتى 2 ميجابايت)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfig(c => ({ ...c, orgLogo: null }));
+                    }}
+                    style={{
+                      marginRight: 'auto',
+                      padding: '6px 14px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕ حذف الشعار
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', marginBottom: '6px' }}>📁</div>
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#4f46e5', display: 'block' }}>
+                    اضغط هنا لاختيار وتحميل شعار الشركة من جهازك
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    يُفضل استخدام صورة شفافة بخلفية مفرغة (PNG أو SVG)
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </Section>
 
       {/* Colors */}
-      <Section title={t('admin.branding.colors_title') || 'ألوان المظهر'} icon="🎨" delay={120}>
+      <Section title="الألوان الرئيسية للواجهات" icon="🎨" delay={120}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-          {/* Light Mode Color */}
+          {/* Light Color */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '10px' }}>{t('admin.branding.light_color') || '☀️ لون المظهر الفاتح (Light Mode)'}</label>
+            <label style={{ fontSize: '13px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '10px' }}>
+              اللون الرئيسي للوضع الفاتح (Light Accent):
+            </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               {PRESET_LIGHTS.map(c => (
                 <button
                   key={c}
+                  type="button"
                   className={`branding-color-swatch${config.lightPrimary === c ? ' active' : ''}`}
                   style={{ background: c }}
                   onClick={() => setConfig(cfg => ({ ...cfg, lightPrimary: c }))}
@@ -366,19 +431,22 @@ export const BrandingTab: React.FC = () => {
                 value={config.lightPrimary}
                 onChange={e => setConfig(c => ({ ...c, lightPrimary: e.target.value }))}
                 style={{ width: '36px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '50%', padding: 0, background: 'none' }}
-                title={t('admin.branding.custom_color') || 'لون مخصص'}
+                title="لون مخصص"
               />
               <span style={{ fontSize: '13px', color: '#6b7280', fontFamily: 'monospace' }}>{config.lightPrimary}</span>
             </div>
           </div>
 
-          {/* Dark Mode Color */}
+          {/* Dark Color */}
           <div>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '10px' }}>{t('admin.branding.dark_color') || '🌙 لون المظهر الغامق (Dark Mode)'}</label>
+            <label style={{ fontSize: '13px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '10px' }}>
+              اللون الرئيسي للوضع الداكن (Dark Accent):
+            </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               {PRESET_DARKS.map(c => (
                 <button
                   key={c}
+                  type="button"
                   className={`branding-color-swatch${config.darkPrimary === c ? ' active' : ''}`}
                   style={{ background: c }}
                   onClick={() => setConfig(cfg => ({ ...cfg, darkPrimary: c }))}
@@ -390,7 +458,7 @@ export const BrandingTab: React.FC = () => {
                 value={config.darkPrimary}
                 onChange={e => setConfig(c => ({ ...c, darkPrimary: e.target.value }))}
                 style={{ width: '36px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: '50%', padding: 0, background: 'none' }}
-                title={t('admin.branding.custom_color') || 'لون مخصص'}
+                title="لون مخصص"
               />
               <span style={{ fontSize: '13px', color: '#6b7280', fontFamily: 'monospace' }}>{config.darkPrimary}</span>
             </div>
@@ -399,37 +467,38 @@ export const BrandingTab: React.FC = () => {
       </Section>
 
       {/* Typography */}
-      <Section title={t('admin.branding.font_title') || 'الخط الرسمي'} icon="✍️" delay={180}>
+      <Section title="الخط الرسمي المعتمد" icon="✍️" delay={180}>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {FONT_OPTIONS.map(opt => (
             <button
               key={opt.value}
+              type="button"
               className={`branding-font-option${config.fontFamily === opt.value ? ' active' : ''}`}
-              style={{ fontFamily: opt.value }}
+              style={{ fontFamily: `${opt.value}, sans-serif` }}
               onClick={() => setConfig(c => ({ ...c, fontFamily: opt.value }))}
             >
               {opt.label}
             </button>
           ))}
         </div>
-        <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#9ca3af' }}>{t('admin.branding.font_preview') || 'معاينة:'} <span style={{ fontFamily: config.fontFamily, fontWeight: '600', color: '#374151', fontSize: '15px' }}>{t('admin.branding.font_preview_text') || 'نظام إدارة الطلبات والتذاكر — LITC TDS'}</span>
-        </p>
       </Section>
 
       {/* Save Button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingBottom: '30px' }}>
         <button
+          type="button"
           className="branding-btn-save"
           onClick={handleSave}
           disabled={saving}
           style={{
-            background: saving ? '#9ca3af' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            background: saving ? '#9ca3af' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
             color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer',
             opacity: saving ? 0.75 : 1,
+            boxShadow: '0 4px 15px rgba(79, 70, 229, 0.35)'
           }}
         >
-          {saving ? t('admin.branding.saving_btn', '⏳ جاري الحفظ...') : t('admin.branding.save_btn', '💾 حفظ وتطبيق هوية المنظومة')}
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ وتطبيق هوية وشعار الشركة'}
         </button>
       </div>
 

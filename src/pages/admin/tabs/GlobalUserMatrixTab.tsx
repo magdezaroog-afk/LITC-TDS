@@ -13,7 +13,7 @@ export const GlobalUserMatrixTab: React.FC = () => {
   const [selectedDept, setSelectedDept] = useState('');
 
   // Pseudo logic for current admin context
-  const currentUserRole = 'DIRECT_MANAGER'; // Simulate logged in user role ('SYSTEM_ADMIN' or 'DIRECT_MANAGER')
+  const currentUserRole: string = 'DIRECT_MANAGER'; // Simulate logged in user role ('SYSTEM_ADMIN' or 'DIRECT_MANAGER')
   const currentUserDept = 'إدارة تقنية المعلومات';
 
   const checkPermission = (targetUsers: any[]) => {

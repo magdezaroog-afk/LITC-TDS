@@ -16,11 +16,10 @@ export class SLARoutingEngine {
       if (!ticket) return;
 
       // Ensure the department exists
-      let dept = await prisma.department.findUnique({ where: { name: departmentName } });
+      let dept = await prisma.department.findFirst({ where: { name: departmentName, isDeleted: false } });
       if (!dept) {
-        let division = await prisma.companyDivision.findFirst();
-        if (!division) division = await prisma.companyDivision.create({ data: { name: 'Main Division' } });
-        dept = await prisma.department.create({ data: { name: departmentName, divisionId: division.id } });
+        // Create department directly (no companyDivision in schema)
+        dept = await prisma.department.create({ data: { name: departmentName } });
       }
 
       // Base SLA time from Category or default to 60 mins

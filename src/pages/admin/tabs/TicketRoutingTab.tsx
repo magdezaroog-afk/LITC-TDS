@@ -1,70 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import type { OrgDepartment, OrgDivision } from './OperationalStructureTab';
+import * as LucideIcons from 'lucide-react';
+import {
+  type IndicatorOption,
+  type SubIssueIndicator,
+  type MainIssueIndicator,
+  type ChildFieldBinding,
+  type DynamicFieldOption,
+  type DynamicCustomField,
+  type RouteFormConfig,
+  type TicketRouteDefinition,
+  defaultFormConfig,
+  normalizeRoute,
+  loadRoutes,
+  saveRoutes,
+  loadDynamicFields,
+  saveDynamicFields,
+} from '../../../services/ticketRouting.helpers';
+
+export type {
+  IndicatorOption,
+  SubIssueIndicator,
+  MainIssueIndicator,
+  ChildFieldBinding,
+  DynamicFieldOption,
+  DynamicCustomField,
+  RouteFormConfig,
+  TicketRouteDefinition,
+};
 
 // ═══════════════════════════════════════════════════════════
-// Types
+// Constants & Styling
 // ═══════════════════════════════════════════════════════════
-export interface IndicatorOption { id: string; label: string; isActive: boolean; }
-export interface SubIssueIndicator { id: string; parentMainIssueId: string; label: string; options: IndicatorOption[]; isActive: boolean; }
-export interface MainIssueIndicator { id: string; label: string; subIssues: SubIssueIndicator[]; isActive: boolean; }
-
-export interface ChildFieldBinding {
-  childFieldId: string;
-  triggerValue: string; // The ID of the option in the parent field
-}
-
-export interface DynamicFieldOption {
-  id: string;
-  label: string;
-  isActive: boolean;
-}
-
-export interface DynamicCustomField {
-  id: string;
-  name: string;
-  options: DynamicFieldOption[];
-  childBindings?: ChildFieldBinding[];
-}
-
-export interface RouteFormConfig {
-  showBuildingField?: boolean;
-  mandatoryBuilding?: boolean;
-  showDepartmentField?: boolean;
-  mandatoryDepartment?: boolean;
-  showDescription: boolean;
-  mandatoryDescription: boolean;
-  showAttachments: boolean;
-  mandatoryAttachments: boolean;
-  attachmentTypes: string[];
-  maxAttachmentMB: number;
-  taxonomy: MainIssueIndicator[];
-  customFieldIds: string[]; // Keep for legacy / simple arrays
-  routeDynamicFields: { fieldId: string; isRequired: boolean }[];
-}
-
-export interface TicketRouteDefinition {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  targetDepartmentId: string;
-  targetDepartmentName: string;
-  targetDivisionId: string;
-  targetDivisionName: string;
-  formConfig: RouteFormConfig;
-  isActive: boolean;
-  captured_historical_data?: any;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ═══════════════════════════════════════════════════════════
-// Constants
-// ═══════════════════════════════════════════════════════════
-export const ROUTES_KEY = 'litc_ticket_routes';
-const ICONS = ['💻','🏗️','📋','🔧','📡','🔒','📊','🏥','📞','🖨️','⚡','🌐','🗄️','📱','🔑'];
+const ICONS = ['Monitor', 'Building2', 'ClipboardList', 'Wrench', 'Radio', 'Lock', 'BarChart3', 'HeartPulse', 'Phone', 'Printer', 'Zap', 'Globe', 'Archive', 'Smartphone', 'Key'];
 const COLORS = ['#007AFF','#5856D6','#FF9500','#FF3B30','#34C759','#AF52DE','#FF6B35','#00C7BE','#30B0C7','#636567'];
+
+const renderIcon = (name: string, size: number = 24, color?: string) => {
+  const emojiMap: Record<string, string> = {
+    '💻': 'Monitor', '🏗️': 'Building2', '📋': 'ClipboardList', '🔧': 'Wrench',
+    '📡': 'Radio', '🔒': 'Lock', '📊': 'BarChart3', '🏥': 'HeartPulse',
+    '📞': 'Phone', '🖨️': 'Printer', '⚡': 'Zap', '🌐': 'Globe',
+    '🗄️': 'Archive', '📱': 'Smartphone', '🔑': 'Key'
+  };
+  const iconName = emojiMap[name] || name;
+  const IconComp = (LucideIcons as any)[iconName] || LucideIcons.FileQuestion;
+  return <IconComp size={size} color={color || 'currentColor'} strokeWidth={2.5} />;
+};
 
 const A = {
   bg: '#F5F5F7', surface: '#FFFFFF', text: '#1D1D1F', textSub: '#6E6E73', textTer: '#AEAEB2',
@@ -83,6 +64,10 @@ const injectStyles = () => {
   style.textContent = `
     @keyframes fadeSlideIn { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:translateY(0);} }
     @keyframes scaleIn { from { opacity:0; transform:scale(0.95);} to { opacity:1; transform:scale(1);} }
+    @keyframes toastIn { from { opacity:0; transform:translateY(-20px) scale(0.95);} to { opacity:1; transform:translateY(0) scale(1);} }
+    @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1);} to { opacity:0; transform:translateY(-16px) scale(0.95);} }
+    @keyframes spin { from { transform:rotate(0deg);} to { transform:rotate(360deg);} }
+    @keyframes dftFade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:translateY(0);} }
     .route-card { transition:all 0.2s cubic-bezier(0.28,0.11,0.32,1); animation:fadeSlideIn 0.3s both; }
     .route-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.12) !important; }
     .route-action-btn { transition:all 0.15s ease; cursor:pointer; }
@@ -103,56 +88,12 @@ const injectStyles = () => {
     .option-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,122,255,0.08); color: #007AFF !important; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 6px; }
     .add-subfield-btn { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 1px solid rgba(0,122,255,0.3); color: #007AFF !important; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; transition: all 0.2s; }
     .add-subfield-btn:hover { background: #007AFF; color: #fff !important; }
+    .tr-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:99999; display:flex; align-items:center; gap:10px; padding:12px 20px; border-radius:14px; font-size:13px; font-weight:600; box-shadow:0 8px 32px rgba(0,0,0,0.18); animation:toastIn 0.3s cubic-bezier(0.28,0.11,0.32,1) both; min-width:220px; max-width:400px; }
+    .tr-toast.success { background:#1C1C1E; color:#fff; border:1px solid rgba(52,199,89,0.3); }
+    .tr-toast.error { background:#1C1C1E; color:#fff; border:1px solid rgba(255,59,48,0.4); }
+    .tr-toast.loading { background:#1C1C1E; color:#fff; border:1px solid rgba(255,255,255,0.12); }
   `;
   document.head.appendChild(style);
-};
-
-// ═══════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════
-const defaultFormConfig = (): RouteFormConfig => ({
-  showBuildingField: false, mandatoryBuilding: false,
-  showDepartmentField: false, mandatoryDepartment: false,
-  showDescription: true, mandatoryDescription: true,
-  showAttachments: true, mandatoryAttachments: false,
-  attachmentTypes: ['PDF','PNG','JPG'], maxAttachmentMB: 5,
-  taxonomy: [], customFieldIds: [], routeDynamicFields: [],
-});
-
-const loadDynamicFields = async (): Promise<DynamicCustomField[]> => {
-  try {
-    const { AdminAPI } = await import('../../../services/admin.api');
-    const res = await AdminAPI.getDynamicFields();
-    return res.success && res.fields ? res.fields : [];
-  } catch { return []; }
-};
-const saveDynamicFields = async (fields: DynamicCustomField[]) => {
-  try {
-    const { AdminAPI } = await import('../../../services/admin.api');
-    await AdminAPI.saveDynamicFields(fields);
-    window.dispatchEvent(new Event('litc_settings_updated'));
-  } catch (e) {
-    console.error("Failed to save dynamic fields", e);
-  }
-};
-export const loadRoutes = async (): Promise<TicketRouteDefinition[]> => {
-  try {
-    const AdminAPI = (await import('../../../services/admin.api')).AdminAPI;
-    const res = await AdminAPI.getRoutes();
-    if (res.success && res.routes) {
-      return res.routes;
-    }
-    return [];
-  } catch { return []; }
-};
-const saveRoutes = async (routes: TicketRouteDefinition[]) => {
-  try {
-    const { AdminAPI } = await import('../../../services/admin.api');
-    await AdminAPI.saveRoutesSnapshot(routes);
-    window.dispatchEvent(new Event('litc_settings_updated'));
-  } catch(e) {
-    console.error("Failed to save routes", e);
-  }
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -163,14 +104,21 @@ interface WizardState {
   name: string; description: string; icon: string; color: string;
   targetDepartmentId: string; targetDepartmentName: string;
   targetDivisionId: string; targetDivisionName: string;
+  targetTeamId?: string; targetTeamName?: string;
+  managerId: string; managerName: string;
   formConfig: RouteFormConfig;
 }
 const defaultWizard = (): WizardState => ({
-  name: '', description: '', icon: '💻', color: '#007AFF',
+  name: '', description: '', icon: 'Monitor', color: '#007AFF',
   targetDepartmentId: '', targetDepartmentName: '',
   targetDivisionId: '', targetDivisionName: '',
+  targetTeamId: '', targetTeamName: '',
+  managerId: '', managerName: '',
   formConfig: defaultFormConfig(),
 });
+
+// ─── Toast Component ─────────────────────────────────────────────────────────
+interface ToastState { message: string; type: 'success' | 'error' | 'loading'; visible: boolean; }
 
 export const TicketRoutingTab: React.FC = () => {
   useEffect(() => { injectStyles(); }, []);
@@ -178,7 +126,17 @@ export const TicketRoutingTab: React.FC = () => {
   const [routes, setRoutes] = useState<TicketRouteDefinition[]>([]);
   const [departments, setDepartments] = useState<OrgDepartment[]>([]);
   const [dynamicFields, setDynamicFields] = useState<DynamicCustomField[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [toast, setToast] = useState<ToastState>({ message: '', type: 'success', visible: false });
   
+  const showToast = (message: string, type: ToastState['type'], duration = 3000) => {
+    setToast({ message, type, visible: true });
+    if (type !== 'loading') {
+      setTimeout(() => setToast(t => ({ ...t, visible: false })), duration);
+    }
+  };
+
   const [view, setView] = useState<'list' | 'wizard'>('list');
   const [wizardStep, setWizardStep] = useState<WizardStep>(1);
   const [wizard, setWizard] = useState<WizardState>(defaultWizard());
@@ -192,21 +150,65 @@ export const TicketRoutingTab: React.FC = () => {
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [showSubFieldModal, setShowSubFieldModal] = useState(false); // When choosing existing or new
 
-  useEffect(() => {
-    loadRoutes().then(setRoutes);
-    
-    // Fetch departments securely via API to avoid missing/invalid localStorage data
-    import('../../../services/admin.api').then(mod => {
-      mod.AdminAPI.getOperationalDepartments().then(res => {
-        if (res && res.departments && Array.isArray(res.departments)) {
-          setDepartments(res.departments);
-        } else {
-          setDepartments([]);
-        }
-      }).catch(() => setDepartments([]));
-    });
+  // Flow Manager Selection State
+  const [candidateManagers, setCandidateManagers] = useState<any[]>([]);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
 
-    loadDynamicFields().then(setDynamicFields);
+  useEffect(() => {
+    if (!wizard.targetDepartmentId) {
+      setCandidateManagers([]);
+      return;
+    }
+    setIsLoadingCandidates(true);
+    const query = new URLSearchParams({
+      departmentId: wizard.targetDepartmentId,
+      ...(wizard.targetDivisionId ? { divisionId: wizard.targetDivisionId } : {}),
+      ...(wizard.targetTeamId ? { teamId: wizard.targetTeamId } : {})
+    });
+    const token = localStorage.getItem('litc_token');
+    fetch(`/api/v1/flow-governance/candidate-managers?${query}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.candidates)) {
+          setCandidateManagers(res.candidates);
+          // If wizard already has a managerId, ensure its managerName is filled from candidate list
+          if (wizard.managerId) {
+            const current = res.candidates.find((c: any) => String(c.id) === String(wizard.managerId));
+            if (current && !wizard.managerName) {
+              setW({ managerName: current.name });
+            }
+          } else {
+            // Pre-select suggested manager only if no manager is currently selected
+            const suggested = res.candidates.find((c: any) => c.isSuggested);
+            if (suggested) {
+              setW({ managerId: String(suggested.id), managerName: suggested.name });
+            }
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingCandidates(false));
+  }, [wizard.targetDepartmentId, wizard.targetDivisionId, wizard.targetTeamId]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([
+      loadRoutes(),
+      loadDynamicFields(),
+      import('../../../services/admin.api').then(mod =>
+        mod.AdminAPI.getOperationalDepartments()
+          .then(res => (res?.departments && Array.isArray(res.departments) ? res.departments : []))
+          .catch(() => [])
+      ),
+    ]).then(([fetchedRoutes, fetchedFields, fetchedDepts]) => {
+      setRoutes(fetchedRoutes);
+      setDynamicFields(fetchedFields);
+      setDepartments(fetchedDepts);
+    }).catch(() => {
+      showToast('فشل في تحميل البيانات، تحقق من اتصالك بالسيرفر', 'error');
+    }).finally(() => setIsLoading(false));
   }, []);
 
   const setW = (upd: Partial<WizardState>) => setWizard(p => ({ ...p, ...upd }));
@@ -214,20 +216,27 @@ export const TicketRoutingTab: React.FC = () => {
 
   const openCreate = () => { setEditingId(null); setWizard(defaultWizard()); setWizardStep(1); setView('wizard'); };
   const openEdit = (route: TicketRouteDefinition) => {
-    setEditingId(route.id);
+    const r = normalizeRoute(route);
+    setEditingId(r.id);
     setWizard({
-      name:route.name, description:route.description, icon:route.icon, color:route.color,
-      targetDepartmentId:route.targetDepartmentId, targetDepartmentName:route.targetDepartmentName,
-      targetDivisionId:route.targetDivisionId, targetDivisionName:route.targetDivisionName,
-      formConfig: { ...route.formConfig, routeDynamicFields: [...(route.formConfig.routeDynamicFields || [])] }
+      name: r.name, description: r.description, icon: r.icon, color: r.color,
+      targetDepartmentId: r.targetDepartmentId, targetDepartmentName: r.targetDepartmentName,
+      targetDivisionId: r.targetDivisionId, targetDivisionName: r.targetDivisionName,
+      targetTeamId: r.targetTeamId || '', targetTeamName: r.targetTeamName || '',
+      managerId: r.managerId ? String(r.managerId) : '', managerName: r.managerName || '',
+      formConfig: { ...r.formConfig, routeDynamicFields: [...(r.formConfig.routeDynamicFields || [])] }
     });
     setWizardStep(1); setView('wizard');
   };
 
-  const handleSaveRoute = () => {
+  const handleSaveRoute = async () => {
+    setIsSaving(true);
+    showToast('جارٍ الحفظ...', 'loading');
     const r: TicketRouteDefinition = {
       id: editingId || `route_${Date.now()}`,
       ...wizard,
+      managerId: wizard.managerId ? String(wizard.managerId) : undefined,
+      managerName: wizard.managerName || undefined,
       isActive: true,
       createdAt: editingId ? (routes.find(x=>x.id===editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -235,20 +244,63 @@ export const TicketRoutingTab: React.FC = () => {
     let updated = [...routes];
     if (editingId) updated = updated.map(x => x.id === editingId ? r : x);
     else updated.push(r);
-    
-    setRoutes(updated);
-    saveRoutes(updated);
-    setView('list');
+
+    try {
+      const normalizedRoutes = await saveRoutes(updated);
+      setRoutes(normalizedRoutes); // ✅ Use server-returned normalized routes
+      setView('list');
+      showToast(editingId ? '✅ تم تحديث المسار بنجاح' : '✅ تم إنشاء المسار بنجاح', 'success');
+    } catch (err: any) {
+      showToast(`❌ فشل الحفظ: ${err?.message || 'خطأ في الاتصال بالخادم'}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const toggleRouteStatus = (id: string) => {
+  const toggleRouteStatus = async (id: string) => {
+    const route = routes.find(r => r.id === id);
     const updated = routes.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r);
-    setRoutes(updated); saveRoutes(updated);
+    showToast('جارٍ التحديث...', 'loading');
+    try {
+      const normalizedRoutes = await saveRoutes(updated);
+      setRoutes(normalizedRoutes);
+      showToast(route?.isActive ? '⏸ تم إيقاف المسار' : '✅ تم تفعيل المسار', 'success');
+    } catch (err: any) {
+      showToast(`❌ فشل تحديث حالة المسار: ${err?.message || 'خطأ في الاتصال'}`, 'error');
+    }
   };
-  const deleteRoute = (id: string) => {
-    if(!window.confirm('هل أنت متأكد من حذف هذا المسار؟')) return;
+
+  const deleteRoute = async (id: string) => {
+    const route = routes.find(r => r.id === id);
+    if (!window.confirm(`هل أنت متأكد من حذف مسار "${route?.name || ''}"؟`)) return;
     const updated = routes.filter(r => r.id !== id);
-    setRoutes(updated); saveRoutes(updated);
+    showToast('جارٍ الحذف...', 'loading');
+    try {
+      const normalizedRoutes = await saveRoutes(updated);
+      setRoutes(normalizedRoutes);
+      showToast('🗑 تم حذف المسار بنجاح', 'success');
+    } catch (err: any) {
+      showToast(`❌ فشل حذف المسار: ${err?.message || 'خطأ في الاتصال'}`, 'error');
+    }
+  };
+
+  const duplicateRoute = async (route: TicketRouteDefinition) => {
+    showToast('جارٍ استنساخ المسار...', 'loading');
+    try {
+      const clonedRoute: TicketRouteDefinition = {
+        ...JSON.parse(JSON.stringify(route)),
+        id: `route_${Date.now()}`,
+        name: `${route.name} (نسخة)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const updated = [clonedRoute, ...routes];
+      const normalizedRoutes = await saveRoutes(updated);
+      setRoutes(normalizedRoutes);
+      showToast('✅ تم استنساخ المسار بنجاح ويمكنك تعديل تفاصيله الآن', 'success');
+    } catch (err: any) {
+      showToast(`❌ فشل استنساخ المسار: ${err?.message || 'خطأ في الاتصال'}`, 'error');
+    }
   };
 
   const divisions = departments.find(d => d.id === wizard.targetDepartmentId)?.divisions || [];
@@ -263,29 +315,40 @@ export const TicketRoutingTab: React.FC = () => {
   const startBuildingField = (parentCtx: { parentFieldId: string; triggerOptionId: string } | null = null) => {
     setParentContext(parentCtx);
     setEditingFieldId(null);
-    setFieldDraft({ name: '', options: [] });
+    let autoName = '';
+    if (parentCtx) {
+      const parent = dynamicFields.find(f => f.id === parentCtx.parentFieldId);
+      const opt = parent?.options.find(o => o.id === parentCtx.triggerOptionId);
+      autoName = opt?.label || 'مستدلة فرعية';
+    }
+    setFieldDraft({ name: autoName, options: [] });
     setDraftOptionText('');
     setIsBuildingField(true);
   };
 
-  const startEditingField = (field: DynamicCustomField) => {
-    setParentContext(null);
+  const startEditingField = (field: DynamicCustomField, parentCtx: { parentFieldId: string; triggerOptionId: string } | null = null) => {
+    setParentContext(parentCtx);
     setEditingFieldId(field.id);
     setFieldDraft({ name: field.name, options: [...field.options] });
     setDraftOptionText('');
     setIsBuildingField(true);
   };
 
-  const deleteDynamicField = (fieldId: string) => {
+  const deleteDynamicField = async (fieldId: string) => {
     if(!window.confirm('هل أنت متأكد من حذف هذه المستدلة تماماً؟ سيتم مسحها من جميع المسارات.')) return;
     const updated = dynamicFields.filter(f => f.id !== fieldId).map(f => ({
       ...f,
       childBindings: (f.childBindings || []).filter(cb => cb.childFieldId !== fieldId)
     }));
-    setDynamicFields(updated);
-    saveDynamicFields(updated);
-    const current = wizard.formConfig.routeDynamicFields || [];
-    setFC({ routeDynamicFields: current.filter(rf => rf.fieldId !== fieldId) });
+    const result = await saveDynamicFields(updated);
+    if (result.success) {
+      setDynamicFields(updated);
+      const current = wizard.formConfig.routeDynamicFields || [];
+      setFC({ routeDynamicFields: current.filter(rf => rf.fieldId !== fieldId) });
+      showToast('🗑 تم حذف المستدلة', 'success');
+    } else {
+      showToast(`❌ ${result.error || 'فشل في حذف المستدلة'}`, 'error');
+    }
   };
 
   const addDraftOption = () => {
@@ -319,21 +382,32 @@ export const TicketRoutingTab: React.FC = () => {
     });
   };
 
-  const saveFieldDraft = (asSubField: boolean) => {
-    if (!fieldDraft.name?.trim() || !fieldDraft.options?.length) {
-      alert('الرجاء إدخال اسم المستدلة وإضافة خيار واحد على الأقل.');
+  const saveFieldDraft = async (asSubField: boolean) => {
+    let finalName = (fieldDraft.name || '').trim();
+    if (asSubField && parentContext && (!finalName || finalName === 'مستدلة فرعية')) {
+      const parent = dynamicFields.find(f => f.id === parentContext.parentFieldId);
+      const opt = parent?.options.find(o => o.id === parentContext.triggerOptionId);
+      if (opt?.label) finalName = opt.label;
+    }
+    if (!finalName || !fieldDraft.options?.length) {
+      showToast(asSubField ? 'الرجاء إضافة خيار فرعي واحد على الأقل.' : 'الرجاء إدخال اسم المستدلة وإضافة خيار واحد على الأقل.', 'error');
       return;
     }
 
     if (editingFieldId) {
       const updatedFields = dynamicFields.map(f => {
         if (f.id === editingFieldId) {
-          return { ...f, name: fieldDraft.name!.trim(), options: fieldDraft.options || [] };
+          return { ...f, name: finalName, options: fieldDraft.options || [] };
         }
         return f;
       });
-      setDynamicFields(updatedFields);
-      saveDynamicFields(updatedFields);
+      const result = await saveDynamicFields(updatedFields);
+      if (result.success) {
+        setDynamicFields(updatedFields);
+        showToast('✅ تم تحديث المستدلة بنجاح', 'success');
+      } else {
+        showToast(`❌ ${result.error || 'فشل في تحديث المستدلة'}`, 'error');
+      }
       setIsBuildingField(false);
       setEditingFieldId(null);
       return;
@@ -341,9 +415,9 @@ export const TicketRoutingTab: React.FC = () => {
 
     const newField: DynamicCustomField = {
       id: `df_${Date.now()}`,
-      name: fieldDraft.name.trim(),
+      name: finalName,
       options: fieldDraft.options || [],
-      childBindings: asSubField && parentContext ? [{ childFieldId: `df_${Date.now()}`, triggerValue: parentContext.triggerOptionId }] : []
+      childBindings: []
     };
 
     // If it's a subfield, we actually just save it as a normal field, but we UPDATE the parent field's childBindings
@@ -358,23 +432,32 @@ export const TicketRoutingTab: React.FC = () => {
         return f;
       });
       updatedFields.push(newField);
-      setDynamicFields(updatedFields);
-      saveDynamicFields(updatedFields);
+      const result = await saveDynamicFields(updatedFields);
+      if (result.success) {
+        setDynamicFields(updatedFields);
+        showToast('✅ تم إضافة المستدلة الفرعية بنجاح', 'success');
+      } else {
+        showToast(`❌ ${result.error || 'فشل في حفظ المستدلة الفرعية'}`, 'error');
+      }
     } else {
       const updatedFields = [...dynamicFields, newField];
-      setDynamicFields(updatedFields);
-      saveDynamicFields(updatedFields);
-      
-      // Also attach it to the current route as a MAIN field
-      const currentRouteFields = wizard.formConfig.routeDynamicFields || [];
-      setFC({ routeDynamicFields: [...currentRouteFields, { fieldId: newField.id, isRequired: true }] });
+      const result = await saveDynamicFields(updatedFields);
+      if (result.success) {
+        setDynamicFields(updatedFields);
+        // Also attach it to the current route as a MAIN field
+        const currentRouteFields = wizard.formConfig.routeDynamicFields || [];
+        setFC({ routeDynamicFields: [...currentRouteFields, { fieldId: newField.id, isRequired: true }] });
+        showToast('✅ تم إنشاء المستدلة وربطها بالمسار', 'success');
+      } else {
+        showToast(`❌ ${result.error || 'فشل في حفظ المستدلة'}`, 'error');
+      }
     }
 
     setIsBuildingField(false);
     setParentContext(null);
   };
 
-  const attachExistingAsSubField = (childFieldId: string) => {
+  const attachExistingAsSubField = async (childFieldId: string) => {
     if (!parentContext) return;
     const updatedFields = dynamicFields.map(f => {
       if (f.id === parentContext.parentFieldId) {
@@ -388,8 +471,13 @@ export const TicketRoutingTab: React.FC = () => {
       }
       return f;
     });
-    setDynamicFields(updatedFields);
-    saveDynamicFields(updatedFields);
+    const result = await saveDynamicFields(updatedFields);
+    if (result.success) {
+      setDynamicFields(updatedFields);
+      showToast('✅ تم ربط المستدلة الفرعية', 'success');
+    } else {
+      showToast(`❌ ${result.error || 'فشل في ربط المستدلة'}`, 'error');
+    }
     setShowSubFieldModal(false);
     setParentContext(null);
   };
@@ -414,11 +502,11 @@ export const TicketRoutingTab: React.FC = () => {
   };
 
   const getParentContextTitle = () => {
-    if (editingFieldId) return 'تعديل المستدلة';
+    if (editingFieldId) return parentContext ? 'تعديل خيارات المستدلة الفرعية' : 'تعديل المستدلة';
     if (!parentContext) return 'إنشاء مستدلة أساسية';
     const pField = dynamicFields.find(f => f.id === parentContext.parentFieldId);
     const pOpt = pField?.options.find(o => o.id === parentContext.triggerOptionId);
-    return `مستدلة فرعية مرتبطة بـ: ${pOpt?.label || 'خيار غير معروف'}`;
+    return `إضافة خيارات فرعية تابعة لـ: «${pOpt?.label || fieldDraft.name || 'خيار'}»`;
   };
 
   // Build a map of child fields for rendering
@@ -435,20 +523,36 @@ export const TicketRoutingTab: React.FC = () => {
   const step2Valid = !!wizard.targetDepartmentId;
 
   const renderSteps = () => (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, marginBottom:30 }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginBottom:28, background: '#F8FAFC', padding: '10px 16px', borderRadius: 16, border: `1px solid ${A.sep}` }}>
       {([1,2,3] as WizardStep[]).map((s, i) => {
         const done = wizardStep > s; const active = wizardStep === s;
         return (
           <React.Fragment key={s}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div className="step-dot" style={{ background:done?A.green:active?wizard.color:A.bg, color:(done||active)?'#fff':A.textTer, border:active?`2px solid ${wizard.color}`:done?'none':'2px solid rgba(0,0,0,0.1)' }}>
+            <div 
+              onClick={() => setWizardStep(s)}
+              className="route-action-btn"
+              title="انقر للانتقال مباشرة إلى هذه الخطوة"
+              style={{ 
+                display:'flex', alignItems:'center', gap:8, cursor:'pointer',
+                padding: '8px 14px', borderRadius: 12,
+                background: active ? '#FFFFFF' : 'transparent',
+                boxShadow: active ? '0 2px 10px rgba(0,0,0,0.06)' : 'none',
+                border: active ? `1.5px solid ${wizard.color}50` : '1.5px solid transparent',
+                transition: 'all 0.2s',
+              }}>
+              <div className="step-dot" style={{ 
+                background: done ? A.green : active ? wizard.color : '#E2E8F0', 
+                color: (done || active) ? '#fff' : A.textSub, 
+                border: active ? `2px solid ${wizard.color}` : 'none',
+                width: 26, height: 26, fontSize: 11
+              }}>
                 {done ? '✓' : s}
               </div>
-              <span style={{ fontSize:13, fontWeight:active?700:600, color:active?A.text:A.textTer }}>
-                {s===1?'الأساسيات':s===2?'الواجهة والمستدلات':'تخصيص الفورم'}
+              <span style={{ fontSize:13, fontWeight: active ? 800 : 600, color: active ? wizard.color : A.textSub }}>
+                {s === 1 ? '1. الأساسيات' : s === 2 ? '2. الواجهة والمستدلات' : '3. تخصيص حقول الفورم ⚡'}
               </span>
             </div>
-            {i < 2 && <div style={{ width:40, height:2, background:done?A.green:A.sep }} />}
+            {i < 2 && <div style={{ width:24, height:2, background: done ? A.green : '#E2E8F0' }} />}
           </React.Fragment>
         );
       })}
@@ -469,7 +573,9 @@ export const TicketRoutingTab: React.FC = () => {
         <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:8 }}>أيقونة المسار</label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
           {ICONS.map(ic => (
-            <div key={ic} className="icon-option" style={{ background:wizard.icon===ic?`${wizard.color}22`:A.bg, border:wizard.icon===ic?`2px solid ${wizard.color}`:'2px solid transparent', fontSize:20 }} onClick={() => setW({ icon:ic })}>{ic}</div>
+            <div key={ic} className="icon-option" style={{ background:wizard.icon===ic?`${wizard.color}22`:A.bg, border:wizard.icon===ic?`2px solid ${wizard.color}`:'2px solid transparent', fontSize:20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: wizard.icon===ic ? wizard.color : A.textSub }} onClick={() => setW({ icon:ic })}>
+              {renderIcon(ic, 24)}
+            </div>
           ))}
         </div>
       </div>
@@ -490,23 +596,77 @@ export const TicketRoutingTab: React.FC = () => {
     // All available fields (for picking existing ones)
     const availableToAttach = dynamicFields.filter(f => !(wizard.formConfig.routeDynamicFields || []).some(rf => rf.fieldId === f.id));
 
+    const selectedDept = departments.find(d => String(d.id) === String(wizard.targetDepartmentId));
+    const divisions = selectedDept?.divisions || [];
+    const selectedDiv = divisions.find(d => String(d.id) === String(wizard.targetDivisionId));
+    const teams = selectedDiv?.teams || [];
+
     return (
       <div className="wizard-step" style={{ display:'flex', flexDirection:'column', gap:20 }}>
         <div>
           <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:6 }}>الإدارة التشغيلية المستقبلة <span style={{ color:A.red }}>*</span></label>
-          <select className="tr-input" value={wizard.targetDepartmentId} onChange={e => { const dept=departments.find(d=>d.id===e.target.value); setW({ targetDepartmentId:e.target.value, targetDepartmentName:dept?.name||'', targetDivisionId:'', targetDivisionName:'' }); }}>
-            <option value="">-- اختر الإدارة --</option>
+          <select className="tr-input" value={wizard.targetDepartmentId} onChange={e => { const dept=departments.find(d=>String(d.id)===e.target.value); setW({ targetDepartmentId:e.target.value, targetDepartmentName:dept?.name||'', targetDivisionId:'', targetDivisionName:'', targetTeamId:'', targetTeamName:'' }); }}>
+            <option value="">-- اختر الإدارة التشغيلية --</option>
             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
           {departments.length === 0 && <div style={{ fontSize:11, color:A.textTer, marginTop:4 }}>💡 أنشئ الإدارات أولاً من تبويب "الهيكل التشغيلي"</div>}
         </div>
         {divisions.length > 0 && (
           <div>
-            <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:6 }}>القسم (اختياري)</label>
-            <select className="tr-input" value={wizard.targetDivisionId} onChange={e => { const div=divisions.find(d=>d.id===e.target.value); setW({ targetDivisionId:e.target.value, targetDivisionName:div?.name||'' }); }}>
-              <option value="">-- أي قسم (التوجيه لكامل الإدارة) --</option>
+            <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:6 }}>القسم التابع للإدارة (اختياري)</label>
+            <select className="tr-input" value={wizard.targetDivisionId} onChange={e => { const div=divisions.find(d=>String(d.id)===e.target.value); setW({ targetDivisionId:e.target.value, targetDivisionName:div?.name||'', targetTeamId:'', targetTeamName:'' }); }}>
+              <option value="">-- توجيه للإدارة بالكامل دون حصر في قسم --</option>
               {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
+          </div>
+        )}
+        {teams.length > 0 && (
+          <div>
+            <label style={{ fontSize:12, fontWeight:600, color:A.textSub, display:'block', marginBottom:6 }}>الوحدة / الفريق التابع للقسم (اختياري)</label>
+            <select className="tr-input" value={wizard.targetTeamId || ''} onChange={e => { const tm=teams.find((t: any)=>String(t.id)===e.target.value); setW({ targetTeamId:e.target.value, targetTeamName:tm?.name||'' }); }}>
+              <option value="">-- توجيه للقسم بالكامل دون حصر في وحدة --</option>
+              {teams.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* ─── قائد خصائص المسار (Flow Manager Delegation) ─── */}
+        {wizard.targetDepartmentId && (
+          <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 14, border: `1.5px solid ${wizard.managerId ? wizard.color + '60' : A.sep}`, transition: 'all 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: A.text, display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                <span>🛡️ قائد خصائص المسار (المسؤول المخول بحوكمة الاستقبال)</span>
+                <span style={{ color: A.red }}>*</span>
+              </label>
+              {isLoadingCandidates && <span style={{ fontSize: 11, color: wizard.color, fontWeight: 600 }}>جاري استخراج الأسماء الهرمية...</span>}
+            </div>
+            <p style={{ fontSize: 11, color: A.textSub, margin: '0 0 10px 0', lineHeight: 1.5 }}>
+              يُمنح هذا الموظف صلاحية إدارة تبويب خصائص هذا المسار، مصفوفة الصلاحيات (سحب، إغلاق، تحويل)، وقواعد الأتمتة الشرطية.
+            </p>
+            <select
+              className="tr-input"
+              value={wizard.managerId || ''}
+              onChange={e => {
+                const cand = candidateManagers.find(c => String(c.id) === e.target.value);
+                setW({ managerId: e.target.value, managerName: cand?.name || '' });
+              }}
+              style={{ background: '#fff', fontWeight: 600 }}
+            >
+              <option value="">-- اختر قائد خصائص المسار من الهيكل الموجه له --</option>
+              {wizard.managerId && !candidateManagers.some(c => String(c.id) === String(wizard.managerId)) && (
+                <option value={wizard.managerId}>
+                  {wizard.managerName ? `⭐ ${wizard.managerName} (المسؤول المحدد)` : `مستخدم #${wizard.managerId}`}
+                </option>
+              )}
+              {candidateManagers.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.isSuggested ? `⭐ ${c.name} (${c.hierarchyRole} - المقترح الأول)` : `${c.name} (${c.hierarchyRole})`}
+                </option>
+              ))}
+            </select>
+            {candidateManagers.length === 0 && !isLoadingCandidates && (
+              <div style={{ fontSize: 11, color: A.red, marginTop: 6 }}>⚠️ لم يتم العثور على موظفين مسجلين تحت هذه الجهة في الهيكل التشغيلي.</div>
+            )}
           </div>
         )}
         
@@ -535,25 +695,118 @@ export const TicketRoutingTab: React.FC = () => {
               </div>
             </div>
             {/* Department field */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 10, border: `1px solid ${!!wizard.formConfig.showDepartmentField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 18 }}>🏛️</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل "الإدارة أو المكتب"</div>
-                  <div style={{ fontSize: 11, color: A.textTer }}>يطلب من الموظف تحديد إدارته</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 10, border: `1px solid ${!!wizard.formConfig.showDepartmentField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 18 }}>🏛️</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل "التبعية المؤسسية لمقدم الطلب"</div>
+                    <div style={{ fontSize: 11, color: A.textTer }}>تحديد موقع الموظف في الهيكل المؤسسي (إدارة / قسم / وحدة)</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {!!wizard.formConfig.showDepartmentField && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDepartment ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDepartment ? '#fef2f2' : '#f8fafc', padding: '3px 8px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDepartment ? '#fecaca' : A.sep}`, transition: 'all 0.2s' }}>
+                      <input type="checkbox" style={{ display: 'none' }} checked={!!wizard.formConfig.mandatoryDepartment} onChange={e => setFC({ mandatoryDepartment: e.target.checked })} />
+                      {wizard.formConfig.mandatoryDepartment ? '🔴 إلزامي' : '⚪ اختياري'}
+                    </label>
+                  )}
+                  <div onClick={() => setFC({ showDepartmentField: !wizard.formConfig.showDepartmentField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDepartmentField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDepartmentField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {!!wizard.formConfig.showDepartmentField && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDepartment ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDepartment ? '#fef2f2' : '#f8fafc', padding: '3px 8px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDepartment ? '#fecaca' : A.sep}`, transition: 'all 0.2s' }}>
-                    <input type="checkbox" style={{ display: 'none' }} checked={!!wizard.formConfig.mandatoryDepartment} onChange={e => setFC({ mandatoryDepartment: e.target.checked })} />
-                    {wizard.formConfig.mandatoryDepartment ? '🔴 إلزامي' : '⚪ اختياري'}
-                  </label>
-                )}
-                <div onClick={() => setFC({ showDepartmentField: !wizard.formConfig.showDepartmentField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDepartmentField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-                  <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDepartmentField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+
+              {/* عمق التدرج الهرمي المطلوب عند التفعيل */}
+              {!!wizard.formConfig.showDepartmentField && (
+                <div style={{ padding: '12px 14px', background: `${wizard.color}08`, borderRadius: 10, border: `1px solid ${wizard.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: A.text }}>
+                    مستوى التدرج التنظيمي المطلوب من الموظف:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    {/* المستوى 1 */}
+                    <div 
+                      onClick={() => setFC({ departmentSelectionLevel: 'DEPT_ONLY' })}
+                      style={{
+                        padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                        background: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? '#fff' : 'rgba(255,255,255,0.6)',
+                        border: `1.5px solid ${(!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? wizard.color : A.sep}`,
+                        boxShadow: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? `0 2px 8px ${wizard.color}20` : 'none',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span>🏛️</span> الإدارة / المكتب فقط
+                      </div>
+                      <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                        المستوى الأول فقط (إدارة عليا / إدارة / مكتب)
+                      </div>
+                    </div>
+
+                    {/* المستوى 2 */}
+                    <div 
+                      onClick={() => setFC({ departmentSelectionLevel: 'DEPT_AND_DIV' })}
+                      style={{
+                        padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                        background: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? '#fff' : 'rgba(255,255,255,0.6)',
+                        border: `1.5px solid ${wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? wizard.color : A.sep}`,
+                        boxShadow: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? `0 2px 8px ${wizard.color}20` : 'none',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span>📂</span> الإدارة ➔ ثم القسم
+                      </div>
+                      <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                        يختار الإدارة ثم القسم التابع لها في الهيكل
+                      </div>
+                    </div>
+
+                    {/* المستوى 3 */}
+                    <div 
+                      onClick={() => setFC({ departmentSelectionLevel: 'FULL_HIERARCHY' })}
+                      style={{
+                        padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                        background: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? '#fff' : 'rgba(255,255,255,0.6)',
+                        border: `1.5px solid ${wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? wizard.color : A.sep}`,
+                        boxShadow: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? `0 2px 8px ${wizard.color}20` : 'none',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span>👥</span> الإدارة ➔ القسم ➔ الوحدة
+                      </div>
+                      <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                        تسلسل ثلاثي كامل حتى مستوى الوحدة أو الفريق
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* إلزامية المستويات الفرعية */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4, flexWrap: 'wrap' }}>
+                    {(wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' || wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY') && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', color: A.textSub }}>
+                        <input 
+                          type="checkbox" 
+                          checked={!!wizard.formConfig.mandatoryDivision} 
+                          onChange={e => setFC({ mandatoryDivision: e.target.checked })} 
+                        />
+                        <span>إلزامية تحديد القسم</span>
+                      </label>
+                    )}
+                    {wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', color: A.textSub }}>
+                        <input 
+                          type="checkbox" 
+                          checked={!!wizard.formConfig.mandatoryTeam} 
+                          onChange={e => setFC({ mandatoryTeam: e.target.checked })} 
+                        />
+                        <span>إلزامية تحديد الوحدة/الفريق</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -569,7 +822,33 @@ export const TicketRoutingTab: React.FC = () => {
           {isBuildingField ? (
             <div className="field-card" style={{ border: `2px solid ${wizard.color}55` }}>
               <div style={{ fontSize:13, fontWeight:700, marginBottom:10, color:A.text }}>{getParentContextTitle()}</div>
-              <input className="tr-input" placeholder="اسم المستدلة (مثال: نوع العطل)" value={fieldDraft.name} onChange={e => setFieldDraft(p => ({ ...p, name: e.target.value }))} style={{ marginBottom:10 }} />
+              {parentContext ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px', background: `${wizard.color}12`, borderRadius: 12, border: `1px solid ${wizard.color}35`, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>↳</span>
+                    <div>
+                      <div style={{ fontSize: 11, color: A.textSub, fontWeight: 600 }}>المستدلة الفرعية ترث اسم الخيار تلقائياً:</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: wizard.color }}>{fieldDraft.name}</div>
+                    </div>
+                  </div>
+                  {dynamicFields.filter(f => f.id !== parentContext.parentFieldId).length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: A.textSub }}>أو</span>
+                      <select 
+                        style={{ fontSize: 11, padding: '5px 10px', borderRadius: 8, border: `1px solid ${A.sep}`, background: '#fff', color: A.text, outline: 'none', cursor: 'pointer' }}
+                        onChange={e => { if (e.target.value) { attachExistingAsSubField(e.target.value); } }}
+                      >
+                        <option value="">-- ربط مستدلة محفوظة بدلاً من الإنشاء --</option>
+                        {dynamicFields.filter(f => f.id !== parentContext.parentFieldId).map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <input className="tr-input" placeholder="اسم المستدلة (مثال: نوع العطل)" value={fieldDraft.name} onChange={e => setFieldDraft(p => ({ ...p, name: e.target.value }))} style={{ marginBottom:10 }} />
+              )}
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                 {(fieldDraft.options || []).map((o, idx) => (
@@ -636,18 +915,18 @@ export const TicketRoutingTab: React.FC = () => {
                             <div style={{ display:'flex', alignItems:'center' }}>
                               <div className="option-tag" style={{ margin:0 }}>
                                 {opt.label}
-                                <button className="add-subfield-btn" onClick={() => { setParentContext({ parentFieldId: field.id, triggerOptionId: opt.id }); setShowSubFieldModal(true); }} title="إضافة مستدلة فرعية">+</button>
+                                <button className="add-subfield-btn" onClick={() => startBuildingField({ parentFieldId: field.id, triggerOptionId: opt.id })} title="إضافة خيارات فرعية لهذا الخيار">+</button>
                               </div>
                             </div>
                             {/* Render Subfields inside a neat nested box */}
                             {children.length > 0 && (
                               <div style={{ marginRight: 20, padding: '10px 14px', background: A.bg, borderRadius: 10, borderRight: `3px solid ${wizard.color}66` }}>
                                 {children.map(cf => (
-                                  <div key={cf.id} style={{ marginBottom: 8, lastChild: { marginBottom: 0 } }}>
+                                  <div key={cf.id} style={{ marginBottom: 8 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: A.text }}>↳ مستدلة فرعية: {cf.name}</div>
                                       <div style={{ display:'flex', gap:6 }}>
-                                        <button onClick={() => startEditingField(cf)} style={{ background:'none', border:'none', color:A.blue, fontSize:11, cursor:'pointer', padding:0, fontWeight:600 }}>تعديل</button>
+                                        <button onClick={() => startEditingField(cf, { parentFieldId: field.id, triggerOptionId: opt.id })} style={{ background:'none', border:'none', color:A.blue, fontSize:11, cursor:'pointer', padding:0, fontWeight:600 }}>تعديل</button>
                                         <button onClick={() => unlinkSubField(field.id, opt.id, cf.id)} style={{ background:'none', border:'none', color:A.accent, fontSize:11, cursor:'pointer', padding:0, fontWeight:600 }}>حذف القائمة</button>
                                         <button onClick={() => deleteDynamicField(cf.id)} style={{ background:'none', border:'none', color:A.red, fontSize:11, cursor:'pointer', padding:0, fontWeight:600 }}>حذف نهائي</button>
                                       </div>
@@ -718,6 +997,136 @@ export const TicketRoutingTab: React.FC = () => {
   const renderStep3 = () => (
     <div className="wizard-step" style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div style={{ display:'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Building Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fff', borderRadius: 12, border: `1px solid ${wizard.formConfig.showBuildingField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>🏢</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل موقع / مبنى العمل</div>
+              <div style={{ fontSize: 11, color: A.textTer }}>إلزام أو إتاحة اختيار المبنى أو الموقع الذي تقع فيه المشكلة</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {wizard.formConfig.showBuildingField && (
+              <div onClick={() => setFC({ mandatoryBuilding: !wizard.formConfig.mandatoryBuilding })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryBuilding ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryBuilding ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryBuilding ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                {wizard.formConfig.mandatoryBuilding ? '🔴 إلزامي' : '⚪ اختياري'}
+              </div>
+            )}
+            <div onClick={() => setFC({ showBuildingField: !wizard.formConfig.showBuildingField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showBuildingField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showBuildingField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Submitter Department Toggle & Depth */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fff', borderRadius: 12, border: `1px solid ${wizard.formConfig.showDepartmentField ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>🏛️</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل التبعية المؤسسية لمقدم الطلب</div>
+                <div style={{ fontSize: 11, color: A.textTer }}>تحديد موقع الموظف في الهيكل المؤسسي الحقيقي (إدارة / قسم / وحدة)</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {wizard.formConfig.showDepartmentField && (
+                <div onClick={() => setFC({ mandatoryDepartment: !wizard.formConfig.mandatoryDepartment })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDepartment ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDepartment ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDepartment ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                  {wizard.formConfig.mandatoryDepartment ? '🔴 إلزامي' : '⚪ اختياري'}
+                </div>
+              )}
+              <div onClick={() => setFC({ showDepartmentField: !wizard.formConfig.showDepartmentField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDepartmentField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDepartmentField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+              </div>
+            </div>
+          </div>
+
+          {wizard.formConfig.showDepartmentField && (
+            <div style={{ padding: '12px 14px', background: `${wizard.color}08`, borderRadius: 10, border: `1px solid ${wizard.color}25`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: A.text }}>
+                مستوى التدرج التنظيمي المطلوب من الموظف:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <div 
+                  onClick={() => setFC({ departmentSelectionLevel: 'DEPT_ONLY' })}
+                  style={{
+                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? '#fff' : 'rgba(255,255,255,0.6)',
+                    border: `1.5px solid ${(!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? wizard.color : A.sep}`,
+                    boxShadow: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? `0 2px 8px ${wizard.color}20` : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: (!wizard.formConfig.departmentSelectionLevel || wizard.formConfig.departmentSelectionLevel === 'DEPT_ONLY') ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span>🏛️</span> الإدارة فقط
+                  </div>
+                  <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                    إدارة عليا أو إدارة أو مكتب فقط
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => setFC({ departmentSelectionLevel: 'DEPT_AND_DIV' })}
+                  style={{
+                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? '#fff' : 'rgba(255,255,255,0.6)',
+                    border: `1.5px solid ${wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? wizard.color : A.sep}`,
+                    boxShadow: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? `0 2px 8px ${wizard.color}20` : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span>📂</span> الإدارة ➔ ثم القسم
+                  </div>
+                  <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                    يختار الإدارة ثم القسم التابع لها
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => setFC({ departmentSelectionLevel: 'FULL_HIERARCHY' })}
+                  style={{
+                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? '#fff' : 'rgba(255,255,255,0.6)',
+                    border: `1.5px solid ${wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? wizard.color : A.sep}`,
+                    boxShadow: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? `0 2px 8px ${wizard.color}20` : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span>👥</span> الإدارة ➔ القسم ➔ الوحدة
+                  </div>
+                  <div style={{ fontSize: 10, color: A.textTer, marginTop: 4 }}>
+                    تسلسل كامل حتى الوحدة أو الفريق
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4, flexWrap: 'wrap' }}>
+                {(wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' || wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', color: A.textSub }}>
+                    <input 
+                      type="checkbox" 
+                      checked={!!wizard.formConfig.mandatoryDivision} 
+                      onChange={e => setFC({ mandatoryDivision: e.target.checked })} 
+                    />
+                    <span>إلزامية تحديد القسم</span>
+                  </label>
+                )}
+                {wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', color: A.textSub }}>
+                    <input 
+                      type="checkbox" 
+                      checked={!!wizard.formConfig.mandatoryTeam} 
+                      onChange={e => setFC({ mandatoryTeam: e.target.checked })} 
+                    />
+                    <span>إلزامية تحديد الوحدة/الفريق</span>
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Description Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#fff', borderRadius: 12, border: `1px solid ${wizard.formConfig.showDescription ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -758,6 +1167,107 @@ export const TicketRoutingTab: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* ─── Smart Time & Scheduling Engine & Corporate Delegation ─── */}
+        <div style={{ margin: '14px 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>⚡</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: A.text }}>محرك الجدولة الزمنية والتفويض المؤسسي</span>
+          <div style={{ flex: 1, height: 1, background: A.sep, marginRight: 8 }} />
+        </div>
+
+        {/* 1. Smart Time & Scheduling Engine */}
+        {(() => {
+          const isScheduleActive = !!(wizard.formConfig.showScheduleEngine || wizard.formConfig.showDateRange);
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '16px', background: '#fff', borderRadius: 14, border: `1px solid ${isScheduleActive ? wizard.color + '45' : A.sep}`, boxShadow: isScheduleActive ? `0 2px 14px ${wizard.color}12` : 'none', transition: 'all 0.2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: isScheduleActive ? `${wizard.color}15` : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                    🗓️
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>محرك الجدولة الزمنية والوقت الذكي (Scheduling & Attendance Engine)</div>
+                    <div style={{ fontSize: 11, color: A.textTer }}>إجازات بعداد أيام تلقائي، أيام متفرقة، وأذونات خروج واستئذان بالساعات والدقائق</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {isScheduleActive && (
+                    <div onClick={() => setFC({ mandatorySchedule: !wizard.formConfig.mandatorySchedule, mandatoryDateRange: !wizard.formConfig.mandatorySchedule })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? A.red : A.textSub, fontWeight: 600, background: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                      {(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '🔴 إلزامي' : '⚪ اختياري'}
+                    </div>
+                  )}
+                  <div onClick={() => setFC({ showScheduleEngine: !isScheduleActive, showDateRange: !isScheduleActive })} style={{ width: 40, height: 22, borderRadius: 11, background: isScheduleActive ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: isScheduleActive ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                  </div>
+                </div>
+              </div>
+
+              {isScheduleActive && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نمط الجدولة الزمنية المطلوب</label>
+                      <select className="tr-input" style={{ fontSize: 12, padding: '8px 12px' }} value={wizard.formConfig.scheduleMode || 'ANY'} onChange={e => setFC({ scheduleMode: e.target.value as any })}>
+                        <option value="ANY">🔀 نمط مرن وشامل (يتيح للموظف الاختيار بين فترة، أيام متفرقة، أو إذن ساعي)</option>
+                        <option value="DATE_RANGE">📆 فترة متصلة بأيام محسوبة (تاريخ البدء إلى تاريخ الانتهاء مع عداد الأيام)</option>
+                        <option value="DISCRETE_DAYS">🗓️ أيام متعددة متفرقة (إضافة عدة تواريخ متفرقة مع عداد الأيام)</option>
+                        <option value="HOURLY_WINDOW">⏱️ إذن خروج واستئذان زمني بالساعات (تاريخ محدد + من وإلى الساعة)</option>
+                        <option value="SINGLE_DATE">📅 موعد أو تاريخ محدد (يوم واحد فقط)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+                      <input className="tr-input" style={{ fontSize: 12, padding: '8px 12px' }} placeholder="مثال: فترة الإجازة / الجدولة الزمنية" value={wizard.formConfig.scheduleLabel || wizard.formConfig.dateRangeLabel || ''} onChange={e => setFC({ scheduleLabel: e.target.value, dateRangeLabel: e.target.value })} />
+                    </div>
+                  </div>
+                  <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 11, color: A.textSub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>💡</span>
+                    <span>يحسب النظام تلقائياً إجمالي الأيام المتصلة أو المتفرقة، أو الساعات والدقائق لأذونات الخروج دون أي تدخل يدوي.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 2. Delegate / Alternate Employee Toggle */}
+        <div style={{ display: 'flex', flexDirection: 'column', padding: '16px', background: '#fff', borderRadius: 14, border: `1px solid ${wizard.formConfig.showDelegateUser ? wizard.color + '45' : A.sep}`, boxShadow: wizard.formConfig.showDelegateUser ? `0 2px 14px ${wizard.color}12` : 'none', transition: 'all 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: wizard.formConfig.showDelegateUser ? `${wizard.color}15` : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                👤
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>الموظف البديل / تسليم المهام (Delegate User)</div>
+                <div style={{ fontSize: 11, color: A.textTer }}>لتحديد زميل يستلم المهام أو يتابع التنسيق أثناء غياب مقدم الطلب</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {wizard.formConfig.showDelegateUser && (
+                <div onClick={() => setFC({ mandatoryDelegateUser: !wizard.formConfig.mandatoryDelegateUser })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDelegateUser ? A.red : A.textSub, fontWeight: 600, background: wizard.formConfig.mandatoryDelegateUser ? '#fef2f2' : '#f8fafc', padding: '3px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDelegateUser ? '#fecaca' : A.sep}`, transition: 'all 0.2s', userSelect: 'none' }}>
+                  {wizard.formConfig.mandatoryDelegateUser ? '🔴 إلزامي' : '⚪ اختياري'}
+                </div>
+              )}
+              <div onClick={() => setFC({ showDelegateUser: !wizard.formConfig.showDelegateUser })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDelegateUser ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDelegateUser ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+              </div>
+            </div>
+          </div>
+          {wizard.formConfig.showDelegateUser && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${A.sep}` }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+              <input className="tr-input" style={{ fontSize: 12, padding: '8px 12px' }} placeholder="مثال: الموظف البديل / تسليم العهدة والمهام" value={wizard.formConfig.delegateUserLabel || ''} onChange={e => setFC({ delegateUserLabel: e.target.value })} />
+            </div>
+          )}
+        </div>
+
+        {/* 3. Enterprise Dynamic Recommendation Banner */}
+        <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(147,51,234,0.06))', borderRadius: 12, border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 20 }}>💡</span>
+          <div style={{ fontSize: 11, color: A.textSub, lineHeight: 1.6 }}>
+            <strong style={{ color: A.text }}>معمارية ديناميكية شاملة:</strong> أي بيانات إضافية (مثل بيانات المركبات، أرقام اللوحات، المبالغ، والعهد، أو التصنيفات الخاصة) تُبنى بكل دقة عبر <strong>المستدلات والمستدلات الفرعية</strong> أعلاه دون الحاجة لحقول ثابتة مقيدة.
+          </div>
+        </div>
       </div>
       {wizard.formConfig.showAttachments && (
         <div>
@@ -793,7 +1303,9 @@ export const TicketRoutingTab: React.FC = () => {
           {/* Phone notch bar */}
           <div style={{ padding:'10px 16px 8px', background:`linear-gradient(135deg, ${wizard.color}, ${wizard.color}CC)`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.25)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17 }}>{wizard.icon || '📋'}</div>
+              <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.25)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, color: '#fff' }}>
+                {renderIcon(wizard.icon || 'ClipboardList', 18, '#fff')}
+              </div>
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}>{wizard.name || 'اسم المسار'}</div>
                 <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', marginTop:1 }}>→ {wizard.targetDepartmentName || 'الإدارة المستقبلة'}</div>
@@ -927,17 +1439,121 @@ export const TicketRoutingTab: React.FC = () => {
                   </div>
                 )}
                 {wizard.formConfig.showDepartmentField && (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 5, background: '#F3E5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🏛️</div>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>الإدارة</span>
-                      {wizard.formConfig.mandatoryDepartment && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                        <div style={{ width: 20, height: 20, borderRadius: 5, background: '#F3E5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🏛️</div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>الإدارة / المكتب</span>
+                        {wizard.formConfig.mandatoryDepartment && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                      </div>
+                      <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>-- اختر الإدارة أو المكتب --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                      </div>
                     </div>
-                    <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span>-- اختر الإدارة --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+
+                    {(wizard.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' || wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY') && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 5, background: '#E0F2FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>📂</div>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>القسم التابع له</span>
+                          {wizard.formConfig.mandatoryDivision && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                        </div>
+                        <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>-- اختر القسم التابع له --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {wizard.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 5, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>👥</div>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>الوحدة / الفريق</span>
+                          {wizard.formConfig.mandatoryTeam && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                        </div>
+                        <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>-- اختر الوحدة أو الفريق --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Smart Scheduling Engine Live Preview ── */}
+            {(wizard.formConfig.showScheduleEngine || wizard.formConfig.showDateRange) && (
+              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 12, border: `1.5px solid ${wizard.color}35`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: `${wizard.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>🗓️</div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: A.text }}>{wizard.formConfig.scheduleLabel || wizard.formConfig.dateRangeLabel || 'الجدولة الزمنية / فترة الطلب'}</span>
+                    {(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                  </div>
+                  <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: `${wizard.color}15`, color: wizard.color, fontWeight: 700 }}>
+                    {wizard.formConfig.scheduleMode === 'DATE_RANGE' ? 'فترة متصلة' : wizard.formConfig.scheduleMode === 'DISCRETE_DAYS' ? 'أيام متفرقة' : wizard.formConfig.scheduleMode === 'HOURLY_WINDOW' ? 'إذن ساعي' : wizard.formConfig.scheduleMode === 'SINGLE_DATE' ? 'تاريخ محدد' : 'نمط مرن'}
+                  </span>
+                </div>
+
+                {/* Sub-preview based on mode */}
+                {(!wizard.formConfig.scheduleMode || wizard.formConfig.scheduleMode === 'ANY') && (
+                  <div>
+                    <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                      {['فترة متصلة', 'أيام متفرقة', 'إذن ساعي'].map((tab, i) => (
+                        <span key={tab} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 6, background: i === 0 ? wizard.color : '#e2e8f0', color: i === 0 ? '#fff' : '#64748b', fontWeight: 600 }}>{tab}</span>
+                      ))}
+                    </div>
+                    <div style={{ padding: '6px 10px', borderRadius: 8, background: '#fff', border: '1px solid #e2e8f0', fontSize: 10, color: A.textSub, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>من: 2026/10/15  إلى: 2026/10/20</span>
+                      <span style={{ fontWeight: 700, color: '#16a34a' }}>🟢 إجمالي: 6 أيام</span>
                     </div>
                   </div>
                 )}
+
+                {wizard.formConfig.scheduleMode === 'DATE_RANGE' && (
+                  <div style={{ padding: '6px 10px', borderRadius: 8, background: '#fff', border: '1px solid #e2e8f0', fontSize: 10, color: A.textSub, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>من: 2026/10/15  إلى: 2026/10/20</span>
+                    <span style={{ fontWeight: 700, color: '#16a34a' }}>🟢 إجمالي: 6 أيام</span>
+                  </div>
+                )}
+
+                {wizard.formConfig.scheduleMode === 'DISCRETE_DAYS' && (
+                  <div>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+                      {['12 أكتوبر', '15 أكتوبر', '18 أكتوبر'].map(d => (
+                        <span key={d} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: `${wizard.color}10`, color: wizard.color, border: `1px solid ${wizard.color}25`, fontWeight: 600 }}>{d} ✕</span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a' }}>🟢 إجمالي: 3 أيام متفرقة</span>
+                  </div>
+                )}
+
+                {wizard.formConfig.scheduleMode === 'HOURLY_WINDOW' && (
+                  <div style={{ padding: '6px 10px', borderRadius: 8, background: '#fff', border: '1px solid #e2e8f0', fontSize: 10, color: A.textSub, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>📅 اليوم | من: 09:30 إلى: 11:45</span>
+                    <span style={{ fontWeight: 700, color: '#2563eb' }}>⏱️ المدة: 2س و 15د</span>
+                  </div>
+                )}
+
+                {wizard.formConfig.scheduleMode === 'SINGLE_DATE' && (
+                  <div style={{ padding: '6px 10px', borderRadius: 8, background: '#fff', border: '1px solid #e2e8f0', fontSize: 10, color: A.textSub }}>
+                    <span>📅 التاريخ المحدد: 2026/10/15</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Delegate Colleague Live Preview ── */}
+            {wizard.formConfig.showDelegateUser && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 5, background: '#E0E7FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>👤</div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: A.text }}>{wizard.formConfig.delegateUserLabel || 'الموظف البديل / تسليم المهام'}</span>
+                  {wizard.formConfig.mandatoryDelegateUser && <span style={{ fontSize: 9, color: A.red, fontWeight: 700 }}>*</span>}
+                </div>
+                <div style={{ padding: '8px 10px', borderRadius: 8, background: '#F8F9FC', border: '1.5px solid #E8ECF4', fontSize: 11, color: A.textTer, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>-- اختر الموظف البديل من الدليل المؤسسي --</span><span style={{ fontSize: 9, transform: 'rotate(-90deg)', color: '#C0C4CC' }}>‹</span>
+                </div>
               </div>
             )}
 
@@ -1027,7 +1643,9 @@ export const TicketRoutingTab: React.FC = () => {
               <div key={r.id} className="route-card" style={{ background:A.surface, borderRadius:A.radius, padding:20, boxShadow:A.shadowCard, border:`1px solid ${A.sep}`, borderLeft:`4px solid ${r.color}`, opacity:r.isActive?1:0.6 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
                   <div style={{ display:'flex', gap:12 }}>
-                    <div style={{ width:48, height:48, borderRadius:12, background:`${r.color}15`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>{r.icon}</div>
+                    <div style={{ width:48, height:48, borderRadius:12, background:`${r.color}15`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, color: r.color }}>
+                      {renderIcon(r.icon || 'ClipboardList', 24, r.color)}
+                    </div>
                     <div>
                       <div style={{ fontSize:15, fontWeight:700, color:A.text }}>{r.name}</div>
                       <div style={{ fontSize:12, color:A.textSub, marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
@@ -1037,14 +1655,16 @@ export const TicketRoutingTab: React.FC = () => {
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:6 }}>
-                    <button className="route-action-btn" onClick={() => openEdit(r)} style={{ background:A.bg, border:'none', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>⚙️</button>
-                    <button className="route-action-btn" onClick={() => deleteRoute(r.id)} style={{ background:'#FFF0F0', color:A.red, border:'none', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🗑</button>
+                    <button className="route-action-btn" title="استنساخ المسار" onClick={() => duplicateRoute(r)} style={{ background:`${A.blue}15`, color:A.blue, border:'none', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📑</button>
+                    <button className="route-action-btn" title="تعديل المسار" onClick={() => openEdit(r)} style={{ background:A.bg, border:'none', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>⚙️</button>
+                    <button className="route-action-btn" title="حذف المسار" onClick={() => deleteRoute(r.id)} style={{ background:'#FFF0F0', color:A.red, border:'none', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🗑</button>
                   </div>
                 </div>
                 <div style={{ background:A.bg, padding:10, borderRadius:8, fontSize:12, color:A.textSub, display:'flex', flexDirection:'column', gap:6 }}>
                   <div style={{ display:'flex', justifyContent:'space-between' }}><span>الإدارة:</span><strong style={{ color:A.text }}>{r.targetDepartmentName}</strong></div>
                   {r.targetDivisionName && <div style={{ display:'flex', justifyContent:'space-between' }}><span>القسم:</span><strong style={{ color:A.text }}>{r.targetDivisionName}</strong></div>}
-                  <div style={{ display:'flex', justifyContent:'space-between' }}><span>المستدلات:</span><strong style={{ color:A.text }}>{(r.formConfig.routeDynamicFields||[]).length} حقول</strong></div>
+                  {r.managerName && <div style={{ display:'flex', justifyContent:'space-between' }}><span>قائد المسار:</span><strong style={{ color:A.blue }}>🛡️ {r.managerName}</strong></div>}
+                  <div style={{ display:'flex', justifyContent:'space-between' }}><span>المستدلات:</span><strong style={{ color:A.text }}>{(r.formConfig?.routeDynamicFields||[]).length} حقول</strong></div>
                 </div>
                 <div style={{ marginTop:14, borderTop:`1px solid ${A.sep}`, paddingTop:14, display:'flex', gap:8 }}>
                   <button className="route-action-btn" onClick={() => toggleRouteStatus(r.id)} style={{ flex:1, padding:'8px', background:r.isActive?`${A.red}15`:`${A.green}15`, color:r.isActive?A.red:A.green, border:'none', borderRadius:8, fontSize:12, fontWeight:700 }}>
@@ -1061,12 +1681,30 @@ export const TicketRoutingTab: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+      {/* ── Toast Notification ── */}
+      {toast.visible && (
+        <div className={`tr-toast ${toast.type}`}>
+          {toast.type === 'loading' && <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />}
+          {toast.type === 'success' && <span style={{ fontSize: 16 }}>✅</span>}
+          {toast.type === 'error' && <span style={{ fontSize: 16 }}>❌</span>}
+          {toast.message}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: A.text, margin: '0 0 4px 0', letterSpacing: '-0.5px' }}>منشئ مسارات التذاكر 🛤️</h2>
           <p style={{ fontSize: 14, color: A.textSub, margin: 0 }}>تصميم تدفق الطلبات، ربط الإدارات، وبناء المستدلات الديناميكية</p>
         </div>
       </div>
+
+      {/* ── Loading State ── */}
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: A.textTer }}>
+          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.5 }}>⏳</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: A.textSub }}>جارٍ تحميل المسارات...</div>
+        </div>
+      )}
 
       {view === 'list' ? renderList() : (
         <div style={{ background: A.surface, borderRadius: A.radius, padding: 30, boxShadow: A.shadowCard, border: `1px solid ${A.sep}` }}>
@@ -1088,8 +1726,12 @@ export const TicketRoutingTab: React.FC = () => {
                   التالي →
                 </button>
               ) : (
-                <button className="route-action-btn" style={{ padding:'10px 24px', borderRadius:10, background:wizard.color, color:'#fff', border:'none', fontSize:13, fontWeight:700 }} onClick={handleSaveRoute}>
-                  {editingId ? 'حفظ التعديلات ✔' : 'إنشاء المسار 🚀'}
+                <button 
+                  className="route-action-btn" 
+                  disabled={isSaving}
+                  style={{ padding:'10px 24px', borderRadius:10, background: isSaving ? A.bg : wizard.color, color: isSaving ? A.textTer : '#fff', border:'none', fontSize:13, fontWeight:700, cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, display:'flex', alignItems:'center', gap:6 }} 
+                  onClick={handleSaveRoute}>
+                  {isSaving ? <><span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(0,0,0,0.2)', borderTopColor: A.text, display:'inline-block', animation:'spin 0.7s linear infinite' }}/> جارٍ الحفظ...</> : (editingId ? 'حفظ التعديلات ✔' : 'إنشاء المسار 🚀')}
                 </button>
               )}
             </div>

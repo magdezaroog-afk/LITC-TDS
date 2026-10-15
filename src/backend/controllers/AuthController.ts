@@ -30,15 +30,22 @@ export class AuthController {
         }
       }
 
-      // Set HttpOnly Secure Cookie
+      // Set HttpOnly Secure Cookie (Primary authentication method)
       res.cookie('litc_session', result.token, {
         httpOnly: true,
-        secure: false, // Fix for localhost HTTP testing
+        secure: false, // Fix for localhost HTTP testing (set to true in production with HTTPS)
         sameSite: 'strict',
         maxAge: 8 * 60 * 60 * 1000 // 8 hours
       });
 
-      res.json({ success: true, user: result.user });
+      // Also return the token in the JSON response body.
+      // This allows the frontend to store it in localStorage as a Bearer fallback
+      // (useful in environments where cookie propagation is unreliable, e.g., dev proxies).
+      res.json({
+        success: true,
+        token: result.token,  // ✅ Added: needed for localStorage Bearer fallback
+        user: result.user
+      });
     } catch (error: any) {
       res.status(401).json({ success: false, error: error.message });
     }
@@ -50,6 +57,71 @@ export class AuthController {
     
     res.clearCookie('litc_session');
     res.json({ success: true, message: 'Logged out successfully' });
+  }
+
+  // جلب بيانات المستخدم الحالي
+  async me(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user || !user.id) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          role: { select: { name: true } },
+          department: { select: { name: true } }
+        }
+      });
+
+      if (!dbUser) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: dbUser.id,
+          email: dbUser.email!,
+          fullName: dbUser.fullName!,
+          username: dbUser.username,
+          mfaEnabled: dbUser.mfaEnabled,
+          role: dbUser.role || null,
+          department: dbUser.department || null,
+        }
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  // محاكي بيئة العمل الحقيقية (Impersonation)
+  async impersonate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const adminUser = (req as any).user;
+      const { targetUserId } = req.body;
+      const sourceIp = req.ip || req.socket.remoteAddress || 'UNKNOWN';
+
+      if (!targetUserId) {
+        return res.status(400).json({ success: false, error: 'targetUserId is required' });
+      }
+
+      const result = await AuthService.impersonate(Number(targetUserId));
+      
+      SIEMLogger.logEvent('IMPERSONATION_STARTED', 'WARNING', sourceIp, { 
+        adminId: adminUser.id, 
+        targetUserId 
+      });
+
+      res.json({
+        success: true,
+        token: result.token,
+        user: result.user
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
   }
 
   // 2FA Setup

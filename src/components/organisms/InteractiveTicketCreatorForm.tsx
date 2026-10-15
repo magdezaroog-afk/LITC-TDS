@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowLeft, CheckCircle, Paperclip, UploadCloud, ChevronLeft, X, Edit3, Plus, Maximize2 } from 'lucide-react';
 import { DynamicCustomField } from '../../pages/admin/tabs/DynamicFieldsTab';
-import { loadRoutes, TicketRouteDefinition } from '../../pages/admin/tabs/TicketRoutingTab';
-import { Robot3D } from './Robot3D';
+import { loadRoutes, type TicketRouteDefinition, type RouteFormConfig } from '../../services/ticketRouting.helpers';
+import {
+  getTopLevelDepartments,
+  getDivisionsForDepartment,
+  getTeamsForDivision,
+  loadCachedOrRemoteOrgTree,
+  type InstitutionalNode
+} from '../../services/institutionalHierarchy.helpers';
 
 // Dummy t function to prevent crash
 const t = (key: any, fallback?: any) => fallback || key;
@@ -158,6 +164,9 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [routeBuilding, setRouteBuilding] = useState<string>('');
   const [routeDepartment, setRouteDepartment] = useState<string>('');
+  const [routeDivision, setRouteDivision] = useState<string>('');
+  const [routeTeam, setRouteTeam] = useState<string>('');
+  const [orgTree, setOrgTree] = useState<InstitutionalNode | null>(null);
   const [routeSelectedTaxMain, setRouteSelectedTaxMain] = useState<string>('');
   const [routeSelectedTaxSub, setRouteSelectedTaxSub] = useState<string>('');
   const [routeTitle, setRouteTitle] = useState<string>('');
@@ -167,24 +176,65 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [fileError, setFileError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const [orgDepartments, setOrgDepartments] = useState<any[]>([]);
+  // ─── Smart Scheduling Engine State & Calculations ───
+  const [scheduleType, setScheduleType] = useState<'DATE_RANGE' | 'DISCRETE_DAYS' | 'HOURLY_WINDOW' | 'SINGLE_DATE'>('DATE_RANGE');
+  const [scheduleStartDate, setScheduleStartDate] = useState('');
+  const [scheduleEndDate, setScheduleEndDate] = useState('');
+  const [discreteDays, setDiscreteDays] = useState<string[]>([]);
+  const [discreteDayInput, setDiscreteDayInput] = useState('');
+  const [hourlyDate, setHourlyDate] = useState('');
+  const [hourlyTimeFrom, setHourlyTimeFrom] = useState('');
+  const [hourlyTimeTo, setHourlyTimeTo] = useState('');
+  const [singleDate, setSingleDate] = useState('');
+
+  // ─── Delegate Colleague State ───
+  const [routeDelegateUserName, setRouteDelegateUserName] = useState('');
+
+  // Helper calculations for Smart Scheduling
+  const getContinuousDaysCount = () => {
+    if (!scheduleStartDate || !scheduleEndDate) return 0;
+    const d1 = new Date(scheduleStartDate);
+    const d2 = new Date(scheduleEndDate);
+    const diff = d2.getTime() - d1.getTime();
+    if (diff < 0) return -1;
+    return Math.round(diff / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const getHourlyDuration = () => {
+    if (!hourlyTimeFrom || !hourlyTimeTo) return { hours: 0, minutes: 0, isValid: true };
+    const [h1, m1] = hourlyTimeFrom.split(':').map(Number);
+    const [h2, m2] = hourlyTimeTo.split(':').map(Number);
+    const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff <= 0) return { hours: 0, minutes: 0, isValid: false };
+    return { hours: Math.floor(diff / 60), minutes: diff % 60, isValid: true };
+  };
+
+  const [orgDepartments, setOrgDepartments] = useState<InstitutionalNode[]>([]);
   const [spatialBuildings, setSpatialBuildings] = useState<any[]>([]);
 
+  // Dynamically computed hierarchy options based on tree
+  const availableDivisions = React.useMemo(() => {
+    if (!orgTree || !routeDepartment) return [];
+    return getDivisionsForDepartment(orgTree, routeDepartment);
+  }, [orgTree, routeDepartment]);
+
+  const availableTeams = React.useMemo(() => {
+    if (!orgTree || !routeDivision) return [];
+    return getTeamsForDivision(orgTree, routeDivision);
+  }, [orgTree, routeDivision]);
+
   useEffect(() => {
-    const reloadData = () => {
-      setSavedRoutes(loadRoutes());
+    const reloadData = async () => {
+      setSavedRoutes(await loadRoutes());
       try {
-        const s = localStorage.getItem('litc_org_tree');
-        if (s) {
-          const rootNode = JSON.parse(s);
-          const flatten = (n: any): any[] => {
-            let res = [n];
-            if (n.children) n.children.forEach((c: any) => { res = res.concat(flatten(c)); });
-            return res;
-          };
-          setOrgDepartments(flatten(rootNode).filter(n => n.type === 'إدارة' || n.type === 'مكتب'));
+        const tree = await loadCachedOrRemoteOrgTree();
+        if (tree) {
+          setOrgTree(tree);
+          setOrgDepartments(getTopLevelDepartments(tree));
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to load institutional tree:', err);
+      }
 
       try {
         const b = localStorage.getItem('litc_buildings_tree');
@@ -262,8 +312,8 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
     if (files.length === 0) return;
 
     const routeDef = savedRoutes.find(r => r.id === selectedRouteId);
-    const rules = routeDef?.formConfig || {};
-    const maxSizeMB = rules.maxAttachmentMB; 
+    const rules = (routeDef?.formConfig || {}) as RouteFormConfig;
+    const maxSizeMB = rules.maxAttachmentMB;
     const allowedExts = rules.attachmentTypes || [];
 
     const validFiles = files.filter(file => {
@@ -290,38 +340,75 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = () => {
-    // Basic validation mock
-    if (!routeTitle.trim() || !routeDescription.trim() || !route) return;
+  const handleSubmit = async () => {
+    // Basic validation
+    if (!routeTitle.trim() || !route) return;
 
-    const newTicket = {
-      id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
-      routeId: route.id,
-      routeName: route.name,
-      routeIcon: route.icon,
-      routeColor: route.color,
-      title: routeTitle,
-      description: routeDescription,
-      status: 'NEW',
-      currentHandler: route.targetDepartmentName,
-      created_at: new Date().toISOString(),
-      history: [
-        { id: 'h1', type: 'SUBMITTED', title: 'تم تقديم الطلب بنجاح', status: 'COMPLETED', timestamp: new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }) },
-        { id: 'h2', type: 'ROUTED', title: `توجيه إلى ${route.targetDepartmentName}`, status: 'ACTIVE', department: route.targetDepartmentName, timestamp: new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }) },
-        { id: 'h3', type: 'ASSIGNED', title: 'إسناد للمهندس المختص', status: 'PENDING' },
-        { id: 'h4', type: 'RESOLVED', title: 'إنجاز الطلب وحل المشكلة', status: 'PENDING' }
-      ]
-    };
+    try {
+      const { AdminAPI } = await import('../../services/admin.api');
 
-    const existing = JSON.parse(localStorage.getItem('litc_user_active_tickets') || '[]');
-    existing.push(newTicket);
-    localStorage.setItem('litc_user_active_tickets', JSON.stringify(existing));
+      // Build fields record from routeFieldValues and Smart Scheduling Engine
+      const fieldsRecord: Record<string, string> = { ...routeFieldValues };
+      if (route.formConfig.showScheduleEngine || route.formConfig.showDateRange) {
+        fieldsRecord['schedule_type'] = scheduleType;
+        if (scheduleType === 'DATE_RANGE') {
+          const days = getContinuousDaysCount();
+          fieldsRecord['schedule_start_date'] = scheduleStartDate;
+          fieldsRecord['schedule_end_date'] = scheduleEndDate;
+          fieldsRecord['schedule_total_days'] = String(days > 0 ? days : 1);
+          fieldsRecord['date_range'] = `من ${scheduleStartDate} إلى ${scheduleEndDate} (إجمالي: ${days > 0 ? days : 1} يوم)`;
+          fieldsRecord['date_start'] = scheduleStartDate;
+          if (scheduleEndDate) fieldsRecord['date_end'] = scheduleEndDate;
+        } else if (scheduleType === 'DISCRETE_DAYS') {
+          fieldsRecord['schedule_discrete_days'] = discreteDays.join(', ');
+          fieldsRecord['schedule_total_days'] = String(discreteDays.length);
+          fieldsRecord['date_range'] = `أيام متفرقة: ${discreteDays.join(', ')} (إجمالي: ${discreteDays.length} يوم)`;
+        } else if (scheduleType === 'HOURLY_WINDOW') {
+          const dur = getHourlyDuration();
+          fieldsRecord['schedule_hourly_date'] = hourlyDate;
+          fieldsRecord['schedule_time_from'] = hourlyTimeFrom;
+          fieldsRecord['schedule_time_to'] = hourlyTimeTo;
+          fieldsRecord['schedule_total_hours'] = `${dur.hours}س و ${dur.minutes}د`;
+          fieldsRecord['date_range'] = `إذن خروج: ${hourlyDate} من ${hourlyTimeFrom} إلى ${hourlyTimeTo} (المدة: ${dur.hours}س و ${dur.minutes}د)`;
+        } else if (scheduleType === 'SINGLE_DATE') {
+          fieldsRecord['schedule_single_date'] = singleDate;
+          fieldsRecord['date_range'] = `تاريخ محدد: ${singleDate}`;
+        }
+      }
+      if (route.formConfig.showDelegateUser && routeDelegateUserName.trim()) {
+        fieldsRecord['delegate_user'] = routeDelegateUserName.trim();
+      }
 
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('litc_settings_updated'));
+      if (routeDepartment) {
+        const deptNode = orgDepartments.find(d => d.id === routeDepartment || d.name === routeDepartment);
+        fieldsRecord['requester_department'] = deptNode?.name || routeDepartment;
+      }
+      if (routeDivision) {
+        const divNode = availableDivisions.find(div => div.id === routeDivision || div.name === routeDivision);
+        fieldsRecord['requester_division'] = divNode?.name || routeDivision;
+      }
+      if (routeTeam) {
+        const teamNode = availableTeams.find(t => t.id === routeTeam || t.name === routeTeam);
+        fieldsRecord['requester_team'] = teamNode?.name || routeTeam;
+      }
 
-    // Advance to success
-    setStep('success');
+      await AdminAPI.submitTicketRequest({
+        routeId: route.id,
+        title: routeTitle.trim(),
+        description: routeDescription.trim() || routeTitle.trim(),
+        taxonomyMain: routeSelectedTaxMain || undefined,
+        taxonomySub: routeSelectedTaxSub || undefined,
+        buildingId: routeBuilding || undefined,
+        departmentId: routeDepartment || undefined,
+        fields: fieldsRecord,
+      });
+
+      window.dispatchEvent(new Event('litc_settings_updated'));
+      setStep('success');
+    } catch (e: any) {
+      console.error(e);
+      alert(`حدث خطأ أثناء إرسال الطلب: ${e?.message || 'خطأ في الاتصال بالخادم'}`);
+    }
   };
 
   const activeRoutes = savedRoutes.filter(r => r.isActive);
@@ -342,6 +429,17 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const route = savedRoutes.find(r => r.id === selectedRouteId);
   const taxEntry = route?.formConfig.taxonomy?.find(t => t.id === routeSelectedTaxMain && t.isActive);
 
+  useEffect(() => {
+    if (route) {
+      const mode = route.formConfig.scheduleMode;
+      if (mode && mode !== 'ANY') {
+        setScheduleType(mode as any);
+      } else {
+        setScheduleType('DATE_RANGE');
+      }
+    }
+  }, [selectedRouteId, route?.formConfig?.scheduleMode]);
+
   return (
     <div style={containerStyle}>
       <AnimatePresence mode="wait">
@@ -360,18 +458,63 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
             <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(109,40,217,0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: '20px', right: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-            {/* 3D Robot Centerpiece - CTA opens routes or selects only route */}
-            <Robot3D 
-              onCtaClick={() => {
-                if (filteredRoutes.length === 1) {
-                  setSelectedRouteId(filteredRoutes[0].id);
-                  setStep('details');
-                } else {
-                  setStep('select_route');
-                }
+            {/* Enterprise Interactive Centerpiece - CTA opens routes or selects only route */}
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                margin: '16px 0 24px',
+                zIndex: 1
               }}
-              ctaLabel="إنشاء طلب"
-            />
+            >
+              <div 
+                style={{
+                  width: '96px',
+                  height: '96px',
+                  borderRadius: '24px',
+                  background: 'linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(99,102,241,0.15) 100%)',
+                  border: '1.5px solid rgba(99,102,241,0.25)',
+                  backdropFilter: 'blur(20px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '20px',
+                  boxShadow: '0 12px 28px rgba(37,99,235,0.12)'
+                }}
+              >
+                <Plus size={44} style={{ color: '#2563eb' }} />
+              </div>
+              <button
+                onClick={() => {
+                  if (filteredRoutes.length === 1) {
+                    setSelectedRouteId(filteredRoutes[0].id);
+                    setStep('details');
+                  } else {
+                    setStep('select_route');
+                  }
+                }}
+                style={{
+                  padding: '12px 32px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(37,99,235,0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              >
+                <span>إنشاء طلب جديد</span>
+                <ChevronLeft size={18} />
+              </button>
+            </motion.div>
 
             {/* Status chip */}
             <motion.div
@@ -563,6 +706,25 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
 
                 journeySteps.push({ id: 'title', type: 'title', label: 'عنوان الطلب' });
 
+                if (route.formConfig.showScheduleEngine || route.formConfig.showDateRange) {
+                  journeySteps.push({
+                    id: 'scheduleEngine',
+                    type: 'scheduleEngine',
+                    label: route.formConfig.scheduleLabel || route.formConfig.dateRangeLabel || 'الجدولة الزمنية',
+                    isReq: !!(route.formConfig.mandatorySchedule || route.formConfig.mandatoryDateRange),
+                    mode: route.formConfig.scheduleMode || 'ANY'
+                  });
+                }
+
+                if (route.formConfig.showDelegateUser) {
+                  journeySteps.push({
+                    id: 'delegateUser',
+                    type: 'delegateUser',
+                    label: route.formConfig.delegateUserLabel || 'الموظف البديل',
+                    isReq: !!route.formConfig.mandatoryDelegateUser
+                  });
+                }
+
                 if (route.formConfig.showDescription !== false) {
                   journeySteps.push({ id: 'description', type: 'description', label: 'التفاصيل', isReq: route.formConfig.mandatoryDescription !== false });
                 }
@@ -590,12 +752,41 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                   if (currentStep.type === 'title') {
                     if (!routeTitle.trim()) return false;
                   }
+                  if (currentStep.type === 'scheduleEngine') {
+                    if (currentStep.isReq) {
+                      if (scheduleType === 'DATE_RANGE') {
+                        if (!scheduleStartDate || !scheduleEndDate) return false;
+                        if (new Date(scheduleEndDate) < new Date(scheduleStartDate)) return false;
+                      } else if (scheduleType === 'DISCRETE_DAYS') {
+                        if (discreteDays.length === 0) return false;
+                      } else if (scheduleType === 'HOURLY_WINDOW') {
+                        if (!hourlyDate || !hourlyTimeFrom || !hourlyTimeTo) return false;
+                        const [h1, m1] = hourlyTimeFrom.split(':').map(Number);
+                        const [h2, m2] = hourlyTimeTo.split(':').map(Number);
+                        if (h2 * 60 + m2 <= h1 * 60 + m1) return false;
+                      } else if (scheduleType === 'SINGLE_DATE') {
+                        if (!singleDate) return false;
+                      }
+                    }
+                  }
+                  if (currentStep.type === 'delegateUser') {
+                    if (currentStep.isReq && !routeDelegateUserName.trim()) return false;
+                  }
                   if (currentStep.type === 'description') {
                     if (currentStep.isReq && !routeDescription.trim()) return false;
                   }
                   if (currentStep.type === 'location') {
                     if (route.formConfig.showBuildingField && route.formConfig.mandatoryBuilding && !routeBuilding) return false;
-                    if (route.formConfig.showDepartmentField && route.formConfig.mandatoryDepartment && !routeDepartment) return false;
+                    if (route.formConfig.showDepartmentField) {
+                      if (route.formConfig.mandatoryDepartment && !routeDepartment) return false;
+                      const level = route.formConfig.departmentSelectionLevel || 'DEPT_ONLY';
+                      if ((level === 'DEPT_AND_DIV' || level === 'FULL_HIERARCHY') && route.formConfig.mandatoryDivision && availableDivisions.length > 0 && !routeDivision) {
+                        return false;
+                      }
+                      if (level === 'FULL_HIERARCHY' && route.formConfig.mandatoryTeam && availableTeams.length > 0 && !routeTeam) {
+                        return false;
+                      }
+                    }
                   }
                   if (currentStep.type === 'attachments') {
                     if (currentStep.isReq && selectedFiles.length === 0) return false;
@@ -721,6 +912,284 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                               </div>
                             )}
 
+                            {currentStep.type === 'scheduleEngine' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div>
+                                  <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                                    🗓️ {currentStep.label} {currentStep.isReq && <span style={{ color: '#ef4444' }}>*</span>}
+                                  </h4>
+                                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                                    حدد النمط الزمني المناسب لطلبك مع حساب تلقائي ودقيق للأيام والساعات.
+                                  </p>
+                                </div>
+
+                                {/* Mode Selector Tabs (when mode is ANY or not restricted) */}
+                                {(!currentStep.mode || currentStep.mode === 'ANY') && (
+                                  <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '4px', borderRadius: '12px', flexWrap: 'wrap' }}>
+                                    {[
+                                      { id: 'DATE_RANGE', label: '📆 فترة متصلة (أيام)', icon: '📆' },
+                                      { id: 'DISCRETE_DAYS', label: '🗓️ أيام متفرقة', icon: '🗓️' },
+                                      { id: 'HOURLY_WINDOW', label: '⏱️ إذن خروج (ساعات)', icon: '⏱️' },
+                                      { id: 'SINGLE_DATE', label: '📅 تاريخ محدد', icon: '📅' },
+                                    ].map(tab => (
+                                      <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setScheduleType(tab.id as any)}
+                                        style={{
+                                          flex: 1,
+                                          minWidth: '120px',
+                                          padding: '8px 12px',
+                                          borderRadius: '8px',
+                                          border: 'none',
+                                          background: scheduleType === tab.id ? '#ffffff' : 'transparent',
+                                          color: scheduleType === tab.id ? route.color : '#64748b',
+                                          fontWeight: scheduleType === tab.id ? 700 : 500,
+                                          fontSize: '12px',
+                                          cursor: 'pointer',
+                                          boxShadow: scheduleType === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                                        }}
+                                      >
+                                        {tab.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Sub-View 1: Continuous Date Range with Live Counter */}
+                                {(scheduleType === 'DATE_RANGE' || currentStep.mode === 'DATE_RANGE') && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                      <div>
+                                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '6px', fontWeight: 600 }}>من تاريخ (بداية الفترة)</label>
+                                        <input
+                                          type="date"
+                                          value={scheduleStartDate}
+                                          onChange={e => setScheduleStartDate(e.target.value)}
+                                          style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '6px', fontWeight: 600 }}>إلى تاريخ (نهاية الفترة)</label>
+                                        <input
+                                          type="date"
+                                          value={scheduleEndDate}
+                                          onChange={e => setScheduleEndDate(e.target.value)}
+                                          style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Live calculation badge */}
+                                    {(() => {
+                                      const days = getContinuousDaysCount();
+                                      if (days > 0) {
+                                        return (
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#15803d', fontSize: '13px', fontWeight: 700 }}>
+                                            <span style={{ fontSize: '16px' }}>🟢</span>
+                                            <span>إجمالي المدة المحسوبة: {days} {days === 1 ? 'يوم' : days === 2 ? 'يومان' : days <= 10 ? 'أيام' : 'يوماً'}</span>
+                                          </div>
+                                        );
+                                      }
+                                      if (days === -1) {
+                                        return (
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', fontWeight: 600 }}>
+                                            <span>⚠️</span>
+                                            <span>تنبيه: تاريخ النهاية يسبق تاريخ البداية. يرجى تصحيح النطاق الزمني.</span>
+                                          </div>
+                                        );
+                                      }
+                                      return (
+                                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                          💡 اختر تاريخ البداية والنهاية لحساب إجمالي عدد أيام الطلب تلقائياً.
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
+
+                                {/* Sub-View 2: Discrete Days Selection with Chips and Total Counter */}
+                                {(scheduleType === 'DISCRETE_DAYS' || currentStep.mode === 'DISCRETE_DAYS') && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                                    <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>إضافة يوم محدد إلى قائمة الأيام المتفرقة</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                      <input
+                                        type="date"
+                                        value={discreteDayInput}
+                                        onChange={e => setDiscreteDayInput(e.target.value)}
+                                        style={{ ...inputStyle, flex: 1, padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (discreteDayInput && !discreteDays.includes(discreteDayInput)) {
+                                            setDiscreteDays([...discreteDays, discreteDayInput].sort());
+                                            setDiscreteDayInput('');
+                                          }
+                                        }}
+                                        disabled={!discreteDayInput || discreteDays.includes(discreteDayInput)}
+                                        style={{
+                                          padding: '10px 18px',
+                                          borderRadius: '10px',
+                                          background: (!discreteDayInput || discreteDays.includes(discreteDayInput)) ? '#cbd5e1' : route.color,
+                                          color: '#ffffff',
+                                          fontWeight: 700,
+                                          fontSize: '12px',
+                                          border: 'none',
+                                          cursor: (!discreteDayInput || discreteDays.includes(discreteDayInput)) ? 'not-allowed' : 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '6px'
+                                        }}
+                                      >
+                                        <Plus size={14} />
+                                        <span>إضافة يوم</span>
+                                      </button>
+                                    </div>
+
+                                    {/* Chips for discrete days */}
+                                    {discreteDays.length > 0 ? (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                          {discreteDays.map(d => (
+                                            <div
+                                              key={d}
+                                              style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                padding: '6px 12px',
+                                                borderRadius: '20px',
+                                                background: '#ffffff',
+                                                border: `1.5px solid ${route.color}50`,
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                                fontSize: '12px',
+                                                fontWeight: 600,
+                                                color: '#1e293b'
+                                              }}
+                                            >
+                                              <span>🗓️ {d}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => setDiscreteDays(discreteDays.filter(x => x !== d))}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', display: 'flex', alignItems: 'center' }}
+                                              >
+                                                <X size={13} />
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#15803d', fontSize: '13px', fontWeight: 700 }}>
+                                          <span style={{ fontSize: '16px' }}>🟢</span>
+                                          <span>إجمالي الأيام المحددة: {discreteDays.length} {discreteDays.length === 1 ? 'يوم' : discreteDays.length === 2 ? 'يومان' : discreteDays.length <= 10 ? 'أيام' : 'يوماً متفرقاً'}</span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                        لم يتم إضافة أي أيام بعد. اختر التاريخ واضغط "إضافة يوم".
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Sub-View 3: Hourly Permission Window (إذن خروج) */}
+                                {(scheduleType === 'HOURLY_WINDOW' || currentStep.mode === 'HOURLY_WINDOW') && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                                    <div>
+                                      <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '6px', fontWeight: 600 }}>تاريخ يوم الإذن</label>
+                                      <input
+                                        type="date"
+                                        value={hourlyDate}
+                                        onChange={e => setHourlyDate(e.target.value)}
+                                        style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                      />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                      <div>
+                                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '6px', fontWeight: 600 }}>من الساعة (وقت الخروج)</label>
+                                        <input
+                                          type="time"
+                                          value={hourlyTimeFrom}
+                                          onChange={e => setHourlyTimeFrom(e.target.value)}
+                                          style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '6px', fontWeight: 600 }}>إلى الساعة (وقت العودة)</label>
+                                        <input
+                                          type="time"
+                                          value={hourlyTimeTo}
+                                          onChange={e => setHourlyTimeTo(e.target.value)}
+                                          style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Live calculation for duration */}
+                                    {(() => {
+                                      const dur = getHourlyDuration();
+                                      if (hourlyTimeFrom && hourlyTimeTo) {
+                                        if (dur.isValid && (dur.hours > 0 || dur.minutes > 0)) {
+                                          return (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(37, 99, 235, 0.1)', border: '1px solid rgba(37, 99, 235, 0.3)', color: '#1d4ed8', fontSize: '13px', fontWeight: 700 }}>
+                                              <span style={{ fontSize: '16px' }}>⏱️</span>
+                                              <span>إجمالي مدة الاستئذان: {dur.hours} ساعة و {dur.minutes} دقيقة</span>
+                                            </div>
+                                          );
+                                        }
+                                        return (
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '12px', fontWeight: 600 }}>
+                                            <span>⚠️</span>
+                                            <span>وقت العودة يجب أن يكون بعد وقت الخروج.</span>
+                                          </div>
+                                        );
+                                      }
+                                      return (
+                                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                          💡 حدد وقت الخروج والعودة لحساب مدة الإذن بالساعات والدقائق تلقائياً.
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
+
+                                {/* Sub-View 4: Single Specific Date */}
+                                {(scheduleType === 'SINGLE_DATE' || currentStep.mode === 'SINGLE_DATE') && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                                    <label style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>التاريخ المحدد للطلب</label>
+                                    <input
+                                      type="date"
+                                      value={singleDate}
+                                      onChange={e => setSingleDate(e.target.value)}
+                                      style={{ ...inputStyle, width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {currentStep.type === 'delegateUser' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div>
+                                  <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                                    👤 {currentStep.label} {currentStep.isReq && <span style={{ color: '#ef4444' }}>*</span>}
+                                  </h4>
+                                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                                    حدد الزميل البديل الذي سيتولى متابعة الأعمال أو تسليم المهام أثناء فترة طلبك.
+                                  </p>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={routeDelegateUserName}
+                                  onChange={e => setRouteDelegateUserName(e.target.value)}
+                                  placeholder="اكتب اسم الموظف البديل أو المستلم للمهام..."
+                                  style={{ ...inputStyle, width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '14px', background: '#f8fafc' }}
+                                />
+                              </div>
+                            )}
+
                             {currentStep.type === 'description' && (
                               <div>
                                 <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#0f172a' }}>تفاصيل الطلب {currentStep.isReq && <span style={{ color: '#ef4444' }}>*</span>}</h4>
@@ -741,13 +1210,133 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                                   </div>
                                 )}
                                 {route.formConfig.showDepartmentField && (
-                                  <div>
-                                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#0f172a' }}>🏛️ الإدارة {route.formConfig.mandatoryDepartment && <span style={{ color: '#ef4444' }}>*</span>}</h4>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                      {(orgDepartments || []).map(d => (
-                                        <button key={d.id} onClick={() => setRouteDepartment(d.id)} style={{ padding: '8px 14px', borderRadius: '10px', background: routeDepartment === d.id ? route.color : '#f8fafc', color: routeDepartment === d.id ? '#fff' : '#334155', border: `1px solid ${routeDepartment === d.id ? route.color : '#e2e8f0'}`, cursor: 'pointer', fontSize: '13px' }}>{d.name}</button>
-                                      ))}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                    {/* Level 1: Department / High Administration / Office */}
+                                    <div>
+                                      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#0f172a' }}>
+                                        🏛️ الإدارة أو المكتب {route.formConfig.mandatoryDepartment && <span style={{ color: '#ef4444' }}>*</span>}
+                                      </h4>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {(orgDepartments || []).map(d => {
+                                          const isSelected = routeDepartment === d.id || routeDepartment === d.name;
+                                          return (
+                                            <button
+                                              key={d.id}
+                                              onClick={() => {
+                                                setRouteDepartment(d.id);
+                                                setRouteDivision('');
+                                                setRouteTeam('');
+                                              }}
+                                              style={{
+                                                padding: '8px 14px',
+                                                borderRadius: '10px',
+                                                background: isSelected ? route.color : '#f8fafc',
+                                                color: isSelected ? '#fff' : '#334155',
+                                                border: `1.5px solid ${isSelected ? route.color : '#e2e8f0'}`,
+                                                cursor: 'pointer',
+                                                fontSize: '13px',
+                                                fontWeight: isSelected ? 700 : 500,
+                                                boxShadow: isSelected ? `0 2px 8px ${route.color}30` : 'none',
+                                                transition: 'all 0.15s ease'
+                                              }}
+                                            >
+                                              {d.name}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
+
+                                    {/* Level 2: Division under Department */}
+                                    {(route.formConfig.departmentSelectionLevel === 'DEPT_AND_DIV' || route.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY') && routeDepartment && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        style={{ padding: '16px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.15)' }}
+                                      >
+                                        <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>📂 القسم التابع له</span>
+                                          {route.formConfig.mandatoryDivision && <span style={{ color: '#ef4444' }}>*</span>}
+                                        </h4>
+                                        {availableDivisions.length === 0 ? (
+                                          <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>لا توجد أقسام مسجلة تحت هذه الإدارة حالياً.</div>
+                                        ) : (
+                                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {availableDivisions.map(div => {
+                                              const isSelected = routeDivision === div.id || routeDivision === div.name;
+                                              return (
+                                                <button
+                                                  key={div.id}
+                                                  onClick={() => {
+                                                    setRouteDivision(div.id);
+                                                    setRouteTeam('');
+                                                  }}
+                                                  style={{
+                                                    padding: '7px 12px',
+                                                    borderRadius: '8px',
+                                                    background: isSelected ? '#2563eb' : '#ffffff',
+                                                    color: isSelected ? '#fff' : '#1e293b',
+                                                    border: `1.5px solid ${isSelected ? '#2563eb' : '#cbd5e1'}`,
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: isSelected ? 700 : 500,
+                                                    boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+                                                    transition: 'all 0.15s ease'
+                                                  }}
+                                                >
+                                                  {div.name}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </motion.div>
+                                    )}
+
+                                    {/* Level 3: Team / Unit under Division */}
+                                    {route.formConfig.departmentSelectionLevel === 'FULL_HIERARCHY' && routeDivision && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        style={{ padding: '16px', borderRadius: '12px', background: 'rgba(124, 58, 237, 0.04)', border: '1px solid rgba(124, 58, 237, 0.15)' }}
+                                      >
+                                        <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>👥 الوحدة أو الفريق</span>
+                                          {route.formConfig.mandatoryTeam && <span style={{ color: '#ef4444' }}>*</span>}
+                                        </h4>
+                                        {availableTeams.length === 0 ? (
+                                          <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>لا توجد وحدات أو فرق مسجلة تحت هذا القسم حالياً.</div>
+                                        ) : (
+                                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {availableTeams.map(t => {
+                                              const isSelected = routeTeam === t.id || routeTeam === t.name;
+                                              return (
+                                                <button
+                                                  key={t.id}
+                                                  onClick={() => setRouteTeam(t.id)}
+                                                  style={{
+                                                    padding: '7px 12px',
+                                                    borderRadius: '8px',
+                                                    background: isSelected ? '#7c3aed' : '#ffffff',
+                                                    color: isSelected ? '#fff' : '#1e293b',
+                                                    border: `1.5px solid ${isSelected ? '#7c3aed' : '#cbd5e1'}`,
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: isSelected ? 700 : 500,
+                                                    boxShadow: isSelected ? '0 2px 8px rgba(124,58,237,0.25)' : 'none',
+                                                    transition: 'all 0.15s ease'
+                                                  }}
+                                                >
+                                                  {t.name}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </motion.div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -811,6 +1400,78 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                                     <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>{routeTitle}</span>
                                   </div>
 
+                                  {/* Smart Scheduling Engine summary */}
+                                  {(route.formConfig.showScheduleEngine || route.formConfig.showDateRange) && (
+                                    <div 
+                                      onClick={() => {
+                                        const idx = journeySteps.findIndex(s => s.type === 'scheduleEngine');
+                                        if (idx !== -1) setJourneyStepIndex(idx);
+                                      }}
+                                      style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                                      onMouseEnter={e => { e.currentTarget.style.borderColor = route.color; e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                    >
+                                      <div style={{ position: 'absolute', left: '16px', top: '16px', color: route.color }}><Edit3 size={16} /></div>
+                                      <span style={{ display: 'block', color: '#64748b', fontSize: '12px', marginBottom: '6px', fontWeight: 600 }}>
+                                        🗓️ {route.formConfig.scheduleLabel || route.formConfig.dateRangeLabel || 'الجدولة الزمنية'}
+                                      </span>
+                                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        {scheduleType === 'DATE_RANGE' && (
+                                          <>
+                                            <span>من {scheduleStartDate || '--'} إلى {scheduleEndDate || '--'}</span>
+                                            {getContinuousDaysCount() > 0 && (
+                                              <span style={{ padding: '2px 8px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', fontSize: '11px', fontWeight: 700 }}>
+                                                🟢 {getContinuousDaysCount()} يوم
+                                              </span>
+                                            )}
+                                          </>
+                                        )}
+                                        {scheduleType === 'DISCRETE_DAYS' && (
+                                          <>
+                                            <span>{discreteDays.join('، ') || 'لم يتم اختيار أيام'}</span>
+                                            {discreteDays.length > 0 && (
+                                              <span style={{ padding: '2px 8px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', fontSize: '11px', fontWeight: 700 }}>
+                                                🟢 {discreteDays.length} يوم متفرق
+                                              </span>
+                                            )}
+                                          </>
+                                        )}
+                                        {scheduleType === 'HOURLY_WINDOW' && (
+                                          <>
+                                            <span>{hourlyDate || '--'} | من {hourlyTimeFrom || '--'} إلى {hourlyTimeTo || '--'}</span>
+                                            {getHourlyDuration().isValid && (getHourlyDuration().hours > 0 || getHourlyDuration().minutes > 0) && (
+                                              <span style={{ padding: '2px 8px', borderRadius: '12px', background: 'rgba(37, 99, 235, 0.1)', color: '#1d4ed8', fontSize: '11px', fontWeight: 700 }}>
+                                                ⏱️ {getHourlyDuration().hours}س و {getHourlyDuration().minutes}د
+                                              </span>
+                                            )}
+                                          </>
+                                        )}
+                                        {scheduleType === 'SINGLE_DATE' && (
+                                          <span>{singleDate || '--'}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Delegate User summary */}
+                                  {route.formConfig.showDelegateUser && routeDelegateUserName && (
+                                    <div 
+                                      onClick={() => {
+                                        const idx = journeySteps.findIndex(s => s.type === 'delegateUser');
+                                        if (idx !== -1) setJourneyStepIndex(idx);
+                                      }}
+                                      style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                                      onMouseEnter={e => { e.currentTarget.style.borderColor = route.color; e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                    >
+                                      <div style={{ position: 'absolute', left: '16px', top: '16px', color: route.color }}><Edit3 size={16} /></div>
+                                      <span style={{ display: 'block', color: '#64748b', fontSize: '12px', marginBottom: '6px', fontWeight: 600 }}>
+                                        👤 {route.formConfig.delegateUserLabel || 'الموظف البديل'}
+                                      </span>
+                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>{routeDelegateUserName}</span>
+                                    </div>
+                                  )}
+
                                   {/* Description summary */}
                                   {routeDescription && (
                                     <div 
@@ -825,7 +1486,7 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                                     </div>
                                   )}
 
-                                  {/* Location summary */}
+                                  {/* Location & Organization summary */}
                                   {(routeBuilding || routeDepartment) && (
                                     <div 
                                       onClick={() => {
@@ -837,12 +1498,21 @@ export const InteractiveTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'translateY(0)'; }}
                                     >
                                       <div style={{ position: 'absolute', left: '16px', top: '16px', color: route.color }}><Edit3 size={16} /></div>
-                                      <span style={{ display: 'block', color: '#64748b', fontSize: '12px', marginBottom: '6px', fontWeight: 600 }}>الموقع والإدارة</span>
-                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px', display: 'block' }}>
-                                        {routeBuilding ? (spatialBuildings?.find(b => b.id === routeBuilding)?.name || '') : ''}
-                                        {routeBuilding && routeDepartment ? ' - ' : ''}
-                                        {routeDepartment ? (orgDepartments?.find(d => d.id === routeDepartment)?.name || '') : ''}
-                                      </span>
+                                      <span style={{ display: 'block', color: '#64748b', fontSize: '12px', marginBottom: '6px', fontWeight: 600 }}>الموقع والتبعية الإدارية</span>
+                                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        {routeBuilding && (
+                                          <span style={{ color: '#475569', fontSize: '13px' }}>
+                                            🏢 {spatialBuildings?.find(b => b.id === routeBuilding)?.name || routeBuilding}
+                                          </span>
+                                        )}
+                                        {routeDepartment && (
+                                          <span style={{ color: '#1e293b' }}>
+                                            🏛️ {orgDepartments?.find(d => d.id === routeDepartment || d.name === routeDepartment)?.name || routeDepartment}
+                                            {routeDivision ? ` ➔ 📂 ${availableDivisions.find(div => div.id === routeDivision || div.name === routeDivision)?.name || routeDivision}` : ''}
+                                            {routeTeam ? ` ➔ 👥 ${availableTeams.find(t => t.id === routeTeam || t.name === routeTeam)?.name || routeTeam}` : ''}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   )}
 

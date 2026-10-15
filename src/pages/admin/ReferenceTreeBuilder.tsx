@@ -128,7 +128,7 @@ export const ReferenceTreeBuilder: React.FC = () => {
         </select>
         <select 
           value={newParentId} 
-          onChange={e => setNewParentId(e.target.value)}
+          onChange={e => setNewParentId(e.target.value === '' ? '' : Number(e.target.value))}
           style={{
             background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', 
             padding: '10px 16px', borderRadius: '8px', minWidth: '150px'

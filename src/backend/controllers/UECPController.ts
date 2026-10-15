@@ -14,7 +14,23 @@ export class UECPController {
         return res.status(400).json({ success: false, error: 'manifestUrl is required' });
       }
 
-      // 1. Fetch the manifest from the URL
+      // 1. SSRF Protection: Validate the URL
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(manifestUrl);
+      } catch (e) {
+        return res.status(400).json({ success: false, error: 'Invalid URL format' });
+      }
+
+      const hostname = parsedUrl.hostname;
+      const forbiddenIPs = ['127.0.0.1', 'localhost', '0.0.0.0', '169.254.169.254', '::1'];
+      const forbiddenPatterns = [/^10\./, /^192\.168\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./];
+      
+      if (forbiddenIPs.includes(hostname) || forbiddenPatterns.some(p => p.test(hostname))) {
+        return res.status(403).json({ success: false, error: 'Access to internal network is forbidden (SSRF Protection)' });
+      }
+
+      // 2. Fetch the manifest from the URL
       let manifestData = {};
       let systemName = `System_${Math.floor(Math.random() * 10000)}`;
 

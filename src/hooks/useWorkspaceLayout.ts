@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react';
+/**
+ * LITC-TS v43 — useWorkspaceLayout Hook (Refactored)
+ * ======================================================
+ * يجلب إعدادات واجهة المستخدم من الـ API مباشرة بدلاً من localStorage.
+ * المصدر: جدول Interface في قاعدة البيانات (مربوط بـ Department + roleType).
+ */
+import { useState, useEffect, useCallback } from 'react';
+import { CoreRole } from '../types/roles';
 import { DynamicCustomField } from '../pages/admin/tabs/DynamicFieldsTab';
-
-export type CoreRole = 'END_USER' | 'OPERATIONAL_USER' | 'TEAM_LEADER' | 'SECTION_HEAD' | 'OPERATIONAL_MANAGER' | 'IT_ADMIN';
 
 interface SchemaComponent {
   componentId: string;
@@ -14,205 +19,176 @@ export interface UiSchema {
   layoutConfig: SchemaComponent[];
 }
 
-export const useWorkspaceLayout = (currentUserRole: CoreRole, userEmail?: string) => {
+// تصدير CoreRole من المصدر الموحد
+export type { CoreRole };
+
+/**
+ * الواجهة الافتراضية التي تظهر للموظف العادي عندما لا توجد واجهة مخصصة.
+ * تحتوي فقط على العناصر الأساسية: إنشاء طلب + متابعة الطلبات.
+ */
+const DEFAULT_FUNCTIONAL_LAYOUT: SchemaComponent[] = [
+  { componentId: 'ticket_create', name: 'إنشاء طلب / بلاغ', settings: { enableAttachments: true, maxAttachmentSizeMB: 5 } },
+  { componentId: 'ticket_inbox', name: 'طلباتي', settings: { showStatusBadges: true } },
+  { componentId: 'admin_profile', name: 'الملف الشخصي', settings: {} },
+];
+
+/**
+ * الواجهة الافتراضية للمستخدم التشغيلي الذي لم تُنشأ له واجهة مخصصة بعد.
+ */
+const DEFAULT_OPERATIONAL_LAYOUT: SchemaComponent[] = [
+  { componentId: 'admin_operational_console', name: 'لوحة الطلبات الواردة', settings: { tabsConfig: { NEW: true, IN_PROGRESS: true, PENDING: true, CLOSED: true } } },
+  { componentId: 'admin_profile', name: 'الملف الشخصي', settings: {} },
+];
+
+export const useWorkspaceLayout = (currentUserRole: CoreRole, userId?: number) => {
   const [submissionSchema, setSubmissionSchema] = useState<UiSchema | null>(null);
   const [workSchema, setWorkSchema] = useState<UiSchema | null>(null);
   const [customFields, setCustomFields] = useState<DynamicCustomField[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isWorkModeLocked, setIsWorkModeLocked] = useState(true);
+  const [isWorkModeLocked, setIsWorkModeLocked] = useState(false);
 
-  useEffect(() => {
-    const fetchSchema = async () => {
-      // Fetch dynamic fields from local storage
-      const savedFields = localStorage.getItem('litc_dynamic_fields');
-      if (savedFields) {
-        try { setCustomFields(JSON.parse(savedFields)); } catch (e) {}
-      }
+  const systemUtils: SchemaComponent[] = [
+    { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
+  ];
 
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // 1. Load layouts from localStorage for each role level
-      const adminLayout = localStorage.getItem('litc_layout_components_IT_ADMIN') || localStorage.getItem('litc_layout_components');
-      const managerLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_MANAGER');
-      const sectionHeadLayout = localStorage.getItem('litc_layout_components_SECTION_HEAD');
-      const teamLeaderLayout = localStorage.getItem('litc_layout_components_TEAM_LEADER');
-      const userLayout = localStorage.getItem('litc_layout_components_OPERATIONAL_USER');
-      const endUserLayout = localStorage.getItem('litc_layout_components_END_USER');
-
-      // 2. Parse layouts
-      let adminList: any[] = [];
-      try { adminList = adminLayout ? JSON.parse(adminLayout) : []; } catch (e) {}
-
-      let managerList: any[] = [];
-      try { managerList = managerLayout ? JSON.parse(managerLayout) : []; } catch (e) {}
-      
-      let sectionHeadList: any[] = [];
-      try { sectionHeadList = sectionHeadLayout ? JSON.parse(sectionHeadLayout) : []; } catch (e) {}
-
-      let teamLeaderList: any[] = [];
-      try { teamLeaderList = teamLeaderLayout ? JSON.parse(teamLeaderLayout) : []; } catch (e) {}
-
-      let userList: any[] = [];
-      try { userList = userLayout ? JSON.parse(userLayout) : []; } catch (e) {}
-
-      let endUserList: any[] = [];
-      try { endUserList = endUserLayout ? JSON.parse(endUserLayout) : []; } catch (e) {}
-
-      // Default layout config if no configurations found
-      const defaultLayoutConfig = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } },
-        { componentId: 'ticket_create', name: 'إنشاء تذكرة للمرسل', settings: { mandatoryAttachments: true, enableSLA: true, enableVoiceToText: true, showPriorityField: true, enableAttachments: true, maxAttachmentSizeMB: 5, allowedExtensions: 'pdf, jpg, png', injectedFields: customFields.map(f => f.id) } },
-        { componentId: 'ticket_inbox', name: 'التذاكر الواردة', settings: {} },
-        { componentId: 'tool_sla_timer', name: 'مؤقت الـ SLA', settings: {} },
-        { componentId: 'sub_ticket_engine', name: 'محرك التذاكر الفرعية', settings: { concurrencyMode: 'SEQUENTIAL', maxSubTickets: 2, routingScope: 'INTERNAL_TEAM', enableDescription: true } },
-        { componentId: 'admin_analytics', name: 'التحليل المركزي', settings: { dataScope: 'TEAM', filterDestDept: true, activeCharts: ['kpi_cards', 'bar_chart'], allowedFilters: [] } },
-        { componentId: 'admin_leaderboard', name: 'المقارنة', settings: { allowedDimensions: ['EMP_VS_EMP', 'DEPT_VS_DEPT'], allowedMetrics: ['VOLUME', 'SPEED', 'SLA'], displayModes: ['SIDE_BAR', 'VARIANCE_TABLE'] } },
-        { componentId: 'admin_archive', name: 'الأرشيف المركزي', settings: { archiveScope: 'Department_Only', allowCompletedClosedTickets: true, allowSupplementaryAdditionalTickets: true, enabledUIFilters: ['operator_name', 'end_user_name', 'issue_type', 'building_location'] } },
-        { componentId: 'admin_profile', name: 'الملف الشخصي', settings: { identityProvider: 'Microsoft_SSO', allowThemeCustomization: true } },
-        { componentId: 'admin_notifications', name: 'إعدادات الإشعارات والـ SLA', settings: { forceWhatsappCritical: true, lockSLAThresholds: false } },
-        { componentId: 'admin_sovereign_custody_ledger_v10', name: 'منظومة العُهد والمخازن السيادية الشاملة V10', settings: { allowedReportFilters: ['BY_ITEM_TYPE', 'BY_DATE_RANGE'], allowedReportColumns: ['SHOW_RECEIVER_IDENTITY', 'SHOW_VERIFICATION_STATUS'] } },
-        { componentId: 'admin_operational_console', name: 'قمرة إدارة الكيانات التشغيلية', settings: {} }
-      ];
-
-      // --- SUBMISSION TEMPLATE LOGIC ---
-      let submissionLayout: any[] = [];
+  const fetchSchema = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 1. جلب الحقول الديناميكية من الباكاند
       try {
-        const templatesRaw = localStorage.getItem('SUBMISSION_TEMPLATES_SCHEMA');
-        const roleMappingsRaw = localStorage.getItem('ROLE_SUBMISSION_MAPPINGS');
-        if (templatesRaw) {
-          const templates = JSON.parse(templatesRaw);
-          const mappings = roleMappingsRaw ? JSON.parse(roleMappingsRaw) : [];
-          
-          // Simulation: If a mapping exists for currentUserRole, use it. Else use default.
-          const mapping = mappings.find((m: any) => m.role === currentUserRole);
-          const activeTemplate = mapping 
-            ? templates.find((t: any) => t.id === mapping.templateId)
-            : templates.find((t: any) => t.isDefault);
-
-          if (activeTemplate && activeTemplate.components && activeTemplate.components.length > 0) {
-            submissionLayout = activeTemplate.components;
+        const fieldsRes = await fetch('/api/v1/admin/dynamic-fields', { credentials: 'include' });
+        if (fieldsRes.ok) {
+          const fieldsData = await fieldsRes.json();
+          if (Array.isArray(fieldsData.fields)) {
+            setCustomFields(fieldsData.fields);
           }
         }
-      } catch(e) {}
+      } catch (_) {
+        // الحقول الديناميكية اختيارية — لا نوقف العملية
+      }
 
-      // The Base Employee Interface (واجهة الارسال الرئيسية)
-      let baseEmployeeLayout: any[] = [];
+      // 2. جلب قوالب الإرسال من الباكاند
+      let submissionLayout: SchemaComponent[] = [];
       try {
-        let assignedLayoutId = 'MAIN_SUBMISSION_INTERFACE';
-        
-        if (userEmail) {
-          const opsUsers = localStorage.getItem('litc_operational_users');
-          if (opsUsers) {
-            const users = JSON.parse(opsUsers);
-            const foundUser = users.find((u: any) => u.email === userEmail);
-            if (foundUser && foundUser.layoutId) {
-               // Check if the assigned layout is a FUNCTIONAL interface
-               const savedInterfaces = localStorage.getItem('litc_saved_interfaces');
-               if (savedInterfaces) {
-                 const interfaces = JSON.parse(savedInterfaces);
-                 const assignedInterface = interfaces.find((ui: any) => ui.id === foundUser.layoutId);
-                 if (assignedInterface && assignedInterface.interfaceType === 'FUNCTIONAL') {
-                    assignedLayoutId = foundUser.layoutId;
-                 }
-               }
+        const [templatesRes, mappingsRes] = await Promise.all([
+          fetch('/api/v1/admin/settings/SUBMISSION_TEMPLATES_SCHEMA', { credentials: 'include' }),
+          fetch('/api/v1/admin/settings/ROLE_SUBMISSION_MAPPINGS', { credentials: 'include' }),
+        ]);
+
+        if (templatesRes.ok && mappingsRes.ok) {
+          const tData = await templatesRes.json();
+          const mData = await mappingsRes.json();
+
+          if (tData?.settingValue) {
+            const templates = JSON.parse(tData.settingValue);
+            const mappings = mData?.settingValue ? JSON.parse(mData.settingValue) : [];
+
+            const mapping = mappings.find((m: any) => m.role === currentUserRole);
+            const activeTemplate = mapping
+              ? templates.find((t: any) => t.id === mapping.templateId)
+              : templates.find((t: any) => t.isDefault);
+
+            if (activeTemplate?.components?.length > 0) {
+              submissionLayout = activeTemplate.components.map((c: any) => ({
+                componentId: c.id,
+                name: c.name,
+                settings: c.properties || {},
+              }));
             }
           }
         }
-
-        const baseSaved = localStorage.getItem(`litc_layout_components_${assignedLayoutId}`);
-        if (baseSaved) {
-          baseEmployeeLayout = JSON.parse(baseSaved);
-        }
-      } catch (e) {}
-
-      // Role-based Layout Selection
-      let activeList: any[] = [];
-      if (currentUserRole === 'IT_ADMIN') {
-        activeList = adminList.length > 0 ? adminList : defaultLayoutConfig.map(d => ({ id: d.componentId, name: d.name, isActive: true, properties: d.settings }));
-      } else if (currentUserRole === 'OPERATIONAL_MANAGER') {
-        activeList = managerList;
-      } else if (currentUserRole === 'SECTION_HEAD') {
-        activeList = sectionHeadList;
-      } else if (currentUserRole === 'TEAM_LEADER') {
-        activeList = teamLeaderList;
-      } else if (currentUserRole === 'OPERATIONAL_USER') {
-        activeList = userList;
-      } else if (currentUserRole === 'END_USER') {
-        activeList = endUserList;
+      } catch (_) {
+        // قوالب الإرسال اختيارية
       }
 
-      const hasActiveWorkComponents = activeList.some((c: any) => c.isActive);
-      setIsWorkModeLocked(!hasActiveWorkComponents);
+      // 3. جلب الواجهة المخصصة لهذا المستخدم بناءً على دوره من جدول Interface
+      let workLayout: SchemaComponent[] = [];
+      let hasCustomWorkLayout = false;
+      try {
+        // نجلب الواجهة المناسبة: إذا كان لدينا userId نجلب الواجهة المسندة له،
+        // وإلا نجلب بحسب الدور فقط
+        const interfaceEndpoint = userId
+          ? `/api/v1/layouts?userId=${userId}&roleType=${currentUserRole}`
+          : `/api/v1/layouts?roleType=${currentUserRole}`;
 
-      const systemUtils = [
-        { componentId: 'tool_language_theme', name: 'اللغات والمظهر', settings: { defaultLang: 'ar', allowUserSwitch: true } }
-      ];
+        const layoutRes = await fetch(interfaceEndpoint, { credentials: 'include' });
+        if (layoutRes.ok) {
+          const layoutData = await layoutRes.json();
+          // يدعم الـ API استجابة على شكل مصفوفة أو كائن
+          const components = Array.isArray(layoutData)
+            ? layoutData
+            : (layoutData.components || layoutData.layout || []);
 
-      // Build Submission Schema
-      let submissionConfig = baseEmployeeLayout.filter((c: any) => c.isActive).map((c: any) => ({
-        componentId: c.id,
-        name: c.name,
-        settings: c.properties
-      }));
-      
+          if (components.length > 0) {
+            workLayout = components
+              .filter((c: any) => c.isActive !== false)
+              .map((c: any) => ({
+                componentId: c.id || c.componentId,
+                name: c.name,
+                settings: c.properties || c.settings || {},
+              }));
+            hasCustomWorkLayout = workLayout.length > 0;
+          }
+        }
+      } catch (_) {
+        // نرجع للقيم الافتراضية
+      }
+
+      // 4. تحديد ما إذا كان وضع العمل متاحاً
+      const operationalRoles = ['tech_director', 'dept_head', 'team_leader', 'system_director', 'super_admin'];
+      const isOperationalRole = operationalRoles.includes(currentUserRole) || ['OPERATIONAL_USER', 'TEAM_LEADER', 'SECTION_HEAD', 'OPERATIONAL_MANAGER', 'IT_ADMIN'].includes(currentUserRole);
+      setIsWorkModeLocked(!isOperationalRole && !hasCustomWorkLayout);
+
+      // 5. بناء مخطط الإرسال (للموظف العادي)
+      const funcDefault = submissionLayout.length > 0 ? submissionLayout : DEFAULT_FUNCTIONAL_LAYOUT;
       const combinedSubmission = [...systemUtils];
-      submissionConfig.forEach((item: any) => {
-        if (!combinedSubmission.some(s => s.componentId === item.componentId)) combinedSubmission.push(item);
-      });
-
-      // Merge components from Submission Templates if they exist
-      submissionLayout.forEach((subItem: any) => {
-        const existingIdx = combinedSubmission.findIndex(c => c.componentId === subItem.id);
-        const transformed = { componentId: subItem.id, name: subItem.name, settings: subItem.properties };
-        if (existingIdx >= 0) {
-          combinedSubmission[existingIdx] = transformed;
-        } else {
-          combinedSubmission.push(transformed);
+      funcDefault.forEach(item => {
+        if (!combinedSubmission.some(s => s.componentId === item.componentId)) {
+          combinedSubmission.push(item);
         }
       });
 
-      // Build Work Schema
-      let workConfig = activeList.filter((c: any) => c.isActive).map((c: any) => ({
-        componentId: c.id,
-        name: c.name,
-        settings: c.properties
-      }));
-
+      // 6. بناء مخطط العمل (للمستخدم التشغيلي والقيادي)
+      const operDefault = hasCustomWorkLayout ? workLayout : (isOperationalRole ? DEFAULT_OPERATIONAL_LAYOUT : []);
       const combinedWork = [...systemUtils];
-      workConfig.forEach((item: any) => {
-        if (!combinedWork.some(s => s.componentId === item.componentId)) combinedWork.push(item);
+      operDefault.forEach(item => {
+        if (!combinedWork.some(s => s.componentId === item.componentId)) {
+          combinedWork.push(item);
+        }
       });
 
-      setSubmissionSchema({
-        version: "v43.5",
-        layoutConfig: combinedSubmission
-      });
-
-      setWorkSchema({
-        version: "v43.5",
-        layoutConfig: combinedWork
-      });
-
+      setSubmissionSchema({ version: 'v43.5', layoutConfig: combinedSubmission });
+      setWorkSchema({ version: 'v43.5', layoutConfig: combinedWork });
+    } catch (error) {
+      console.error('[useWorkspaceLayout] Failed to fetch schema:', error);
+      // في حالة الفشل الكامل، نُظهر الواجهة الافتراضية
+      setSubmissionSchema({ version: 'v43.5', layoutConfig: [...systemUtils, ...DEFAULT_FUNCTIONAL_LAYOUT] });
+      setWorkSchema({ version: 'v43.5', layoutConfig: [...systemUtils, ...DEFAULT_OPERATIONAL_LAYOUT] });
+    } finally {
       setLoading(false);
-    };
+    }
+  }, [currentUserRole, userId]);
+
+  useEffect(() => {
     fetchSchema();
 
-    // Listen to cross-tab updates (e.g. Admin adding a custom field)
-    window.addEventListener('storage', fetchSchema);
-    // Listen to same-tab custom updates
-    window.addEventListener('litc_settings_updated', fetchSchema);
+    // الاستماع لتحديثات الإعدادات من نفس الجلسة
+    const handleSettingsUpdate = () => fetchSchema();
+    window.addEventListener('litc_settings_updated', handleSettingsUpdate);
+    window.addEventListener('litc_layout_saved', handleSettingsUpdate);
 
     return () => {
-      window.removeEventListener('storage', fetchSchema);
-      window.removeEventListener('litc_settings_updated', fetchSchema);
+      window.removeEventListener('litc_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('litc_layout_saved', handleSettingsUpdate);
     };
-  }, [currentUserRole]);
+  }, [fetchSchema]);
 
   return {
     submissionSchema,
     workSchema,
     customFields,
     loading,
-    isWorkModeLocked
+    isWorkModeLocked,
+    refreshSchema: fetchSchema,
   };
 };

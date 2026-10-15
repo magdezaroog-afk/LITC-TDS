@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DynamicCustomField } from '../../pages/admin/tabs/DynamicFieldsTab';
-import { loadRoutes, TicketRouteDefinition } from '../../pages/admin/tabs/TicketRoutingTab';
-
-// Dummy t function to prevent crash
-const t = (key: any, fallback?: any) => fallback || key;
+import { loadRoutes, type TicketRouteDefinition } from '../../services/ticketRouting.helpers';
+import { loadCachedOrRemoteOrgTree, getTopLevelDepartments } from '../../services/institutionalHierarchy.helpers';
 
 interface TicketCreatorFormProps {
   customFields: DynamicCustomField[];
-  allowedRouteIds?: string[]; // Allowed Workflows
-  concurrencyPolicy?: 'ALLOW_MULTIPLE' | 'PREVENT_CONCURRENT'; // Submission Concurrency Policy
+  allowedRouteIds?: string[];
+  concurrencyPolicy?: 'ALLOW_MULTIPLE' | 'PREVENT_CONCURRENT';
   hasActiveTicketInRoute?: (routeId: string) => boolean;
   glassPanelStyle?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
@@ -33,34 +31,28 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
   const [routeSubmitSuccess, setRouteSubmitSuccess] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-
   const [orgDepartments, setOrgDepartments] = useState<any[]>([]);
   const [spatialBuildings, setSpatialBuildings] = useState<any[]>([]);
 
   useEffect(() => {
-    setSavedRoutes(loadRoutes());
-    
-    // Load Org Tree and flatten for dropdown
-    try {
-      const s = localStorage.getItem('litc_org_tree');
-      if (s) {
-        const rootNode = JSON.parse(s);
-        const flatten = (n: any): any[] => {
-          let res = [n];
-          if (n.children) n.children.forEach((c: any) => { res = res.concat(flatten(c)); });
-          return res;
-        };
-        // Filter to only include Departments (إدارة) or Offices (مكتب)
-        setOrgDepartments(flatten(rootNode).filter(n => n.type === 'إدارة' || n.type === 'مكتب'));
-      }
-    } catch {}
+    // loadRoutes may return a Promise or a plain array depending on implementation
+    const result = loadRoutes();
+    if (result && typeof (result as any).then === 'function') {
+      (result as any as Promise<TicketRouteDefinition[]>).then(routes => setSavedRoutes(routes));
+    } else {
+      setSavedRoutes(result as unknown as TicketRouteDefinition[]);
+    }
 
-    // Load Buildings
+    loadCachedOrRemoteOrgTree().then(tree => {
+      if (tree) {
+        setOrgDepartments(getTopLevelDepartments(tree));
+      }
+    }).catch(() => {});
+
     try {
       const b = localStorage.getItem('litc_buildings_tree');
       if (b) setSpatialBuildings(JSON.parse(b));
     } catch {}
-
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,26 +61,22 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
     if (files.length === 0) return;
 
     const routeDef = savedRoutes.find(r => r.id === selectedRouteId);
-    const rules = routeDef?.formConfig || {};
-    
-    // Completely dynamic configuration from workflow settings (no defaults like 5 or '*')
-    const maxSizeMB = rules.maxAttachmentMB; 
-    const allowedExts = rules.attachmentTypes || [];
+    const rules = (routeDef?.formConfig || {}) as any;
+
+    const maxSizeMB: number | undefined = rules.maxAttachmentMB;
+    const allowedExts: string[] = rules.attachmentTypes || [];
 
     const validFiles = files.filter(file => {
       const fileSizeMB = file.size / (1024 * 1024);
-      
-      // Strict size check only if defined
+
       if (maxSizeMB !== undefined && fileSizeMB > maxSizeMB) {
         setFileError(`حجم الملف ${file.name} يتجاوز الحد المسموح (${maxSizeMB}MB)`);
         return false;
       }
 
-      // Strict extension check only if defined
       if (allowedExts.length > 0 && !allowedExts.includes('*')) {
         const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
         const lowerAllowedExts = allowedExts.map((s: string) => s.trim().toLowerCase());
-        
         if (!lowerAllowedExts.includes(fileExt)) {
           setFileError(`صيغة الملف ${file.name} غير مسموحة. المسموح: ${allowedExts.join(', ')}`);
           return false;
@@ -124,7 +112,7 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
             <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '6px', fontWeight: 700 }}>عنوان البلاغ</label>
             <input type="text" style={inputStyle} placeholder="وصف موجز للمشكلة..." />
             <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '6px', fontWeight: 700 }}>تفاصيل البلاغ</label>
-            <textarea style={{ ...inputStyle, height: '100px', resize: 'none' }} placeholder="الرجاء وصف المشكلة بدقة..." />
+            <textarea style={{ ...inputStyle, height: '100px', resize: 'none' } as any} placeholder="الرجاء وصف المشكلة بدقة..." />
             <button style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 14px rgba(37,99,235,0.3)', transition: 'all 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
@@ -143,24 +131,23 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {visibleRoutes.map(route => {
                 const isLocked = concurrencyPolicy === 'PREVENT_CONCURRENT' && hasActiveTicketInRoute && hasActiveTicketInRoute(route.id);
-                
                 return (
                   <div key={route.id}
-                    onClick={() => { 
-                      if(isLocked) return;
-                      setSelectedRouteId(route.id); 
-                      setRouteFieldValues({}); 
+                    onClick={() => {
+                      if (isLocked) return;
+                      setSelectedRouteId(route.id);
+                      setRouteFieldValues({});
                       setRouteBuilding('');
                       setRouteDepartment('');
-                      setRouteDescription(''); 
-                      setRouteSelectedTaxMain(''); 
-                      setRouteSelectedTaxSub(''); 
-                      setRouteSubmitSuccess(false); 
-                      setSelectedFiles([]); 
+                      setRouteDescription('');
+                      setRouteSelectedTaxMain('');
+                      setRouteSelectedTaxSub('');
+                      setRouteSubmitSuccess(false);
+                      setSelectedFiles([]);
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', borderRadius: '14px', border: `1.5px solid ${isLocked ? '#e2e8f0' : route.color + '30'}`, background: isLocked ? '#f8fafc' : `${route.color}08`, cursor: isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.6 : 1, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                    onMouseEnter={e => { if(!isLocked) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 20px ${route.color}15`; e.currentTarget.style.borderColor = route.color + '60'; } }}
-                    onMouseLeave={e => { if(!isLocked) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = route.color + '30'; } }}
+                    onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 20px ${route.color}15`; e.currentTarget.style.borderColor = route.color + '60'; } }}
+                    onMouseLeave={e => { if (!isLocked) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = route.color + '30'; } }}
                   >
                     <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: isLocked ? '#e2e8f0' : `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0, boxShadow: isLocked ? 'none' : `0 4px 12px ${route.color}30` }}>
                       {isLocked ? '🔒' : route.icon}
@@ -168,11 +155,11 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: isLocked ? '#94a3b8' : '#1e293b' }}>{route.name}</div>
                       {route.description && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px', lineHeight: 1.4 }}>{route.description}</div>}
-                      <div style={{ fontSize: '10px', color: isLocked ? '#94a3b8' : route.color, marginTop: '4px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {isLocked ? '⛔ لديك طلب مفتوح' : <><span>←</span> {route.targetDepartmentName}</>}
+                      <div style={{ fontSize: '10px', color: isLocked ? '#94a3b8' : route.color, marginTop: '4px', fontWeight: 700 }}>
+                        {isLocked ? '⛔ لديك طلب مفتوح' : `← ${route.targetDepartmentName}`}
                       </div>
                     </div>
-                    <div style={{ color: isLocked ? '#cbd5e1' : route.color, fontSize: '20px', fontWeight: 300, transition: 'transform 0.2s' }}>‹</div>
+                    <div style={{ color: isLocked ? '#cbd5e1' : route.color, fontSize: '20px', fontWeight: 300 }}>‹</div>
                   </div>
                 );
               })}
@@ -182,7 +169,7 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
       ) : (() => {
         const route = savedRoutes.find(r => r.id === selectedRouteId)!;
         if (!route) return null;
-        const taxEntry = route.formConfig.taxonomy?.find(t => t.id === routeSelectedTaxMain && t.isActive);
+        const taxEntry = route.formConfig.taxonomy?.find((tx: any) => tx.id === routeSelectedTaxMain && tx.isActive);
 
         if (routeSubmitSuccess) {
           return (
@@ -191,9 +178,7 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>تم إرسال طلبك بنجاح!</div>
               <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '24px', lineHeight: 1.5 }}>تم توجيه طلبك إلى <strong style={{ color: '#334155' }}>{route.targetDepartmentName}</strong></div>
               <button onClick={() => { setSelectedRouteId(null); setRouteSubmitSuccess(false); }}
-                style={{ padding: '12px 28px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 4px 14px ${route.color}30`, transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                style={{ padding: '12px 28px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                 ← إرسال طلب آخر
               </button>
             </div>
@@ -202,331 +187,75 @@ export const ClassicTicketCreatorForm: React.FC<TicketCreatorFormProps> = ({
 
         return (
           <div>
-            {/* ── Premium Header ── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
               <button onClick={() => setSelectedRouteId(null)}
-                style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: '12px', cursor: 'pointer', color: '#64748b', fontWeight: 600, transition: 'all 0.2s', backdropFilter: 'blur(8px)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}>← رجوع</button>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}BB)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', boxShadow: `0 4px 14px ${route.color}30` }}>{route.icon}</div>
+                style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: '12px', cursor: 'pointer', color: '#64748b', fontWeight: 600 }}>← رجوع</button>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}, ${route.color}BB)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px' }}>{route.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>{route.name}</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>← {route.targetDepartmentName}{route.targetDivisionName ? ` › ${route.targetDivisionName}` : ''}</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{route.name}</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>← {route.targetDepartmentName}</div>
               </div>
             </div>
 
-            {/* ── Taxonomy Section ── */}
-            {route.formConfig.taxonomy && route.formConfig.taxonomy.length > 0 && (
-              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
-                  <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: `${route.color}12`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>🏷️</span>
-                  نوع المشكلة <span style={{ color: '#ef4444' }}>*</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {route.formConfig.taxonomy.filter(t => t.isActive).map(t => (
-                    <div key={t.id}
-                      onClick={() => { setRouteSelectedTaxMain(t.id); setRouteSelectedTaxSub(''); }}
-                      style={{
-                        padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                        cursor: 'pointer', transition: 'all 0.2s ease',
-                        background: routeSelectedTaxMain === t.id ? `${route.color}15` : 'rgba(0,0,0,0.03)',
-                        border: `1.5px solid ${routeSelectedTaxMain === t.id ? route.color : 'transparent'}`,
-                        color: routeSelectedTaxMain === t.id ? route.color : '#64748b',
-                        boxShadow: routeSelectedTaxMain === t.id ? `0 2px 8px ${route.color}20` : 'none',
-                      }}
-                      onMouseEnter={e => { if (routeSelectedTaxMain !== t.id) { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-                      onMouseLeave={e => { if (routeSelectedTaxMain !== t.id) { e.currentTarget.style.background = 'rgba(0,0,0,0.03)'; e.currentTarget.style.transform = 'translateY(0)'; } }}
-                    >
-                      {routeSelectedTaxMain === t.id && <span style={{ marginLeft: '4px' }}>✓</span>} {t.label}
-                    </div>
-                  ))}
-                </div>
-                {taxEntry && taxEntry.subIssues && taxEntry.subIssues.length > 0 && (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' }}>↳ المشكلة الفرعية</div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {taxEntry.subIssues.filter(s => s.isActive).map(s => (
-                        <div key={s.id}
-                          onClick={() => setRouteSelectedTaxSub(s.id)}
-                          style={{
-                            padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
-                            cursor: 'pointer', transition: 'all 0.2s',
-                            background: routeSelectedTaxSub === s.id ? `${route.color}12` : 'rgba(0,0,0,0.02)',
-                            border: `1px solid ${routeSelectedTaxSub === s.id ? route.color + '60' : 'transparent'}`,
-                            color: routeSelectedTaxSub === s.id ? route.color : '#94a3b8',
-                          }}
-                        >
-                          {routeSelectedTaxSub === s.id && '✓ '}{s.label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Building / Department ── */}
-            {(route.formConfig.showBuildingField || route.formConfig.showDepartmentField) && (
-              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', gap: '10px' }}>
-                {route.formConfig.showBuildingField && (
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px' }}>🏢</span> الموقع <span style={{ color: '#ef4444', fontSize: '10px' }}>*</span>
-                    </div>
-                    <select style={{ ...inputStyle, width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '12px', background: 'rgba(248,250,252,0.8)', color: '#334155', outline: 'none', transition: 'border-color 0.2s' }} value={routeBuilding} onChange={e => setRouteBuilding(e.target.value)}
-                      onFocus={e => e.currentTarget.style.borderColor = route.color}
-                      onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'}>
-                      <option value="">-- اختر --</option>
-                      {spatialBuildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                  </div>
-                )}
-                {route.formConfig.showDepartmentField && (
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px' }}>🏛️</span> الإدارة <span style={{ color: '#ef4444', fontSize: '10px' }}>*</span>
-                    </div>
-                    <select style={{ ...inputStyle, width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '12px', background: 'rgba(248,250,252,0.8)', color: '#334155', outline: 'none', transition: 'border-color 0.2s' }} value={routeDepartment} onChange={e => setRouteDepartment(e.target.value)}
-                      onFocus={e => e.currentTarget.style.borderColor = route.color}
-                      onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'}>
-                      <option value="">-- اختر --</option>
-                      {orgDepartments.map(d => <option key={d.id} value={d.id}>{d.title} ({d.type === 'department' ? 'إدارة' : 'مكتب'})</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Dynamic Fields as Interactive Pills ── */}
-            {(() => {
-              const activeFieldIds = route.formConfig.routeDynamicFields 
-                ? route.formConfig.routeDynamicFields.map(rdf => rdf.fieldId) 
-                : (route.formConfig.customFieldIds || []);
-              
-              let activeCustomFields = customFields.filter(f => activeFieldIds.includes(f.id));
-
-              // Recursively add triggered child fields
-              let addedNew = true;
-              while (addedNew) {
-                addedNew = false;
-                const currentIds = activeCustomFields.map(f => f.id);
-                activeCustomFields.forEach(field => {
-                  if (field.childBindings && field.childBindings.length > 0) {
-                    const selectedVal = routeFieldValues[field.id];
-                    if (selectedVal) {
-                      field.childBindings.forEach(binding => {
-                        const triggers = binding.triggerValue.split(',').map(t => t.trim());
-                        if (triggers.includes(selectedVal)) {
-                          const childField = customFields.find(f => f.id === binding.childFieldId);
-                          if (childField && !currentIds.includes(childField.id)) {
-                            activeCustomFields.push(childField);
-                            currentIds.push(childField.id);
-                            addedNew = true;
-                          }
-                        }
-                      });
-                    }
-                  }
-                });
-              }
-
-              if (activeCustomFields.length === 0) return null;
-
-              return activeCustomFields.map((field, fieldIdx) => {
-                const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                const isReq = rdfs.find(r => r.fieldId === field.id)?.isRequired;
-                const opts = field.dependsOn && field.dependencyMap && routeFieldValues[field.dependsOn]
-                  ? field.dependencyMap[routeFieldValues[field.dependsOn]] || field.options
-                  : field.options;
-                const activeOpts = opts.filter((opt: any) => typeof opt === 'string' || opt.isActive);
-                const isChildField = !activeFieldIds.includes(field.id);
-
-                return (
-                  <div key={field.id} style={{
-                    marginBottom: '14px', padding: '14px', borderRadius: '14px',
-                    background: isChildField ? 'rgba(139,92,246,0.04)' : 'rgba(255,255,255,0.7)',
-                    backdropFilter: 'blur(12px)',
-                    border: isChildField ? '1px solid rgba(139,92,246,0.12)' : '1px solid rgba(0,0,0,0.04)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    marginRight: isChildField ? '12px' : '0',
-                    borderRight: isChildField ? `3px solid ${route.color}40` : 'none',
-                    animation: 'fadeIn 0.3s ease',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
-                      <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: isChildField ? `${route.color}15` : `${route.color}10`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
-                        {isChildField ? '🔗' : '📋'}
-                      </span>
-                      {field.name} {isReq && <span style={{ color: '#ef4444' }}>*</span>}
-                      {isChildField && <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '6px', background: `${route.color}10`, color: route.color, fontWeight: 500, marginRight: 'auto' }}>فرعي</span>}
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {activeOpts.map((opt: any) => {
-                        const optId = typeof opt === 'string' ? opt : opt.id;
-                        const optLabel = typeof opt === 'string' ? opt : opt.label;
-                        const isSelected = routeFieldValues[field.id] === optId;
-                        return (
-                          <div key={optId}
-                            onClick={() => {
-                              const newValues = { ...routeFieldValues, [field.id]: isSelected ? '' : optId };
-                              // Clear child fields when parent changes
-                              if (!isSelected && field.childBindings) {
-                                field.childBindings.forEach(b => { delete newValues[b.childFieldId]; });
-                              }
-                              setRouteFieldValues(newValues);
-                            }}
-                            style={{
-                              padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 600,
-                              cursor: 'pointer', transition: 'all 0.2s ease',
-                              background: isSelected ? `${route.color}15` : 'rgba(0,0,0,0.03)',
-                              border: `1.5px solid ${isSelected ? route.color : 'transparent'}`,
-                              color: isSelected ? route.color : '#64748b',
-                              boxShadow: isSelected ? `0 2px 10px ${route.color}18` : 'none',
-                              transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                            }}
-                            onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-                            onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = 'rgba(0,0,0,0.03)'; e.currentTarget.style.transform = 'scale(1)'; } }}
-                          >
-                            {isSelected && <span style={{ marginLeft: '4px' }}>✓</span>} {optLabel}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {routeFieldValues[field.id] && (
-                      <div style={{ marginTop: '8px', fontSize: '10px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        ✅ تم الاختيار
-                      </div>
-                    )}
-                  </div>
-                );
-              });
-            })()}
-
-            {/* ── Description ── */}
+            {/* Description */}
             {route.formConfig.showDescription && (
-              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
-                  <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: '#FFF3E0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✏️</span>
+              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
                   وصف المشكلة {route.formConfig.mandatoryDescription && <span style={{ color: '#ef4444' }}>*</span>}
                 </div>
-                <textarea style={{ ...(inputStyle as any), width: '100%', height: '90px', resize: 'none', padding: '12px', borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '12px', background: 'rgba(248,250,252,0.8)', color: '#334155', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', fontFamily: 'inherit' }}
+                <textarea style={{ width: '100%', height: '90px', resize: 'none', padding: '12px', borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '12px', background: 'rgba(248,250,252,0.8)', color: '#334155', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' } as any}
                   placeholder="اكتب تفاصيل المشكلة هنا..."
                   value={routeDescription}
-                  onChange={e => setRouteDescription(e.target.value)}
-                  onFocus={e => e.currentTarget.style.borderColor = route.color}
-                  onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'} />
+                  onChange={e => setRouteDescription(e.target.value)} />
               </div>
             )}
 
-            {/* ── Attachments ── */}
+            {/* Attachments */}
             {route.formConfig.showAttachments && (
-              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
-                  <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: '#E8F5E9', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>📎</span>
+              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '14px', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>
                   المرفقات {route.formConfig.mandatoryAttachments && <span style={{ color: '#ef4444' }}>*</span>}
-                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 400, marginRight: 'auto' }}>{route.formConfig.attachmentTypes?.join(' · ') || 'الكل'} | {route.formConfig.maxAttachmentMB || '?'}MB</span>
                 </div>
-                <div style={{ position: 'relative' }}>
-                  <input type="file" multiple onChange={handleFileChange}
-                    accept={route.formConfig.attachmentTypes?.map((t: string) => `.${t.toLowerCase()}`).join(',')}
-                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 2 }} />
-                  <div style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    padding: '20px', border: '2px dashed rgba(0,0,0,0.1)', borderRadius: '12px',
-                    background: 'rgba(248,250,252,0.6)', transition: 'all 0.2s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = route.color; e.currentTarget.style.background = `${route.color}05`; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; e.currentTarget.style.background = 'rgba(248,250,252,0.6)'; }}>
-                    <span style={{ fontSize: '24px', opacity: 0.5 }}>☁️</span>
-                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>اسحب الملفات أو انقر للرفع</span>
+                <input type="file" multiple onChange={handleFileChange} style={{ display: 'block', fontSize: '12px' }} />
+                {fileError && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '8px' }}>⚠️ {fileError}</div>}
+                {selectedFiles.map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(16,185,129,0.06)', borderRadius: '8px', marginTop: '6px', fontSize: '11px' }}>
+                    <span>✅ {f.name}</span>
+                    <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
                   </div>
-                </div>
-                {fileError && <div style={{ color: '#ef4444', fontSize: '11px', padding: '8px 12px', background: '#fef2f2', borderRadius: '8px', marginTop: '8px' }}>⚠️ {fileError}</div>}
-                {selectedFiles.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-                    {selectedFiles.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', fontSize: '11px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>✅</span>
-                          <span style={{ color: '#0f172a', fontWeight: 600 }}>{f.name}</span>
-                          <span style={{ color: '#94a3b8', fontSize: '10px' }}>({(f.size / 1024 / 1024).toFixed(1)}MB)</span>
-                        </div>
-                        <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', padding: '2px 6px' }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
             )}
 
-            {/* ── Submit Button ── */}
+            {/* Submit */}
             <button
               onClick={() => {
                 if (route.formConfig.mandatoryDescription && !routeDescription.trim()) { alert('وصف المشكلة إلزامي لهذا المسار.'); return; }
                 if (route.formConfig.mandatoryAttachments && selectedFiles.length === 0) { alert('المرفق إلزامي لهذا المسار.'); return; }
-                
-                const rdfs = route.formConfig.routeDynamicFields || (route.formConfig.customFieldIds || []).map(id => ({ fieldId: id, isRequired: true }));
-                const missingFields = rdfs.filter(r => r.isRequired && !routeFieldValues[r.fieldId]);
-                if (missingFields.length > 0) {
-                  const firstMissing = customFields.find(f => f.id === missingFields[0].fieldId);
-                  alert(`يرجى إدخال الحقل الإلزامي: ${firstMissing?.name}`);
-                  return;
-                }
 
-                const generatedTitle = Object.values(routeFieldValues).filter(Boolean).join(' - ') || route.name;
-                
-                const historicalSnapshot = {
-                  mainIssueLabel: taxEntry?.label || routeSelectedTaxMain,
-                  subIssueLabel: taxEntry?.subIssues?.find(s => s.id === routeSelectedTaxSub)?.label || routeSelectedTaxSub,
-                  customFieldsLabels: Object.keys(routeFieldValues).reduce((acc, fieldId) => {
-                    const field = customFields.find(f => f.id === fieldId);
-                    const selectedOpt = field?.options?.find((o: any) => o.id === routeFieldValues[fieldId]);
-                    acc[field?.name || fieldId] = selectedOpt?.label || routeFieldValues[fieldId];
-                    return acc;
-                  }, {} as Record<string, string>)
-                };
-
-                 const newTicket = {
+                const newTicket = {
                   id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
                   routeId: route.id,
                   routeName: route.name,
                   routeIcon: route.icon,
                   routeColor: route.color,
-                  title: generatedTitle,
+                  title: route.name,
                   description: routeDescription,
                   status: 'NEW',
                   currentHandler: route.targetDepartmentName,
                   created_at: new Date().toISOString(),
-                  history: [
-                    { id: 'h1', type: 'SUBMITTED', title: 'تم تقديم الطلب بنجاح', status: 'COMPLETED', timestamp: new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }) },
-                    { id: 'h2', type: 'ROUTED', title: `توجيه إلى ${route.targetDepartmentName}`, status: 'ACTIVE', department: route.targetDepartmentName, timestamp: new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }) },
-                    { id: 'h3', type: 'ASSIGNED', title: 'إسناد للمهندس المختص', status: 'PENDING' },
-                    { id: 'h4', type: 'RESOLVED', title: 'إنجاز الطلب وحل المشكلة', status: 'PENDING' }
-                  ]
                 };
 
                 const existing = JSON.parse(localStorage.getItem('litc_user_active_tickets') || '[]');
                 existing.push(newTicket);
                 localStorage.setItem('litc_user_active_tickets', JSON.stringify(existing));
-
                 window.dispatchEvent(new Event('storage'));
                 window.dispatchEvent(new Event('litc_settings_updated'));
-
                 setRouteSubmitSuccess(true);
               }}
-              style={{
-                width: '100%', padding: '14px',
-                background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`,
-                color: '#fff', border: 'none', borderRadius: '14px',
-                fontWeight: 800, cursor: 'pointer',
-                boxShadow: `0 6px 20px ${route.color}30`,
-                fontSize: '14px', marginTop: '4px',
-                transition: 'all 0.3s', letterSpacing: '0.3px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${route.color}40`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 6px 20px ${route.color}30`; }}
+              style={{ width: '100%', padding: '14px', background: `linear-gradient(135deg, ${route.color}, ${route.color}CC)`, color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', marginTop: '4px' }}
             >
-              <span>إرسال الطلب</span> <span>{route.icon}</span>
+              إرسال الطلب {route.icon}
             </button>
           </div>
         );

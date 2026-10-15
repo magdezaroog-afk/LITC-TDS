@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { OperationalDashboard } from '../pages/console/OperationalDashboard';
+import { WorkModeShell } from '../functional_ui/pages/ops/WorkModeShell';
 import { AdminGovernanceConsole } from '../pages/admin/AdminGovernanceConsole';
 import { MobileAnalyticsCube } from './components/MobileAnalyticsCube';
 import { NotificationBell } from '../components/infrastructure/NotificationBell';
@@ -37,7 +37,7 @@ export const MobileShell: React.FC = () => {
         paddingBottom: '80px' // Space for bottom nav
       }}>
         <Routes>
-          <Route path="/" element={<OperationalDashboard />} />
+          <Route path="/" element={<WorkModeShell />} />
           <Route path="/admin" element={<AdminGovernanceConsole />} />
           <Route path="/mobile/analytics" element={<MobileAnalyticsCube />} />
         </Routes>

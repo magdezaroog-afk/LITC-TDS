@@ -1,4 +1,4 @@
-import { useLanguage } from '..\..\engine\ui-loader\LanguageContext';
+import { useLanguage } from '../../engine/ui-loader/LanguageContext';
 import React, { useState } from 'react';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { useThemeEngine } from '../../engine/ui-loader/ThemeProvider';

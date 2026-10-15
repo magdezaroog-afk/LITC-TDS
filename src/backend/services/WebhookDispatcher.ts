@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Logger from '../infrastructure/Logger';
+import { Logger } from '../infrastructure/Logger';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

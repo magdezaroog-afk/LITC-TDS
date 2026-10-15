@@ -1,0 +1,392 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@500;700;800;900&display=swap');
+
+/* ==========================================================================
+   LITC Enterprise Design System — Functional UI (Service Desk)
+   الشركة الليبية للاتصالات وتقنية المعلومات — بوابة الموظف والخدمات
+   Dark Executive Theme (النمط الليلي المؤسسي الفاخر)
+   ========================================================================== */
+
+:root, html.dark, .dark-theme {
+  --litc-navy: #f8fafc;
+  --litc-canvas: #0b0f19;
+  --litc-surface: #111827;
+  --litc-surface-elevated: #1e293b;
+  --litc-surface-hover: #162032;
+  
+  --litc-blue-primary: #2563eb;
+  --litc-blue-hover: #1d4ed8;
+  --litc-blue-light: rgba(37, 99, 235, 0.15);
+  --litc-blue-border: rgba(59, 130, 246, 0.3);
+
+  /* LITC Brand Palette (from official logo) */
+  --litc-logo-gold: #e08a26;
+  --litc-logo-gold-border: rgba(224, 138, 38, 0.4);
+  --litc-logo-gold-glow: rgba(224, 138, 38, 0.25);
+  --litc-logo-navy: #1e3a52;
+  
+  --litc-border: rgba(255, 255, 255, 0.08);
+  --litc-border-subtle: rgba(255, 255, 255, 0.05);
+  --litc-border-hover: rgba(255, 255, 255, 0.16);
+
+  --litc-table-th-bg: #0d1322;
+  --litc-table-th-color: #94a3b8;
+  --litc-table-td-bg: #111827;
+  --litc-table-td-color: #e2e8f0;
+  --litc-table-hover: #162032;
+
+  --litc-text-title: #ffffff;
+  --litc-text-subtitle: #94a3b8;
+  --litc-text-muted: #64748b;
+
+  --litc-input-bg: #0b0f19;
+  --litc-input-border: rgba(255, 255, 255, 0.12);
+  --litc-input-text: #f8fafc;
+
+  --litc-header-bg: rgba(15, 23, 42, 0.85);
+  --litc-header-border: rgba(255, 255, 255, 0.08);
+
+  --litc-radius-sm: 6px;
+  --litc-radius-md: 8px;
+  --litc-radius-lg: 10px;
+  --litc-radius-xl: 12px;
+
+  --litc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --litc-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --litc-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --litc-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --litc-shadow-card: 0 8px 30px rgba(0, 0, 0, 0.35);
+
+  --litc-font: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --litc-font-display: 'Tajawal', 'Cairo', sans-serif;
+}
+
+html.light, .light-theme {
+  --litc-navy: #0f172a;
+  --litc-canvas: #f8fafc;
+  --litc-surface: #ffffff;
+  --litc-surface-elevated: #ffffff;
+  --litc-surface-hover: #f1f5f9;
+  
+  --litc-blue-primary: #1e3a52; /* LITC Deep Corporate Navy */
+  --litc-blue-hover: #14283b;
+  --litc-blue-light: rgba(30, 58, 82, 0.08);
+  --litc-blue-border: rgba(30, 58, 82, 0.2);
+
+  /* LITC Brand Palette in Light Mode */
+  --litc-logo-gold: #d97706; /* LITC Desert Amber-Gold */
+  --litc-logo-gold-border: rgba(217, 119, 6, 0.35);
+  --litc-logo-gold-glow: rgba(217, 119, 6, 0.18);
+  --litc-logo-navy: #1e3a52;
+  
+  --litc-border: #e2e8f0;
+  --litc-border-subtle: #f1f5f9;
+  --litc-border-hover: #cbd5e1;
+
+  --litc-table-th-bg: #f8fafc;
+  --litc-table-th-color: #475569;
+  --litc-table-td-bg: #ffffff;
+  --litc-table-td-color: #1e293b;
+  --litc-table-hover: #f8fafc;
+
+  --litc-text-title: #0f172a;
+  --litc-text-subtitle: #475569;
+  --litc-text-muted: #64748b;
+
+  --litc-input-bg: #ffffff;
+  --litc-input-border: #cbd5e1;
+  --litc-input-text: #0f172a;
+
+  --litc-header-bg: rgba(255, 255, 255, 0.92);
+  --litc-header-border: #e2e8f0;
+
+  --litc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --litc-shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.06);
+  --litc-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --litc-shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12);
+  --litc-shadow-card: 0 4px 24px -2px rgba(30, 58, 82, 0.08), 0 2px 8px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Global Reset for Functional Workspace */
+.functional-ui-root {
+  min-height: 100vh;
+  background-color: var(--litc-canvas);
+  color: var(--litc-navy);
+  font-family: var(--litc-font);
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.functional-ui-root * {
+  box-sizing: border-box;
+}
+
+/* Table Utilities - Executive */
+.litc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: right;
+}
+
+.litc-table th {
+  background-color: var(--litc-table-th-bg);
+  color: var(--litc-table-th-color);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--litc-border);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.litc-table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--litc-border-subtle);
+  font-size: 13.5px;
+  color: var(--litc-table-td-color);
+  background-color: var(--litc-table-td-bg);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.litc-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.litc-table tr:last-child td {
+  border-bottom: none;
+}
+
+.litc-table tr:hover td {
+  background-color: var(--litc-table-hover);
+}
+
+/* Base Card Style */
+.litc-card {
+  background-color: var(--litc-surface);
+  border: 1px solid var(--litc-border);
+  border-radius: var(--litc-radius-md);
+  box-shadow: var(--litc-shadow-xs);
+  transition: all 0.2s ease;
+}
+
+.litc-card-hover:hover {
+  border-color: var(--litc-border-hover);
+  box-shadow: var(--litc-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Base Button Styles */
+.litc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background-color: var(--litc-blue-primary);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: var(--litc-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+  font-family: var(--litc-font);
+}
+
+.litc-btn-primary:hover {
+  background-color: var(--litc-blue-hover);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.45);
+}
+
+.litc-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--litc-radius-md);
+  border: 1px solid var(--litc-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--litc-font);
+}
+
+.litc-btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+  border-color: var(--litc-border-hover);
+  color: #ffffff;
+}
+
+/* Status Badges - Dark Executive Glow */
+.litc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.litc-badge-pending {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.litc-badge-progress {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.litc-badge-completed {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.litc-badge-rejected {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Animations */
+@keyframes litc-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.litc-animate-in {
+  animation: litc-fade-in 0.25s ease-out forwards;
+}
+
+/* Common Layout Utilities */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.justify-start { justify-content: flex-start; }
+.justify-end { justify-content: flex-end; }
+.flex-wrap { flex-wrap: wrap; }
+.shrink-0 { flex-shrink: 0; }
+.grow { flex-grow: 1; }
+
+.grid { display: grid; }
+.gap-1 { gap: 4px; }
+.gap-1\.5 { gap: 6px; }
+.gap-2 { gap: 8px; }
+.gap-2\.5 { gap: 10px; }
+.gap-3 { gap: 12px; }
+.gap-3\.5 { gap: 14px; }
+.gap-4 { gap: 16px; }
+.gap-5 { gap: 20px; }
+.gap-6 { gap: 24px; }
+.gap-8 { gap: 32px; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.max-w-5xl { max-width: 64rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+
+.rounded-md { border-radius: 6px; }
+.rounded-lg { border-radius: 8px; }
+.rounded-xl { border-radius: 12px; }
+.rounded-2xl { border-radius: 16px; }
+.rounded-full { border-radius: 9999px; }
+
+.p-2 { padding: 8px; }
+.p-3 { padding: 12px; }
+.p-4 { padding: 16px; }
+.p-5 { padding: 20px; }
+.p-6 { padding: 24px; }
+.px-3 { padding-left: 12px; padding-right: 12px; }
+.px-4 { padding-left: 16px; padding-right: 16px; }
+.px-5 { padding-left: 20px; padding-right: 20px; }
+.py-1 { padding-top: 4px; padding-bottom: 4px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
+.py-3 { padding-top: 12px; padding-bottom: 12px; }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.inset-0 { inset: 0; }
+.overflow-hidden { overflow: hidden; }
+
+.text-xs { font-size: 12px; }
+.text-sm { font-size: 14px; }
+.text-base { font-size: 16px; }
+.text-lg { font-size: 18px; }
+.text-xl { font-size: 20px; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-black { font-weight: 900; }
+
+.bg-slate-900 { background-color: #0b0f19; }
+.bg-slate-800 { background-color: #111827; }
+.bg-slate-700 { background-color: #1e293b; }
+.text-slate-100 { color: #f1f5f9; }
+.text-slate-200 { color: #e2e8f0; }
+.text-slate-300 { color: #cbd5e1; }
+.text-slate-400 { color: #94a3b8; }
+.text-slate-500 { color: #64748b; }
+
+/* ── Executive 2-Column Workspace (Vertical Rail on Right + Table on Left in RTL) ── */
+.workspace-grid-layout {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .workspace-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell-header-container {
+    padding: 0 10px !important;
+  }
+  .app-shell-main {
+    padding: 12px 10px 80px !important;
+  }
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .show-on-mobile-only {
+    display: flex !important;
+  }
+  .mobile-status-rail {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .mobile-create-ticket {
+    grid-column: 1 / -1 !important;
+  }
+  .mobile-full-width {
+    grid-column: 1 / -1 !important;
+  }
+}

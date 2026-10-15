@@ -7,10 +7,11 @@ import React from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './engine/ui-loader/ThemeProvider';
 import { AuthProvider, useAuth } from './engine/auth/AuthContext';
-import { OperationalDashboard } from './pages/console/OperationalDashboard';
 import { UnifiedSmartAnalytics } from './components/analytics/UnifiedSmartAnalytics';
 import { AdminGovernanceConsole } from './pages/admin/AdminGovernanceConsole';
 import { AdminDashboardShell } from './pages/admin/AdminDashboardShell';
+import FunctionalWorkspace from './functional_ui/App';
+import { WorkModeShell } from './functional_ui/pages/ops/WorkModeShell';
 
 // Dummy t function to prevent crash
 const t = (key: any, fallback?: any) => fallback || key;
@@ -18,22 +19,17 @@ const t = (key: any, fallback?: any) => fallback || key;
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
 import { Login } from './pages/auth/Login';
-import { PersonaSwitcher } from './components/molecules/PersonaSwitcher';
 import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { WindowProvider } from './engine/ui-loader/WindowContext';
-import { WindowManagerRenderer } from './components/runtime/WindowManagerRenderer';
-import { useWindowManager } from './engine/ui-loader/WindowContext';
+import { Sun, Moon } from 'lucide-react';
+import litcLogo from './functional_ui/assets/litc_palm_transparent.png';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
 import { SecurityControlTab } from './pages/admin/tabs/SecurityControlTab';
 
-import { EmployeeWorkspace } from './pages/workspace/EmployeeWorkspace';
-import { DepartmentHeadWorkspace } from './pages/management/DepartmentHeadWorkspace';
 
-import { FloatingTaskbar } from './components/runtime/FloatingTaskbar';
 
 // Route Guard Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({ children, allowedRoles }) => {
@@ -63,27 +59,17 @@ const WorkspaceWrapper: React.FC<{ children: React.ReactNode; allowedRoles: stri
   if (loading) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '50px' }}>جاري التحقق من الهوية...</div>;
   if (!user) return <Navigate to="/login" replace />;
 
-  // 1. If we are in Employee Mode:
   if (systemMode === 'employee') {
-    return <EmployeeWorkspace />;
+    return <FunctionalWorkspace />;
   }
 
-  // 2. If we are in Work Mode and this is the employee route:
   if (isEmployeeRoute) {
-    // Technicians or operational users see their OperationalDashboard in Work Mode
-    if (user.role === 'Technician' || user.role === 'editor') {
-      return <OperationalDashboard />;
-    }
-    // Admin and Department Head see the Employee Workspace when they explicitly visit `/employee` in Work Mode
-    return <>{children}</>;
+    return <WorkModeShell />;
   }
 
-  // 3. Normal Role Guard checks in Work Mode
   if (!allowedRoles.includes(user.role) && !allowedRoles.includes('ANY')) {
     if (['super_admin', 'co_admin'].includes(user.role)) {
       return <Navigate to="/admin" replace />;
-    } else if (['dept_head', 'tech_director', 'team_leader'].includes(user.role) || user.role === 'HEAD_DEPT') {
-      return <Navigate to="/head" replace />;
     } else {
       return <Navigate to="/employee" replace />;
     }
@@ -134,72 +120,308 @@ const Navigation: React.FC = () => {
   const { user } = useAuth();
   const { t, toggleLanguage, language, dir } = useLanguage();
   
-  // Unified Navigation across all workspaces
-  
+  const [branding, setBranding] = React.useState<{ orgName: string; orgLogo: string | null }>({
+    orgName: 'TdS',
+    orgLogo: null
+  });
+  const [hasOpsInterface, setHasOpsInterface] = React.useState<boolean>(false);
+  const [isDark, setIsDark] = React.useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return (
+        document.documentElement.classList.contains('dark') ||
+        localStorage.getItem('litc_theme') === 'dark' ||
+        localStorage.getItem('litc_theme_mode') === 'dark'
+      );
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const checkTheme = () => {
+      const dark =
+        document.documentElement.classList.contains('dark') ||
+        (!document.documentElement.classList.contains('light') && localStorage.getItem('litc_theme') === 'dark');
+      setIsDark(dark);
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (user?.id) {
+      fetch(`/api/v1/org/users/${user.id}/interface`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.interface && res.interface.meta) {
+            const type = res.interface.meta.interfaceType;
+            // Only show Work Mode if they have an OPERATIONAL or LEADERSHIP interface assigned
+            if (type === 'OPERATIONAL' || type === 'LEADERSHIP') {
+              setHasOpsInterface(true);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    fetch('/api/v1/branding', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data) {
+          const payload = data.branding || data.config || data;
+          if (payload.orgName || payload.orgLogo) {
+            setBranding({
+              orgName: payload.orgName || 'TdS',
+              orgLogo: payload.orgLogo || null
+            });
+          }
+        }
+      })
+      .catch(() => {});
+
+    const handleUpdate = (e: any) => {
+      if (e.detail) {
+        setBranding({
+          orgName: e.detail.orgName || 'TdS',
+          orgLogo: e.detail.orgLogo || null
+        });
+      }
+    };
+    window.addEventListener('litc_branding_updated', handleUpdate);
+    return () => window.removeEventListener('litc_branding_updated', handleUpdate);
+  }, []);
+
   const navStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     gap: '24px',
     padding: '14px 32px',
-    background: 'rgba(255, 255, 255, 0.85)',
+    background: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.85)',
     backdropFilter: 'blur(20px)',
-    borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+    WebkitBackdropFilter: 'blur(20px)',
+    borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+    boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.25)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
     direction: dir,
-    
-    
-  
     position: 'fixed',
     top: 0,
     left: 0,
     width: '100%',
     boxSizing: 'border-box',
     height: '64px',
-    zIndex: 95000,};
-
-  const linkStyle = (path: string): React.CSSProperties => {
-    const isActive = (location.pathname.startsWith(path) && path !== '/') || location.pathname === path;
-    return {
-      color: isActive ? '#6366f1' : '#64748b',
-      fontWeight: isActive ? '600' : '500',
-      textDecoration: 'none',
-      fontSize: '14px',
-      padding: '6px 14px',
-      borderRadius: '10px',
-      background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
-      transition: 'all 0.25s ease',
-      letterSpacing: '0.2px'
-    };
+    zIndex: 95000,
+    transition: 'background 0.25s ease, border-color 0.25s ease',
   };
 
   return (
     <nav style={navStyle}>
-      <div style={{ fontWeight: '800', [dir === 'rtl' ? 'marginRight' : 'marginLeft']: 'auto', color: '#0f172a', fontSize: '16px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-        <span style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('footer.brand')}</span>
-        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>v43.5</span>
+      {/* 1. الشعار والهوية (Logo & Brand Title) */}
+      <div style={{ fontWeight: '800', [dir === 'rtl' ? 'marginRight' : 'marginLeft']: 'auto', color: isDark ? '#ffffff' : '#0f172a', fontSize: '16px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+        <div style={{
+          width: '34px',
+          height: '34px',
+          borderRadius: '8px',
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(30, 58, 82, 0.05)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(30, 58, 82, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px',
+          flexShrink: 0
+        }}>
+          <img 
+            src={branding.orgLogo || litcLogo} 
+            alt={branding.orgName} 
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <span style={{ 
+            background: isDark ? 'linear-gradient(135deg, #ffffff, #93c5fd)' : 'linear-gradient(135deg, #0f172a, #1e3a8a)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent', 
+            fontSize: '17px', 
+            fontWeight: '900', 
+            letterSpacing: '-0.02em',
+            fontFamily: "'Tajawal', 'Cairo', sans-serif"
+          }}>
+            TdS
+          </span>
+          <span style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: '600', fontFamily: "'Cairo', sans-serif" }}>شركة الاتصالات الدولية الليبية • LITC</span>
+        </div>
       </div>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* 2. حاوية التبديل السلس بين المودات (Segmented Mode Switcher) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          background: isDark ? 'rgba(30, 41, 59, 0.65)' : 'rgba(15, 23, 42, 0.06)',
+          padding: '4px',
+          borderRadius: '10px',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+        }}>
+          {/* رابط بوابة الموظف */}
+          <Link 
+            to="/hub"
+            style={{
+              background: (location.pathname.startsWith('/hub') || location.pathname === '/' || ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings'].some(p => location.pathname.startsWith(p)))
+                ? (isDark ? 'linear-gradient(135deg, #1e40af, #2563eb)' : '#ffffff') 
+                : 'transparent',
+              color: (location.pathname.startsWith('/hub') || location.pathname === '/' || ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings'].some(p => location.pathname.startsWith(p)))
+                ? (isDark ? '#ffffff' : '#1e40af') 
+                : (isDark ? '#94a3b8' : '#64748b'),
+              textDecoration: 'none',
+              padding: '6px 13px',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              fontWeight: (location.pathname.startsWith('/hub') || location.pathname === '/' || ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings'].some(p => location.pathname.startsWith(p))) ? 800 : 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: (location.pathname.startsWith('/hub') || location.pathname === '/' || ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings'].some(p => location.pathname.startsWith(p)))
+                ? (isDark ? '0 2px 8px rgba(37,99,235,0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
+                : 'none',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontFamily: "'Cairo', sans-serif"
+            }}
+          >
+            <span>🏢 بوابة الموظف</span>
+          </Link>
+
+          {/* رابط مود العمل التشغيلي */}
+          {(['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface) && (
+            <Link 
+              to="/ops"
+              style={{
+                background: location.pathname.startsWith('/ops') 
+                  ? (isDark ? 'linear-gradient(135deg, #2563eb, #4f46e5)' : '#ffffff') 
+                  : 'transparent',
+                color: location.pathname.startsWith('/ops') 
+                  ? (isDark ? '#ffffff' : '#2563eb') 
+                  : (isDark ? '#94a3b8' : '#64748b'),
+                textDecoration: 'none',
+                padding: '6px 13px',
+                borderRadius: '7px',
+                fontSize: '12.5px',
+                fontWeight: location.pathname.startsWith('/ops') ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: location.pathname.startsWith('/ops') 
+                  ? (isDark ? '0 2px 8px rgba(79,70,229,0.4)' : '0 2px 6px rgba(0,0,0,0.06)') 
+                  : 'none',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              <span>🚀 مود العمل (العمليات)</span>
+            </Link>
+          )}
+
+          {/* رابط لوحة تحكم النظام (Admin) */}
+          {(['super_admin', 'system_director', 'co_admin'].includes(user?.role || '') || user?.email === 'admin@litc.ly') && (
+            <Link 
+              to="/admin"
+              style={{
+                background: location.pathname.startsWith('/admin') 
+                  ? (isDark ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : '#ffffff') 
+                  : 'transparent',
+                color: location.pathname.startsWith('/admin') 
+                  ? (isDark ? '#ffffff' : '#4f46e5') 
+                  : (isDark ? '#94a3b8' : '#64748b'),
+                textDecoration: 'none',
+                padding: '6px 13px',
+                borderRadius: '7px',
+                fontSize: '12.5px',
+                fontWeight: location.pathname.startsWith('/admin') ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: location.pathname.startsWith('/admin') 
+                  ? (isDark ? '0 2px 8px rgba(124,58,237,0.4)' : '0 2px 6px rgba(0,0,0,0.06)') 
+                  : 'none',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              <span>🛡️ لوحة تحكم النظام</span>
+            </Link>
+          )}
+        </div>
+
+        {/* زر تبديل اللغة */}
         <button 
           onClick={toggleLanguage}
+          title="تغيير لغة العرض"
           style={{
-            background: 'rgba(99, 102, 241, 0.08)',
-            border: 'none',
-            color: '#6366f1',
+            background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(30, 58, 82, 0.06)',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(30, 58, 82, 0.15)',
+            color: isDark ? '#c7d2fe' : '#1e3a52',
             padding: '6px 12px',
             borderRadius: '8px',
             cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '13px',
+            fontWeight: 700,
+            fontSize: '12px',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.18s ease',
+            fontFamily: "'Cairo', sans-serif"
           }}
         >
-          🌐 {t('nav.language')}
+          🌐 {language === 'ar' ? 'English' : 'عربي'}
         </button>
+
+        {/* زر التبديل بين الوضع الفاتح والداكن (أيقونة فقط موحدة بجانب زر الإشعارات) */}
+        <button 
+          onClick={() => {
+            const next = !isDark;
+            setIsDark(next);
+            localStorage.setItem('litc_theme', next ? 'dark' : 'light');
+            localStorage.setItem('litc_theme_mode', next ? 'dark' : 'light');
+            if (next) {
+              document.documentElement.classList.add('dark');
+              document.documentElement.classList.remove('light');
+            } else {
+              document.documentElement.classList.add('light');
+              document.documentElement.classList.remove('dark');
+            }
+          }}
+          title={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '8px',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(30, 58, 82, 0.06)',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(30, 58, 82, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isDark ? '#e08a26' : '#1e3a52',
+            transition: 'all 0.18s ease',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? 'rgba(224, 138, 38, 0.15)' : 'rgba(30, 58, 82, 0.12)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? '#e08a26' : '#1e3a52';
+            (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(30, 58, 82, 0.06)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(30, 58, 82, 0.15)';
+            (e.currentTarget as HTMLButtonElement).style.transform = 'none';
+          }}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+
+        {/* زر الإشعارات */}
         <NotificationBell />
+
+        {/* القائمة المنسدلة لملف المستخدم */}
         <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
       </div>
     </nav>
@@ -210,6 +432,10 @@ const UniversalWorkspaceRouter: React.FC<{ user: any, systemMode: string }> = ({
   const role = user?.role;
   
   if (!user) return <Navigate to="/login" replace />;
+
+  if (systemMode === 'employee' && !['system_director', 'super_admin', 'co_admin'].includes(role)) {
+    return <Navigate to="/hub" replace />;
+  }
 
   const wrapperStyle = {
     animation: 'fadeIn 0.4s ease-in-out',
@@ -224,44 +450,24 @@ const UniversalWorkspaceRouter: React.FC<{ user: any, systemMode: string }> = ({
     case 'co_admin':
       return <div key={role} style={wrapperStyle}><AdminGovernanceConsole /></div>;
     case 'tech_director':
-      return (
-        <div key={role} style={wrapperStyle}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
-            <UnifiedSmartAnalytics title="نظرة عامة على العمليات التقنية" metrics={[]} layout="GRID" />
-            <OperationalDashboard />
-          </div>
-        </div>
-      );
     case 'dept_head':
-      return <div key={role} style={wrapperStyle}><DepartmentHeadWorkspace /></div>;
     case 'team_leader':
-      return (
-        <div key={role} style={wrapperStyle}>
-          <div style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>
-            <h2>واجهة قيادة الفريق (Team Leader Hub)</h2>
-            <p>توزيع التذاكر ومراقبة أداء الفريق</p>
-            <button style={{ padding: '10px 20px', background: '#0052cc', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', marginTop: '20px' }}>
-              فتح سياسات المشرفين (Supervisor Policy Modal)
-            </button>
-            <div style={{ marginTop: '40px' }}>
-              <EmployeeWorkspace />
-            </div>
-          </div>
-        </div>
-      );
     case 'employee':
     default:
-      return <div key={role} style={wrapperStyle}><EmployeeWorkspace /></div>;
+      // Operational Roles -> Load WorkModeShell!
+      return <div key={role} style={wrapperStyle}><WorkModeShell /></div>;
   }
 };
 
 const AppContent: React.FC = () => {
   const isMobile = useMobileViewport();
   const { user, systemMode } = useAuth();
-  const { activeWindows } = useWindowManager();
   const location = useLocation();
 
-  if (isMobile) {
+  const isFunctionalWorkspaceRoute = location.pathname.startsWith('/hub') || 
+    ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings', '/employee'].some(p => location.pathname.startsWith(p));
+
+  if (isMobile && !isFunctionalWorkspaceRoute && systemMode !== 'employee') {
     return (
       <>
         <MobileShell />
@@ -271,9 +477,8 @@ const AppContent: React.FC = () => {
   }
 
   const isLoginPage = location.pathname === '/login';
-  const isSystemDirector = user?.role === 'system_director';
 
-  // 1. If we are on the login page, render ONLY the login page without the Navigation shell
+  // If we are on the login page or not logged in, render ONLY login page
   if (isLoginPage || !user) {
     return (
       <div style={{ minHeight: '100vh', background: '#0f172a' }}>
@@ -290,20 +495,25 @@ const AppContent: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navigation />
       <NeonSignalToast />
-      <FloatingTaskbar />
-      
-      <WindowManagerRenderer />
-      <PersonaSwitcher />
       
       <div 
-        className={`app-content-layer ${activeWindows.length > 0 ? 'app-content-layer--dimmed' : ''}`}
+        className="app-content-layer"
         style={{ 
           flex: 1, 
-          padding: user && !['super_admin', 'co_admin', 'system_director'].includes(user.role) ? '0' : '0 20px', 
+          padding: 0, 
           minHeight: 'calc(100vh - 64px)', 
           paddingTop: '64px' 
         }}>
         <Routes>
+          <Route path="/hub/*" element={<FunctionalWorkspace />} />
+          <Route path="/requests/*" element={<FunctionalWorkspace />} />
+          <Route path="/challenges/*" element={<FunctionalWorkspace />} />
+          <Route path="/directory/*" element={<FunctionalWorkspace />} />
+          <Route path="/healthcare/*" element={<FunctionalWorkspace />} />
+          <Route path="/profile/*" element={<FunctionalWorkspace />} />
+          <Route path="/settings/*" element={<FunctionalWorkspace />} />
+          <Route path="/admin/*" element={<AdminDashboardShell />} />
+          <Route path="/ops/*" element={<WorkModeShell />} />
           <Route path="/" element={<UniversalWorkspaceRouter user={user} systemMode={systemMode} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -317,10 +527,8 @@ export const App: React.FC = () => {
     <LanguageProvider>
       <ThemeProvider>
         <AuthProvider>
-            <WindowProvider>
           <AppContent />
-        </WindowProvider>
-          </AuthProvider>
+        </AuthProvider>
       </ThemeProvider>
     </LanguageProvider>
   );

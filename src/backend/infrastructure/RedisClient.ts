@@ -17,13 +17,13 @@ class RedisManager {
       const options = {
         host: process.env.REDIS_HOST || '127.0.0.1',
         port: Number(process.env.REDIS_PORT) || 6379,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
         retryStrategy: (times: number) => {
-          // Retry a few times, then fallback to memory
-          if (times > 3) {
-            console.warn('[Redis] Connection failed after 3 attempts. Falling back to Memory Mode.');
-            return null; // Stop retrying
+          if (times > 2) {
+            return null; // Stop retrying and fallback to Memory Mode
           }
-          return Math.min(times * 50, 2000);
+          return 500;
         }
       };
 
@@ -31,15 +31,22 @@ class RedisManager {
       this.pub = new Redis(options);
       this.sub = new Redis(options);
 
+      const handleErr = (_err: any) => {
+        this.isConnected = false;
+      };
+
       this.client.on('ready', () => {
         this.isConnected = true;
         console.log('[Redis] Connected successfully. Distributed caching active.');
       });
 
-      this.client.on('error', (err) => {
-        this.isConnected = false;
-        // Suppress massive error spam in dev mode without Redis
-      });
+      this.client.on('error', handleErr);
+      this.pub.on('error', handleErr);
+      this.sub.on('error', handleErr);
+
+      this.client.on('close', () => { this.isConnected = false; });
+      this.pub.on('close', () => { this.isConnected = false; });
+      this.sub.on('close', () => { this.isConnected = false; });
     } catch (e) {
       this.isConnected = false;
       console.warn('[Redis] Initialization failed. Falling back to Memory Mode.');

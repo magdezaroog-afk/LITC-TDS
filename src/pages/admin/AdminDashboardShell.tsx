@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../engine/auth/AuthContext';
 import { useLanguage } from '../../engine/ui-loader/LanguageContext';
-import { UILayoutEngineTab } from './tabs/UILayoutEngineTab';
+import { UILayoutEngineTab } from './tabs/UILayoutEngine/UILayoutEngineTabCore';
 import { OperationalStructureTab } from './tabs/OperationalStructureTab';
 
 import { SecurityControlTab } from './tabs/SecurityControlTab';
 import { NotificationPolicyConsole } from './NotificationPolicyConsole';
 import { TicketRoutingTab } from './tabs/TicketRoutingTab';
 import { ExternalSystemsTab } from './tabs/ExternalSystemsTab';
-import { IdentityHubTab } from './tabs/IdentityHubTab';
 import { SystemOverviewTab } from './tabs/SystemOverviewTab';
 import { InstitutionalStructureTab } from './tabs/InstitutionalStructureTab';
 import { SystemAdminsTab } from './tabs/SystemAdminsTab';
+import { DynamicFormAwareAnalytics } from '../../components/analytics/DynamicFormAwareAnalytics';
+import { AnalyticsGovernanceSubTab } from './tabs/AnalyticsGovernanceSubTab';
 import { OrgNode, initialOrgTree } from './tabs/orgStructureTypes';
+import { AdminAPI } from '../../services/admin.api';
+import { RoleSimulatorTab } from './tabs/RoleSimulatorTab';
 
 /* ─────────────────────────────────────────────────────────────
    Apple-Inspired Design System Tokens
@@ -36,6 +39,7 @@ const APPLE = {
   spring: 'cubic-bezier(0.28, 0.11, 0.32, 1)',
   tabs: {
     overview: { color: '#3b82f6', bg: '#eff6ff', label: 'اللوحة المركزية', sublabel: 'System Telemetry', icon: '◱' },
+    analytics: { color: '#0284c7', bg: '#e0f2fe', label: 'التحليلات والمقارنة', sublabel: 'Smart Analytics & Governance', icon: '📊' },
     ui: { color: '#5856D6', bg: '#F0F0FF', label: 'هندسة الواجهات', sublabel: 'UI Layout Engine', icon: '✦' },
     operations: { color: '#007AFF', bg: '#EBF5FF', label: 'الهيكل التشغيلي', sublabel: 'Operations & Structure', icon: '⬡' },
     security: { color: '#FF3B30', bg: '#FFF0EF', label: 'الأمان والحوكمة', sublabel: 'Security Control Core', icon: '⬢' },
@@ -44,7 +48,8 @@ const APPLE = {
     uecpHub: { color: '#8B5CF6', bg: '#F3E8FF', label: 'الأنظمة الخارجية', sublabel: 'External Integrations', icon: '🔌' },
     identityHub: { color: '#10B981', bg: '#E6F4EA', label: 'إداراة الهوية والربط', sublabel: 'Identity Federation', icon: '🔑' },
     institutional: { color: '#8B5CF6', bg: '#F3E8FF', label: 'المباني والمواقع', sublabel: 'Buildings & Locations', icon: '🏢' },
-    admins: { color: '#FF3B30', bg: '#FFF0EF', label: 'حوض مدراء النظام', sublabel: 'System Admins', icon: '🛡️' }
+    admins: { color: '#FF3B30', bg: '#FFF0EF', label: 'حوض مدراء النظام', sublabel: 'System Admins', icon: '🛡️' },
+    simulator: { color: '#f59e0b', bg: '#fef3c7', label: 'محاكي بيئة العمل', sublabel: 'Impersonation Testing', icon: '🎭' }
   }
 };
 
@@ -113,8 +118,36 @@ export const AdminDashboardShell: React.FC = () => {
   const [orgTree, setOrgTree] = useState<OrgNode>(() => {
     try { const s = localStorage.getItem('litc_org_tree'); return s ? JSON.parse(s) : initialOrgTree; } catch { return initialOrgTree; }
   });
-  useEffect(() => { localStorage.setItem('litc_org_tree', JSON.stringify(orgTree)); }, [orgTree]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins'>('overview');
+
+  // Track whether the org tree was loaded from the server to avoid re-saving it immediately.
+  // Only save to DB when the user explicitly modifies the tree (not on initial server load).
+  const isServerLoaded = useRef(false);
+
+  useEffect(() => {
+    AdminAPI.getInstitutionalTree()
+      .then(res => {
+        const loadedTree = res?.tree || (res?.id ? res : null);
+        if (loadedTree) {
+          isServerLoaded.current = true;
+          setOrgTree(loadedTree);
+          localStorage.setItem('litc_org_tree', JSON.stringify(loadedTree));
+        }
+      })
+      .catch(err => console.error('Failed to load server institutional tree:', err));
+  }, []);
+
+  // Auto-saving from Shell is removed to prevent React Strict Mode and localStorage from overwriting the DB.
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator'>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const tabParam = p.get('tab') as any;
+      if (tabParam && ['overview', 'analytics', 'ui', 'operations', 'security', 'policies', 'routing', 'uecpHub', 'institutional', 'admins', 'simulator'].includes(tabParam)) {
+        return tabParam;
+      }
+    } catch {}
+    return 'overview';
+  });
+  const [analyticsSubView, setAnalyticsSubView] = useState<'analytics' | 'governance'>('analytics');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const startMenuRef = useRef<HTMLDivElement>(null);
@@ -136,7 +169,7 @@ export const AdminDashboardShell: React.FC = () => {
     };
   }, [isStartMenuOpen]);
 
-  const isAdmin = user && ['system_director', 'super_admin'].includes(user.role);
+  const isAdmin = user && (['system_director', 'super_admin', 'co_admin'].includes(user.role) || user.email === 'admin@litc.ly');
 
   if (!isAdmin) {
     return (
@@ -161,10 +194,10 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'overview' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins'> = [
-    'overview',
+  const TAB_KEYS: Array<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator'> = [
+    'overview', 'analytics',
     'ui', 'operations', 'security', 'policies', 'routing'
-  , 'uecpHub', 'institutional', 'admins'];
+  , 'uecpHub', 'institutional', 'admins', 'simulator'];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
@@ -217,7 +250,7 @@ export const AdminDashboardShell: React.FC = () => {
               padding: '28px',
               overflowY: 'auto',
               opacity: isTransitioning ? 0 : 1,
-              transform: isTransitioning ? 'translateY(6px)' : 'translateY(0)',
+              transform: isTransitioning ? 'translateY(6px)' : undefined,
               transition: 'opacity 0.2s ease, transform 0.2s ease',
               animation: !isTransitioning ? 'appleReveal 0.3s cubic-bezier(0.28, 0.11, 0.32, 1)' : 'none',
               maxWidth: '1440px',
@@ -226,8 +259,56 @@ export const AdminDashboardShell: React.FC = () => {
             }}
           >
             {activeTab === 'overview' && <SystemOverviewTab />}
+            {activeTab === 'analytics' && (
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '20px',
+                  background: '#f1f5f9',
+                  padding: '4px',
+                  borderRadius: '14px',
+                  width: 'fit-content'
+                }}>
+                  <button
+                    onClick={() => setAnalyticsSubView('analytics')}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: analyticsSubView === 'analytics' ? '#fff' : 'transparent',
+                      color: analyticsSubView === 'analytics' ? '#0f172a' : '#64748b',
+                      boxShadow: analyticsSubView === 'analytics' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
+                    }}
+                  >
+                    محرك التحليلات والمقارنة الذكي
+                  </button>
+                  <button
+                    onClick={() => setAnalyticsSubView('governance')}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: analyticsSubView === 'governance' ? '#fff' : 'transparent',
+                      color: analyticsSubView === 'governance' ? '#0f172a' : '#64748b',
+                      boxShadow: analyticsSubView === 'governance' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none'
+                    }}
+                  >
+                    حوكمة الصلاحيات العابرة للإدارات
+                  </button>
+                </div>
+                {analyticsSubView === 'analytics' ? <DynamicFormAwareAnalytics /> : <AnalyticsGovernanceSubTab />}
+              </div>
+            )}
             {activeTab === 'ui' && <UILayoutEngineTab onNavigateToTab={handleTabSwitch} />}
-            {activeTab === 'operations' && <OperationalStructureTab orgTree={orgTree} onNavigateToTab={handleTabSwitch} />}
+            {activeTab === 'operations' && <OperationalStructureTab orgTree={orgTree} />}
             
             {activeTab === 'security' && <SecurityControlTab />}
             {activeTab === 'policies' && <NotificationPolicyConsole />}
@@ -235,6 +316,7 @@ export const AdminDashboardShell: React.FC = () => {
             {activeTab === 'uecpHub' && <ExternalSystemsTab />}
             {activeTab === 'institutional' && <InstitutionalStructureTab orgTree={orgTree} setOrgTree={setOrgTree} />}
             {activeTab === 'admins' && <SystemAdminsTab />}
+            {activeTab === 'simulator' && <RoleSimulatorTab />}
           </div>
         </main>
       </div>
@@ -255,7 +337,7 @@ export const AdminDashboardShell: React.FC = () => {
         borderRadius: '22px',
         border: '1px solid rgba(255, 255, 255, 0.6)',
         boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
-        zIndex: 90000,
+        zIndex: 8000,
         animation: 'appleReveal 0.5s cubic-bezier(0.28, 0.11, 0.32, 1)',
       }}>
         {TAB_KEYS.map((tabId) => {
