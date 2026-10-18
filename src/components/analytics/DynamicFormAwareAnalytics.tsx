@@ -64,19 +64,68 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [customFilters, setCustomFilters] = useState<Record<string, string>>({});
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
-  // المشاكل الرئيسية المتاحة من المخطط الديناميكي
+  // المسار التشغيلي المختار وتعريفاته وأبعاده التلقائية المكتشفة من المسار
+  const selectedRouteDef = useMemo(() => {
+    if (!schemaData?.routeDefinitions || schemaData.routeDefinitions.length === 0) return null;
+    if (selectedFlowId) {
+      return schemaData.routeDefinitions.find((r: any) => r.id === selectedFlowId) || null;
+    }
+    return schemaData.routeDefinitions[0] || null;
+  }, [selectedFlowId, schemaData]);
+
+  // البعد الأساسي للمسار (مثال: المشاكل الرئيسية، نوع الإجازة، طبيعة العطل)
+  const primaryRouteDimension = useMemo(() => {
+    if (selectedRouteDef?.dimensions && selectedRouteDef.dimensions.length > 0) {
+      return selectedRouteDef.dimensions[0];
+    }
+    return schemaData?.dynamicFilterDimensions?.find((d: any) => d.key === 'main_issue') || null;
+  }, [selectedRouteDef, schemaData]);
+
+  // الخيارات المتاحة للمستدلة الأساسية
   const availableMainIssues = useMemo(() => {
+    if (primaryRouteDimension?.options && primaryRouteDimension.options.length > 0) {
+      return primaryRouteDimension.options.map((o: any) => typeof o === 'string' ? o : (o.label || o.name || o.id));
+    }
     return schemaData?.dynamicFilterDimensions?.find((d: any) => d.key === 'main_issue')?.options || [];
-  }, [schemaData]);
+  }, [primaryRouteDimension, schemaData]);
 
-  // المشاكل الفرعية المتاحة (تتكيف ديناميكياً مع المشكلة الرئيسية المختارة)
+  // البعد الفرعي المرتبط بالخيار المختار (Child Binding Dimension)
+  const activeChildDimension = useMemo(() => {
+    if (!primaryRouteDimension || !selectedMainIssue) return null;
+    if (primaryRouteDimension.childBindingsMap) {
+      const matchedOpt = primaryRouteDimension.options?.find((o: any) => 
+        (typeof o === 'string' ? o : (o.label || o.name || o.id)) === selectedMainIssue
+      );
+      const bindingKey = matchedOpt ? (matchedOpt.id || matchedOpt.label) : selectedMainIssue;
+      if (primaryRouteDimension.childBindingsMap[bindingKey]) {
+        return primaryRouteDimension.childBindingsMap[bindingKey];
+      }
+      for (const [k, v] of Object.entries(primaryRouteDimension.childBindingsMap)) {
+        if (k === selectedMainIssue || (matchedOpt && k === matchedOpt.id)) return v;
+      }
+    }
+    if (schemaData?.issueHierarchy?.[selectedMainIssue]?.length > 0) {
+      return {
+        childKey: 'sub_issue',
+        childLabel: 'المشكلة الفرعية',
+        options: schemaData.issueHierarchy[selectedMainIssue].map((lbl: string) => ({ id: lbl, label: lbl }))
+      };
+    }
+    return null;
+  }, [primaryRouteDimension, selectedMainIssue, schemaData]);
+
+  // الخيارات الفرعية المتاحة المتكيفة تلقائياً
   const availableSubIssues = useMemo(() => {
+    if (activeChildDimension?.options && activeChildDimension.options.length > 0) {
+      return activeChildDimension.options.map((o: any) => typeof o === 'string' ? o : (o.label || o.name || o.id));
+    }
     if (selectedMainIssue && schemaData?.issueHierarchy?.[selectedMainIssue]?.length > 0) {
       return schemaData.issueHierarchy[selectedMainIssue];
     }
     return schemaData?.dynamicFilterDimensions?.find((d: any) => d.key === 'sub_issue')?.options || [];
-  }, [selectedMainIssue, schemaData]);
+  }, [activeChildDimension, selectedMainIssue, schemaData]);
 
   // الأقسام الطالبة المتاحة من الهيكل المؤسسي
   const availableRequesterDivisions = useMemo(() => {
@@ -516,6 +565,8 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
           buildings={schemaData?.buildings || []}
           flows={schemaData?.flows || []}
           institutionalDepartments={schemaData?.institutionalDepartments || []}
+          routeDefinitions={schemaData?.routeDefinitions || []}
+          dynamicTaxonomy={schemaData?.dynamicTaxonomy || null}
           canExport={currentDeptObj?.canExport ?? true}
           isDark={isDark}
         />
@@ -578,38 +629,69 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
               )}
             </div>
 
-            {/* شبكة حقول الفلترة */}
+            {/* ─── 1. الركائز الأربع الأساسية (Primary Fixed Anchors) ─── */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '12px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: '12px',
+              marginBottom: '14px'
             }}>
-              {/* 1. مسار الاستقبال المحدد (Flow Isolation) */}
-              {schemaData?.flows?.length > 0 && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                    مسار العمل المحدد:
+              {/* أ) مسار العمل المحدد */}
+              <div style={{
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${cardBorder}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 800, color: '#135d79', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Layers size={13} color="#135d79" />
+                    مسار العمل المعتمد:
                   </label>
-                  <select
-                    value={selectedFlowId}
-                    onChange={e => setSelectedFlowId(e.target.value)}
-                    style={{
-                      width: '100%', padding: '7px 10px', borderRadius: '8px',
-                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                      color: textColor, fontSize: '12.5px', outline: 'none'
-                    }}
-                  >
-                    <option value="">-- كافة مسارات الإدارة --</option>
-                    {schemaData.flows.map((f: any) => (
-                      <option key={f.id} value={f.id}>{f.name}</option>
-                    ))}
-                  </select>
+                  {selectedRouteDef?.teamName && (
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      background: isDark ? 'rgba(243, 108, 33, 0.15)' : '#fff7ed',
+                      color: '#ea580c',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(243, 108, 33, 0.25)'
+                    }}>
+                      فريق: {selectedRouteDef.teamName}
+                    </span>
+                  )}
                 </div>
-              )}
+                <select
+                  value={selectedFlowId}
+                  onChange={e => {
+                    setSelectedFlowId(e.target.value);
+                    setSelectedMainIssue('');
+                    setSelectedSubIssue('');
+                  }}
+                  style={{
+                    width: '100%', padding: '7px 10px', borderRadius: '8px',
+                    border: `1px solid ${selectedFlowId ? '#135d79' : cardBorder}`,
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: textColor, fontSize: '12.5px', fontWeight: 700, outline: 'none'
+                  }}
+                >
+                  <option value="">-- كافة مسارات الإدارة --</option>
+                  {schemaData?.flows?.map((f: any) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
 
-              {/* 2. المبنى / الموقع المعتمد */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+              {/* ب) المبنى / الموقع المعتمد */}
+              <div style={{
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${cardBorder}`
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 800, color: subtextColor, marginBottom: '6px' }}>
+                  <Building2 size={13} color="#135d79" />
                   المبنى / الموقع:
                 </label>
                 <select
@@ -617,8 +699,9 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
                   onChange={e => setSelectedBuilding(e.target.value)}
                   style={{
                     width: '100%', padding: '7px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12.5px', outline: 'none'
+                    border: `1px solid ${selectedBuilding ? '#135d79' : cardBorder}`,
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: textColor, fontSize: '12.5px', fontWeight: 600, outline: 'none'
                   }}
                 >
                   <option value="">جميع المباني المعتمدة</option>
@@ -628,58 +711,46 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
                 </select>
               </div>
 
-              {/* 2. ب) الإدارة الطالبة من الهيكل المؤسسي */}
-              {schemaData?.institutionalDepartments?.length > 0 && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                    الإدارة الطالبة (الهيكل المؤسسي):
-                  </label>
-                  <select
-                    value={selectedRequesterDept}
-                    onChange={e => {
-                      setSelectedRequesterDept(e.target.value);
-                      setSelectedRequesterDiv('');
-                    }}
-                    style={{
-                      width: '100%', padding: '7px 10px', borderRadius: '8px',
-                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                      color: textColor, fontSize: '12.5px', outline: 'none'
-                    }}
-                  >
-                    <option value="">كافة الإدارات الطالبة</option>
-                    {schemaData.institutionalDepartments.map((d: any) => (
-                      <option key={d.id || d.name} value={d.name}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* ج) الإدارة الطالبة من الهيكل المؤسسي */}
+              <div style={{
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${cardBorder}`
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 800, color: subtextColor, marginBottom: '6px' }}>
+                  <Sparkles size={13} color="#135d79" />
+                  الإدارة الطالبة (الهيكل المؤسسي):
+                </label>
+                <select
+                  value={selectedRequesterDept}
+                  onChange={e => {
+                    setSelectedRequesterDept(e.target.value);
+                    setSelectedRequesterDiv('');
+                  }}
+                  style={{
+                    width: '100%', padding: '7px 10px', borderRadius: '8px',
+                    border: `1px solid ${selectedRequesterDept ? '#135d79' : cardBorder}`,
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: textColor, fontSize: '12.5px', fontWeight: 600, outline: 'none'
+                  }}
+                >
+                  <option value="">كافة الإدارات الطالبة</option>
+                  {schemaData?.institutionalDepartments?.map((d: any) => (
+                    <option key={d.id || d.name} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
 
-              {/* 2. ج) القسم الطالب من الهيكل المؤسسي */}
-              {availableRequesterDivisions.length > 0 && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                    القسم الطالب (الهيكل المؤسسي):
-                  </label>
-                  <select
-                    value={selectedRequesterDiv}
-                    onChange={e => setSelectedRequesterDiv(e.target.value)}
-                    style={{
-                      width: '100%', padding: '7px 10px', borderRadius: '8px',
-                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                      color: textColor, fontSize: '12.5px', outline: 'none'
-                    }}
-                  >
-                    <option value="">كافة الأقسام</option>
-                    {availableRequesterDivisions.map((divName: string) => (
-                      <option key={divName} value={divName}>{divName}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* 3. الفني المكلف */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+              {/* د) المهندس المكلف */}
+              <div style={{
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: '12px',
+                border: `1px solid ${cardBorder}`
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 800, color: subtextColor, marginBottom: '6px' }}>
+                  <Users size={13} color="#135d79" />
                   المهندس المكلف:
                 </label>
                 <select
@@ -687,8 +758,9 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
                   onChange={e => setSelectedTech(e.target.value)}
                   style={{
                     width: '100%', padding: '7px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12.5px', outline: 'none'
+                    border: `1px solid ${selectedTech ? '#135d79' : cardBorder}`,
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: textColor, fontSize: '12.5px', fontWeight: 600, outline: 'none'
                   }}
                 >
                   <option value="">جميع الكوادر</option>
@@ -697,132 +769,259 @@ export const DynamicFormAwareAnalytics: React.FC<DynamicFormAwareAnalyticsProps>
                   ))}
                 </select>
               </div>
+            </div>
 
-              {/* 4. المشكلة الرئيسية (مشتقة ديناميكياً من المسار والنماذج) */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                  المشكلة الرئيسية:
-                </label>
-                <select
-                  value={selectedMainIssue}
-                  onChange={e => {
-                    setSelectedMainIssue(e.target.value);
-                    setSelectedSubIssue('');
-                  }}
-                  style={{
-                    width: '100%', padding: '7px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12.5px', outline: 'none'
-                  }}
-                >
-                  <option value="">جميع المشاكل الرئيسية</option>
-                  {availableMainIssues.map((opt: string) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
+            {/* ─── 2. كبسولات المستدلات والأبعاد الذكية التكيفية للمسار ─── */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexWrap: 'wrap',
+              paddingTop: '12px',
+              borderTop: `1px dashed ${cardBorder}`
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#135d79', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <SlidersHorizontal size={14} color="#f36c21" />
+                مستدلات وتصنيفات المسار:
+              </span>
 
-              {/* 4.1 المشكلة الفرعية (تتكيف تلقائياً مع المشكلة الرئيسية) */}
-              {availableSubIssues.length > 0 && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                    المشكلة الفرعية:
-                  </label>
+              {/* كبسولة المستدلة الرئيسية (مشتقة تلقائياً من المسار) */}
+              {availableMainIssues.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: selectedMainIssue ? (isDark ? 'rgba(19, 93, 121, 0.25)' : '#e0f2fe') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9'),
+                  borderRadius: '24px',
+                  padding: '4px 12px',
+                  border: `1px solid ${selectedMainIssue ? '#135d79' : cardBorder}`,
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: selectedMainIssue ? '#135d79' : subtextColor }}>
+                    {primaryRouteDimension?.label || 'المشاكل الرئيسية'}:
+                  </span>
+                  <select
+                    value={selectedMainIssue}
+                    onChange={e => {
+                      setSelectedMainIssue(e.target.value);
+                      setSelectedSubIssue('');
+                    }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: textColor,
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">كافة الخيارات</option>
+                    {availableMainIssues.map((opt: string) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  {selectedMainIssue && (
+                    <button
+                      onClick={() => {
+                        setSelectedMainIssue('');
+                        setSelectedSubIssue('');
+                      }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '0 2px' }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* كبسولة المستدلة الفرعية (تنبثق تلقائياً فقط إذا كان للخيار المختار تفريع) */}
+              {activeChildDimension && availableSubIssues.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: selectedSubIssue ? (isDark ? 'rgba(243, 108, 33, 0.2)' : '#fff7ed') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
+                  borderRadius: '24px',
+                  padding: '4px 12px',
+                  border: `1px solid ${selectedSubIssue ? '#f36c21' : cardBorder}`,
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: selectedSubIssue ? '#ea580c' : subtextColor }}>
+                    ↳ {activeChildDimension.childLabel}:
+                  </span>
                   <select
                     value={selectedSubIssue}
                     onChange={e => setSelectedSubIssue(e.target.value)}
                     style={{
-                      width: '100%', padding: '7px 10px', borderRadius: '8px',
-                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                      color: textColor, fontSize: '12.5px', outline: 'none'
+                      border: 'none',
+                      background: 'transparent',
+                      color: textColor,
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      outline: 'none',
+                      cursor: 'pointer'
                     }}
                   >
-                    <option value="">جميع المشاكل الفرعية</option>
+                    <option value="">كافة الفروع</option>
                     {availableSubIssues.map((opt: string) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
+                  {selectedSubIssue && (
+                    <button
+                      onClick={() => setSelectedSubIssue('')}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '0 2px' }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* 4.2 أي حقول ونماذج ديناميكية إضافية خاصة بالمسار والإدارة */}
-              {schemaData?.dynamicFilterDimensions?.filter((d: any) => d.key !== 'main_issue' && d.key !== 'sub_issue').map((dim: any) => (
-                <div key={dim.key}>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+              {/* أي حقول ديناميكية مخصصة للمسار المختار */}
+              {selectedRouteDef?.dimensions?.filter((d: any) => d.id !== 'taxonomy' && d.key !== 'main_issue' && d.id !== primaryRouteDimension?.id).map((dim: any) => (
+                <div key={dim.id || dim.key} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: customFilters[dim.key] ? (isDark ? 'rgba(19, 93, 121, 0.25)' : '#e0f2fe') : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9'),
+                  borderRadius: '24px',
+                  padding: '4px 12px',
+                  border: `1px solid ${customFilters[dim.key] ? '#135d79' : cardBorder}`,
+                  gap: '6px'
+                }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: subtextColor }}>
                     {dim.label}:
-                  </label>
+                  </span>
                   <select
                     value={customFilters[dim.key] || ''}
                     onChange={e => setCustomFilters({ ...customFilters, [dim.key]: e.target.value })}
                     style={{
-                      width: '100%', padding: '7px 10px', borderRadius: '8px',
-                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                      color: textColor, fontSize: '12.5px', outline: 'none'
+                      border: 'none', background: 'transparent',
+                      color: textColor, fontSize: '12px', fontWeight: 600, outline: 'none', cursor: 'pointer'
                     }}
                   >
-                    <option value="">كافة خيارات ({dim.label})</option>
-                    {dim.options?.map((opt: string) => (
-                      <option key={opt} value={opt}>{opt}</option>
+                    <option value="">الكل</option>
+                    {dim.options?.map((opt: any) => (
+                      <option key={opt.id || opt.label} value={opt.label || opt.id}>{opt.label || opt.name || opt}</option>
                     ))}
                   </select>
                 </div>
               ))}
 
-              {/* 5. الأولوية */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                  الأولوية:
-                </label>
-                <select
-                  value={selectedPriority}
-                  onChange={e => setSelectedPriority(e.target.value)}
-                  style={{
-                    width: '100%', padding: '7px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12.5px', outline: 'none'
-                  }}
-                >
-                  <option value="">كافة الأولويات</option>
-                  {schemaData?.priorities?.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 6. من تاريخ */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                  من تاريخ:
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  style={{
-                    width: '100%', padding: '6px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12px', outline: 'none'
-                  }}
-                />
-              </div>
-
-              {/* 7. إلى تاريخ */}
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
-                  إلى تاريخ:
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  style={{
-                    width: '100%', padding: '6px 10px', borderRadius: '8px',
-                    border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
-                    color: textColor, fontSize: '12px', outline: 'none'
-                  }}
-                />
-              </div>
+              {/* زر إظهار/إخفاء الفلاتر الإضافية التكميلية */}
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                style={{
+                  marginInlineStart: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '10px',
+                  border: `1px solid ${showAdvancedFilters ? '#135d79' : cardBorder}`,
+                  background: showAdvancedFilters ? (isDark ? 'rgba(19, 93, 121, 0.15)' : '#f0f9ff') : 'transparent',
+                  color: showAdvancedFilters ? '#135d79' : subtextColor,
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Filter size={12} />
+                <span>{showAdvancedFilters ? 'إخفاء الفلاتر الإضافية' : '⚙️ فلاتر المعالجة والجدولة'}</span>
+              </button>
             </div>
+
+            {/* ─── 3. الدرج القابل للطي للفلاتر الإضافية (Collapsible Secondary Filters) ─── */}
+            {showAdvancedFilters && (
+              <div style={{
+                marginTop: '14px',
+                paddingTop: '14px',
+                borderTop: `1px solid ${cardBorder}`,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: '12px'
+              }}>
+                {/* الأولوية */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+                    الأولوية:
+                  </label>
+                  <select
+                    value={selectedPriority}
+                    onChange={e => setSelectedPriority(e.target.value)}
+                    style={{
+                      width: '100%', padding: '6px 10px', borderRadius: '8px',
+                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
+                      color: textColor, fontSize: '12px', outline: 'none'
+                    }}
+                  >
+                    <option value="">كافة الأولويات</option>
+                    {schemaData?.priorities?.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* القسم الطالب */}
+                {availableRequesterDivisions.length > 0 && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+                      القسم الطالب (الهيكل المؤسسي):
+                    </label>
+                    <select
+                      value={selectedRequesterDiv}
+                      onChange={e => setSelectedRequesterDiv(e.target.value)}
+                      style={{
+                        width: '100%', padding: '6px 10px', borderRadius: '8px',
+                        border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
+                        color: textColor, fontSize: '12px', outline: 'none'
+                      }}
+                    >
+                      <option value="">كافة الأقسام</option>
+                      {availableRequesterDivisions.map((divName: string) => (
+                        <option key={divName} value={divName}>{divName}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* من تاريخ */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+                    من تاريخ:
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    style={{
+                      width: '100%', padding: '5px 8px', borderRadius: '8px',
+                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
+                      color: textColor, fontSize: '11.5px', outline: 'none'
+                    }}
+                  />
+                </div>
+
+                {/* إلى تاريخ */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: subtextColor, marginBottom: '5px' }}>
+                    إلى تاريخ:
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    style={{
+                      width: '100%', padding: '5px 8px', borderRadius: '8px',
+                      border: `1px solid ${cardBorder}`, background: isDark ? '#1e293b' : '#ffffff',
+                      color: textColor, fontSize: '11.5px', outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ─── الركائز التشغيلية الـ 5 الموحدة (Universal Operational Pillars) ─── */}

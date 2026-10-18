@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Users, Building2, Calendar, TrendingUp, TrendingDown, 
   ArrowRightLeft, Award, CheckCircle2, Clock, AlertTriangle, 
-  Download, RefreshCw, BarChart2, ShieldCheck, Filter, Plus, X, Layers, Sparkles
+  Download, RefreshCw, BarChart2, ShieldCheck, Filter, Plus, X, Layers, Sparkles, SlidersHorizontal
 } from 'lucide-react';
 
 export interface MultiDimensionalComparatorProps {
@@ -21,6 +21,8 @@ export interface MultiDimensionalComparatorProps {
   buildings?: Array<{ id: number; name: string }>;
   flows?: Array<{ id: string; name: string; routeId?: string }>;
   institutionalDepartments?: Array<{ id: string; name: string; type?: string; divisions?: any[] }>;
+  routeDefinitions?: any[];
+  dynamicTaxonomy?: any;
   canExport?: boolean;
   isDark?: boolean;
 }
@@ -32,11 +34,13 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
   buildings = [],
   flows = [],
   institutionalDepartments = [],
+  routeDefinitions = [],
+  dynamicTaxonomy = null,
   canExport = true,
   isDark = false
 }) => {
-  // أنماط المقارنة: كوادر / مباني / إدارات طالبة مؤسسية / مسارات / مشكلة متقاطعة زمنياً
-  const [activeMode, setActiveMode] = useState<'PEER_VS_PEER' | 'BUILDING_VS_BUILDING' | 'INSTITUTIONAL_DEPT_VS_DEPT' | 'TRACK_VS_TRACK' | 'CROSS_TEMPORAL_ISSUE'>('PEER_VS_PEER');
+  // أنماط المقارنة: كوادر / مباني / إدارات طالبة مؤسسية / مسارات / تصنيفات ومستدلات المسار / مشكلة متقاطعة زمنياً
+  const [activeMode, setActiveMode] = useState<'PEER_VS_PEER' | 'BUILDING_VS_BUILDING' | 'INSTITUTIONAL_DEPT_VS_DEPT' | 'TRACK_VS_TRACK' | 'DYNAMIC_DIMENSION_VS_DIMENSION' | 'CROSS_TEMPORAL_ISSUE'>('PEER_VS_PEER');
 
   // قائمة الفنيين المحددين للمقارنة (يدعم N مهندس)
   const [selectedTechIds, setSelectedTechIds] = useState<number[]>([]);
@@ -50,6 +54,10 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
   // قائمة المسارات المحددة للمقارنة (يدعم N مسار)
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
 
+  // حالة مقارنة خيارات المستدلات والأبعاد المشتقة للمسار (DYNAMIC_DIMENSION_VS_DIMENSION)
+  const [selectedDimensionKey, setSelectedDimensionKey] = useState<string>('taxonomy');
+  const [selectedDimensionOptions, setSelectedDimensionOptions] = useState<string[]>([]);
+
   // حالة مقارنة المشكلة المتقاطعة زمنياً
   const [selectedIssue, setSelectedIssue] = useState<string>('انقطاع كامل للشبكة');
   const [periodALabel, setPeriodALabel] = useState<string>('الشهر الحالي');
@@ -60,6 +68,48 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
   const [benchmark, setBenchmark] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // استخراج الأبعاد والتصنيفات المستمدة ديناميكياً من المسارات ونماذجها
+  const availableDimensions = useMemo(() => {
+    const list: Array<{ key: string; label: string; options: string[] }> = [];
+    if (dynamicTaxonomy?.mainIssues && dynamicTaxonomy.mainIssues.length > 0) {
+      list.push({
+        key: 'taxonomy',
+        label: dynamicTaxonomy.label || 'المشاكل الرئيسية',
+        options: dynamicTaxonomy.mainIssues
+      });
+    }
+    if (routeDefinitions && Array.isArray(routeDefinitions)) {
+      routeDefinitions.forEach((r: any) => {
+        if (r.dimensions && Array.isArray(r.dimensions)) {
+          r.dimensions.forEach((d: any) => {
+            if (!list.some(existing => existing.key === d.key)) {
+              const opts = d.options?.map((o: any) => typeof o === 'string' ? o : (o.label || o.name || o.id)) || [];
+              if (opts.length > 0) {
+                list.push({
+                  key: d.key,
+                  label: `${d.label} (${r.name})`,
+                  options: opts
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+    return list;
+  }, [routeDefinitions, dynamicTaxonomy]);
+
+  // تهيئة خيارات البعد المختار تلقائياً
+  useEffect(() => {
+    if (availableDimensions.length > 0) {
+      const currentDim = availableDimensions.find(d => d.key === selectedDimensionKey) || availableDimensions[0];
+      if (currentDim && selectedDimensionOptions.length === 0) {
+        setSelectedDimensionKey(currentDim.key);
+        setSelectedDimensionOptions(currentDim.options.slice(0, 4));
+      }
+    }
+  }, [availableDimensions, selectedDimensionKey, selectedDimensionOptions.length]);
 
   // تهيئة الكوادر الافتراضية عند التحميل (اختيار أول فنيين كبداية)
   useEffect(() => {
@@ -121,6 +171,14 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
         payload.targetIds = selectedDeptNames;
       } else if (activeMode === 'TRACK_VS_TRACK') {
         payload.targetIds = selectedTrackIds;
+      } else if (activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION') {
+        if (selectedDimensionOptions.length < 2) {
+          setError('يلزم تحديد خيارين اثنين على الأقل للمقارنة.');
+          setLoading(false);
+          return;
+        }
+        payload.dimensionKey = selectedDimensionKey;
+        payload.targetOptions = selectedDimensionOptions;
       } else if (activeMode === 'CROSS_TEMPORAL_ISSUE') {
         payload.issueKey = 'sub_issue';
         payload.issueValue = selectedIssue;
@@ -156,7 +214,7 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
     } finally {
       setLoading(false);
     }
-  }, [departmentId, activeMode, selectedTechIds, selectedBuildingIds, selectedDeptNames, selectedTrackIds, selectedIssue, periodALabel, periodBLabel, buildings]);
+  }, [departmentId, activeMode, selectedTechIds, selectedBuildingIds, selectedDeptNames, selectedTrackIds, selectedDimensionKey, selectedDimensionOptions, selectedIssue, periodALabel, periodBLabel, buildings]);
 
   useEffect(() => {
     fetchComparison();
@@ -188,6 +246,19 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
     }
   };
 
+  // إدارة إضافة وإزالة خيار من المقارنة (تصنيفات ومستدلات المسار)
+  const addOptionToCompare = (opt: string) => {
+    if (!selectedDimensionOptions.includes(opt) && selectedDimensionOptions.length < 10) {
+      setSelectedDimensionOptions([...selectedDimensionOptions, opt]);
+    }
+  };
+
+  const removeOptionFromCompare = (opt: string) => {
+    if (selectedDimensionOptions.length > 2) {
+      setSelectedDimensionOptions(selectedDimensionOptions.filter(o => o !== opt));
+    }
+  };
+
   // تصدير النتائج لملف CSV
   const handleExportCSV = () => {
     if (!comparisonData) return;
@@ -212,6 +283,11 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
       csvContent += 'المسار,إجمالي التذاكر,المغلقة,المتأخرة,نسبة الإنجاز,الالتزام بـ SLA\n';
       comparisonData.forEach((item: any) => {
         csvContent += `"${item.trackName}",${item.totalTickets},${item.closedTickets},${item.overdueTickets || 0},${item.completionRate}%,${item.slaCompliance}%\n`;
+      });
+    } else if (activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' && Array.isArray(comparisonData)) {
+      csvContent += 'خيار التصنيف / المستدلة,إجمالي التذاكر,المغلقة,المفتوحة,المتأخرة عن SLA,نسبة الإغلاق,الالتزام بـ SLA,متوسط التقييم\n';
+      comparisonData.forEach((item: any) => {
+        csvContent += `"${item.optionLabel}",${item.totalTickets},${item.closedTickets},${item.openTickets},${item.overdueTickets || 0},${item.completionRate}%,${item.slaCompliance}%,${item.avgRating}\n`;
       });
     } else if (activeMode === 'CROSS_TEMPORAL_ISSUE') {
       csvContent += `العطل المستهدف,${comparisonData.targetIssue}\n`;
@@ -357,7 +433,30 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
             مقارنة المسارات والتدفقات
           </button>
 
-          {/* 4. المقارنة الزمنية والموضوعية */}
+          {/* 5. مقارنة تصنيفات وأبعاد المسار */}
+          <button
+            onClick={() => setActiveMode('DYNAMIC_DIMENSION_VS_DIMENSION')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '9px',
+              border: 'none',
+              fontSize: '13px',
+              fontWeight: activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' ? 800 : 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              background: activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' ? (isDark ? '#1e293b' : '#ffffff') : 'transparent',
+              color: activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' ? '#135d79' : subtextColor,
+              boxShadow: activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
+            }}
+          >
+            <SlidersHorizontal size={15} color={activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' ? '#135d79' : 'currentColor'} />
+            مقارنة تصنيفات وأبعاد المسار
+          </button>
+
+          {/* 6. المقارنة الزمنية والموضوعية */}
           <button
             onClick={() => setActiveMode('CROSS_TEMPORAL_ISSUE')}
             style={{
@@ -611,6 +710,128 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
                   .map(d => (
                     <option key={d.id || d.name} value={d.name}>
                       {d.name}
+                    </option>
+                  ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* شريط ضبط مقارنة تصنيفات ومستدلات المسار المشتقة ديناميكياً */}
+      {activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' && (
+        <div style={{
+          background: cardBg,
+          border: `1px solid ${cardBorder}`,
+          borderRadius: '14px',
+          padding: '16px 20px',
+          marginBottom: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: textColor, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <SlidersHorizontal size={16} color="#f36c21" />
+                <span>المستدلة / البعد المستهدف للمقارنة:</span>
+              </div>
+              <select
+                value={selectedDimensionKey}
+                onChange={e => {
+                  const newKey = e.target.value;
+                  setSelectedDimensionKey(newKey);
+                  const dim = availableDimensions.find(d => d.key === newKey);
+                  if (dim && dim.options) {
+                    setSelectedDimensionOptions(dim.options.slice(0, 4));
+                  }
+                }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  border: `1px solid ${cardBorder}`,
+                  background: isDark ? '#1e293b' : '#ffffff',
+                  color: textColor,
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {availableDimensions.map(d => (
+                  <option key={d.key} value={d.key}>{d.label}</option>
+                ))}
+              </select>
+            </div>
+            <span style={{ fontSize: '11px', color: subtextColor }}>
+              المقارنة تستمد خياراتها مباشرة من نماذج المسار وقواعد البيانات الحقيقية
+            </span>
+          </div>
+
+          {/* الكبسولات المحددة للمقارنة من خيارات هذا البعد */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            {selectedDimensionOptions.map(opt => (
+              <div
+                key={opt}
+                style={{
+                  background: isDark ? 'rgba(243, 108, 33, 0.15)' : '#fff7ed',
+                  border: '1px solid rgba(243, 108, 33, 0.35)',
+                  borderRadius: '20px',
+                  padding: '4px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  color: '#ea580c'
+                }}
+              >
+                <span>{opt}</span>
+                {selectedDimensionOptions.length > 2 && (
+                  <button
+                    onClick={() => removeOptionFromCompare(opt)}
+                    title="إزالة من المقارنة"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* إضافة خيار آخر من هذا البعد */}
+            {selectedDimensionOptions.length < 10 && (
+              <select
+                onChange={e => {
+                  if (e.target.value) {
+                    addOptionToCompare(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                defaultValue=""
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  border: `1.5px dashed ${isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1'}`,
+                  background: 'transparent',
+                  color: isDark ? '#94a3b8' : '#64748b',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="" disabled>+ إضافة خيار للمقارنة...</option>
+                {(availableDimensions.find(d => d.key === selectedDimensionKey)?.options || [])
+                  .filter(opt => !selectedDimensionOptions.includes(opt))
+                  .map(opt => (
+                    <option key={opt} value={opt}>
+                      {opt}
                     </option>
                   ))}
               </select>
@@ -1085,7 +1306,78 @@ export const MultiDimensionalComparator: React.FC<MultiDimensionalComparatorProp
             </div>
           )}
 
-          {/* ─── النمط 4: المقارنة الزمنية والموضوعية المتقاطعة (Cross-Temporal) ─── */}
+          {/* ─── النمط 5: مقارنة تصنيفات وأبعاد المسار المشتقة (Dynamic Dimension Matrix) ─── */}
+          {activeMode === 'DYNAMIC_DIMENSION_VS_DIMENSION' && Array.isArray(comparisonData) && (
+            <div style={{
+              background: cardBg,
+              border: `1px solid ${cardBorder}`,
+              borderRadius: '16px',
+              overflow: 'hidden'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                  <thead>
+                    <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${cardBorder}` }}>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>خيار التصنيف / المستدلة</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>إجمالي التذاكر</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>الطلبات المنجزة</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>قيد المعالجة</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>المتأخرة عن SLA</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>نسبة الإغلاق</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>الالتزام بـ SLA</th>
+                      <th style={{ padding: '12px 18px', fontSize: '12px', fontWeight: 700, color: subtextColor }}>متوسط التقييم</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonData.map((item: any) => (
+                      <tr
+                        key={item.optionLabel}
+                        style={{ borderBottom: `1px solid ${cardBorder}`, transition: 'background-color 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = rowHoverBg)}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <td style={{ padding: '14px 18px', fontWeight: 800, fontSize: '13.5px', color: textColor }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <SlidersHorizontal size={15} color="#135d79" />
+                            <span>{item.optionLabel}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: textColor }}>
+                          {item.totalTickets}
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#10b981' }}>
+                          {item.closedTickets}
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#f59e0b' }}>
+                          {item.openTickets}
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: item.overdueTickets > 0 ? '#ef4444' : subtextColor }}>
+                          {item.overdueTickets || 0}
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#135d79' }}>
+                          {item.completionRate}%
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <span style={{
+                            fontWeight: 800,
+                            color: item.slaCompliance >= 90 ? '#10b981' : '#f59e0b',
+                            fontVariantNumeric: 'tabular-nums'
+                          }}>
+                            {item.slaCompliance}%
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 18px', fontSize: '13.5px', fontWeight: 800, color: '#f59e0b', fontVariantNumeric: 'tabular-nums' }}>
+                          ★ {item.avgRating}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ─── النمط 6: المقارنة الزمنية والموضوعية المتقاطعة (Cross-Temporal) ─── */}
           {activeMode === 'CROSS_TEMPORAL_ISSUE' && comparisonData && (
             <div style={{
               background: cardBg,

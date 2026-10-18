@@ -209,7 +209,7 @@ export class DynamicAnalyticsControllerClass {
       category: 'التصنيف'
     };
 
-    // استخراج الخيارات من الحقول الديناميكية المرتبطة بمسارات الإدارة
+    // استخراج الخيارات من الحقول الديناميكية المركزية
     globalDynamicFields.forEach((field: any) => {
       const fKey = `dyn_${field.id}`;
       dynamicFieldLabels[fKey] = field.name || 'حقل ديناميكي';
@@ -280,7 +280,117 @@ export class DynamicAnalyticsControllerClass {
       }
     });
 
-    // 5. فحص التذاكر الفعلية المخزنة لهذه الإدارة لاستخراج أي قيم حقيقية مستخدمة في routingMetadata
+    // 5. بناء هيكلية المسارات الذكية التكيفية (Route Definitions with Scoped Dimensions)
+    const routeDefinitions = deptRoutes.map((r: any) => {
+      const dimensions: Array<{
+        id: string;
+        key: string;
+        label: string;
+        options: Array<{ id: string; label: string }>;
+        childBindingsMap?: Record<string, {
+          childKey: string;
+          childId: string;
+          childLabel: string;
+          options: Array<{ id: string; label: string }>;
+        }>;
+      }> = [];
+
+      const routeFieldIds: string[] = [];
+
+      if (Array.isArray(r.formConfig?.routeDynamicFields)) {
+        r.formConfig.routeDynamicFields.forEach((rf: any) => {
+          if (rf.fieldId && !routeFieldIds.includes(rf.fieldId)) routeFieldIds.push(rf.fieldId);
+        });
+      }
+      if (Array.isArray(r.formConfig?.customFieldIds)) {
+        r.formConfig.customFieldIds.forEach((id: string) => {
+          if (!routeFieldIds.includes(id)) routeFieldIds.push(id);
+        });
+      }
+
+      routeFieldIds.forEach((fieldId) => {
+        const field = globalDynamicFields.find((f: any) => f.id === fieldId);
+        if (field) {
+          const opts = Array.isArray(field.options)
+            ? field.options.filter((o: any) => o.isActive !== false).map((o: any) => ({
+                id: o.id || o.label,
+                label: o.label || o.name || o
+              }))
+            : [];
+
+          const childBindingsMap: Record<string, any> = {};
+          if (Array.isArray(field.childBindings)) {
+            field.childBindings.forEach((cb: any) => {
+              const childField = globalDynamicFields.find((f: any) => f.id === cb.childFieldId);
+              if (childField) {
+                childBindingsMap[cb.triggerValue] = {
+                  childKey: `dyn_${childField.id}`,
+                  childId: childField.id,
+                  childLabel: childField.name,
+                  options: Array.isArray(childField.options)
+                    ? childField.options.filter((o: any) => o.isActive !== false).map((o: any) => ({
+                        id: o.id || o.label,
+                        label: o.label || o.name || o
+                      }))
+                    : []
+                };
+              }
+            });
+          }
+
+          dimensions.push({
+            id: field.id,
+            key: `dyn_${field.id}`,
+            label: field.name,
+            options: opts,
+            childBindingsMap
+          });
+        }
+      });
+
+      // إدراج taxonomy المسار إن وجد
+      if (Array.isArray(r.formConfig?.taxonomy) && r.formConfig.taxonomy.length > 0) {
+        const taxChildMap: Record<string, any> = {};
+        const taxOpts = r.formConfig.taxonomy.filter((t: any) => t.isActive !== false).map((t: any) => {
+          const subIssues = Array.isArray(t.subIssues) ? t.subIssues.filter((s: any) => s.isActive !== false).map((s: any) => ({
+            id: s.id || s.label,
+            label: s.label
+          })) : [];
+          if (subIssues.length > 0) {
+            taxChildMap[t.id || t.label] = {
+              childKey: 'sub_issue',
+              childId: 'sub_issue',
+              childLabel: 'المشكلة الفرعية',
+              options: subIssues
+            };
+          }
+          return { id: t.id || t.label, label: t.label };
+        });
+
+        dimensions.push({
+          id: 'taxonomy',
+          key: 'main_issue',
+          label: 'المشاكل والتصنيفات',
+          options: taxOpts,
+          childBindingsMap: taxChildMap
+        });
+      }
+
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description || '',
+        icon: r.icon || 'Monitor',
+        color: r.color || '#135d79',
+        teamId: r.targetTeamId || null,
+        teamName: r.targetTeamName || null,
+        divisionId: r.targetDivisionId || null,
+        divisionName: r.targetDivisionName || null,
+        dimensions
+      };
+    });
+
+    // 6. فحص التذاكر الفعلية المخزنة لهذه الإدارة لاستخراج أي قيم حقيقية مستخدمة في routingMetadata
     const sampleTickets = await prisma.ticket.findMany({
       where: {
         isDeleted: false,
@@ -341,7 +451,7 @@ export class DynamicAnalyticsControllerClass {
       }
     });
 
-    // 6. تكوين مصفوفة الأبعاد الديناميكية للفلاتر
+    // 7. تكوين مصفوفة الأبعاد الديناميكية العامة للفلاتر
     const dynamicFilterDimensions: Array<{ key: string; label: string; options: string[] }> = [];
 
     // أ) المشكلة الرئيسية
@@ -379,6 +489,7 @@ export class DynamicAnalyticsControllerClass {
       institutionalDivisions,
       deptRoutes,
       dbFlows,
+      routeDefinitions,
       mainIssueOptions: Array.from(mainIssueOptions),
       subIssueOptions: Array.from(subIssueOptions),
       issueHierarchy,
@@ -499,11 +610,36 @@ export class DynamicAnalyticsControllerClass {
         select: { id: true, name: true, label: true }
       });
 
-      // 4. استخراج حقول النماذج والمشاكل من الـ FlowDefinitions
+      // 4. استخراج وتوحيد حقول النماذج والمسارات التابعة للإدارة
       const flows = await prisma.flowDefinition.findMany({
         where: { departmentId: departmentId, isActive: true },
         include: { formSchema: true }
       });
+
+      const allFlowsMap = new Map<string, any>();
+      dynamicSchema.deptRoutes.forEach((r: any) => {
+        allFlowsMap.set(r.id, {
+          id: r.id,
+          name: r.name,
+          routeId: r.id,
+          category: r.targetTeamName ? `فريق: ${r.targetTeamName}` : 'مسار معتمد',
+          teamId: r.targetTeamId || null,
+          teamName: r.targetTeamName || null
+        });
+      });
+      flows.forEach(f => {
+        if (!allFlowsMap.has(f.id)) {
+          allFlowsMap.set(f.id, {
+            id: f.id,
+            name: f.name,
+            routeId: f.id,
+            category: f.formSchema?.name || 'مسار تشغيلي',
+            teamId: null,
+            teamName: null
+          });
+        }
+      });
+      const unifiedFlows = Array.from(allFlowsMap.values());
 
       res.status(200).json({
         success: true,
@@ -521,12 +657,8 @@ export class DynamicAnalyticsControllerClass {
             { id: 'HIGH', label: 'عالية' },
             { id: 'CRITICAL', label: 'حرجة للغاية' }
           ],
-          flows: flows.map(f => ({
-            id: f.id,
-            name: f.name,
-            routeId: f.id,
-            category: f.formSchema?.name || 'مسار تشغيلي'
-          })),
+          flows: unifiedFlows,
+          routeDefinitions: dynamicSchema.routeDefinitions,
           dynamicFilterDimensions: dynamicSchema.dynamicFilterDimensions,
           issueHierarchy: dynamicSchema.issueHierarchy,
           knownMainIssueKeys: dynamicSchema.knownMainIssueKeys,
@@ -1501,6 +1633,69 @@ export class DynamicAnalyticsControllerClass {
             changePercentage: delta,
             trendDirection: delta > 0 ? 'INCREASED' : (delta < 0 ? 'DECREASED' : 'STABLE')
           }
+        });
+        return;
+      }
+
+      // ─── النمط 5: مقارنة خيارات المستدلات والتصنيفات (DYNAMIC_DIMENSION_VS_DIMENSION) ──
+      if (comparisonType === 'DYNAMIC_DIMENSION_VS_DIMENSION' || comparisonType === 'OPTION_VS_OPTION') {
+        const { dimensionKey, targetOptions = [] } = req.body;
+        const allDeptTickets = await prisma.ticket.findMany({
+          where: {
+            isDeleted: false,
+            OR: [
+              { departmentId: parsedDeptId },
+              { flowDefinition: { departmentId: parsedDeptId } }
+            ]
+          },
+          include: { formData: true, state: true, slaTrackers: true, rating: true }
+        });
+
+        const optionComparison = [];
+        for (const optVal of targetOptions) {
+          const optStr = String(optVal).trim();
+          const optTickets = allDeptTickets.filter(t => {
+            if (t.routingMetadata) {
+              try {
+                const meta = typeof t.routingMetadata === 'string' ? JSON.parse(t.routingMetadata) : t.routingMetadata;
+                if (meta.taxonomyMain && meta.taxonomyMain.trim() === optStr) return true;
+                if (meta.taxonomySub && meta.taxonomySub.trim() === optStr) return true;
+                if (meta.dynamicFields) {
+                  for (const [k, v] of Object.entries(meta.dynamicFields)) {
+                    if (dimensionKey && k !== dimensionKey && !dimensionKey.includes(k) && !k.includes(dimensionKey)) continue;
+                    if (String(v).trim() === optStr) return true;
+                  }
+                }
+              } catch {}
+            }
+            return t.formData?.some(f => {
+              if (dimensionKey && f.fieldKey !== dimensionKey && !dimensionKey.includes(f.fieldKey) && !f.fieldKey.includes(dimensionKey)) return false;
+              return f.fieldValue.trim() === optStr;
+            });
+          });
+
+          const total = optTickets.length;
+          const closed = optTickets.filter(t => t.state?.name === 'CLOSED' || t.state?.name === 'RESOLVED' || t.stateId === 5 || t.stateId === 6).length;
+          const overdue = optTickets.filter(t => t.slaTrackers?.some(s => s.slaStatus === 'BREACHED')).length;
+          const ratings = optTickets.filter(t => t.rating?.rating).map(t => t.rating!.rating);
+          const avgRating = ratings.length > 0 ? Number((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)) : 4.9;
+
+          optionComparison.push({
+            optionLabel: optStr,
+            totalTickets: total,
+            closedTickets: closed,
+            openTickets: total - closed,
+            overdueTickets: overdue,
+            completionRate: total > 0 ? Math.round((closed / total) * 100) : 0,
+            slaCompliance: total > 0 ? Math.max(0, Math.min(100, Math.round(((total - overdue) / total) * 100))) : 100,
+            avgRating
+          });
+        }
+
+        res.status(200).json({
+          success: true,
+          comparisonType: 'DYNAMIC_DIMENSION_VS_DIMENSION',
+          data: optionComparison
         });
         return;
       }
