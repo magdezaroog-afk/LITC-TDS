@@ -222,7 +222,8 @@ export default function RequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<UserRecentRequest | null>(null);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('create');
+  const [filterStatus, setFilterStatus] = useState<'active' | 'needs_rating' | 'completed'>('active');
+  const creatorRef = useRef<HTMLDivElement>(null);
   
   const handleSelectFlow = (flow: any) => {
     setActiveRequest(flow);
@@ -269,7 +270,7 @@ export default function RequestsPage() {
         return needsRating;
       }
       // 3. أرشيف المعاملات (المعاملات المكتملة السابقة)
-      if (filterStatus === 'completed' || filterStatus === 'archived') {
+      if (filterStatus === 'completed') {
         return archived;
       }
       // 1. المعاملات النشطة (active, create, all) - كل المعاملات التي لم تكتمل
@@ -359,8 +360,8 @@ export default function RequestsPage() {
           {/* ── 1. PRIMARY CREATION TICKET: إنشاء طلب جديد (الوضع الفاتح بلمسة ذهبي الشعار) ── */}
           <CinemaTicketFrame
             accentColor={darkMode ? "#38bdf8" : "#d97706"}
-            isSelected={filterStatus === 'create'}
-            alwaysGlow={filterStatus === 'create'}
+            isSelected={false}
+            alwaysGlow={false}
             cornerCutout={13}
             notchRadius={5.5}
             numNotches={3}
@@ -369,7 +370,7 @@ export default function RequestsPage() {
             tabIndex={0}
             className="mobile-create-ticket"
             onClick={() => {
-              setFilterStatus(filterStatus === 'create' ? 'all' : 'create');
+              creatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
             style={{
               width: '100%',
@@ -387,65 +388,36 @@ export default function RequestsPage() {
                 }}>
                   إنشاء طلب جديد
                 </span>
-                {filterStatus === 'create' ? (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  color: darkMode ? '#38bdf8' : '#d97706',
+                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(217, 119, 6, 0.12)',
+                  border: `1px solid ${darkMode ? 'rgba(56, 189, 248, 0.35)' : 'rgba(217, 119, 6, 0.3)'}`,
+                  padding: '1px 6px',
+                  borderRadius: '9999px',
+                  fontFamily: "'Cairo', sans-serif",
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
                   <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    color: darkMode ? '#38bdf8' : '#d97706',
-                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(217, 119, 6, 0.15)',
-                    border: `1px solid ${darkMode ? 'rgba(56, 189, 248, 0.4)' : 'rgba(217, 119, 6, 0.35)'}`,
-                    padding: '1px 6px',
-                    borderRadius: '9999px',
-                    fontFamily: "'Cairo', sans-serif",
-                  }}>
-                    <span style={{
-                      width: '4.5px',
-                      height: '4.5px',
-                      borderRadius: '50%',
-                      backgroundColor: darkMode ? '#38bdf8' : '#d97706',
-                      boxShadow: `0 0 6px ${darkMode ? '#38bdf8' : '#d97706'}`,
-                    }} />
-                    نشط
-                  </span>
-                ) : (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    color: darkMode ? '#38bdf8' : '#d97706',
-                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(217, 119, 6, 0.12)',
-                    border: `1px solid ${darkMode ? 'rgba(56, 189, 248, 0.35)' : 'rgba(217, 119, 6, 0.3)'}`,
-                    padding: '1px 6px',
-                    borderRadius: '9999px',
-                    fontFamily: "'Cairo', sans-serif",
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                    <span style={{
-                      width: '4.5px',
-                      height: '4.5px',
-                      borderRadius: '50%',
-                      backgroundColor: darkMode ? '#38bdf8' : '#d97706',
-                      boxShadow: `0 0 6px ${darkMode ? '#38bdf8' : '#d97706'}`,
-                    }} />
-                    {requests.length} مسارات
-                  </span>
-                )}
+                    width: '4.5px',
+                    height: '4.5px',
+                    borderRadius: '50%',
+                    backgroundColor: darkMode ? '#38bdf8' : '#d97706',
+                    boxShadow: `0 0 6px ${darkMode ? '#38bdf8' : '#d97706'}`,
+                  }} />
+                  {requests.length} مسارات
+                </span>
               </div>
               <div style={{
                 width: '28px',
                 height: '28px',
                 borderRadius: '6px',
-                backgroundColor: filterStatus === 'create' 
-                  ? (darkMode ? 'rgba(56, 189, 248, 0.28)' : 'rgba(217, 119, 6, 0.2)')
-                  : (darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(217, 119, 6, 0.12)'),
-                border: filterStatus === 'create' 
-                  ? (darkMode ? '1px solid #38bdf8' : '1px solid #d97706')
-                  : (darkMode ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(217, 119, 6, 0.3)'),
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(217, 119, 6, 0.12)',
+                border: darkMode ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(217, 119, 6, 0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -472,12 +444,12 @@ export default function RequestsPage() {
               </div>
               <div style={{
                 fontSize: '10.5px',
-                color: filterStatus === 'create' ? (darkMode ? '#e0f2fe' : '#92400e') : (darkMode ? '#94a3b8' : '#64748b'),
+                color: darkMode ? '#94a3b8' : '#64748b',
                 marginTop: '4px',
                 fontWeight: 500,
                 fontFamily: "'Cairo', sans-serif",
               }}>
-                انقر لفتح دليل المسارات وتعبئة الطلب
+                انقر للتركيز على مسارات الخدمة وتعبئة الطلب
               </div>
             </div>
           </CinemaTicketFrame>
@@ -486,22 +458,13 @@ export default function RequestsPage() {
         {/* ── LEFT COLUMN: WORKSPACE SECTION (3 CARDS + ROUTE CREATOR + LEDGER TABLE) ── */}
         <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-          {/* ── 1. ROUTE PICKER & CREATOR (When in create mode) ── */}
-          <AnimatePresence>
-            {filterStatus === 'create' && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <InlineRequestCreator
-                  onCancel={() => setFilterStatus('active')}
-                  onSuccess={() => setFilterStatus('active')}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* ── 1. ROUTE PICKER & CREATOR (عرض المسارات دائماً ثابت في مساحة العمل) ── */}
+          <div ref={creatorRef}>
+            <InlineRequestCreator
+              onCancel={() => {}}
+              onSuccess={() => setFilterStatus('active')}
+            />
+          </div>
 
           {/* ── 2. THREE PRIMARY HORIZONTAL KPI TILES (1: المعاملات النشطة | 2: طلبات تحتاج إلى التقييم | 3: أرشيف المعاملات) ── */}
           <div style={{
@@ -516,7 +479,7 @@ export default function RequestsPage() {
               sublabel="جميع المعاملات الجارية ولم تكتمل"
               icon={Activity}
               accentColor={darkMode ? "#38bdf8" : "#0284c7"}
-              isSelected={filterStatus === 'active' || filterStatus === 'all'}
+              isSelected={filterStatus === 'active'}
               onClick={() => setFilterStatus('active')}
               darkMode={darkMode}
             />
@@ -540,7 +503,7 @@ export default function RequestsPage() {
               sublabel="المعاملات المنجزة والمقيمة سابقاً"
               icon={Archive}
               accentColor="#10b981"
-              isSelected={filterStatus === 'completed' || filterStatus === 'archived'}
+              isSelected={filterStatus === 'completed'}
               onClick={() => setFilterStatus('completed')}
               darkMode={darkMode}
             />
@@ -577,7 +540,7 @@ export default function RequestsPage() {
               letterSpacing: '-0.01em',
               fontFamily: "'Tajawal', sans-serif",
             }}>
-              {filterStatus === 'completed' || filterStatus === 'archived'
+              {filterStatus === 'completed'
                 ? 'أرشيف المعاملات المكتملة السابقة'
                 : filterStatus === 'needs_rating'
                 ? 'طلبات تحتاج إلى التقييم ⭐'
@@ -594,13 +557,13 @@ export default function RequestsPage() {
               fontVariantNumeric: 'tabular-nums',
             }}>
               {filteredRequests.length} {
-                filterStatus === 'completed' || filterStatus === 'archived' ? 'معاملة سابقة' :
+                filterStatus === 'completed' ? 'معاملة سابقة' :
                 filterStatus === 'needs_rating' ? 'بانتظار التقييم' : 'معاملة نشطة'
               }
             </span>
 
             {/* Quick Filter Reset Badge when not 'active' */}
-            {filterStatus !== 'active' && filterStatus !== 'create' && filterStatus !== 'all' && (
+            {filterStatus !== 'active' && (
               <button
                 onClick={() => setFilterStatus('active')}
                 style={{
@@ -621,8 +584,7 @@ export default function RequestsPage() {
                 title="إلغاء التصفية والعودة للمعاملات النشطة"
               >
                 <span>تصفية: {
-                  filterStatus === 'needs_rating' ? 'طلبات تحتاج إلى التقييم' :
-                  filterStatus === 'completed' || filterStatus === 'archived' ? 'أرشيف المعاملات' : filterStatus
+                  filterStatus === 'needs_rating' ? 'طلبات تحتاج إلى التقييم' : 'أرشيف المعاملات'
                 }</span>
                 <X size={12} />
               </button>
