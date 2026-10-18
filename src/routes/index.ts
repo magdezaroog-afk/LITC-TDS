@@ -275,6 +275,9 @@ router.get('/analytics/department-schema', authMiddleware, (req, res, next) => D
 router.post('/analytics/department-data', authMiddleware, (req, res, next) => DynamicAnalyticsController.getDynamicAnalyticsData(req, res, next));
 router.post('/analytics/compare', authMiddleware, (req, res, next) => DynamicAnalyticsController.getMultiDimensionalComparison(req, res, next));
 router.get('/analytics/accessible-departments', authMiddleware, (req, res, next) => AnalyticsPermissionController.getUserAccessibleDepartments(req, res, next));
+router.get('/analytics/delegations', authMiddleware, (req, res, next) => AnalyticsPermissionController.getPermissionsList(req, res, next));
+router.post('/analytics/delegations', authMiddleware, (req, res, next) => AnalyticsPermissionController.grantAnalyticsAccess(req, res, next));
+router.delete('/analytics/delegations/:id', authMiddleware, (req, res, next) => AnalyticsPermissionController.revokeAnalyticsAccess(req, res, next));
 
 router.get('/admin/analytics/permissions', authMiddleware, requireRole([1, 22]), (req, res, next) => AnalyticsPermissionController.getPermissionsList(req, res, next));
 router.post('/admin/analytics/permissions', authMiddleware, requireRole([1, 22]), (req, res, next) => AnalyticsPermissionController.grantAnalyticsAccess(req, res, next));

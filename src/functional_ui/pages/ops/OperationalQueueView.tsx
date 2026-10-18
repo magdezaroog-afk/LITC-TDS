@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { OpsAPI } from '../../../services/ops.api';
 import { useAuth } from '../../../engine/auth/AuthContext';
 import { FlowReceptionGovernanceView } from './FlowReceptionGovernanceView';
+import { DynamicFormAwareAnalytics } from '../../../components/analytics/DynamicFormAwareAnalytics';
+import { AnalyticsGovernanceView } from '../../../components/analytics/AnalyticsGovernanceView';
 import { CinemaTicketFrame, TicketCodeBadge } from '../../components/CinemaTicketFrame';
 import { 
   Inbox, Activity, CheckCircle, Clock, Search, Filter, 
@@ -11,7 +13,7 @@ import {
   AlertTriangle, CheckCircle2, ChevronRight, Send, CornerDownLeft,
   MessageSquare, RotateCcw, FileCheck, XCircle, History,
   ArrowRightLeft, Hourglass, Plus, PlusCircle, GitBranch, ArrowLeft, ExternalLink,
-  GitPullRequest, Zap, Sun, Moon
+  GitPullRequest, Zap, Sun, Moon, BarChart3
 } from 'lucide-react';
 
 // --- Types ---
@@ -234,7 +236,7 @@ function OpsQueueTile({
   isDark,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   sublabel: string;
   icon: any;
   accentColor: string;
@@ -366,7 +368,7 @@ export const OperationalQueueView: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ALL_TICKETS' | 'FLOW_SETTINGS'>('POOL');
+  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
   const [poolCount, setPoolCount] = useState<number>(0);
@@ -739,6 +741,113 @@ export const OperationalQueueView: React.FC = () => {
     }
   };
 
+  // ── Unified View Configurations & Standards ──
+  const isTicketView = ['POOL', 'MY_QUEUE', 'ALL_TICKETS', 'SUB_TICKETS'].includes(activeTab);
+
+  const activeViewConfig = React.useMemo(() => {
+    switch (activeTab) {
+      case 'POOL':
+        return {
+          title: 'حوض الطلبات الواردة',
+          subtitle: 'الطلبات العامة المعلقة بانتظار السحب والإسناد المباشر للفريق',
+          badgeText: `${poolCount} معلقة`,
+          badgeColor: '#0284c7',
+          badgeBg: 'rgba(2, 132, 199, 0.12)',
+          icon: Inbox,
+          iconBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+          glowColor: 'rgba(2, 132, 199, 0.35)'
+        };
+      case 'MY_QUEUE':
+        return {
+          title: 'بريدي (المهام المسندة إليّ)',
+          subtitle: 'المعاملات والتذاكر التشغيلية المسندة إليك مباشرة قيد المتابعة والإنجاز',
+          badgeText: `${myCount} جارية`,
+          badgeColor: '#4f46e5',
+          badgeBg: 'rgba(79, 70, 229, 0.12)',
+          icon: ShieldCheck,
+          iconBg: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+          glowColor: 'rgba(79, 70, 229, 0.35)'
+        };
+      case 'ALL_TICKETS':
+        return {
+          title: 'كافة طلبات وسجل الإدارة',
+          subtitle: 'الأرشيف والسجل التشغيلي الشامل لكافة طلبات ومعاملات القسم',
+          badgeText: `${stats.open} مفتوحة`,
+          badgeColor: isDark ? '#38bdf8' : '#0f172a',
+          badgeBg: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.08)',
+          icon: Layers,
+          iconBg: 'linear-gradient(135deg, #1e3a52 0%, #0f172a 100%)',
+          glowColor: 'rgba(30, 58, 82, 0.35)'
+        };
+      case 'SUB_TICKETS':
+        return {
+          title: 'التذاكر والمهام الداخلية المنبثقة',
+          subtitle: 'التكليفات والمهام الفرعية المستحدثة لمعالجة أجزاء من الطلبات الرئيسية',
+          badgeText: `${subTicketsCount} فرعية`,
+          badgeColor: '#7e22ce',
+          badgeBg: 'rgba(126, 34, 206, 0.12)',
+          icon: GitPullRequest,
+          iconBg: 'linear-gradient(135deg, #7e22ce 0%, #581c87 100%)',
+          glowColor: 'rgba(126, 34, 206, 0.35)'
+        };
+      case 'FLOW_SETTINGS':
+        return {
+          title: 'خصائص واستقبال الطلبات',
+          subtitle: 'حوكمة مسارات استقبال التذاكر، صلاحيات السحب، وأتمتة قواعد التوجيه',
+          badgeText: `${managedFlowsCount} مسار`,
+          badgeColor: '#d97706',
+          badgeBg: 'rgba(217, 119, 6, 0.12)',
+          icon: Sliders,
+          iconBg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+          glowColor: 'rgba(217, 119, 6, 0.35)'
+        };
+      case 'ANALYTICS':
+        return {
+          title: 'التحليلات التكيفية للمسار (NACE Universal Pillars)',
+          subtitle: 'استخراج مؤشرات الأداء الحية، الركائز الـ 5، وتصنيف البلاغات والمشاكل الأكثر تكراراً',
+          badgeText: 'NACE Analytics',
+          badgeColor: '#135d79',
+          badgeBg: 'rgba(19, 93, 121, 0.12)',
+          icon: BarChart3,
+          iconBg: 'linear-gradient(135deg, #135d79 0%, #0d4257 100%)',
+          glowColor: 'rgba(19, 93, 121, 0.35)'
+        };
+      case 'COMPARISON':
+        return {
+          title: 'محرك المقارنة والمفاضلة متعدد الأبعاد (N-Entities)',
+          subtitle: 'المفاضلة الشاملة بين الكوادر، المباني والمواقع، المسارات والتدفقات، والمدد الزمنية',
+          badgeText: 'N-Entity Comparator',
+          badgeColor: '#f36c21',
+          badgeBg: 'rgba(243, 108, 33, 0.12)',
+          icon: ArrowRightLeft,
+          iconBg: 'linear-gradient(135deg, #f36c21 0%, #c2410c 100%)',
+          glowColor: 'rgba(243, 108, 33, 0.35)'
+        };
+      case 'ANALYTICS_GOVERNANCE':
+        return {
+          title: 'حوكمة وتفويض صلاحيات التحليل (RBAC Delegation)',
+          subtitle: 'تفويض قادة الفرق والمهندسين لاستعراض مؤشرات الأداء والمقارنة مع منع تسرب بيانات المسارات',
+          badgeText: 'RBAC Delegation',
+          badgeColor: '#059669',
+          badgeBg: 'rgba(5, 150, 105, 0.12)',
+          icon: ShieldCheck,
+          iconBg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+          glowColor: 'rgba(5, 150, 105, 0.35)'
+        };
+      default:
+        return {
+          title: 'غرفة العمليات',
+          subtitle: 'مركز المعالجة التشغيلية',
+          badgeText: 'نشط',
+          badgeColor: '#135d79',
+          badgeBg: 'rgba(19, 93, 121, 0.12)',
+          icon: Inbox,
+          iconBg: 'linear-gradient(135deg, #135d79 0%, #0d4257 100%)',
+          glowColor: 'rgba(19, 93, 121, 0.35)'
+        };
+    }
+  }, [activeTab, poolCount, myCount, stats.open, subTicketsCount, managedFlowsCount, isDark]);
+
   // --- UI Render ---
   return (
     <div style={{
@@ -888,7 +997,11 @@ export const OperationalQueueView: React.FC = () => {
           flexDirection: 'column',
           gap: '12px',
           position: 'sticky',
-          top: '80px'
+          top: '96px',
+          maxHeight: 'calc(100vh - 120px)',
+          overflowY: 'auto',
+          paddingBottom: '24px',
+          scrollbarWidth: 'none'
         }}>
           {/* Quick KPI Summary Tile */}
           <div style={{
@@ -1028,70 +1141,227 @@ export const OperationalQueueView: React.FC = () => {
               isDark={isDark}
             />
           )}
+
+          {/* Rail Section Title: التحليلات والمقارنة المؤسسية */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 4px 6px',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+            marginTop: '4px'
+          }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: isDark ? '#cbd5e1' : '#1e293b',
+              fontFamily: "'Cairo', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              <BarChart3 size={13} color={isDark ? "#f36c21" : "#135d79"} />
+              <span>التحليلات والمقارنة</span>
+            </span>
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 800,
+              color: '#f36c21',
+              backgroundColor: 'rgba(243, 108, 33, 0.12)',
+              padding: '1px 6px',
+              borderRadius: '9999px',
+              fontFamily: "'Cairo', sans-serif",
+            }}>
+              NACE
+            </span>
+          </div>
+
+          {/* 6. التحليلات التكيفية للمسار */}
+          <OpsQueueTile
+            label="التحليلات التكيفية للمسار"
+            value="NACE"
+            sublabel="الركائز الـ 5 ونماذج المسار"
+            icon={BarChart3}
+            accentColor="#135d79"
+            isSelected={activeTab === 'ANALYTICS'}
+            onClick={() => setActiveTab('ANALYTICS')}
+            isDark={isDark}
+          />
+
+          {/* 7. محرك المقارنة متعدد الأبعاد */}
+          <OpsQueueTile
+            label="محرك المقارنة والمفاضلة"
+            value="N-Entity"
+            sublabel="مفاضلة الكوادر والمباني والمسارات"
+            icon={ArrowRightLeft}
+            accentColor="#f36c21"
+            isSelected={activeTab === 'COMPARISON'}
+            onClick={() => setActiveTab('COMPARISON')}
+            isDark={isDark}
+          />
+
+          {/* 8. تفويض صلاحيات التحليل (للمدراء وقادة المسارات) */}
+          {canManageFlows && (
+            <OpsQueueTile
+              label="حوكمة وتفويض التحليل"
+              value="RBAC"
+              sublabel="تفويض الصلاحيات لقادة الفرق"
+              icon={ShieldCheck}
+              accentColor="#059669"
+              isSelected={activeTab === 'ANALYTICS_GOVERNANCE'}
+              onClick={() => setActiveTab('ANALYTICS_GOVERNANCE')}
+              isDark={isDark}
+            />
+          )}
         </aside>
 
-        {/* ── LEFT COLUMN: MAIN OPERATIONS CONTENT (يسار الشاشة) ── */}
+        {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0 }}>
-          {activeTab === 'FLOW_SETTINGS' ? (
-            <FlowReceptionGovernanceView />
-          ) : (
-            <div style={{
-              background: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.8)',
+          <div 
+            className="unified-operations-canvas-card"
+            style={{
+              background: isDark ? 'rgba(15, 23, 42, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.85)',
               borderRadius: '20px',
-              padding: '24px',
-              boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.36)' : '0 4px 20px -2px rgba(15, 23, 42, 0.04)'
+              padding: '24px 28px',
+              boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.4)' : '0 4px 24px -2px rgba(15, 23, 42, 0.05)',
+              minHeight: '780px',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              transition: 'all 0.25s ease'
+            }}
+          >
+            {/* ═══ 1. UNIFIED VIEW TITLE & ACTION HEADER STRIP ═══ */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px',
+              paddingBottom: '18px',
+              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9'
             }}>
-              {/* Search & Fast Filter Header */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '16px',
-                marginBottom: '20px',
-                paddingBottom: '16px',
-                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9'
-              }}>
-                <div style={{ position: 'relative', flex: 1, maxWidth: '520px' }}>
-                  <Search size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <input 
-                    type="text" 
-                    placeholder="ابحث برقم الطلب، الموضوع، أو اسم المُرسل..." 
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '11px 42px 11px 16px',
-                      borderRadius: '12px',
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                      background: isDark ? 'rgba(30, 41, 59, 0.6)' : '#ffffff',
-                      fontSize: '13.5px',
-                      outline: 'none',
-                      color: isDark ? '#ffffff' : '#0f172a',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch('')}
-                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
+              {/* Identity (Icon + Title + Badge + Subtitle) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  background: activeViewConfig.iconBg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  boxShadow: `0 4px 14px ${activeViewConfig.glowColor}`,
+                  flexShrink: 0
+                }}>
+                  <activeViewConfig.icon size={22} />
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                    {tickets.filter(t => (t.subject || t.title || '').includes(search) || t.id.toString().includes(search) || (t.creatorName || '').includes(search)).length} معاملة مطابقة
-                  </span>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h2 style={{
+                      margin: 0,
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      color: isDark ? '#ffffff' : '#0f172a',
+                      fontFamily: "'Cairo', sans-serif"
+                    }}>
+                      {activeViewConfig.title}
+                    </h2>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: activeViewConfig.badgeColor,
+                      backgroundColor: activeViewConfig.badgeBg,
+                      border: `1px solid ${activeViewConfig.badgeColor}33`,
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontFamily: "'Cairo', sans-serif"
+                    }}>
+                      {activeViewConfig.badgeText}
+                    </span>
+                  </div>
+                  <p style={{
+                    margin: '3px 0 0 0',
+                    fontSize: '12.5px',
+                    color: isDark ? '#94a3b8' : '#64748b'
+                  }}>
+                    {activeViewConfig.subtitle}
+                  </p>
                 </div>
               </div>
 
-              {/* Tickets List Rendered as Cinema Tickets */}
+              {/* View-Specific Contextual Search / Refresh Controls for Tickets */}
+              {isTicketView && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, justifyContent: 'flex-end', maxWidth: '580px' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+                    <Search size={15} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input 
+                      type="text" 
+                      placeholder="ابحث برقم الطلب، الموضوع، أو اسم المُرسل..." 
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '9px 36px 9px 12px',
+                        borderRadius: '10px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        background: isDark ? 'rgba(30, 41, 59, 0.6)' : '#ffffff',
+                        fontSize: '13px',
+                        color: isDark ? '#ffffff' : '#0f172a',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {search && (
+                      <button
+                        onClick={() => setSearch('')}
+                        style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={fetchData}
+                    disabled={loading}
+                    title="تحديث البيانات الفورية"
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0',
+                      background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                      color: isDark ? '#f8fafc' : '#334155',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 700
+                    }}
+                  >
+                    <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                    <span>تحديث</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ═══ 2. VIEW BODY (ALL VIEWS EMBEDDED SEAMLESSLY INSIDE) ═══ */}
+            {activeTab === 'FLOW_SETTINGS' ? (
+              <FlowReceptionGovernanceView />
+            ) : activeTab === 'ANALYTICS' ? (
+              <DynamicFormAwareAnalytics initialTab="OVERVIEW" isDark={isDark} isEmbedded={true} />
+            ) : activeTab === 'COMPARISON' ? (
+              <DynamicFormAwareAnalytics initialTab="COMPARISON" isDark={isDark} isEmbedded={true} />
+            ) : activeTab === 'ANALYTICS_GOVERNANCE' ? (
+              <AnalyticsGovernanceView isDark={isDark} />
+            ) : (
+              /* Tickets List Rendered as Cinema Tickets */
               <div style={{ minHeight: '320px' }}>
                 {loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8', gap: '14px' }}>
@@ -1402,8 +1672,8 @@ export const OperationalQueueView: React.FC = () => {
                   </AnimatePresence>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
 

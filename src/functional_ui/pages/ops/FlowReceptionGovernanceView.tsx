@@ -763,71 +763,62 @@ export const FlowReceptionGovernanceView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── Top Header & Multi-Flow Selector ───────────────────────────── */}
-      <div style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', borderRadius: '24px', padding: '24px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-              <div style={{ padding: '8px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5' }}>
-                <Shield size={22} />
-              </div>
-              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                حوكمة خصائص استقبال الطلبات
-              </h1>
-            </div>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
-              تحكم كامل في مصفوفة صلاحيات الفريق، محرك الأتمتة الشرطي، ومعايرة مؤشرات الأولوية
-            </p>
-          </div>
-
-          {/* Search Bar */}
-          <div style={{ position: 'relative', width: '280px' }}>
-            <Search size={16} style={{ position: 'absolute', top: '12px', right: '14px', color: '#94a3b8' }} />
-            <input 
-              type="text" 
-              placeholder="بحث في أسماء الموظفين..." 
-              value={searchTerm} 
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 40px 10px 14px', borderRadius: '12px',
-                border: '1px solid #e2e8f0', background: '#ffffff', fontSize: '13px', outline: 'none'
-              }}
-            />
-          </div>
+      {/* ─── Top Multi-Flow Selector & Filter Bar ───────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        paddingBottom: '16px',
+        borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
+      }}>
+        {/* Route Selector Chips */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>
+            المسار التشغيلي المستهدف:
+          </span>
+          {flows.map(f => {
+            const isSelected = f.id === selectedFlowId;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setSelectedFlowId(f.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px',
+                  borderRadius: '10px', border: isSelected ? `2px solid ${f.color || '#4f46e5'}` : '1px solid #e2e8f0',
+                  background: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.6)', cursor: 'pointer',
+                  boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color || '#4f46e5' }} />
+                <span style={{ fontSize: '13px', fontWeight: isSelected ? 800 : 600, color: isSelected ? '#0f172a' : '#64748b' }}>
+                  {f.name}
+                </span>
+                <span style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '6px', color: '#64748b', fontWeight: 700 }}>
+                  {f.activeTicketsCount} طلب
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Route Selector Chips */}
-        {flows.length > 1 && (
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              المسارات التي تقودها:
-            </span>
-            {flows.map(f => {
-              const isSelected = f.id === selectedFlowId;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setSelectedFlowId(f.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px',
-                    borderRadius: '12px', border: isSelected ? `2px solid ${f.color || '#4f46e5'}` : '1px solid #e2e8f0',
-                    background: isSelected ? '#ffffff' : '#f8fafc', cursor: 'pointer',
-                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.06)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color || '#4f46e5' }} />
-                  <span style={{ fontSize: '13px', fontWeight: isSelected ? 800 : 600, color: isSelected ? '#0f172a' : '#64748b' }}>
-                    {f.name}
-                  </span>
-                  <span style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '6px', color: '#64748b', fontWeight: 700 }}>
-                    {f.activeTicketsCount} طلب
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Search Bar */}
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search size={15} style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: '12px', color: '#94a3b8' }} />
+          <input 
+            type="text" 
+            placeholder="بحث في أسماء الموظفين..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%', padding: '8px 36px 8px 12px', borderRadius: '10px',
+              border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '12.5px', outline: 'none',
+              boxSizing: 'border-box'
+            }}
+          />
+        </div>
       </div>
 
       {loadingDetails || !data ? (

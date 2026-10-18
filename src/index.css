@@ -3,7 +3,8 @@
 :root {
   --neon-blue: #00e5ff;
   --neon-green: #00ffaa;
-  --bg-dark: #0b0f19;
+  --bg-dark: #080e18;
+  --bg-light: #f8fafc;
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.1);
 }
@@ -12,13 +13,29 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Cairo', sans-serif;
-  background-color: var(--bg-dark);
-  color: #fff;
   min-height: 100vh;
-  /* background with neon glowing orbs */
+  background-color: #f8fafc;
+  color: #0f172a;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body,
+body.dark {
+  background-color: #080e18;
+  color: #f8fafc;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.1), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(0, 255, 170, 0.1), transparent 25%);
+    radial-gradient(circle at 15% 50%, rgba(19, 93, 121, 0.12), transparent 35%),
+    radial-gradient(circle at 85% 30%, rgba(243, 108, 33, 0.08), transparent 35%);
+  background-attachment: fixed;
+}
+
+html.light body,
+body.light {
+  background-color: #f8fafc;
+  color: #0f172a;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(19, 93, 121, 0.04), transparent 35%),
+    radial-gradient(circle at 85% 30%, rgba(243, 108, 33, 0.03), transparent 35%);
   background-attachment: fixed;
 }
 

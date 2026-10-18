@@ -17,12 +17,30 @@ export class AnalyticsPermissionControllerClass {
       const roleId = Number(user?.roleId || 0);
       const isAdmin = roleId === 1 || roleId === 22;
 
-      if (!isAdmin) {
-        res.status(403).json({ success: false, error: 'غير مصرح: هذه الميزة مخصصة لمدير النظام فقط.' });
-        return;
+      // فحص إن كان المستخدم مدير نظام أو رئيس إدارة
+      let allowedDeptIds: number[] = [];
+      if (isAdmin) {
+        // جميع الإدارات متاحة للأدمن
+        const allDepts = await prisma.department.findMany({ where: { isDeleted: false }, select: { id: true } });
+        allowedDeptIds = allDepts.map(d => d.id);
+      } else {
+        // رئيس الإدارة / القيادي: تقتصر صلاحياته على إدارته
+        const dbCaller = await prisma.user.findUnique({
+          where: { id: user?.id },
+          select: { id: true, departmentId: true, role: { select: { name: true } } }
+        });
+        if (dbCaller?.departmentId) {
+          allowedDeptIds = [dbCaller.departmentId];
+        } else {
+          res.status(403).json({ success: false, error: 'غير مصرح: ليس لديك صلاحية حوكمة التحليلات.' });
+          return;
+        }
       }
 
       const permissions = await prisma.analyticsPermission.findMany({
+        where: {
+          departmentId: { in: allowedDeptIds }
+        },
         include: {
           user: {
             select: { id: true, username: true, fullName: true, jobTitle: true, departmentId: true }
@@ -37,21 +55,26 @@ export class AnalyticsPermissionControllerClass {
         orderBy: { createdAt: 'desc' }
       });
 
-      // جلب قائمة الإدارات والموظفين للتسهيل على واجهة الأدمن
+      // جلب قائمة الإدارات والموظفين المسموح إدارتهم
       const departments = await prisma.department.findMany({
-        where: { isDeleted: false },
+        where: { isDeleted: false, id: { in: allowedDeptIds } },
         select: { id: true, name: true }
       });
 
       const users = await prisma.user.findMany({
-        where: { isDeleted: false, isActive: true },
+        where: {
+          isDeleted: false,
+          isActive: true,
+          ...(isAdmin ? {} : { departmentId: { in: allowedDeptIds } })
+        },
         select: { id: true, username: true, fullName: true, jobTitle: true, departmentId: true },
-        take: 100
+        take: 150
       });
 
       res.status(200).json({
         success: true,
         data: {
+          isAdmin,
           permissions,
           departments,
           users
@@ -64,18 +87,13 @@ export class AnalyticsPermissionControllerClass {
   };
 
   /**
-   * منح صلاحية استعراض تحليلات إدارة لمستخدم (Admin Only)
+   * منح صلاحية استعراض تحليلات إدارة لمستخدم (Admin أو رئيس الإدارة)
    */
   public grantAnalyticsAccess = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const adminUser = (req as any).user;
-      const roleId = Number(adminUser?.roleId || 0);
+      const caller = (req as any).user;
+      const roleId = Number(caller?.roleId || 0);
       const isAdmin = roleId === 1 || roleId === 22;
-
-      if (!isAdmin) {
-        res.status(403).json({ success: false, error: 'غير مصرح: يتطلب صلاحيات مدير النظام.' });
-        return;
-      }
 
       const { userId, departmentId, routeId, canExport = true, canCompare = true } = req.body;
 
@@ -86,6 +104,18 @@ export class AnalyticsPermissionControllerClass {
 
       const parsedUserId = Number(userId);
       const parsedDeptId = Number(departmentId);
+
+      // التحقق من الصلاحية: إن لم يكن أدمن، يجب أن يكون هو رئيس/منسوب نفس الإدارة
+      if (!isAdmin) {
+        const dbCaller = await prisma.user.findUnique({
+          where: { id: caller?.id },
+          select: { id: true, departmentId: true }
+        });
+        if (dbCaller?.departmentId !== parsedDeptId) {
+          res.status(403).json({ success: false, error: 'غير مصرح لك بتفويض صلاحيات لإدارة غير إدارتك.' });
+          return;
+        }
+      }
 
       const permission = await prisma.analyticsPermission.upsert({
         where: {
@@ -98,7 +128,7 @@ export class AnalyticsPermissionControllerClass {
         update: {
           canExport: Boolean(canExport),
           canCompare: Boolean(canCompare),
-          grantedById: adminUser.id
+          grantedById: caller.id
         },
         create: {
           userId: parsedUserId,
@@ -106,7 +136,7 @@ export class AnalyticsPermissionControllerClass {
           routeId: routeId || '',
           canExport: Boolean(canExport),
           canCompare: Boolean(canCompare),
-          grantedById: adminUser.id
+          grantedById: caller.id
         }
       });
 
@@ -126,19 +156,34 @@ export class AnalyticsPermissionControllerClass {
    */
   public revokeAnalyticsAccess = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const adminUser = (req as any).user;
-      const roleId = Number(adminUser?.roleId || 0);
+      const caller = (req as any).user;
+      const roleId = Number(caller?.roleId || 0);
       const isAdmin = roleId === 1 || roleId === 22;
-
-      if (!isAdmin) {
-        res.status(403).json({ success: false, error: 'غير مصرح: يتطلب صلاحيات مدير النظام.' });
-        return;
-      }
 
       const permissionId = req.params.id;
       if (!permissionId) {
         res.status(400).json({ success: false, error: 'معرف الصلاحية مطلوب.' });
         return;
+      }
+
+      const existing = await prisma.analyticsPermission.findUnique({
+        where: { id: permissionId }
+      });
+
+      if (!existing) {
+        res.status(404).json({ success: false, error: 'الصلاحية غير موجودة.' });
+        return;
+      }
+
+      if (!isAdmin) {
+        const dbCaller = await prisma.user.findUnique({
+          where: { id: caller?.id },
+          select: { departmentId: true }
+        });
+        if (dbCaller?.departmentId !== existing.departmentId) {
+          res.status(403).json({ success: false, error: 'غير مصرح لك بإلغاء صلاحية تخص إدارة أخرى.' });
+          return;
+        }
       }
 
       await prisma.analyticsPermission.delete({

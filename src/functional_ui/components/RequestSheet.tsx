@@ -645,7 +645,7 @@ export function RequestSheet() {
                 >
                   <div>
                     <div style={{ fontSize: '10px', color: flowColor, fontWeight: 800, letterSpacing: '0.04em' }}>
-                      شركة الاتصالات الدولية الليبية • نموذج تسجيل إلكتروني
+                      NEXUS TDS • TICKETING DYNAMIC SYSTEM • نموذج تسجيل إلكتروني
                     </div>
                     <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff', fontFamily: "'Tajawal', sans-serif" }}>
                       {step === 1 ? 'اختر مسار المعاملة المطلوبة' : selectedFlow?.title}

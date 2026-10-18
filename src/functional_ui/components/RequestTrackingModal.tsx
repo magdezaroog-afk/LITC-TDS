@@ -653,7 +653,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                 >
                   <div>
                     <div style={{ fontSize: '10px', color: darkMode ? '#60a5fa' : '#1e3a52', fontWeight: 800, letterSpacing: '0.04em' }}>
-                      شركة الاتصالات الدولية الليبية • LIBYAN INTERNATIONAL TELECOM CO.
+                      NEXUS TDS • TICKETING DYNAMIC SYSTEM • نظام التذاكر الموحد
                     </div>
                     <div style={{ fontSize: isMobile ? '12.5px' : '14px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
                       سجل المتابعة والاعتمادات الإجرائية • AUDIT TRAIL
@@ -1154,7 +1154,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                   </div>
 
                   <span style={{ fontSize: '10.5px', color: '#64748b' }}>
-                    بوابة الموظف المركزية • شركة الاتصالات الدولية الليبية
+                    بوابة الموظف المركزية • NEXUS TDS TICKETING DYNAMIC SYSTEM
                   </span>
                 </div>
               </div>

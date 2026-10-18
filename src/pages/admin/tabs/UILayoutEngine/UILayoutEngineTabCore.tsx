@@ -275,7 +275,7 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
   const [corporateLocations, setCorporateLocations] = useState<CorporateLocation[]>([
     {
       id: 'hq',
-      buildingName: 'المقر الرئيسي (HQ)',
+      buildingName: 'مبنى شهداء الشط',
       offices: [
         { id: 'hq_it', name: 'إدارة تقنية المعلومات' },
         { id: 'hq_hr', name: 'الموارد البشرية' },
@@ -283,11 +283,11 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
       ]
     },
     {
-      id: 'misurata',
-      buildingName: 'فرع مصراتة',
+      id: 'tajoura',
+      buildingName: 'تاجوراء',
       offices: [
-        { id: 'mis_ops', name: 'العمليات' },
-        { id: 'mis_support', name: 'الدعم الفني' }
+        { id: 'taj_ops', name: 'العمليات' },
+        { id: 'taj_support', name: 'الدعم الفني' }
       ]
     }
   ]);
@@ -1935,8 +1935,8 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
                                   {locationF ? (
                                     <select style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', background: '#F5F5F7', fontFamily: 'inherit', color: '#1D1D1F' }}>
                                       <option>📍 تصفية حسب المبنى</option>
-                                      <option>المبنى الرئيسي (طرابلس)</option>
-                                      <option>فرع بنغازي</option>
+                                      <option>مبنى شهداء الشط</option>
+                                      <option>كم/4</option>
                                     </select>
                                   ) : (
                                     <div style={{ flex: 1, minHeight: 0, padding: '12px', borderRadius: '8px', background: '#F9F9FB', color: '#AEAEB2', border: '1px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🔒 تصفية المباني مقفلة</div>

@@ -93,7 +93,7 @@ export function UserProfileModal() {
                 {activeProfileTarget.role}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                {activeProfileTarget.dept} • شركة الاتصالات الدولية الليبية LITC
+                {activeProfileTarget.dept} • NEXUS TDS
               </p>
 
               {/* Action Buttons */}

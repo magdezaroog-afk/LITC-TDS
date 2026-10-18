@@ -319,7 +319,7 @@ export default function RequestsPage() {
             مركز متابعة المعاملات والطلبات
           </h1>
           <p style={{ fontSize: '12.5px', color: darkMode ? '#94a3b8' : '#475569', margin: 0, fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
-            منظومة موحدة لمتابعة مسار الإجراءات وحالات الاعتماد لشركة الاتصالات الدولية الليبية.
+            منظومة NEXUS TDS الذكية لمتابعة مسار الإجراءات وحالات الاعتماد وإدارة التذاكر.
           </p>
         </div>
 

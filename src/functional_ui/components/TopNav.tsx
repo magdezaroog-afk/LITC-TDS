@@ -22,8 +22,7 @@ import { useHub } from '../context/HubContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HeaderSearchBar } from './HeaderSearchBar';
 import { LogoViewerModal } from './LogoViewerModal';
-import litcLogo from '../assets/litc_palm_transparent.png';
-import nexusLogo from '../assets/images/nexus_intelligent_space_logo_1788129957614.jpg';
+import nexusIconTransparent from '../assets/nexus_official_icon_transparent.png';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function TopNav({ isEmbedded = true }: { isEmbedded?: boolean }) {
@@ -212,21 +211,21 @@ export function TopNav({ isEmbedded = true }: { isEmbedded?: boolean }) {
                 {/* Top: Logo Icon Image */}
                 <div className="relative size-7 sm:size-8 rounded-xl p-0.5 flex items-center justify-center shadow-md shadow-orange-500/25 border border-orange-500/40 bg-slate-950 overflow-hidden ring-2 ring-orange-500/20 group-hover:ring-orange-500/60 transition-all">
                   <img 
-                    src={nexusLogo} 
-                    alt="Nexus Logo" 
-                    className="size-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-300" 
+                    src={nexusIconTransparent} 
+                    alt="NEXUS TDS" 
+                    className="size-full object-contain rounded-lg group-hover:scale-110 transition-transform duration-300" 
                   />
                 </div>
 
                 {/* Bottom: System Name directly underneath */}
                 <span className="font-display font-black text-[10px] sm:text-[11px] tracking-wider text-orange-500 group-hover:text-orange-400 leading-none mt-1 uppercase">
-                  NEXUS
+                  NEXUS TDS
                 </span>
               </button>
             </div>
           )}
 
-          {/* LEFT SIDE (END in RTL): LITC Badge & User Profile Menu OR Work Mode Button */}
+          {/* LEFT SIDE (END in RTL): NEXUS TDS Badge & User Profile Menu OR Work Mode Button */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-10">
             {isEmbedded ? (
               <Link
@@ -244,10 +243,10 @@ export function TopNav({ isEmbedded = true }: { isEmbedded?: boolean }) {
               </Link>
             ) : (
               <>
-                {/* LITC Badge beside User Profile */}
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 text-orange-500 shadow-2xs">
-                  <img src={litcLogo} alt="LITC" className="size-3.5 object-contain" />
-                  <span className="text-[11px] font-black tracking-wider leading-none">LITC</span>
+                {/* NEXUS TDS Badge beside User Profile */}
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 text-orange-500 shadow-2xs">
+                  <img src={nexusIconTransparent} alt="NEXUS TDS" className="size-3.5 object-contain" />
+                  <span className="text-[11px] font-black tracking-wider leading-none">NEXUS TDS</span>
                 </div>
 
                 {/* User Profile Avatar with interactive Dropdown Menu */}
