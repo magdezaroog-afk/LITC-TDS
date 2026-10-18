@@ -224,6 +224,17 @@ export default function RequestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'needs_rating' | 'completed'>('active');
   const creatorRef = useRef<HTMLDivElement>(null);
+  const [stubLanded, setStubLanded] = useState(false);
+
+  useEffect(() => {
+    const handleStubLanded = () => {
+      setFilterStatus('active');
+      setStubLanded(true);
+      setTimeout(() => setStubLanded(false), 2200);
+    };
+    window.addEventListener('litc_stub_landed', handleStubLanded);
+    return () => window.removeEventListener('litc_stub_landed', handleStubLanded);
+  }, []);
   
   const handleSelectFlow = (flow: any) => {
     setActiveRequest(flow);
@@ -370,7 +381,10 @@ export default function RequestsPage() {
             tabIndex={0}
             className="mobile-create-ticket"
             onClick={() => {
-              creatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (window.scrollY > 100) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+              window.dispatchEvent(new CustomEvent('litc_focus_routes'));
             }}
             style={{
               width: '100%',
@@ -458,7 +472,7 @@ export default function RequestsPage() {
         {/* ── LEFT COLUMN: WORKSPACE SECTION (3 CARDS + ROUTE CREATOR + LEDGER TABLE) ── */}
         <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-          {/* ── 1. ROUTE PICKER & CREATOR (عرض المسارات دائماً ثابت في مساحة العمل) ── */}
+          {/* ── 1. ROUTE PICKER & CREATOR (المسارات دائماً ثابتة بالأعلى والفورم بمراحله أسفلها) ── */}
           <div ref={creatorRef}>
             <InlineRequestCreator
               onCancel={() => {}}
@@ -472,17 +486,25 @@ export default function RequestsPage() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: '14px',
           }}>
-            {/* Box 1 (Right): المعاملات النشطة */}
-            <MetricTile
-              label="المعاملات النشطة"
-              value={stats.active}
-              sublabel="جميع المعاملات الجارية ولم تكتمل"
-              icon={Activity}
-              accentColor={darkMode ? "#38bdf8" : "#0284c7"}
-              isSelected={filterStatus === 'active'}
-              onClick={() => setFilterStatus('active')}
-              darkMode={darkMode}
-            />
+            {/* Box 1 (Right): المعاملات النشطة (يتوهج ويتفاعل سينمائياً عند هبوط كعب التذكرة فيه) */}
+            <div style={{
+              position: 'relative',
+              transform: stubLanded ? 'scale(1.04)' : 'none',
+              transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: stubLanded ? '0 0 28px rgba(56, 189, 248, 0.65)' : 'none',
+              borderRadius: '12px',
+            }}>
+              <MetricTile
+                label="المعاملات النشطة"
+                value={stats.active}
+                sublabel={stubLanded ? "✨ استلمت التذكرة بنجاح في الحوض!" : "جميع المعاملات الجارية ولم تكتمل"}
+                icon={Activity}
+                accentColor={darkMode ? "#38bdf8" : "#0284c7"}
+                isSelected={filterStatus === 'active'}
+                onClick={() => setFilterStatus('active')}
+                darkMode={darkMode}
+              />
+            </div>
 
             {/* Box 2 (Center): طلبات تحتاج الي التقييم */}
             <MetricTile
