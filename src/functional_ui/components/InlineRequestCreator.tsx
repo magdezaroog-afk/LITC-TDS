@@ -1,6 +1,7 @@
 /**
  * InlineRequestCreator — In-Place Creation Workspace with Multi-Stage Wizard
- * & Cinematic Perforated Ticket Tear-Off Action (NEXUS TDS 2026 Standards)
+ * & Realistic Progressive Top-to-Bottom Perforated Ticket Tear-Off Action
+ * (NEXUS TDS 2026 Standards)
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -283,7 +284,7 @@ function FieldInput({
 }
 
 // ══════════════════════════════════════════════════════════════
-// INLINE REQUEST CREATOR (المسارات دائماً بالأعلى + الفورم كمراحل فاخرة أسفلها)
+// INLINE REQUEST CREATOR (المسارات دائماً بالأعلى + الفورم ذو حجم ثابت ومراحل متناسقة)
 // ══════════════════════════════════════════════════════════════
 export interface InlineRequestCreatorProps {
   onCancel: () => void;
@@ -301,8 +302,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [errorMsg, setErrorMsg] = useState('');
   const [highlightPulse, setHighlightPulse] = useState(false);
 
-  // ── Cinematic Tear Animation States ──
-  const [isTearing, setIsTearing] = useState(false);
+  // ── Realistic Progressive Tearing States ──
+  // 'idle' -> 'ripping' (starts at top, moves downward over 650ms) -> 'departing' (two pieces fly away) -> 'completed'
+  const [tearState, setTearState] = useState<'idle' | 'ripping' | 'departing' | 'completed'>('idle');
   const [previewSerial, setPreviewSerial] = useState('');
 
   // ── Organizational Structure & Dynamic Fields Store ──
@@ -360,7 +362,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const handleFieldChange = (name: string, val: string) => {
     setFormData(prev => {
       const next = { ...prev, [name]: val };
-      // Cascade clear on higher-level changes
       if (name === 'department') {
         next.division = '';
         next.team = '';
@@ -373,7 +374,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
   const handleSelectFlow = (flow: typeof requests[0]) => {
     if (selectedFlow?.id === flow.id) {
-      // Toggle close if clicked again
       setSelectedFlow(null);
       return;
     }
@@ -382,11 +382,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     setCurrentStep(1);
     setStatus('idle');
     setErrorMsg('');
-    setIsTearing(false);
-    // Generate clean pre-assigned sequential code
+    setTearState('idle');
     setPreviewSerial(`REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
 
-    // Smooth subtle scroll to form if needed
     setTimeout(() => {
       formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
@@ -404,11 +402,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     const all = selectedFlow.fields;
 
     if (totalStages === 2) {
-      // All fields in stage 1, ticket review in stage 2
       return { step1: all, step2: [] };
     }
 
-    // 3 stages: stage 1 = institutional / core, stage 2 = details / dynamic / schedule
     const isCore = (name: string) =>
       ['department', 'division', 'team', 'title', 'subject', 'category', 'priority', 'urgency'].includes(name);
 
@@ -416,7 +412,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     let step2 = all.filter(f => !isCore(f.name));
 
     if (step1.length === 0) {
-      // Fallback: first 2 fields in step 1, rest in step 2
       step1 = all.slice(0, 2);
       step2 = all.slice(2);
     }
@@ -424,7 +419,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     return { step1, step2 };
   }, [selectedFlow, totalStages]);
 
-  // Validation for advancing steps
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
     const currentFields = currentStep === 1 ? stepFields.step1 : stepFields.step2;
@@ -459,11 +453,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }
   };
 
-  // ── Cinematic Tear & Submit Trigger ───────────────────────────
+  // ── Realistic Progressive Tearing & Submit Trigger ───────────────
   const handleTearAndSubmit = async () => {
-    if (!selectedFlow || loading || isTearing) return;
+    if (!selectedFlow || loading || tearState !== 'idle') return;
 
-    // Final integrity check
     const allRequired = selectedFlow.fields.every(f => {
       if (!f.required) return true;
       if (f.name === 'division' && divisionOptions.length === 0) return true;
@@ -475,71 +468,71 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return;
     }
 
-    // 1. Launch visual tearing animation!
-    setIsTearing(true);
+    // ── Phase 1: Progressive Tear Propagation from TOP to BOTTOM (650ms) ──
+    setTearState('ripping');
     setLoading(true);
     setErrorMsg('');
 
-    try {
-      const token = sessionStorage.getItem('litc_token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+    // Launch backend request concurrently
+    const token = sessionStorage.getItem('litc_token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const flowAny = selectedFlow as any;
-      const res = await fetch('/api/v1/functional/requests', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          routeId: selectedFlow.id,
-          flowDefinitionId: selectedFlow.id,
-          title: selectedFlow.title,
-          departmentId: selectedFlow.targetDepartmentId,
-          divisionId: flowAny.targetDivisionId || undefined,
-          teamId: flowAny.targetTeamId || undefined,
-          targetDepartmentName: flowAny.targetDepartmentName || undefined,
-          targetDivisionName: flowAny.targetDivisionName || undefined,
-          targetTeamName: flowAny.targetTeamName || undefined,
-          description: formData.description?.trim() || Object.entries(formData).map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
-          fields: formData,
-          routingMetadata: {
-            formData,
-            targetDepartmentName: flowAny.targetDepartmentName,
-            targetDivisionName: flowAny.targetDivisionName,
-            targetTeamName: flowAny.targetTeamName,
-          },
-        }),
-      });
+    const flowAny = selectedFlow as any;
+    const reqPromise = fetch('/api/v1/functional/requests', {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        routeId: selectedFlow.id,
+        flowDefinitionId: selectedFlow.id,
+        title: selectedFlow.title,
+        departmentId: selectedFlow.targetDepartmentId,
+        divisionId: flowAny.targetDivisionId || undefined,
+        teamId: flowAny.targetTeamId || undefined,
+        targetDepartmentName: flowAny.targetDepartmentName || undefined,
+        targetDivisionName: flowAny.targetDivisionName || undefined,
+        targetTeamName: flowAny.targetTeamName || undefined,
+        description: formData.description?.trim() || Object.entries(formData).map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
+        fields: formData,
+        routingMetadata: {
+          formData,
+          targetDepartmentName: flowAny.targetDepartmentName,
+          targetDivisionName: flowAny.targetDivisionName,
+          targetTeamName: flowAny.targetTeamName,
+        },
+      }),
+    }).then(r => r.json());
 
-      const data = await res.json();
+    // Wait until the tear cuts completely from top to bottom
+    await new Promise(r => setTimeout(r, 650));
 
-      // Keep animation flying for full cinematic drama (950ms)
-      await new Promise(r => setTimeout(r, 950));
+    // ── Phase 2: Post-Cut Departure Flight (850ms) ──
+    setTearState('departing');
 
-      if (data.success) {
-        setStatus('success');
-        // Notify Box 1 (المعاملات النشطة) that the stub has arrived into the pool!
-        window.dispatchEvent(new CustomEvent('litc_stub_landed'));
-        window.dispatchEvent(new CustomEvent('litc_request_created'));
+    const [data] = await Promise.all([
+      reqPromise,
+      new Promise(r => setTimeout(r, 850))
+    ]);
 
-        setTimeout(() => {
-          setSelectedFlow(null);
-          setIsTearing(false);
-          setStatus('idle');
-          onSuccess();
-        }, 1100);
-      } else {
-        setIsTearing(false);
-        setErrorMsg(data.error || data.message || 'حدث خطأ غير متوقع');
-        setStatus('error');
-      }
-    } catch {
-      setIsTearing(false);
-      setErrorMsg('تعذر الاتصال بالخادم — يرجى المحاولة مجدداً');
+    if (data && data.success) {
+      setTearState('completed');
+      setStatus('success');
+      window.dispatchEvent(new CustomEvent('litc_stub_landed'));
+      window.dispatchEvent(new CustomEvent('litc_request_created'));
+
+      setTimeout(() => {
+        setSelectedFlow(null);
+        setTearState('idle');
+        setStatus('idle');
+        onSuccess();
+      }, 1000);
+    } else {
+      setTearState('idle');
+      setErrorMsg(data?.error || data?.message || 'حدث خطأ غير متوقع');
       setStatus('error');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   // Recursive renderer for child dynamic fields
@@ -774,8 +767,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          2. MULTI-STAGE EXPANDABLE FORM CONTAINER
-          (يظهر مباشرة أسفل المسارات وأعلى المربعات الأفقية الثلاثة)
+          2. UNIFORM-SIZED MULTI-STAGE EXPANDABLE FORM CONTAINER
+          (حجم ثابت وموحد هندسياً يمنع أي قفزات أو تغير في المساحة بين المراحل)
           ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {selectedFlow && (
@@ -794,6 +787,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
+              width: '100%',
             }}
           >
             {/* ── Top Bar: Active Flow Overview & Close Button ── */}
@@ -892,7 +886,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               ].map((step, idx) => {
                 const isActive = currentStep === step.num;
                 const isPassed = currentStep > step.num;
-                const StepIcon = step.icon;
 
                 return (
                   <React.Fragment key={step.num}>
@@ -950,523 +943,615 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               })}
             </div>
 
-            {/* ── Form Body: Stage Content Switcher ── */}
-            <div style={{ padding: '22px' }}>
-
-              {/* SUCCESS MESSAGE STATE */}
-              {status === 'success' && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px',
-                    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                    borderRadius: '10px',
-                    border: '1.5px solid rgba(16, 185, 129, 0.3)',
-                  }}
-                >
-                  <div
+            {/* ── Form Body: STRICT UNIFORM HEIGHT VIEWPORT (ارتفاع ثابت تماماً لا يقفز) ── */}
+            <div style={{ padding: '20px 22px' }}>
+              <div
+                style={{
+                  height: '350px',
+                  minHeight: '350px',
+                  maxHeight: '350px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  paddingInlineEnd: '6px',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* SUCCESS MESSAGE STATE */}
+                {status === 'success' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(16, 185, 129, 0.18)',
-                      border: '1.5px solid rgba(16, 185, 129, 0.45)',
+                      height: '100%',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '14px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                      borderRadius: '10px',
+                      border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                      padding: '20px',
                     }}
                   >
-                    <CheckCircle2 size={32} color="#34d399" />
-                  </div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#34d399', fontFamily: "'Tajawal', sans-serif" }}>
-                    تم تمزيق التذكرة وإرسال المعاملة بنجاح!
-                  </div>
-                  <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#475569' }}>
-                    تم ترحيل المعاملة رسمياً إلى ({targetDeptName}) وأُودع الكعب في حوض المعاملات النشطة.
-                  </div>
-                </motion.div>
-              )}
-
-              {/* STAGE 1: BASIC INFO & ROUTING */}
-              {status !== 'success' && currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 15 }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-                >
-                  <div style={{
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.04)',
-                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                  }}>
-                    <Building2 size={18} color={darkMode ? '#38bdf8' : '#2563eb'} />
-                    <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#334155' }}>
-                      <strong>الجهة المستهدفة بالمعاملة:</strong> سيتم توجيه هذا الطلب رسمياً إلى <strong>{targetDeptName}</strong>
-                      {targetDivName && ` (${targetDivName})`} للتنفيذ والاعتماد.
-                    </div>
-                  </div>
-
-                  {stepFields.step1.map((field) => {
-                    let fieldToRender = { ...field };
-                    if (field.name === 'department') {
-                      fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
-                    } else if (field.name === 'division') {
-                      fieldToRender.options = divisionOptions;
-                    } else if (field.name === 'team') {
-                      fieldToRender.options = teamOptions;
-                    }
-
-                    const dynamicFieldId = field.name.startsWith('dyn_') ? field.name.replace('dyn_', '') : null;
-
-                    return (
-                      <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <label style={{ fontSize: '12.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                            {fieldToRender.label}
-                          </label>
-                          {fieldToRender.required && (
-                            <span style={{ fontSize: '9.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
-                              مطلوب
-                            </span>
-                          )}
-                        </div>
-                        <FieldInput
-                          field={fieldToRender}
-                          value={formData[field.name] || ''}
-                          onChange={v => handleFieldChange(field.name, v)}
-                          darkMode={darkMode}
-                        />
-                        {dynamicFieldId && renderChildFields(dynamicFieldId, formData[field.name])}
-                      </div>
-                    );
-                  })}
-                </motion.div>
-              )}
-
-              {/* STAGE 2: DETAILED REQUIREMENTS & SCHEDULE (FOR 3-STAGE FLOWS) */}
-              {status !== 'success' && currentStep === 2 && totalStages === 3 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 15 }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-                >
-                  <div style={{
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)',
-                    border: '1px solid rgba(245, 158, 11, 0.25)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                  }}>
-                    <Layers size={18} color="#f59e0b" />
-                    <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#334155' }}>
-                      يرجى إدخال المتطلبات التشغيلية وتحديد مواعيد الجدولة إن وُجدت لدقة وسرعة التنفيذ.
-                    </div>
-                  </div>
-
-                  {stepFields.step2.map((field) => {
-                    let fieldToRender = { ...field };
-                    const dynamicFieldId = field.name.startsWith('dyn_') ? field.name.replace('dyn_', '') : null;
-
-                    return (
-                      <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <label style={{ fontSize: '12.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                            {fieldToRender.label}
-                          </label>
-                          {fieldToRender.required && (
-                            <span style={{ fontSize: '9.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
-                              مطلوب
-                            </span>
-                          )}
-                        </div>
-                        <FieldInput
-                          field={fieldToRender}
-                          value={formData[field.name] || ''}
-                          onChange={v => handleFieldChange(field.name, v)}
-                          darkMode={darkMode}
-                        />
-                        {dynamicFieldId && renderChildFields(dynamicFieldId, formData[field.name])}
-                      </div>
-                    );
-                  })}
-                </motion.div>
-              )}
-
-              {/* STAGE FINAL: CINEMATIC PERFORATED TICKET & TEAR-OFF ACTION */}
-              {status !== 'success' && currentStep === totalStages && (
-                <motion.div
-                  key="stepTicket"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : 'rgba(37, 99, 235, 0.06)',
-                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb' }}>
-                      <Scissors size={16} />
-                      <span>معاينة التذكرة الرسمية — اضغط "موافقة وإرسال" لتمزيق التذكرة وإحالتها فوراً</span>
-                    </div>
-                    <span style={{ fontSize: '11px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                      جاهزة للإصدار والترحيل
-                    </span>
-                  </div>
-
-                  {/* ── THE CINEMATIC TICKET STRUCTURE (STUB + PERFORATION + BODY) ── */}
-                  <div
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      flexDirection: 'row',
-                      borderRadius: '12px',
-                      overflow: 'visible',
-                      backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-                      border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid #cbd5e1',
-                      boxShadow: darkMode ? '0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(56, 189, 248, 0.15)' : '0 12px 30px rgba(30, 58, 82, 0.12)',
-                    }}
-                  >
-                    {/* ══ 1. THE RIGHT PART: TICKET STUB (كعب التذكرة الرقيق) ══ */}
-                    <motion.div
-                      animate={isTearing ? {
-                        y: 120,
-                        x: 50,
-                        rotate: 6,
-                        scale: 0.65,
-                        opacity: 0,
-                        filter: 'blur(2px)',
-                      } : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                    <div
                       style={{
-                        width: '210px',
-                        flexShrink: 0,
-                        padding: '18px 16px',
-                        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : '#f8fafc',
-                        borderInlineEnd: isTearing ? 'none' : (darkMode ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed #cbd5e1'),
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(16, 185, 129, 0.18)',
+                        border: '1.5px solid rgba(16, 185, 129, 0.45)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        position: 'relative',
-                        zIndex: 2,
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      {/* Top Stub Header */}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '9.5px', fontWeight: 900, color: flowColor, letterSpacing: '0.06em' }}>
-                            NEXUS TDS STUB
-                          </span>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '14px',
-                          fontWeight: 900,
-                          color: darkMode ? '#ffffff' : '#0f172a',
-                          fontFamily: "'Courier New', monospace",
-                          marginTop: '4px',
-                          letterSpacing: '0.04em',
-                        }}>
-                          {previewSerial}
-                        </div>
-                      </div>
+                      <CheckCircle2 size={32} color="#34d399" />
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#34d399', fontFamily: "'Tajawal', sans-serif" }}>
+                      تم تمزيق التذكرة وإرسال المعاملة بنجاح!
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#475569' }}>
+                      تم ترحيل المعاملة رسمياً إلى ({targetDeptName}) وأُودع الكعب في حوض المعاملات النشطة.
+                    </div>
+                  </motion.div>
+                )}
 
-                      {/* Barcode Graphic Simulation */}
-                      <div style={{
-                        padding: '8px 10px',
-                        borderRadius: '6px',
-                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
-                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                {/* STAGE 1: BASIC INFO & ROUTING */}
+                {status !== 'success' && currentStep === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}
+                  >
+                    <div style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.04)',
+                      border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}>
+                      <Building2 size={18} color={darkMode ? '#38bdf8' : '#2563eb'} />
+                      <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#334155' }}>
+                        <strong>الجهة المستهدفة بالمعاملة:</strong> سيتم توجيه هذا الطلب رسمياً إلى <strong>{targetDeptName}</strong>
+                        {targetDivName && ` (${targetDivName})`} للتنفيذ والاعتماد.
+                      </div>
+                    </div>
+
+                    {stepFields.step1.map((field) => {
+                      let fieldToRender = { ...field };
+                      if (field.name === 'department') {
+                        fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
+                      } else if (field.name === 'division') {
+                        fieldToRender.options = divisionOptions;
+                      } else if (field.name === 'team') {
+                        fieldToRender.options = teamOptions;
+                      }
+
+                      const dynamicFieldId = field.name.startsWith('dyn_') ? field.name.replace('dyn_', '') : null;
+
+                      return (
+                        <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
+                              {fieldToRender.label}
+                            </label>
+                            {fieldToRender.required && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '4px' }}>
+                                مطلوب
+                              </span>
+                            )}
+                          </div>
+                          <FieldInput
+                            field={fieldToRender}
+                            value={formData[field.name] || ''}
+                            onChange={v => handleFieldChange(field.name, v)}
+                            darkMode={darkMode}
+                          />
+                          {dynamicFieldId && renderChildFields(dynamicFieldId, formData[field.name])}
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+
+                {/* STAGE 2: DETAILED REQUIREMENTS & SCHEDULE (FOR 3-STAGE FLOWS) */}
+                {status !== 'success' && currentStep === 2 && totalStages === 3 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}
+                  >
+                    <div style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)',
+                      border: '1px solid rgba(245, 158, 11, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}>
+                      <Layers size={18} color="#f59e0b" />
+                      <div style={{ fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#334155' }}>
+                        يرجى إدخال المتطلبات التشغيلية وتحديد مواعيد الجدولة إن وُجدت لدقة وسرعة التنفيذ.
+                      </div>
+                    </div>
+
+                    {stepFields.step2.map((field) => {
+                      let fieldToRender = { ...field };
+                      const dynamicFieldId = field.name.startsWith('dyn_') ? field.name.replace('dyn_', '') : null;
+
+                      return (
+                        <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
+                              {fieldToRender.label}
+                            </label>
+                            {fieldToRender.required && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '4px' }}>
+                                مطلوب
+                              </span>
+                            )}
+                          </div>
+                          <FieldInput
+                            field={fieldToRender}
+                            value={formData[field.name] || ''}
+                            onChange={v => handleFieldChange(field.name, v)}
+                            darkMode={darkMode}
+                          />
+                          {dynamicFieldId && renderChildFields(dynamicFieldId, formData[field.name])}
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+
+                {/* STAGE FINAL: CINEMATIC PERFORATED TICKET WITH REALISTIC TOP-TO-BOTTOM TEAR */}
+                {status !== 'success' && currentStep === totalStages && (
+                  <motion.div
+                    key="stepTicket"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, position: 'relative' }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : 'rgba(37, 99, 235, 0.06)',
+                      border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb' }}>
+                        <Scissors size={15} />
+                        <span>معاينة التذكرة الرسمية — سيتم التمزيق من الأعلى إلى الأسفل ثم الترحيل</span>
+                      </div>
+                      <span style={{ fontSize: '10.5px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                        جاهزة للإصدار والترحيل
+                      </span>
+                    </div>
+
+                    {/* ── THE CINEMATIC TICKET BOUNDARY (STUB + PERFORATION + BODY) ── */}
+                    <div
+                      style={{
+                        position: 'relative',
                         display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}>
-                        {/* Barcode lines */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '28px', width: '100%', justifyContent: 'center' }}>
-                          {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 2].map((w, i) => (
-                            <span key={i} style={{ width: `${w * 1.5}px`, height: '100%', backgroundColor: darkMode ? '#94a3b8' : '#334155' }} />
-                          ))}
-                        </div>
-                        <span style={{ fontSize: '8px', color: '#64748b', fontFamily: 'monospace' }}>2026-NEXUS-VERIFIED</span>
-                      </div>
-
-                      {/* Issuer & Destination Ledger Tag */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ fontSize: '10.5px', color: darkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
-                          مقدم الطلب: <strong style={{ color: darkMode ? '#ffffff' : '#0f172a' }}>{user?.name || 'الموظف'}</strong>
-                        </div>
-                        <div style={{
-                          fontSize: '9.5px',
-                          fontWeight: 800,
-                          color: '#38bdf8',
-                          backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                          padding: '3px 6px',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}>
-                          <span>📥 حوض المعاملات النشطة</span>
-                        </div>
-                      </div>
-
-                      {/* Flying Stub Badge indicator */}
-                      {isTearing && (
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundColor: 'rgba(2, 132, 199, 0.9)',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          borderRadius: '8px',
-                          textAlign: 'center',
-                          padding: '8px',
-                        }}>
-                          📥 إيداع بالحوض النشط...
-                        </div>
-                      )}
-                    </motion.div>
-
-                    {/* ══ 2. PERFORATION NOTCHES & SCISSORS ══ */}
-                    {!isTearing && (
-                      <div
+                        flexDirection: 'row',
+                        borderRadius: '12px',
+                        overflow: 'visible',
+                        backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid #cbd5e1',
+                        boxShadow: darkMode ? '0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(56, 189, 248, 0.15)' : '0 12px 30px rgba(30, 58, 82, 0.12)',
+                        minHeight: '260px',
+                        flex: 1,
+                      }}
+                    >
+                      {/* ══ 1. THE RIGHT PART: TICKET STUB (كعب التذكرة الرقيق) ══ */}
+                      <motion.div
+                        animate={
+                          tearState === 'ripping'
+                            ? {
+                                rotate: 1.5,
+                                x: 4,
+                                transformOrigin: 'bottom right',
+                              }
+                            : tearState === 'departing'
+                            ? {
+                                y: 130,
+                                x: 50,
+                                rotate: 6,
+                                scale: 0.65,
+                                opacity: 0,
+                                filter: 'blur(2px)',
+                              }
+                            : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
+                        }
+                        transition={
+                          tearState === 'ripping'
+                            ? { duration: 0.65, ease: 'easeOut' }
+                            : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
+                        }
                         style={{
-                          position: 'absolute',
-                          insetInlineStart: '202px',
-                          top: 0,
-                          bottom: 0,
-                          width: '16px',
+                          width: '210px',
+                          flexShrink: 0,
+                          padding: '16px 14px',
+                          backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : '#f8fafc',
+                          borderInlineEnd: tearState === 'departing' ? 'none' : (darkMode ? '2px dashed rgba(255, 255, 255, 0.2)' : '2px dashed #cbd5e1'),
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
-                          alignItems: 'center',
-                          pointerEvents: 'none',
-                          zIndex: 5,
+                          gap: '10px',
+                          position: 'relative',
+                          zIndex: 2,
                         }}
                       >
-                        {/* Top notch cutout */}
-                        <div style={{
-                          width: '16px',
-                          height: '8px',
-                          backgroundColor: darkMode ? '#111827' : '#ffffff',
-                          borderBottomLeftRadius: '10px',
-                          borderBottomRightRadius: '10px',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
-                          borderTop: 'none',
-                        }} />
-
-                        {/* Scissor icon in center */}
-                        <div style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: '50%',
-                          backgroundColor: darkMode ? '#1e293b' : '#e2e8f0',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #cbd5e1',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: flowColor,
-                        }}>
-                          <Scissors size={11} />
-                        </div>
-
-                        {/* Bottom notch cutout */}
-                        <div style={{
-                          width: '16px',
-                          height: '8px',
-                          backgroundColor: darkMode ? '#111827' : '#ffffff',
-                          borderTopLeftRadius: '10px',
-                          borderTopRightRadius: '10px',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
-                          borderBottom: 'none',
-                        }} />
-                      </div>
-                    )}
-
-                    {/* ══ 3. THE LEFT PART: MAIN PAYLOAD BODY (متن التذكرة الواسع) ══ */}
-                    <motion.div
-                      animate={isTearing ? {
-                        y: -150,
-                        x: -70,
-                        rotate: -8,
-                        scale: 0.85,
-                        opacity: 0,
-                        filter: 'blur(3px)',
-                      } : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
-                      style={{
-                        flex: 1,
-                        padding: '20px 22px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '14px',
-                        position: 'relative',
-                        zIndex: 1,
-                        background: darkMode
-                          ? `linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)`
-                          : '#ffffff',
-                      }}
-                    >
-                      {/* Flow Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {/* Top Stub Header */}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '9px', fontWeight: 900, color: flowColor, letterSpacing: '0.06em' }}>
+                              NEXUS TDS STUB
+                            </span>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                          </div>
                           <div style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '8px',
-                            backgroundColor: `${flowColor}20`,
-                            border: `1.5px solid ${flowColor}60`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: flowColor,
+                            fontSize: '13px',
+                            fontWeight: 900,
+                            color: darkMode ? '#ffffff' : '#0f172a',
+                            fontFamily: "'Courier New', monospace",
+                            marginTop: '2px',
+                            letterSpacing: '0.04em',
                           }}>
-                            {resolveIcon(selectedFlow.icon, 18, flowColor)}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '15px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                              {selectedFlow.title}
-                            </div>
-                            <div style={{ fontSize: '11px', color: flowColor, fontWeight: 700 }}>
-                              🎯 جهة الاختصاص: {targetDeptName}
-                            </div>
+                            {previewSerial}
                           </div>
                         </div>
 
+                        {/* Barcode Graphic Simulation */}
                         <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '4px 10px',
-                          borderRadius: '9999px',
-                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          color: '#34d399',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                        }}>
-                          <ShieldCheck size={14} />
-                          <span>معتمدة وجاهزة للترحيل</span>
-                        </div>
-                      </div>
-
-                      {/* Entered Payload Key-Value Grid */}
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-                        gap: '10px',
-                        padding: '12px 14px',
-                        borderRadius: '8px',
-                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-                      }}>
-                        {selectedFlow.fields.map((f) => {
-                          const val = formData[f.name];
-                          if (!val) return null;
-                          return (
-                            <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '10.5px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                                {f.label}
-                              </span>
-                              <span style={{
-                                fontSize: '12px',
-                                fontWeight: 800,
-                                color: darkMode ? '#ffffff' : '#0f172a',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {val}
-                              </span>
-                            </div>
-                          );
-                        })}
-
-                        {/* Extra dynamic fields */}
-                        {Object.entries(formData)
-                          .filter(([k]) => k.startsWith('dyn_') && !selectedFlow.fields.some(f => f.name === k))
-                          .map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '10.5px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 600 }}>
-                                متطلب إضافي
-                              </span>
-                              <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                                {v}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-
-                      {/* Flying Body Badge indicator */}
-                      {isTearing && (
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundColor: 'rgba(19, 93, 121, 0.95)',
-                          color: '#ffffff',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          borderRadius: '8px',
-                          textAlign: 'center',
-                          padding: '14px',
+                          gap: '3px',
                         }}>
-                          <span style={{ fontSize: '24px' }}>✈️</span>
-                          <span>تحليق وإحالة فورية إلى: {targetDeptName}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '22px', width: '100%', justifyContent: 'center' }}>
+                            {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 2].map((w, i) => (
+                              <span key={i} style={{ width: `${w * 1.5}px`, height: '100%', backgroundColor: darkMode ? '#94a3b8' : '#334155' }} />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '8px', color: '#64748b', fontFamily: 'monospace' }}>2026-NEXUS-VERIFIED</span>
+                        </div>
+
+                        {/* Issuer & Destination Ledger Tag */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <div style={{ fontSize: '10px', color: darkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
+                            مقدم الطلب: <strong style={{ color: darkMode ? '#ffffff' : '#0f172a' }}>{user?.name || 'الموظف'}</strong>
+                          </div>
+                          <div style={{
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            color: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                            padding: '3px 6px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}>
+                            <span>📥 حوض المعاملات النشطة</span>
+                          </div>
+                        </div>
+
+                        {/* Floating Stub Departure Badge */}
+                        {tearState === 'departing' && (
+                          <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(2, 132, 199, 0.92)',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            padding: '8px',
+                          }}>
+                            📥 إيداع بالحوض النشط...
+                          </div>
+                        )}
+                      </motion.div>
+
+                      {/* ══ 2. PROGRESSIVE TOP-TO-BOTTOM TEAR LINE EFFECT ══ */}
+                      {tearState === 'ripping' && (
+                        <>
+                          {/* Laser Rip Line running downwards */}
+                          <motion.div
+                            initial={{ height: '0%' }}
+                            animate={{ height: '100%' }}
+                            transition={{ duration: 0.65, ease: 'easeInOut' }}
+                            style={{
+                              position: 'absolute',
+                              insetInlineStart: '210px',
+                              top: 0,
+                              width: '3.5px',
+                              background: 'linear-gradient(to bottom, #ef4444 0%, #f59e0b 60%, #38bdf8 100%)',
+                              boxShadow: '0 0 14px #f59e0b, 0 0 25px #ef4444',
+                              zIndex: 15,
+                            }}
+                          />
+                          {/* Moving Scissor Cutter Tool running downwards */}
+                          <motion.div
+                            initial={{ top: '0%' }}
+                            animate={{ top: '100%' }}
+                            transition={{ duration: 0.65, ease: 'easeInOut' }}
+                            style={{
+                              position: 'absolute',
+                              insetInlineStart: '210px',
+                              width: '26px',
+                              height: '26px',
+                              transform: 'translate(-50%, -50%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              backgroundColor: '#f59e0b',
+                              borderRadius: '50%',
+                              zIndex: 16,
+                              boxShadow: '0 0 12px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.8)',
+                            }}
+                          >
+                            <Scissors size={14} style={{ transform: 'rotate(90deg)' }} />
+                          </motion.div>
+                        </>
+                      )}
+
+                      {/* Static Perforation Boundary Notches (when not departing) */}
+                      {tearState !== 'departing' && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            insetInlineStart: '202px',
+                            top: 0,
+                            bottom: 0,
+                            width: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            pointerEvents: 'none',
+                            zIndex: 5,
+                          }}
+                        >
+                          <div style={{
+                            width: '16px',
+                            height: '8px',
+                            backgroundColor: darkMode ? '#111827' : '#ffffff',
+                            borderBottomLeftRadius: '10px',
+                            borderBottomRightRadius: '10px',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
+                            borderTop: 'none',
+                          }} />
+
+                          {tearState === 'idle' && (
+                            <div style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              backgroundColor: darkMode ? '#1e293b' : '#e2e8f0',
+                              border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #cbd5e1',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: flowColor,
+                            }}>
+                              <Scissors size={11} />
+                            </div>
+                          )}
+
+                          <div style={{
+                            width: '16px',
+                            height: '8px',
+                            backgroundColor: darkMode ? '#111827' : '#ffffff',
+                            borderTopLeftRadius: '10px',
+                            borderTopRightRadius: '10px',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
+                            borderBottom: 'none',
+                          }} />
                         </div>
                       )}
-                    </motion.div>
-                  </div>
-                </motion.div>
-              )}
+
+                      {/* ══ 3. THE LEFT PART: MAIN PAYLOAD BODY (متن التذكرة الواسع) ══ */}
+                      <motion.div
+                        animate={
+                          tearState === 'ripping'
+                            ? {
+                                rotate: -2.5,
+                                x: -8,
+                                transformOrigin: 'bottom left',
+                              }
+                            : tearState === 'departing'
+                            ? {
+                                y: -160,
+                                x: -75,
+                                rotate: -9,
+                                scale: 0.85,
+                                opacity: 0,
+                                filter: 'blur(3px)',
+                              }
+                            : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
+                        }
+                        transition={
+                          tearState === 'ripping'
+                            ? { duration: 0.65, ease: 'easeOut' }
+                            : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
+                        }
+                        style={{
+                          flex: 1,
+                          padding: '16px 18px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          position: 'relative',
+                          zIndex: 1,
+                          background: darkMode
+                            ? `linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)`
+                            : '#ffffff',
+                        }}
+                      >
+                        {/* Flow Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '34px',
+                              height: '34px',
+                              borderRadius: '8px',
+                              backgroundColor: `${flowColor}20`,
+                              border: `1.5px solid ${flowColor}60`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: flowColor,
+                            }}>
+                              {resolveIcon(selectedFlow.icon, 18, flowColor)}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                                {selectedFlow.title}
+                              </div>
+                              <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
+                                🎯 جهة الاختصاص: {targetDeptName}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '3px 8px',
+                            borderRadius: '9999px',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            color: '#34d399',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                          }}>
+                            <ShieldCheck size={13} />
+                            <span>معتمدة وجاهزة للترحيل</span>
+                          </div>
+                        </div>
+
+                        {/* Entered Payload Key-Value Grid */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: '8px',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                          maxHeight: '125px',
+                          overflowY: 'auto',
+                        }}>
+                          {selectedFlow.fields.map((f) => {
+                            const val = formData[f.name];
+                            if (!val) return null;
+                            return (
+                              <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                  {f.label}
+                                </span>
+                                <span style={{
+                                  fontSize: '11.5px',
+                                  fontWeight: 800,
+                                  color: darkMode ? '#ffffff' : '#0f172a',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {val}
+                                </span>
+                              </div>
+                            );
+                          })}
+
+                          {Object.entries(formData)
+                            .filter(([k]) => k.startsWith('dyn_') && !selectedFlow.fields.some(f => f.name === k))
+                            .map(([k, v]) => (
+                              <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                <span style={{ fontSize: '10px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 600 }}>
+                                  متطلب إضافي
+                                </span>
+                                <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                                  {v}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Floating Body Departure Badge */}
+                        {tearState === 'departing' && (
+                          <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(19, 93, 121, 0.95)',
+                            color: '#ffffff',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            padding: '14px',
+                          }}>
+                            <span style={{ fontSize: '24px' }}>✈️</span>
+                            <span>تحليق وإحالة فورية إلى: {targetDeptName}</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               {/* Error Message Box */}
               {errorMsg && (
                 <div
                   style={{
-                    padding: '10px 14px',
+                    padding: '8px 12px',
                     borderRadius: '6px',
                     backgroundColor: 'rgba(239, 68, 68, 0.12)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     color: '#f87171',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    marginTop: '14px',
+                    marginTop: '10px',
                   }}
                 >
-                  <AlertTriangle size={15} />
+                  <AlertTriangle size={14} />
                   <span>{errorMsg}</span>
                 </div>
               )}
@@ -1475,8 +1560,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               {status !== 'success' && (
                 <div
                   style={{
-                    paddingTop: '18px',
-                    marginTop: '18px',
+                    paddingTop: '14px',
+                    marginTop: '10px',
                     borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                     display: 'flex',
                     alignItems: 'center',
@@ -1490,14 +1575,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       <button
                         type="button"
                         onClick={handlePrevStep}
-                        disabled={loading || isTearing}
+                        disabled={loading || tearState !== 'idle'}
                         style={{
-                          padding: '9px 18px',
+                          padding: '8px 16px',
                           borderRadius: '6px',
                           backgroundColor: 'transparent',
                           border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
                           color: darkMode ? '#cbd5e1' : '#475569',
-                          fontSize: '12px',
+                          fontSize: '11.5px',
                           fontWeight: 700,
                           cursor: 'pointer',
                           display: 'flex',
@@ -1516,14 +1601,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     <button
                       type="button"
                       onClick={() => setSelectedFlow(null)}
-                      disabled={loading || isTearing}
+                      disabled={loading || tearState !== 'idle'}
                       style={{
-                        padding: '9px 16px',
+                        padding: '8px 14px',
                         borderRadius: '6px',
                         backgroundColor: 'transparent',
                         border: 'none',
                         color: darkMode ? '#94a3b8' : '#64748b',
-                        fontSize: '12px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         fontFamily: "'Cairo', sans-serif",
@@ -1538,12 +1623,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         type="button"
                         onClick={handleNextStep}
                         style={{
-                          padding: '10px 22px',
+                          padding: '9px 20px',
                           borderRadius: '6px',
                           background: `linear-gradient(135deg, ${flowColor} 0%, #2563eb 100%)`,
                           border: 'none',
                           color: '#ffffff',
-                          fontSize: '12.5px',
+                          fontSize: '12px',
                           fontWeight: 800,
                           cursor: 'pointer',
                           display: 'flex',
@@ -1559,34 +1644,39 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       </button>
                     )}
 
-                    {/* FINAL STAGE: TEAR & SUBMIT ACTION */}
+                    {/* FINAL STAGE: PROGRESSIVE TEAR & SUBMIT ACTION */}
                     {currentStep === totalStages && (
                       <button
                         type="button"
                         onClick={handleTearAndSubmit}
-                        disabled={loading || isTearing}
+                        disabled={loading || tearState !== 'idle'}
                         style={{
-                          padding: '11px 26px',
+                          padding: '10px 24px',
                           borderRadius: '8px',
                           background: `linear-gradient(135deg, #f59e0b 0%, #f36c21 50%, #135d79 100%)`,
                           border: 'none',
                           color: '#ffffff',
-                          fontSize: '13.5px',
+                          fontSize: '13px',
                           fontWeight: 900,
-                          cursor: (loading || isTearing) ? 'not-allowed' : 'pointer',
+                          cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
                           boxShadow: '0 6px 20px rgba(243, 108, 33, 0.45)',
                           fontFamily: "'Cairo', sans-serif",
-                          transform: isTearing ? 'scale(0.96)' : 'none',
+                          transform: tearState !== 'idle' ? 'scale(0.96)' : 'none',
                           transition: 'all 0.2s ease',
                         }}
                       >
-                        {loading || isTearing ? (
+                        {tearState === 'ripping' ? (
+                          <>
+                            <Scissors size={16} style={{ animation: 'bounce 0.5s infinite' }} />
+                            <span>جاري القطع من الأعلى للأسفل...</span>
+                          </>
+                        ) : tearState === 'departing' || loading ? (
                           <>
                             <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                            <span>جاري تمزيق التذكرة والترحيل...</span>
+                            <span>جاري ترحيل التذكرة وإيداع الكعب...</span>
                           </>
                         ) : (
                           <>
