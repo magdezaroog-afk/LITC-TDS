@@ -916,6 +916,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         {selectedFlow && (
           <motion.div
             ref={formTopRef}
+            className="enterprise-ticket-split"
             initial={{ opacity: 0, y: -14, height: 0 }}
             animate={{ opacity: 1, y: 0, height: 'auto' }}
             exit={{ opacity: 0, y: -14, height: 0 }}
@@ -938,6 +939,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
           >
             {/* ══ 1. THE RIGHT COLUMN: TICKET STUB (كعب التذكرة الموحد - حاضر في جميع المراحل) ══ */}
             <motion.div
+              className="ticket-stub-col"
               animate={
                 tearState === 'ripping'
                   ? {
@@ -1113,6 +1115,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             {/* Static Perforation Notches */}
             {tearState !== 'departing' && (
               <div
+                className="hide-on-mobile"
                 style={{
                   position: 'absolute',
                   insetInlineStart: '207px',

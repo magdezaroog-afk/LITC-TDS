@@ -481,13 +481,16 @@ export default function RequestsPage() {
           </div>
 
           {/* ── 2. THREE PRIMARY HORIZONTAL KPI TILES (1: المعاملات النشطة | 2: طلبات تحتاج إلى التقييم | 3: أرشيف المعاملات) ── */}
-          <div style={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '14px',
-          }}>
+          <div
+            className="enterprise-kpi-grid"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '14px',
+            }}
+          >
             {/* Box 1 (Right): المعاملات النشطة (يتوهج ويتفاعل سينمائياً عند هبوط كعب التذكرة فيه) */}
             <div style={{
               position: 'relative',

@@ -238,16 +238,65 @@ export const AdminDashboardShell: React.FC = () => {
           flexDirection: 'column',
           minWidth: 0,
           background: APPLE.bg,
-          paddingBottom: '80px', // Space for taskbar
         }}>
-          
+
+          {/* ── Mobile/Tablet Tabs Strip (Swipeable) ── */}
+          <div
+            className="show-on-mobile-only"
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              background: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+              padding: '8px 12px',
+              width: '100%',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            <div className="enterprise-scroll-tabs" style={{ display: 'flex', gap: '8px', padding: '2px 0' }}>
+              {TAB_KEYS.map((tabId) => {
+                const cfg = APPLE.tabs[tabId];
+                const isActive = activeTab === tabId;
+                return (
+                  <button
+                    key={tabId}
+                    onClick={() => handleTabSwitch(tabId)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '12px',
+                      border: isActive ? `1.5px solid ${cfg.color}` : '1px solid rgba(0,0,0,0.08)',
+                      background: isActive ? cfg.color : '#ffffff',
+                      color: isActive ? '#ffffff' : '#334155',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      boxShadow: isActive ? `0 3px 12px ${cfg.color}35` : '0 1px 3px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1)'
+                    }}
+                  >
+                    <span style={{ fontSize: '15px' }}>{cfg.icon}</span>
+                    <span>{cfg.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Content Area */}
           <div
             className="admin-main-content admin-scroll"
             style={{
               flex: 1,
-              padding: '28px',
+              padding: '28px 28px 110px',
               overflowY: 'auto',
               opacity: isTransitioning ? 0 : 1,
               transform: isTransitioning ? 'translateY(6px)' : undefined,
@@ -321,25 +370,28 @@ export const AdminDashboardShell: React.FC = () => {
         </main>
       </div>
 
-      {/* ── Floating Dock Taskbar (macOS-inspired) ── */}
-      <nav style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '10px 16px',
-        background: 'rgba(255, 255, 255, 0.72)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        borderRadius: '22px',
-        border: '1px solid rgba(255, 255, 255, 0.6)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
-        zIndex: 8000,
-        animation: 'appleReveal 0.5s cubic-bezier(0.28, 0.11, 0.32, 1)',
-      }}>
+      {/* ── Floating Dock Taskbar (macOS-inspired, Desktop only) ── */}
+      <nav
+        className="hide-on-mobile"
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '10px 16px',
+          background: 'rgba(255, 255, 255, 0.72)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          borderRadius: '22px',
+          border: '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
+          zIndex: 8000,
+          animation: 'appleReveal 0.5s cubic-bezier(0.28, 0.11, 0.32, 1)',
+        }}
+      >
         {TAB_KEYS.map((tabId) => {
           const cfg = APPLE.tabs[tabId];
           const isActive = activeTab === tabId;

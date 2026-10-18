@@ -23,7 +23,7 @@ import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { Sun, Moon, Search, Plus } from 'lucide-react';
+import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut } from 'lucide-react';
 import { NexusTdsBrand } from './components/brand/NexusTdsBrand';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
@@ -191,280 +191,626 @@ const Navigation: React.FC = () => {
   const isOpsActive = location.pathname.startsWith('/ops');
   const isAdminActive = location.pathname.startsWith('/admin');
 
+  // Dynamic mobile viewport detection
+  const [isMobileScreen, setIsMobileScreen] = React.useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 840 : false
+  );
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobileScreen(window.innerWidth < 840);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close drawer on route change
+  React.useEffect(() => {
+    setIsDrawerOpen(false);
+  }, [location.pathname]);
+
+  const canAccessOps = ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'OPERATIONAL_USER'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface;
+  const canAccessAdmin = ['super_admin', 'system_director', 'co_admin'].includes(user?.role || '') || user?.email === 'admin@litc.ly';
+
   return (
-    <header
-      style={{
-        position: 'fixed',
-        top: '12px',
-        left: 0,
-        right: 0,
-        zIndex: 95000,
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '0 20px',
-        pointerEvents: 'none',
-      }}
-    >
-      <nav
+    <>
+      {/* ══════════════════════════════════════════════════════════
+          1. TOP APP BAR (DESKTOP FLOATING ISLAND / MOBILE SLIM BAR)
+          ══════════════════════════════════════════════════════════ */}
+      <header
         style={{
-          pointerEvents: 'auto',
-          width: '100%',
-          maxWidth: '1440px',
-          height: '56px',
-          borderRadius: '16px',
-          backdropFilter: 'blur(28px) saturate(190%)',
-          WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-          backgroundColor: isDark ? 'rgba(11, 20, 31, 0.78)' : 'rgba(255, 255, 255, 0.86)',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.14)',
-          boxShadow: isDark
-            ? '0 16px 36px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
-            : '0 12px 30px -8px rgba(19, 93, 121, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+          position: 'fixed',
+          top: isMobileScreen ? '0' : '12px',
+          left: 0,
+          right: 0,
+          zIndex: 95000,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 16px',
-          direction: dir,
-          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          boxSizing: 'border-box'
+          justifyContent: 'center',
+          padding: isMobileScreen ? '0' : '0 20px',
+          pointerEvents: 'none',
         }}
       >
-        {/* ── ZONE 1: Institutional Brand & Compact Search ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <NexusTdsBrand
-              variant="horizontal"
-              theme={isDark ? 'dark' : 'light'}
-              size="sm"
-              showSubtitle={true}
-            />
-          </Link>
-
-          {/* Micro Divider */}
-          <div style={{ width: '1px', height: '22px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.12)' }} />
-
-          {/* Sleek Compact Search Bar */}
-          <div 
-            style={{ 
-              position: 'relative', 
-              display: 'flex', 
-              alignItems: 'center',
-              width: isSearchFocused ? '240px' : '180px',
-              transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          >
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              placeholder={language === 'ar' ? 'بحث سريع عن تذكرة...' : 'Quick search...'}
-              style={{
-                width: '100%',
-                padding: dir === 'rtl' ? '6px 32px 6px 12px' : '6px 12px 6px 32px',
-                borderRadius: '12px',
-                border: isSearchFocused 
-                  ? '1px solid #f36c21' 
-                  : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)'),
-                backgroundColor: isSearchFocused
-                  ? (isDark ? 'rgba(11, 20, 31, 0.95)' : '#ffffff')
-                  : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(19, 93, 121, 0.03)'),
-                boxShadow: isSearchFocused ? '0 0 0 3px rgba(243, 108, 33, 0.15)' : 'none',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                fontSize: '12px',
-                fontFamily: "'Cairo', sans-serif",
-                outline: 'none',
-                transition: 'all 0.2s ease',
-                boxSizing: 'border-box'
-              }}
-            />
-            <Search 
-              size={14} 
-              style={{ 
-                position: 'absolute', 
-                [dir === 'rtl' ? 'right' : 'left']: '10px', 
-                color: isSearchFocused ? '#f36c21' : (isDark ? '#94a3b8' : '#135d79'), 
-                pointerEvents: 'none',
-                transition: 'color 0.2s ease'
-              }} 
-            />
-          </div>
-        </div>
-
-        {/* ── ZONE 2: Central Mode Capsule ── */}
-        <div
+        <nav
           style={{
+            pointerEvents: 'auto',
+            width: '100%',
+            maxWidth: '1440px',
+            height: isMobileScreen ? '54px' : '56px',
+            borderRadius: isMobileScreen ? '0 0 16px 16px' : '16px',
+            backdropFilter: 'blur(28px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.15)',
+            borderLeft: isMobileScreen ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.14)'),
+            borderRight: isMobileScreen ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.14)'),
+            borderTop: isMobileScreen ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.14)'),
+            boxShadow: isDark
+              ? '0 16px 36px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+              : '0 12px 30px -8px rgba(19, 93, 121, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            padding: '3px',
-            borderRadius: '12px',
-            background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(19, 93, 121, 0.04)',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(19, 93, 121, 0.08)',
+            justifyContent: 'space-between',
+            padding: isMobileScreen ? '0 12px' : '0 16px',
+            direction: dir,
+            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box'
           }}
         >
-          {/* رابط بوابة الموظف */}
+          {/* ── ZONE 1: Brand & Search ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobileScreen ? '8px' : '14px', flexShrink: 0 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+              <NexusTdsBrand
+                variant="horizontal"
+                theme={isDark ? 'dark' : 'light'}
+                size="sm"
+                showSubtitle={!isMobileScreen}
+              />
+            </Link>
+
+            {/* Desktop Search Bar */}
+            {!isMobileScreen && (
+              <>
+                <div style={{ width: '1px', height: '22px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.12)' }} />
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    width: isSearchFocused ? '240px' : '180px',
+                    transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    placeholder={language === 'ar' ? 'بحث سريع عن تذكرة...' : 'Quick search...'}
+                    style={{
+                      width: '100%',
+                      padding: dir === 'rtl' ? '6px 32px 6px 12px' : '6px 12px 6px 32px',
+                      borderRadius: '12px',
+                      border: isSearchFocused 
+                        ? '1px solid #f36c21' 
+                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)'),
+                      backgroundColor: isSearchFocused
+                        ? (isDark ? 'rgba(11, 20, 31, 0.95)' : '#ffffff')
+                        : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(19, 93, 121, 0.03)'),
+                      boxShadow: isSearchFocused ? '0 0 0 3px rgba(243, 108, 33, 0.15)' : 'none',
+                      color: isDark ? '#f8fafc' : '#0f172a',
+                      fontSize: '12px',
+                      fontFamily: "'Cairo', sans-serif",
+                      outline: 'none',
+                      transition: 'all 0.2s ease',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <Search 
+                    size={14} 
+                    style={{ 
+                      position: 'absolute', 
+                      [dir === 'rtl' ? 'right' : 'left']: '10px', 
+                      color: isSearchFocused ? '#f36c21' : (isDark ? '#94a3b8' : '#135d79'), 
+                      pointerEvents: 'none',
+                      transition: 'color 0.2s ease'
+                    }} 
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── ZONE 2: Central Mode Capsule (Desktop only) ── */}
+          {!isMobileScreen && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '3px',
+                borderRadius: '12px',
+                background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(19, 93, 121, 0.04)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(19, 93, 121, 0.08)',
+              }}
+            >
+              <Link
+                to="/hub"
+                style={{
+                  background: isEmployeeActive
+                    ? (isDark ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' : '#ffffff')
+                    : 'transparent',
+                  color: isEmployeeActive
+                    ? (isDark ? '#ffffff' : '#135d79')
+                    : (isDark ? '#94a3b8' : '#64748b'),
+                  textDecoration: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '9px',
+                  fontSize: '12px',
+                  fontWeight: isEmployeeActive ? 800 : 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: isEmployeeActive
+                    ? (isDark ? '0 2px 10px rgba(19, 93, 121, 0.4)' : '0 2px 6px rgba(19, 93, 121, 0.12)')
+                    : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                <span>🏢 بوابة الموظف</span>
+              </Link>
+
+              {canAccessOps && (
+                <Link
+                  to="/ops"
+                  style={{
+                    background: isOpsActive
+                      ? (isDark ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' : '#ffffff')
+                      : 'transparent',
+                    color: isOpsActive
+                      ? (isDark ? '#ffffff' : '#f36c21')
+                      : (isDark ? '#94a3b8' : '#64748b'),
+                    textDecoration: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '9px',
+                    fontSize: '12px',
+                    fontWeight: isOpsActive ? 800 : 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isOpsActive
+                      ? (isDark ? '0 2px 10px rgba(243, 108, 33, 0.4)' : '0 2px 6px rgba(243, 108, 33, 0.15)')
+                      : 'none',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}
+                >
+                  <span>🚀 مود العمل (العمليات)</span>
+                </Link>
+              )}
+
+              {canAccessAdmin && (
+                <Link
+                  to="/admin"
+                  style={{
+                    background: isAdminActive
+                      ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                      : 'transparent',
+                    color: isAdminActive
+                      ? (isDark ? '#ffffff' : '#0284c7')
+                      : (isDark ? '#94a3b8' : '#64748b'),
+                    textDecoration: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '9px',
+                    fontSize: '12px',
+                    fontWeight: isAdminActive ? 800 : 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isAdminActive
+                      ? (isDark ? '0 2px 10px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(2, 132, 199, 0.12)')
+                      : 'none',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}
+                >
+                  <span>🛡️ لوحة تحكم النظام</span>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* ── ZONE 3: Utility Controls & Profile / Hamburger ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobileScreen ? '6px' : '8px', flexShrink: 0 }}>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '9px',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(19, 93, 121, 0.05)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: isDark ? '#f36c21' : '#135d79',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                flexShrink: 0,
+              }}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+
+            {/* Notifications */}
+            <NotificationBell />
+
+            {/* Desktop Full Controls */}
+            {!isMobileScreen ? (
+              <>
+                <button
+                  onClick={toggleLanguage}
+                  title="تغيير لغة العرض"
+                  style={{
+                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)',
+                    color: isDark ? '#e2e8f0' : '#135d79',
+                    padding: '6px 10px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '11.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.18s ease',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}
+                >
+                  <span>🌐</span>
+                  <span>{language === 'ar' ? 'English' : 'عربي'}</span>
+                </button>
+                <div style={{ width: '1px', height: '22px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.12)', margin: '0 2px' }} />
+                <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
+              </>
+            ) : (
+              /* Mobile Hamburger Menu Button */
+              <button
+                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '9px',
+                  backgroundColor: isDrawerOpen ? '#f36c21' : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.08)'),
+                  border: `1px solid ${isDrawerOpen ? '#f36c21' : (isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(19, 93, 121, 0.18)')}`,
+                  color: isDrawerOpen ? '#ffffff' : (isDark ? '#f8fafc' : '#135d79'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isDrawerOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            )}
+          </div>
+        </nav>
+      </header>
+
+      {/* ══════════════════════════════════════════════════════════
+          2. SLIDE-OVER EXECUTIVE DRAWER FOR MOBILE (درج التنقل القيادي)
+          ══════════════════════════════════════════════════════════ */}
+      {isMobileScreen && isDrawerOpen && (
+        <>
+          <div className="mobile-drawer-overlay" onClick={() => setIsDrawerOpen(false)} />
+          <aside className="mobile-drawer-panel" dir={dir}>
+            {/* Header: User Info & Close */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #135d79 0%, #f36c21 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontWeight: 900,
+                  fontSize: '15px'
+                }}>
+                  {((user as any)?.fullName || (user as any)?.name || user?.email || 'U').charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>{(user as any)?.fullName || (user as any)?.name || user?.email || 'المستخدم'}</div>
+                  <div style={{ fontSize: '10.5px', color: '#94a3b8' }}>{user?.role || 'EMPLOYEE'}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: 'none',
+                  color: '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Mode Switcher Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                بيئات ومودات العمل
+              </div>
+
+              {/* 1. Employee Portal */}
+              <Link
+                to="/hub"
+                onClick={() => setIsDrawerOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  background: isEmployeeActive ? 'rgba(19, 93, 121, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                  border: `1.5px solid ${isEmployeeActive ? '#135d79' : 'rgba(255, 255, 255, 0.06)'}`,
+                  color: isEmployeeActive ? '#38bdf8' : '#e2e8f0',
+                  textDecoration: 'none',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🏢</span> بوابة الموظف والطلبات
+                </span>
+                <ChevronLeft size={16} />
+              </Link>
+
+              {/* 2. Ops Mode */}
+              {canAccessOps && (
+                <Link
+                  to="/ops"
+                  onClick={() => setIsDrawerOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    background: isOpsActive ? 'rgba(243, 108, 33, 0.25)' : 'rgba(255, 255, 255, 0.03)',
+                    border: `1.5px solid ${isOpsActive ? '#f36c21' : 'rgba(255, 255, 255, 0.06)'}`,
+                    color: isOpsActive ? '#fb923c' : '#e2e8f0',
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🚀</span> مود العمل (غرفة العمليات)
+                  </span>
+                  <ChevronLeft size={16} />
+                </Link>
+              )}
+
+              {/* 3. Admin Mode */}
+              {canAccessAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsDrawerOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    background: isAdminActive ? 'rgba(2, 132, 199, 0.25)' : 'rgba(255, 255, 255, 0.03)',
+                    border: `1.5px solid ${isAdminActive ? '#0284c7' : 'rgba(255, 255, 255, 0.06)'}`,
+                    color: isAdminActive ? '#38bdf8' : '#e2e8f0',
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🛡️</span> لوحة إدارة النظام
+                  </span>
+                  <ChevronLeft size={16} />
+                </Link>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={toggleLanguage}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: '#cbd5e1',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>🌐 لغة الواجهة</span>
+                <span style={{ fontWeight: 800, color: '#38bdf8' }}>{language === 'ar' ? 'العربية' : 'English'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  localStorage.removeItem('litc_token');
+                  sessionStorage.removeItem('litc_token');
+                  window.location.href = '/login';
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  color: '#f87171',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <LogOut size={14} />
+                <span>تسجيل الخروج</span>
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          3. BOTTOM NAVIGATION BAR FOR MOBILE (شريط اللمس السفلي)
+          ══════════════════════════════════════════════════════════ */}
+      {isMobileScreen && (
+        <nav
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '58px',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.14)',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.25)',
+            zIndex: 94000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            direction: dir,
+            padding: '0 8px',
+            boxSizing: 'border-box'
+          }}
+        >
+          {/* 1. Hub Button */}
           <Link
             to="/hub"
             style={{
-              background: isEmployeeActive
-                ? (isDark ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' : '#ffffff')
-                : 'transparent',
-              color: isEmployeeActive
-                ? (isDark ? '#ffffff' : '#135d79')
-                : (isDark ? '#94a3b8' : '#64748b'),
-              textDecoration: 'none',
-              padding: '6px 14px',
-              borderRadius: '9px',
-              fontSize: '12px',
-              fontWeight: isEmployeeActive ? 800 : 600,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: '6px',
-              boxShadow: isEmployeeActive
-                ? (isDark ? '0 2px 10px rgba(19, 93, 121, 0.4)' : '0 2px 6px rgba(19, 93, 121, 0.12)')
-                : 'none',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              fontFamily: "'Cairo', sans-serif"
+              gap: '2px',
+              textDecoration: 'none',
+              color: isEmployeeActive ? (isDark ? '#38bdf8' : '#135d79') : '#64748b',
+              fontWeight: isEmployeeActive ? 800 : 600,
+              fontSize: '10.5px',
+              flex: 1,
+              padding: '6px 0',
+              position: 'relative'
             }}
           >
-            <span>🏢 بوابة الموظف</span>
+            <span style={{ fontSize: '18px' }}>🏢</span>
+            <span>بوابة الموظف</span>
+            {isEmployeeActive && (
+              <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#38bdf8' }} />
+            )}
           </Link>
 
-          {/* رابط مود العمل التشغيلي */}
-          {(['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'OPERATIONAL_USER'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface) && (
+          {/* 2. Ops Mode Button */}
+          {canAccessOps && (
             <Link
               to="/ops"
               style={{
-                background: isOpsActive
-                  ? (isDark ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' : '#ffffff')
-                  : 'transparent',
-                color: isOpsActive
-                  ? (isDark ? '#ffffff' : '#f36c21')
-                  : (isDark ? '#94a3b8' : '#64748b'),
-                textDecoration: 'none',
-                padding: '6px 14px',
-                borderRadius: '9px',
-                fontSize: '12px',
-                fontWeight: isOpsActive ? 800 : 600,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: isOpsActive
-                  ? (isDark ? '0 2px 10px rgba(243, 108, 33, 0.4)' : '0 2px 6px rgba(243, 108, 33, 0.15)')
-                  : 'none',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                fontFamily: "'Cairo', sans-serif"
+                gap: '2px',
+                textDecoration: 'none',
+                color: isOpsActive ? '#f36c21' : '#64748b',
+                fontWeight: isOpsActive ? 800 : 600,
+                fontSize: '10.5px',
+                flex: 1,
+                padding: '6px 0',
+                position: 'relative'
               }}
             >
-              <span>🚀 مود العمل (العمليات)</span>
+              <span style={{ fontSize: '18px' }}>🚀</span>
+              <span>غرفة العمليات</span>
+              {isOpsActive && (
+                <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#f36c21' }} />
+              )}
             </Link>
           )}
 
-          {/* رابط لوحة تحكم النظام */}
-          {(['super_admin', 'system_director', 'co_admin'].includes(user?.role || '') || user?.email === 'admin@litc.ly') && (
+          {/* 3. Admin Button */}
+          {canAccessAdmin && (
             <Link
               to="/admin"
               style={{
-                background: isAdminActive
-                  ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
-                  : 'transparent',
-                color: isAdminActive
-                  ? (isDark ? '#ffffff' : '#0284c7')
-                  : (isDark ? '#94a3b8' : '#64748b'),
-                textDecoration: 'none',
-                padding: '6px 14px',
-                borderRadius: '9px',
-                fontSize: '12px',
-                fontWeight: isAdminActive ? 800 : 600,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: isAdminActive
-                  ? (isDark ? '0 2px 10px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(2, 132, 199, 0.12)')
-                  : 'none',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                fontFamily: "'Cairo', sans-serif"
+                gap: '2px',
+                textDecoration: 'none',
+                color: isAdminActive ? '#0284c7' : '#64748b',
+                fontWeight: isAdminActive ? 800 : 600,
+                fontSize: '10.5px',
+                flex: 1,
+                padding: '6px 0',
+                position: 'relative'
               }}
             >
-              <span>🛡️ لوحة تحكم النظام</span>
+              <span style={{ fontSize: '18px' }}>🛡️</span>
+              <span>لوحة الإدارة</span>
+              {isAdminActive && (
+                <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#0284c7' }} />
+              )}
             </Link>
           )}
-        </div>
 
-        {/* ── ZONE 3: Utility Controls & Profile Dropdown ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          {/* تبديل اللغة */}
+          {/* 4. Menu Toggle Button */}
           <button
-            onClick={toggleLanguage}
-            title="تغيير لغة العرض"
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
             style={{
-              background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)',
-              color: isDark ? '#e2e8f0' : '#135d79',
-              padding: '6px 10px',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '11.5px',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: '5px',
-              transition: 'all 0.18s ease',
-              fontFamily: "'Cairo', sans-serif"
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.1)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)';
+              gap: '2px',
+              background: 'transparent',
+              border: 'none',
+              color: isDrawerOpen ? '#f36c21' : '#64748b',
+              fontWeight: 600,
+              fontSize: '10.5px',
+              flex: 1,
+              padding: '6px 0',
+              cursor: 'pointer'
             }}
           >
-            <span>🌐</span>
-            <span>{language === 'ar' ? 'English' : 'عربي'}</span>
+            <Menu size={18} />
+            <span>المزيد</span>
           </button>
-
-          {/* تبديل الثيم الداكن / الفاتح */}
-          <button
-            onClick={toggleTheme}
-            title={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '10px',
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: isDark ? '#f36c21' : '#135d79',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(243, 108, 33, 0.15)' : 'rgba(19, 93, 121, 0.12)';
-              e.currentTarget.style.transform = 'scale(1.05) rotate(15deg)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)';
-              e.currentTarget.style.transform = 'none';
-            }}
-          >
-            {isDark ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-
-          {/* الإشعارات */}
-          <NotificationBell />
-
-          {/* Micro Divider */}
-          <div style={{ width: '1px', height: '22px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.12)', margin: '0 2px' }} />
-
-          {/* الملف الشخصي المؤسسي */}
-          <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
-        </div>
-      </nav>
-    </header>
+        </nav>
+      )}
+    </>
   );
 };
 
@@ -501,7 +847,6 @@ const UniversalWorkspaceRouter: React.FC<{ user: any, systemMode: string }> = ({
 };
 
 const AppContent: React.FC = () => {
-  const isMobile = useMobileViewport();
   const { user, systemMode } = useAuth();
   const location = useLocation();
 
@@ -529,18 +874,6 @@ const AppContent: React.FC = () => {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
   }, []);
-
-  const isFunctionalWorkspaceRoute = location.pathname.startsWith('/hub') || 
-    ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings', '/employee'].some(p => location.pathname.startsWith(p));
-
-  if (isMobile && !isFunctionalWorkspaceRoute && systemMode !== 'employee') {
-    return (
-      <>
-        <MobileShell />
-        <NeonSignalToast />
-      </>
-    );
-  }
 
   const isLoginPage = location.pathname === '/login';
 

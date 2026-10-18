@@ -983,16 +983,10 @@ export const OperationalQueueView: React.FC = () => {
       </div>
 
       {/* ═══ 2. MAIN 2-COLUMN WORKSPACE (VERTICAL RAIL ON RIGHT + MAIN CANVAS ON LEFT) ═══ */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '310px minmax(0, 1fr)',
-        gap: '24px',
-        alignItems: 'start',
-        direction: 'rtl'
-      }}>
+      <div className="enterprise-adaptive-workspace" style={{ direction: 'rtl' }}>
 
         {/* ── RIGHT COLUMN: VERTICAL OPERATIONAL RAIL (يمين الشاشة) ── */}
-        <aside style={{
+        <aside className="enterprise-operational-rail" style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
@@ -1080,8 +1074,10 @@ export const OperationalQueueView: React.FC = () => {
             </span>
           </div>
 
-          {/* 1. حوض الطلبات الواردة */}
-          <OpsQueueTile
+          {/* Touch-Scrollable Tabs Rail (Stacks vertically on desktop, swipes horizontally on mobile) */}
+          <div className="mobile-tabs-rail" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. حوض الطلبات الواردة */}
+            <OpsQueueTile
             label="حوض الطلبات الواردة"
             value={poolCount}
             sublabel="معلقة بانتظار السحب والإسناد"
@@ -1213,6 +1209,7 @@ export const OperationalQueueView: React.FC = () => {
               isDark={isDark}
             />
           )}
+          </div>
         </aside>
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
