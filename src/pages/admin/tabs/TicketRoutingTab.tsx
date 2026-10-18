@@ -1268,6 +1268,141 @@ export const TicketRoutingTab: React.FC = () => {
             <strong style={{ color: A.text }}>معمارية ديناميكية شاملة:</strong> أي بيانات إضافية (مثل بيانات المركبات، أرقام اللوحات، المبالغ، والعهد، أو التصنيفات الخاصة) تُبنى بكل دقة عبر <strong>المستدلات والمستدلات الفرعية</strong> أعلاه دون الحاجة لحقول ثابتة مقيدة.
           </div>
         </div>
+
+        {/* 4. Submission & Open Ticket Governance Policy Card */}
+        <div style={{ padding: '16px', background: '#fff', borderRadius: 12, border: `1.5px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>🛡️</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حوكمة وضوابط تقديم الطلبات (Governance Policies)</div>
+                <div style={{ fontSize: 11, color: A.textTer }}>التحكم في قيود تقديم الطلبات الجديدة، حظر التكرار، وإلزامية التقييم</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* أ) هل يسمح بإضافة طلب جديد ولديه طلب مفتوح */}
+            <div style={{ padding: '12px', borderRadius: 10, background: A.bg, border: `1px solid ${A.sep}` }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: A.text, display: 'block', marginBottom: 4 }}>
+                السماح بتقديم طلب إضافي مع وجود طلب مفتوح
+              </label>
+              <div style={{ fontSize: 11, color: A.textSub, marginBottom: 8 }}>
+                هل يستطيع الموظف تقديم طلب جديد إذا كان لديه طلب مفتوح بالفعل في هذا المسار؟
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setFC({ allowMultipleOpenTickets: true })}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    border: `1px solid ${wizard.formConfig.allowMultipleOpenTickets !== false ? wizard.color : A.sep}`,
+                    background: wizard.formConfig.allowMultipleOpenTickets !== false ? `${wizard.color}18` : '#fff',
+                    color: wizard.formConfig.allowMultipleOpenTickets !== false ? wizard.color : A.textSub
+                  }}
+                >
+                  ✓ مسموح دائماً
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFC({ allowMultipleOpenTickets: false })}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    border: `1px solid ${wizard.formConfig.allowMultipleOpenTickets === false ? A.red : A.sep}`,
+                    background: wizard.formConfig.allowMultipleOpenTickets === false ? '#fef2f2' : '#fff',
+                    color: wizard.formConfig.allowMultipleOpenTickets === false ? A.red : A.textSub
+                  }}
+                >
+                  ✕ حظر حتى إغلاق المفتوح
+                </button>
+              </div>
+            </div>
+
+            {/* ب) أقصى عدد للطلبات المفتوحة المتزامنة */}
+            <div style={{ padding: '12px', borderRadius: 10, background: A.bg, border: `1px solid ${A.sep}` }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: A.text, display: 'block', marginBottom: 4 }}>
+                أقصى عدد للطلبات المفتوحة المتزامنة
+              </label>
+              <div style={{ fontSize: 11, color: A.textSub, marginBottom: 8 }}>
+                الحد الأقصى للتذاكر الجارية للموظف الواحد في هذا المسار (0 = غير محدود)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="tr-input"
+                  style={{ width: 100, fontSize: 13, fontWeight: 700 }}
+                  value={wizard.formConfig.maxConcurrentOpenTickets || 0}
+                  onChange={e => setFC({ maxConcurrentOpenTickets: Math.max(0, parseInt(e.target.value) || 0) })}
+                />
+                <span style={{ fontSize: 11.5, color: A.textSub }}>
+                  {(wizard.formConfig.maxConcurrentOpenTickets || 0) === 0 ? 'غير محدود (أي عدد)' : `حد أقصى ${wizard.formConfig.maxConcurrentOpenTickets} طلبات`}
+                </span>
+              </div>
+            </div>
+
+            {/* ج) إلزامية تقييم الطلبات السابقة المنجزة */}
+            <div style={{ padding: '12px', borderRadius: 10, background: A.bg, border: `1px solid ${A.sep}` }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: A.text, display: 'block', marginBottom: 4 }}>
+                إلزامية تقييم الطلبات السابقة المنجزة
+              </label>
+              <div style={{ fontSize: 11, color: A.textSub, marginBottom: 8 }}>
+                إلزام الموظف بتقييم طلباته المكتملة قبل السماح بتقديم طلب جديد
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setFC({ requireRatingBeforeNewTicket: false })}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    border: `1px solid ${!wizard.formConfig.requireRatingBeforeNewTicket ? wizard.color : A.sep}`,
+                    background: !wizard.formConfig.requireRatingBeforeNewTicket ? `${wizard.color}18` : '#fff',
+                    color: !wizard.formConfig.requireRatingBeforeNewTicket ? wizard.color : A.textSub
+                  }}
+                >
+                  اختياري
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFC({ requireRatingBeforeNewTicket: true })}
+                  style={{
+                    flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                    border: `1px solid ${wizard.formConfig.requireRatingBeforeNewTicket ? '#ea580c' : A.sep}`,
+                    background: wizard.formConfig.requireRatingBeforeNewTicket ? '#fff7ed' : '#fff',
+                    color: wizard.formConfig.requireRatingBeforeNewTicket ? '#ea580c' : A.textSub
+                  }}
+                >
+                  ⭐ إلزامي
+                </button>
+              </div>
+            </div>
+
+            {/* د) الحد الأقصى للتذاكر غير المقيمة قبل الحظر */}
+            <div style={{ padding: '12px', borderRadius: 10, background: A.bg, border: `1px solid ${A.sep}` }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: A.text, display: 'block', marginBottom: 4 }}>
+                حد التذاكر غير المقيمة قبل الحظر
+              </label>
+              <div style={{ fontSize: 11, color: A.textSub, marginBottom: 8 }}>
+                عدد التذاكر المنجزة المعلقة دون تقييم التي تؤدي لإيقاف التقديم الجديد (0 = تعطيل)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  className="tr-input"
+                  style={{ width: 100, fontSize: 13, fontWeight: 700 }}
+                  value={wizard.formConfig.maxUnratedTicketsAllowed || 0}
+                  onChange={e => setFC({ maxUnratedTicketsAllowed: Math.max(0, parseInt(e.target.value) || 0) })}
+                />
+                <span style={{ fontSize: 11.5, color: A.textSub }}>
+                  {(wizard.formConfig.maxUnratedTicketsAllowed || 0) === 0 ? 'لا يتم الحظر بالعدد' : `حظر عند بلوغ ${wizard.formConfig.maxUnratedTicketsAllowed} تذاكر`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {wizard.formConfig.showAttachments && (
         <div>

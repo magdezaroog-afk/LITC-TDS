@@ -4,7 +4,7 @@
  * دون أي نوافذ منبثقة عائمة
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import {
@@ -14,6 +14,12 @@ import {
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { CinemaTicketFrame } from './CinemaTicketFrame';
+import {
+  getTopLevelDepartments,
+  getDivisionsForDepartment,
+  getTeamsForDivision,
+  loadCachedOrRemoteOrgTree
+} from '../../services/institutionalHierarchy.helpers';
 
 // ── Dynamic Icon Resolver ──────────────────────────────────
 const resolveIcon = (name?: string, size = 20, color = 'currentColor') => {
@@ -234,23 +240,34 @@ function FieldInput({
     );
   }
 
-  if (field.type === 'select' && field.options?.length) {
+  if (field.type === 'select') {
+    const opts = field.options || [];
+    const disabled = opts.length === 0;
     return (
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{ ...base, cursor: 'pointer' }}
+        disabled={disabled}
+        style={{
+          ...base,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.65 : 1,
+        }}
         onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = `0 0 0 1px ${focusBorder}`; }}
         onBlur={e => { e.target.style.borderColor = borderDefault; e.target.style.boxShadow = 'none'; }}
       >
         <option value="" style={{ background: darkMode ? '#101728' : '#ffffff', color: darkMode ? '#94a3b8' : '#64748b' }}>
-          اختر {field.label}...
+          {disabled ? `لا توجد خيارات متاحة (${field.label})` : `اختر ${field.label}...`}
         </option>
-        {field.options.map(opt => (
-          <option key={opt} value={opt} style={{ background: darkMode ? '#101728' : '#ffffff', color: darkMode ? '#ffffff' : '#0f172a' }}>
-            {opt}
-          </option>
-        ))}
+        {opts.map(opt => {
+          const optVal = typeof opt === 'string' ? opt : (opt as any).label || (opt as any).name || (opt as any).id;
+          const optLabel = typeof opt === 'string' ? opt : (opt as any).label || (opt as any).name;
+          return (
+            <option key={optVal} value={optVal} style={{ background: darkMode ? '#101728' : '#ffffff', color: darkMode ? '#ffffff' : '#0f172a' }}>
+              {optLabel}
+            </option>
+          );
+        })}
       </select>
     );
   }
@@ -285,6 +302,61 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // ── Organizational Structure & Dynamic Fields Store ──
+  const [orgTree, setOrgTree] = useState<any>(null);
+  const [allDynamicFields, setAllDynamicFields] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadCachedOrRemoteOrgTree().then(tree => {
+      if (tree) setOrgTree(tree);
+    });
+    try {
+      const stored = localStorage.getItem('litc_dynamic_fields');
+      if (stored) setAllDynamicFields(JSON.parse(stored));
+    } catch {}
+
+    const handleSync = () => {
+      try {
+        const stored = localStorage.getItem('litc_dynamic_fields');
+        if (stored) setAllDynamicFields(JSON.parse(stored));
+        const treeCached = localStorage.getItem('litc_org_tree');
+        if (treeCached) setOrgTree(JSON.parse(treeCached));
+      } catch {}
+    };
+    window.addEventListener('litc_settings_updated', handleSync);
+    return () => window.removeEventListener('litc_settings_updated', handleSync);
+  }, []);
+
+  // Compute departmental hierarchy levels dynamically from real Org Tree
+  const deptOptions = useMemo(() => {
+    if (!orgTree) return [];
+    return getTopLevelDepartments(orgTree).map(d => d.name);
+  }, [orgTree]);
+
+  const divisionOptions = useMemo(() => {
+    if (!orgTree || !formData.department) return [];
+    return getDivisionsForDepartment(orgTree, formData.department).map(d => d.name);
+  }, [orgTree, formData.department]);
+
+  const teamOptions = useMemo(() => {
+    if (!orgTree || !formData.division) return [];
+    return getTeamsForDivision(orgTree, formData.division).map(t => t.name);
+  }, [orgTree, formData.division]);
+
+  const handleFieldChange = (name: string, val: string) => {
+    setFormData(prev => {
+      const next = { ...prev, [name]: val };
+      // Cascade clear on higher-level changes
+      if (name === 'department') {
+        next.division = '';
+        next.team = '';
+      } else if (name === 'division') {
+        next.team = '';
+      }
+      return next;
+    });
+  };
+
   const handleSelectFlow = (flow: typeof requests[0]) => {
     setSelectedFlow(flow);
     setFormData({});
@@ -294,7 +366,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
   const handleSubmit = async () => {
     if (!selectedFlow) return;
-    const allRequired = selectedFlow.fields.every(f => !f.required || formData[f.name]?.trim());
+    const allRequired = selectedFlow.fields.every(f => {
+      if (!f.required) return true;
+      if (f.name === 'division' && divisionOptions.length === 0) return true;
+      if (f.name === 'team' && teamOptions.length === 0) return true;
+      return !!formData[f.name]?.trim();
+    });
     if (!allRequired) {
       setErrorMsg('يرجى تعبئة جميع الحقول المطلوبة');
       return;
@@ -351,6 +428,86 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     } finally {
       setLoading(false);
     }
+  };
+
+  // Recursive renderer for child dynamic fields
+  const renderChildFields = (parentId: string, parentVal: string, level = 1): React.ReactNode => {
+    if (!parentVal) return null;
+    const parentDef = allDynamicFields.find(df => df.id === parentId || df.name === parentId);
+    if (!parentDef || !parentDef.childBindings || parentDef.childBindings.length === 0) return null;
+
+    let selectedOptId = '';
+    let selectedOptLabel = parentVal;
+    if (Array.isArray(parentDef.options)) {
+      const optObj = parentDef.options.find((o: any) =>
+        (typeof o === 'string' && o === parentVal) ||
+        (typeof o === 'object' && (o.id === parentVal || o.label === parentVal))
+      );
+      if (optObj) {
+        selectedOptId = typeof optObj === 'object' ? optObj.id : optObj;
+        selectedOptLabel = typeof optObj === 'object' ? optObj.label : optObj;
+      }
+    }
+
+    const matchingBindings = parentDef.childBindings.filter((b: any) => {
+      const trig = b.triggerValue?.trim();
+      return trig === parentVal || trig === selectedOptId || trig === selectedOptLabel;
+    });
+
+    if (matchingBindings.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+        {matchingBindings.map((b: any) => {
+          const childDef = allDynamicFields.find(df => df.id === b.childFieldId);
+          if (!childDef) return null;
+          const childFieldName = `dyn_${childDef.id}`;
+          const childVal = formData[childFieldName] || '';
+          const childOpts = (childDef.options || [])
+            .filter((o: any) => typeof o === 'string' || o.isActive !== false)
+            .map((o: any) => typeof o === 'string' ? o : o.label);
+
+          return (
+            <div
+              key={childDef.id}
+              style={{
+                marginInlineStart: `${level * 14}px`,
+                padding: '12px 14px',
+                borderRadius: '8px',
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.04)',
+                border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>↳</span>
+                  <span>{childDef.name}</span>
+                </label>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                  مستدلة فرعية مرتبطة بـ ({parentVal})
+                </span>
+              </div>
+              <FieldInput
+                field={{
+                  name: childFieldName,
+                  label: childDef.name,
+                  type: 'select',
+                  options: childOpts,
+                  required: false,
+                }}
+                value={childVal}
+                onChange={v => handleFieldChange(childFieldName, v)}
+                darkMode={darkMode}
+              />
+              {renderChildFields(childDef.id, childVal, level + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const flowColor = selectedFlow?.color || '#38bdf8';
@@ -584,26 +741,117 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             {/* Form Fields */}
             {status !== 'success' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {selectedFlow.fields.map((field) => (
-                  <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <label style={{ fontSize: '12.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                        {field.label}
-                      </label>
-                      {field.required && (
-                        <span style={{ fontSize: '9.5px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb', backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(37, 99, 235, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
-                          مطلوب
-                        </span>
+                {selectedFlow.fields.map((field) => {
+                  let fieldToRender = { ...field };
+
+                  // Handle cascading hierarchy options from real Org Tree
+                  if (field.name === 'department') {
+                    fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
+                  } else if (field.name === 'division') {
+                    fieldToRender.options = divisionOptions;
+                  } else if (field.name === 'team') {
+                    fieldToRender.options = teamOptions;
+                  }
+
+                  const hasExplicitTeamField = selectedFlow.fields.some(f => f.name === 'team');
+                  const isDivisionField = field.name === 'division';
+                  const dynamicFieldId = field.name.startsWith('dyn_') ? field.name.replace('dyn_', '') : null;
+
+                  return (
+                    <React.Fragment key={field.name}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <label style={{ fontSize: '12.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
+                            {fieldToRender.label}
+                          </label>
+                          {fieldToRender.required && (
+                            <span style={{ fontSize: '9.5px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb', backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(37, 99, 235, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                              مطلوب
+                            </span>
+                          )}
+                        </div>
+                        <FieldInput
+                          field={fieldToRender}
+                          value={formData[field.name] || ''}
+                          onChange={v => handleFieldChange(field.name, v)}
+                          darkMode={darkMode}
+                        />
+
+                        {/* If dynamic field has child bindings for the selected option, render child fields below */}
+                        {dynamicFieldId && renderChildFields(dynamicFieldId, formData[field.name])}
+
+                        {/* If taxonomy main has subIssues */}
+                        {field.name === 'taxonomyMain' && (() => {
+                          const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
+                            (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
+                          );
+                          if (!mainTax?.subIssues?.length) return null;
+                          return (
+                            <div style={{
+                              marginInlineStart: '14px',
+                              padding: '10px 14px',
+                              borderRadius: '8px',
+                              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
+                              border: darkMode ? '1px dashed rgba(56, 189, 248, 0.3)' : '1px dashed rgba(37, 99, 235, 0.25)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <label style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>↳</span>
+                                  <span>التصنيف الفرعي للمشكلة</span>
+                                </label>
+                                <span style={{ fontSize: '9.5px', fontWeight: 600, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                  تابع لـ ({formData.taxonomyMain})
+                                </span>
+                              </div>
+                              <FieldInput
+                                field={{
+                                  name: 'taxonomySub',
+                                  label: 'التصنيف الفرعي',
+                                  type: 'select',
+                                  options: mainTax.subIssues.filter((s: any) => s.isActive !== false).map((s: any) => s.label),
+                                  required: false,
+                                }}
+                                value={formData.taxonomySub || ''}
+                                onChange={v => handleFieldChange('taxonomySub', v)}
+                                darkMode={darkMode}
+                              />
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* If division is selected and team is NOT in fields, but units/teams exist in org tree */}
+                      {isDivisionField && !hasExplicitTeamField && teamOptions.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginInlineStart: '12px', padding: '10px 14px', borderRadius: '8px', background: darkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)', border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>👥</span>
+                              <span>الوحدة / الفريق التابع له (اختياري)</span>
+                            </label>
+                            <span style={{ fontSize: '9.5px', fontWeight: 600, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                              مستخرج من الهيكل المؤسسي
+                            </span>
+                          </div>
+                          <FieldInput
+                            field={{
+                              name: 'team',
+                              label: 'الوحدة / الفريق التابع له',
+                              type: 'select',
+                              options: teamOptions,
+                              required: false,
+                            }}
+                            value={formData.team || ''}
+                            onChange={v => handleFieldChange('team', v)}
+                            darkMode={darkMode}
+                          />
+                        </div>
                       )}
-                    </div>
-                    <FieldInput
-                      field={field}
-                      value={formData[field.name] || ''}
-                      onChange={v => setFormData(prev => ({ ...prev, [field.name]: v }))}
-                      darkMode={darkMode}
-                    />
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
 
                 {errorMsg && (
                   <div

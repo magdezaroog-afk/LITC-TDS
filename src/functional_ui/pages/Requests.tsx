@@ -222,7 +222,7 @@ export default function RequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<UserRecentRequest | null>(null);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('create');
   
   const handleSelectFlow = (flow: any) => {
     setActiveRequest(flow);

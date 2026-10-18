@@ -67,6 +67,11 @@ export interface RouteFormConfig {
   showHealthField?: boolean;
   mandatoryHealth?: boolean;
   healthFieldLabel?: string;
+  // ─── Concurrent Open Tickets & Rating Governance ───
+  allowMultipleOpenTickets?: boolean;
+  maxConcurrentOpenTickets?: number;
+  maxUnratedTicketsAllowed?: number;
+  requireRatingBeforeNewTicket?: boolean;
 }
 
 export interface TicketRouteDefinition {
@@ -130,6 +135,10 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   showHealthField: false,
   mandatoryHealth: false,
   healthFieldLabel: '',
+  allowMultipleOpenTickets: true,
+  maxConcurrentOpenTickets: 0,
+  maxUnratedTicketsAllowed: 0,
+  requireRatingBeforeNewTicket: false,
 });
 
 export const normalizeRoute = (r: any): TicketRouteDefinition => {

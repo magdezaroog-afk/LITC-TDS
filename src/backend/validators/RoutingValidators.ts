@@ -74,6 +74,10 @@ const routeFormConfigSchema = z.object({
   showHealthField: z.boolean().optional().default(false),
   mandatoryHealth: z.boolean().optional().default(false),
   healthFieldLabel: z.string().optional().default(''),
+  allowMultipleOpenTickets: z.boolean().optional().default(true),
+  maxConcurrentOpenTickets: z.number().int().min(0).optional().default(0),
+  maxUnratedTicketsAllowed: z.number().int().min(0).optional().default(0),
+  requireRatingBeforeNewTicket: z.boolean().optional().default(false),
 }).passthrough();
 
 // ─── Ticket Route Definition (بنية Frontend الحقيقية) ───────────────────────

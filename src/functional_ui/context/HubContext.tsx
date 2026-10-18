@@ -796,12 +796,70 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
   };
 
   const canCreateRequest = (categoryId: string) => {
+    const route = requests.find(r => r.id === categoryId);
+    const cfg = route?.formConfig || {};
+
+    // 1. Check concurrent open tickets in this route
+    const openTickets = userRequests.filter(req =>
+      req.categoryId === categoryId &&
+      !req.isArchived &&
+      req.status !== 'completed' &&
+      req.status !== 'approved' &&
+      (req as any).statusName !== 'CLOSED' &&
+      (req as any).statusName !== 'RESOLVED'
+    );
+
+    // Rule A: allowMultipleOpenTickets === false
+    if (cfg.allowMultipleOpenTickets === false && openTickets.length > 0) {
+      return {
+        allowed: false,
+        message: `لديك طلب مفتوح قيد المعالجة (${openTickets[0].code}). لا يمكن فتح طلب آخر حتى إغلاقه.`,
+        messageEn: `You have an active ticket (${openTickets[0].code}). You cannot open another until it is closed.`
+      };
+    }
+
+    // Rule B: maxConcurrentOpenTickets limit
+    if (cfg.maxConcurrentOpenTickets && openTickets.length >= cfg.maxConcurrentOpenTickets) {
+      return {
+        allowed: false,
+        message: `بلغت الحد الأقصى للطلبات المفتوحة المسموح بها في هذا المسار (${cfg.maxConcurrentOpenTickets} طلبات).`,
+        messageEn: `Reached maximum concurrent open tickets (${cfg.maxConcurrentOpenTickets}).`
+      };
+    }
+
+    // 2. Check unrated tickets
+    const unratedTickets = userRequests.filter(req =>
+      req.categoryId === categoryId &&
+      (req.isArchived || req.status === 'completed' || (req as any).statusName === 'CLOSED' || (req as any).statusName === 'RESOLVED') &&
+      req.rating === undefined
+    );
+
+    // Rule C: requireRatingBeforeNewTicket
+    if (cfg.requireRatingBeforeNewTicket && unratedTickets.length > 0) {
+      return {
+        allowed: false,
+        message: `يرجى تقييم الطلب المنجز رقم ${unratedTickets[0].code} أولاً لإتاحة تقديم طلب جديد.`,
+        messageEn: `Please rate completed ticket ${unratedTickets[0].code} before creating a new one.`
+      };
+    }
+
+    // Rule D: maxUnratedTicketsAllowed limit
+    if (cfg.maxUnratedTicketsAllowed && unratedTickets.length >= cfg.maxUnratedTicketsAllowed) {
+      return {
+        allowed: false,
+        message: `لديك ${unratedTickets.length} طلبات منجزة دون تقييم. يرجى التقييم لإتاحة تقديم طلب جديد.`,
+        messageEn: `You have ${unratedTickets.length} unrated tickets. Please rate them first.`
+      };
+    }
+
+    // Legacy default check: if there is an unrated completed ticket
     const pendingRating = userRequests.find(req =>
       req.categoryId === categoryId && req.status === 'completed' && req.rating === undefined
     );
     if (pendingRating) {
       return { allowed: false, message: `لا يمكنك إنشاء طلب جديد في هذا المسار إلا بعد تقييم الطلب رقم ${pendingRating.code}`, messageEn: `Cannot create new request until you rate ${pendingRating.code}` };
     }
+
     return { allowed: true };
   };
 

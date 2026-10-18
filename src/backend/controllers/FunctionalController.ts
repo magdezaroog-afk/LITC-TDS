@@ -449,6 +449,72 @@ export class FunctionalController {
         }
       }
 
+      // ─── Route Governance Policy Checks (حوكمة وضوابط التقديم) ───
+      if (matchedRoute?.formConfig) {
+        const fc = matchedRoute.formConfig;
+
+        // 1. هل يسمح للموظف بفتح أكثر من طلب إذا كان لديه طلب مفتوح في هذا المسار
+        if (fc.allowMultipleOpenTickets === false) {
+          const openTicket = await prisma.ticket.findFirst({
+            where: {
+              creatorId: user.id,
+              routeId: routeId,
+              isDeleted: false,
+              state: { name: { notIn: ['CLOSED', 'RESOLVED', 'REJECTED'] } }
+            },
+            select: { id: true, title: true }
+          });
+          if (openTicket) {
+            return res.status(400).json({
+              success: false,
+              error: `لا يمكنك تقديم طلب جديد في هذا المسار نظراً لوجود طلب مفتوح لديك حالياً (#${openTicket.id} - ${openTicket.title}). يرجى انتظار معالجة وإغلاق الطلب القائم أولاً.`
+            });
+          }
+        }
+
+        // 2. الحد الأقصى للطلبات المفتوحة المتزامنة للموظف في هذا المسار
+        const maxConcurrent = Number(fc.maxConcurrentOpenTickets);
+        if (maxConcurrent > 0) {
+          const openCount = await prisma.ticket.count({
+            where: {
+              creatorId: user.id,
+              routeId: routeId,
+              isDeleted: false,
+              state: { name: { notIn: ['CLOSED', 'RESOLVED', 'REJECTED'] } }
+            }
+          });
+          if (openCount >= maxConcurrent) {
+            return res.status(400).json({
+              success: false,
+              error: `لقد وصلت للحد الأقصى المسموح به من الطلبات المفتوحة المتزامنة في هذا المسار (${maxConcurrent} طلبات). يرجى انتظار استكمال وإغلاق الطلبات الجارية أولاً.`
+            });
+          }
+        }
+
+        // 3. إلزامية تقييم الطلبات المنجزة السابقة / الحد الأقصى للطلبات غير المقيمة
+        const maxUnrated = Number(fc.maxUnratedTicketsAllowed);
+        const requireRating = !!fc.requireRatingBeforeNewTicket || maxUnrated > 0;
+        if (requireRating) {
+          const unratedTickets = await prisma.ticket.findMany({
+            where: {
+              creatorId: user.id,
+              isDeleted: false,
+              state: { name: { in: ['CLOSED', 'RESOLVED'] } },
+              rating: null
+            },
+            select: { id: true, title: true },
+            take: 20
+          });
+          const threshold = maxUnrated > 0 ? maxUnrated : 1;
+          if (unratedTickets.length >= threshold) {
+            return res.status(400).json({
+              success: false,
+              error: `يتوجب عليك تقييم وإغلاق تقييم طلباتك السابقة المنجزة (${unratedTickets.length} طلب بحاجة لتقييم) قبل تقديم طلب جديد لضمان جودة الأداء والخدمة.`
+            });
+          }
+        }
+      }
+
       // Resolve numeric departmentId if provided or from matched route
       let deptId: number | null = null;
       const targetDeptId = departmentId || matchedRoute?.targetDepartmentId;
