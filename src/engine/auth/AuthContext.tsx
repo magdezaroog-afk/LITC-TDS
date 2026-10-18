@@ -69,7 +69,14 @@ const readStoredSession = (): User | null => {
       }
     }
 
-    // ✅ Primary: read real authenticated session from localStorage
+    // ✅ Check sessionStorage first (unique to this browser tab, preventing cross-tab account collision)
+    const sessionStored = sessionStorage.getItem(AUTH_SESSION_KEY);
+    if (sessionStored) {
+      const parsed = JSON.parse(sessionStored) as User;
+      return parsed;
+    }
+
+    // ✅ Fallback to localStorage
     const stored = localStorage.getItem(AUTH_SESSION_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as User;
@@ -81,6 +88,7 @@ const readStoredSession = (): User | null => {
     }
   } catch {
     // Corrupted session data — clear it
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem(AUTH_SESSION_KEY);
   }
   return null; // No session → redirect to login
@@ -100,34 +108,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user.role === 'super_admin') return true;
 
     // Define broad role capabilities here
-    // Currently relying on role-based routing and Taskbar checks.
     if (permission === 'use_taskbar') {
       return ['super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user'].includes(user.role);
     }
     
-    // Default deny for unspecified specific permissions
     return false;
   };
 
   const login = (userData: User) => {
     setUser(userData);
     setSystemMode('employee');
-    // ✅ Persist session so page refresh doesn't log the user out
+    // ✅ Persist to both sessionStorage (per-tab priority) and localStorage (persistence)
+    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(userData));
     localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setSystemMode('employee');
-    // ✅ Clear all session data
+    // ✅ Clear all session data across both storages
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    sessionStorage.removeItem('litc_token');
+    sessionStorage.removeItem('token');
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem('litc_token');
+    localStorage.removeItem('token');
   };
 
   const switchRole = (newRole: Role) => {
     if (user) {
       const updated = { ...user, role: newRole };
       setUser(updated);
+      sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(updated));
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(updated));
     }
   };

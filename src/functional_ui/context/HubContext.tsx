@@ -768,18 +768,20 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
 
   const rateRequest = async (requestId: string, rating: number, feedback: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/v1/functional/requests/${requestId}/rate-close`, {
+      const cleanId = String(requestId || '').replace(/\D/g, '') || requestId;
+      const token = sessionStorage.getItem('litc_token') || sessionStorage.getItem('token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
+      const res = await fetch(`/api/v1/functional/requests/${cleanId}/rate-close`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
+        credentials: 'include',
         body: JSON.stringify({ rating, feedback })
       });
       const data = await res.json();
       if (data.success) {
-        setUserRequests(prev => prev.map(req => req.id === requestId ? {
+        setUserRequests(prev => prev.map(req => (req.id === requestId || req.id === cleanId || req.code === requestId) ? {
           ...req,
           rating,
           feedback,
@@ -787,12 +789,17 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
           statusLabel: 'مؤرشف ومكتمل',
           isArchived: true
         } : req));
-        return;
+        // Refresh from server to ensure DB persistence
+        window.dispatchEvent(new CustomEvent('litc_request_created'));
+        return data;
+      } else {
+        console.error('[HubContext] Server rejected rating:', data.message);
+        throw new Error(data.message || 'فشل حفظ التقييم');
       }
     } catch (err) {
       console.error('[HubContext] Error calling rate-close:', err);
+      throw err;
     }
-    setUserRequests(prev => prev.map(req => req.id === requestId ? { ...req, rating, feedback, status: 'completed', statusLabel: 'مؤرشف ومكتمل', isArchived: true } : req));
   };
 
   const canCreateRequest = (categoryId: string) => {
@@ -801,7 +808,7 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
 
     // 1. Check concurrent open tickets in this route
     const openTickets = userRequests.filter(req =>
-      req.categoryId === categoryId &&
+      (req.categoryId === categoryId || req.routeId === categoryId) &&
       !req.isArchived &&
       req.status !== 'completed' &&
       req.status !== 'approved' &&
@@ -829,12 +836,12 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
 
     // 2. Check unrated tickets
     const unratedTickets = userRequests.filter(req =>
-      req.categoryId === categoryId &&
+      (req.categoryId === categoryId || req.routeId === categoryId) &&
       (req.isArchived || req.status === 'completed' || (req as any).statusName === 'CLOSED' || (req as any).statusName === 'RESOLVED') &&
-      req.rating === undefined
+      (req.rating === undefined || req.rating === null || req.rating === 0)
     );
 
-    // Rule C: requireRatingBeforeNewTicket
+    // Rule C: requireRatingBeforeNewTicket (Governance Controlled)
     if (cfg.requireRatingBeforeNewTicket && unratedTickets.length > 0) {
       return {
         allowed: false,
@@ -850,14 +857,6 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
         message: `لديك ${unratedTickets.length} طلبات منجزة دون تقييم. يرجى التقييم لإتاحة تقديم طلب جديد.`,
         messageEn: `You have ${unratedTickets.length} unrated tickets. Please rate them first.`
       };
-    }
-
-    // Legacy default check: if there is an unrated completed ticket
-    const pendingRating = userRequests.find(req =>
-      req.categoryId === categoryId && req.status === 'completed' && req.rating === undefined
-    );
-    if (pendingRating) {
-      return { allowed: false, message: `لا يمكنك إنشاء طلب جديد في هذا المسار إلا بعد تقييم الطلب رقم ${pendingRating.code}`, messageEn: `Cannot create new request until you rate ${pendingRating.code}` };
     }
 
     return { allowed: true };

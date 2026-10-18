@@ -138,7 +138,12 @@ export const Login: React.FC = () => {
         return;
       }
 
-      if (data.token) localStorage.setItem('litc_token', data.token);
+      if (data.token) {
+        sessionStorage.setItem('litc_token', data.token);
+        sessionStorage.setItem('token', data.token);
+        localStorage.setItem('litc_token', data.token);
+        localStorage.setItem('token', data.token);
+      }
 
       const dbUser = data.user;
       const roleMap: Record<string, Role> = {

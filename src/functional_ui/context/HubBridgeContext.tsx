@@ -9,8 +9,10 @@ export const HubBridgeProvider = ({ children }: { children: ReactNode }) => {
   
   useEffect(() => {
     if (authUser) {
+      const tkn = sessionStorage.getItem('litc_token') || sessionStorage.getItem('token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
       fetch('/api/v1/functional/me', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: tkn ? { 'Authorization': `Bearer ${tkn}` } : {},
+        credentials: 'include'
       })
       .then(res => res.json())
       .then(data => {

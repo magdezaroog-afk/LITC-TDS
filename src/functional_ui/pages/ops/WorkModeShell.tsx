@@ -13,7 +13,7 @@ export const WorkModeShell: React.FC = () => {
     if (!user) return;
     
     // Fetch the dynamic interface from the resolution engine
-    const token = localStorage.getItem('litc_token') || localStorage.getItem('token');
+    const token = sessionStorage.getItem('litc_token') || sessionStorage.getItem('token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 

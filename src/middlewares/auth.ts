@@ -22,25 +22,27 @@ export const authMiddleware = (
   next: NextFunction
 ) => {
   const sourceIp = req.ip || req.socket.remoteAddress;
-
-  // 1. Look for token in HttpOnly Cookie (Primary Secure Method)
-  let token = req.cookies?.litc_session;
-
-  // 2. Fallback to Bearer token in Authorization header (For API / Postman)
-  if (!token && req.headers['authorization']?.startsWith('Bearer ')) {
-    token = req.headers['authorization'].substring(7);
-  }
-
-  // 3. Fallback to x-auth-token
-  if (!token && req.headers['x-auth-token']) {
-    token = req.headers['x-auth-token'] as string;
-  }
-
-  // 4. In local development / test environment, support mock tokens and localhost admin sessions
   const isLocalDev = process.env.NODE_ENV !== 'production' || !process.env.NODE_ENV;
   const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
-  if (token === 'mock-admin-token-123' || token === 'dummy' || token === 'DUMMY_TOKEN' || (isLocalDev && isLocalhost && !token)) {
+  // 1. Prioritize Authorization header (allows individual browser tabs to maintain isolated user sessions)
+  let token: string | undefined;
+  if (req.headers['authorization']?.startsWith('Bearer ')) {
+    token = req.headers['authorization'].substring(7).trim();
+  }
+
+  // 2. Fallback to x-auth-token
+  if (!token && req.headers['x-auth-token']) {
+    token = (req.headers['x-auth-token'] as string).trim();
+  }
+
+  // 3. Fallback to HttpOnly Cookie
+  if (!token && req.cookies?.litc_session) {
+    token = req.cookies.litc_session;
+  }
+
+  // 4. In local development / test environment, support explicit mock tokens
+  if (token === 'mock-admin-token-123' || token === 'dummy' || token === 'DUMMY_TOKEN') {
     req.user = {
       id: 20,
       roleId: 1,

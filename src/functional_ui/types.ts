@@ -46,6 +46,7 @@ export interface UserRecentRequest {
   rating?: number;
   feedback?: string;
   categoryId: string; // To check blocking for new requests of same category
+  routeId?: string;
   primaryAssignee?: string;
   subTickets?: Array<{
     id: number;

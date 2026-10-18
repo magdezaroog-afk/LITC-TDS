@@ -897,7 +897,8 @@ export class FunctionalController {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-      const ticketId = parseInt(req.params.id);
+      const cleanId = String(req.params.id || '').replace(/\D/g, '');
+      const ticketId = cleanId ? parseInt(cleanId) : NaN;
       if (isNaN(ticketId)) return res.status(400).json({ success: false, message: 'Invalid ticket ID' });
 
       const { rating, feedback } = req.body;
@@ -906,12 +907,18 @@ export class FunctionalController {
         return res.status(400).json({ success: false, message: 'التقييم يجب أن يكون بين 1 و 5 نجوم' });
       }
 
-      // Verify the ticket belongs to the user
+      // Verify the ticket exists and belongs to the user or admin
       const ticket = await prisma.ticket.findFirst({
-        where: { id: ticketId, creatorId: user.id }
+        where: { id: ticketId, isDeleted: false }
       });
       if (!ticket) {
-        return res.status(404).json({ success: false, message: 'الطلب غير موجود أو غير تابع لك' });
+        return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+      }
+
+      const isOwner = ticket.creatorId === user.id;
+      const isAdmin = user.roleId === 1 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'الطلب غير تابع لك' });
       }
 
       // التحقق من عدم وجود تذاكر فرعية مفتوحة قبل الإغلاق
