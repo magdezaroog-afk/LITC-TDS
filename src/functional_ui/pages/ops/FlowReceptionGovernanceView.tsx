@@ -64,6 +64,13 @@ interface FlowDetailsResponse {
       allowedUserIds: number[];
       userScopes: Record<string, 'SAME_DIVISION' | 'SAME_DEPARTMENT' | 'CROSS_DEPARTMENT'>;
     };
+    formConfig?: {
+      allowMultipleOpenTickets?: boolean;
+      maxConcurrentOpenTickets?: number;
+      requireRatingBeforeNewTicket?: boolean;
+      maxUnratedTicketsAllowed?: number;
+      [key: string]: any;
+    };
   };
   closureApproverIds?: number[];
   transferConfig?: {
@@ -161,6 +168,13 @@ export const FlowReceptionGovernanceView: React.FC = () => {
   const [subTicketUserScopes, setSubTicketUserScopes] = useState<Record<string, 'SAME_DIVISION' | 'SAME_DEPARTMENT' | 'CROSS_DEPARTMENT'>>({});
   const [isSavingSubTicketConfig, setIsSavingSubTicketConfig] = useState(false);
 
+  // Request Reception & Limits Governance State (حوكمة استقبال الطلبات وسقف التذاكر المسموح بها للموظف)
+  const [allowMultipleOpenTickets, setAllowMultipleOpenTickets] = useState(true);
+  const [maxConcurrentOpenTickets, setMaxConcurrentOpenTickets] = useState(0);
+  const [requireRatingBeforeNewTicket, setRequireRatingBeforeNewTicket] = useState(false);
+  const [maxUnratedTicketsAllowed, setMaxUnratedTicketsAllowed] = useState(0);
+  const [isSavingGovernance, setIsSavingGovernance] = useState(false);
+
   // Auth Header Helper
   const getAuthHeaders = useCallback((extra: Record<string, string> = {}) => {
     const token = localStorage.getItem('litc_token');
@@ -223,6 +237,12 @@ export const FlowReceptionGovernanceView: React.FC = () => {
           setEscalateHours(json.flow.priorityConfig.escalateAfterHours || 4);
           setEscalateLevel(json.flow.priorityConfig.escalateTo || 'HIGH');
         }
+
+        const fConfig = json.flow?.formConfig || {};
+        setAllowMultipleOpenTickets(fConfig.allowMultipleOpenTickets !== false);
+        setMaxConcurrentOpenTickets(fConfig.maxConcurrentOpenTickets || 0);
+        setRequireRatingBeforeNewTicket(!!fConfig.requireRatingBeforeNewTicket);
+        setMaxUnratedTicketsAllowed(fConfig.maxUnratedTicketsAllowed || 0);
       } else {
         showToast(json.message || 'فشل تحميل تفاصيل المسار', 'error');
       }
@@ -667,6 +687,43 @@ export const FlowReceptionGovernanceView: React.FC = () => {
     }
   };
 
+  // ─── 9. Save Submission Governance (ضوابط استقبال الطلبات وسقف التذاكر للموظف) ─────
+  const handleSaveSubmissionGovernance = async () => {
+    if (!selectedFlowId) return;
+    setIsSavingGovernance(true);
+    try {
+      const res = await fetch(`/api/v1/flow-governance/${selectedFlowId}/submission-governance`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          allowMultipleOpenTickets,
+          maxConcurrentOpenTickets,
+          requireRatingBeforeNewTicket,
+          maxUnratedTicketsAllowed
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast('تم حفظ سياسات وضوابط استقبال الطلبات بنجاح 🛡️', 'success');
+        if (data?.flow) {
+          setData({
+            ...data,
+            flow: {
+              ...data.flow,
+              formConfig: json.formConfig
+            }
+          });
+        }
+      } else {
+        showToast(json.message || 'فشل حفظ ضوابط الاستقبال', 'error');
+      }
+    } catch {
+      showToast('خطأ في الاتصال بالخادم', 'error');
+    } finally {
+      setIsSavingGovernance(false);
+    }
+  };
+
   // Filtered members for in-tab search
   const filteredMembers = useMemo(() => {
     if (!data?.members) return [];
@@ -828,6 +885,275 @@ export const FlowReceptionGovernanceView: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              الركيزة الأساسية: حوكمة استقبال الطلبات وسقف التذاكر المسموح بها للموظف
+             ═══════════════════════════════════════════════════════════════════ */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(24px)',
+            borderRadius: '24px',
+            padding: '28px',
+            border: '1.5px solid rgba(19, 93, 121, 0.15)',
+            boxShadow: '0 8px 32px rgba(19, 93, 121, 0.06)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                  <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(19, 93, 121, 0.1)', color: '#135d79' }}>
+                    <ShieldCheck size={22} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      الركيزة الأساسية: حوكمة استقبال الطلبات وسقف التذاكر المسموح بها للموظف
+                    </h2>
+                    <p style={{ fontSize: '12.5px', color: '#64748b', margin: '2px 0 0 0' }}>
+                      التحكم في إمكانية فتح تذكرة جديدة مع وجود تذكرة مفتوحة، وتحديد الحد الأقصى للمعاملات المفتوحة واشتراط تقييم الطلبات المنجزة
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveSubmissionGovernance}
+                disabled={isSavingGovernance}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px',
+                  borderRadius: '12px', border: 'none',
+                  background: isSavingGovernance ? '#94a3b8' : 'linear-gradient(135deg, #135d79 0%, #0d4257 100%)',
+                  color: '#ffffff',
+                  fontSize: '13px', fontWeight: 700, cursor: isSavingGovernance ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(19, 93, 121, 0.3)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {isSavingGovernance ? (
+                  <>
+                    <RefreshCw size={15} className="animate-spin" />
+                    <span>جارٍ الحفظ...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} />
+                    <span>حفظ ضوابط الاستقبال ✔</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Controls Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '16px' }}>
+              
+              {/* Control 1: تعدد التذاكر المفتوحة */}
+              <div style={{
+                background: '#ffffff', borderRadius: '18px', padding: '18px 20px',
+                border: `1.5px solid ${allowMultipleOpenTickets ? '#e2e8f0' : 'rgba(239, 68, 68, 0.25)'}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>📂</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      فتح طلب جديد مع وجود طلب مفتوح
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                    هل يستطيع الموظف رفع تذكرة جديدة بينما لديه تذكرة أخرى قيد المعالجة في هذا المسار؟
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAllowMultipleOpenTickets(true)}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                      border: `1.5px solid ${allowMultipleOpenTickets ? '#135d79' : '#cbd5e1'}`,
+                      background: allowMultipleOpenTickets ? 'rgba(19, 93, 121, 0.1)' : '#f8fafc',
+                      color: allowMultipleOpenTickets ? '#135d79' : '#64748b',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    ✓ مسموح دائماً
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAllowMultipleOpenTickets(false)}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                      border: `1.5px solid ${!allowMultipleOpenTickets ? '#ef4444' : '#cbd5e1'}`,
+                      background: !allowMultipleOpenTickets ? '#fef2f2' : '#f8fafc',
+                      color: !allowMultipleOpenTickets ? '#dc2626' : '#64748b',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    ✕ حظر حتى إغلاق المفتوح
+                  </button>
+                </div>
+              </div>
+
+              {/* Control 2: الحد الأقصى للتذاكر المفتوحة المتزامنة */}
+              <div style={{
+                background: '#ffffff', borderRadius: '18px', padding: '18px 20px',
+                border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>🔢</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      أقصى عدد للطلبات المفتوحة المتزامنة
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#64748b', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                    سقف التذاكر الجارية للموظف الواحد في هذا المسار (0 = غير محدود):
+                  </p>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={maxConcurrentOpenTickets}
+                      onChange={e => setMaxConcurrentOpenTickets(Math.max(0, parseInt(e.target.value) || 0))}
+                      style={{
+                        width: '80px', padding: '8px 12px', borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1', textAlign: 'center',
+                        fontSize: '14px', fontWeight: 800, color: '#0f172a', outline: 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: maxConcurrentOpenTickets === 0 ? '#10b981' : '#135d79' }}>
+                      {maxConcurrentOpenTickets === 0 ? '🟢 غير محدود (أي عدد)' : `حد أقصى ${maxConcurrentOpenTickets} طلبات`}
+                    </span>
+                  </div>
+                  {/* Quick presets */}
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    {[1, 2, 5, 10, 0].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setMaxConcurrentOpenTickets(val)}
+                        style={{
+                          padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                          border: `1px solid ${maxConcurrentOpenTickets === val ? '#135d79' : '#e2e8f0'}`,
+                          background: maxConcurrentOpenTickets === val ? '#135d79' : '#f8fafc',
+                          color: maxConcurrentOpenTickets === val ? '#ffffff' : '#64748b'
+                        }}
+                      >
+                        {val === 0 ? 'لا حصر' : val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Control 3: إلزامية تقييم الطلبات السابقة */}
+              <div style={{
+                background: '#ffffff', borderRadius: '18px', padding: '18px 20px',
+                border: `1.5px solid ${requireRatingBeforeNewTicket ? 'rgba(243, 108, 33, 0.3)' : '#e2e8f0'}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>⭐</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      إلزامية تقييم الطلبات المنجزة
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                    إلزام الموظف بتقييم جودة الخدمة في تذاكره المكتملة السابقة قبل فتح تذكرة جديدة:
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setRequireRatingBeforeNewTicket(false)}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                      border: `1.5px solid ${!requireRatingBeforeNewTicket ? '#135d79' : '#cbd5e1'}`,
+                      background: !requireRatingBeforeNewTicket ? 'rgba(19, 93, 121, 0.1)' : '#f8fafc',
+                      color: !requireRatingBeforeNewTicket ? '#135d79' : '#64748b',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    ⚪ اختياري
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequireRatingBeforeNewTicket(true)}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                      border: `1.5px solid ${requireRatingBeforeNewTicket ? '#f36c21' : '#cbd5e1'}`,
+                      background: requireRatingBeforeNewTicket ? '#fff7ed' : '#f8fafc',
+                      color: requireRatingBeforeNewTicket ? '#c2410c' : '#64748b',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    ⭐ إلزامي للتقييم
+                  </button>
+                </div>
+              </div>
+
+              {/* Control 4: سقف المعاملات غير المقيمة المسموح بها */}
+              <div style={{
+                background: '#ffffff', borderRadius: '18px', padding: '18px 20px',
+                border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '18px' }}>⏳</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      سقف المعاملات غير المقيمة
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#64748b', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                    عدد الطلبات المكتملة المسموح بتجاوزها دون تقييم قبل تطبيق الحظر التلقائي (0 = منع فوري):
+                  </p>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={maxUnratedTicketsAllowed}
+                      onChange={e => setMaxUnratedTicketsAllowed(Math.max(0, parseInt(e.target.value) || 0))}
+                      style={{
+                        width: '80px', padding: '8px 12px', borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1', textAlign: 'center',
+                        fontSize: '14px', fontWeight: 800, color: '#0f172a', outline: 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>
+                      {maxUnratedTicketsAllowed === 0 ? 'منع فوري عند أول طلب غير مقيّم' : `سماح حتى ${maxUnratedTicketsAllowed} طلبات غير مقيّمة`}
+                    </span>
+                  </div>
+                  {/* Quick presets */}
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    {[0, 1, 2, 3].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setMaxUnratedTicketsAllowed(val)}
+                        style={{
+                          padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                          border: `1px solid ${maxUnratedTicketsAllowed === val ? '#135d79' : '#e2e8f0'}`,
+                          background: maxUnratedTicketsAllowed === val ? '#135d79' : '#f8fafc',
+                          color: maxUnratedTicketsAllowed === val ? '#ffffff' : '#64748b'
+                        }}
+                      >
+                        {val === 0 ? '0 (فوري)' : `${val} طلب`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
               الركيزة 1: مصفوفة الصلاحيات التشغيلية (Action Permissions Matrix)

@@ -915,6 +915,69 @@ export class FlowGovernanceController {
     }
   }
 
+  /** POST /api/v1/flow-governance/:flowId/submission-governance - Save Request Reception & Ticket Limit Policies */
+  static async saveSubmissionGovernance(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { flowId } = req.params;
+      const { 
+        allowMultipleOpenTickets, 
+        maxConcurrentOpenTickets, 
+        requireRatingBeforeNewTicket, 
+        maxUnratedTicketsAllowed 
+      } = req.body;
+
+      const hasAccess = await verifyFlowGovernanceAccess(flowId, user);
+      if (!hasAccess) return res.status(403).json({ success: false, message: 'غير مخول بإدارة سياسات هذا المسار' });
+
+      const setting = await prisma.systemSetting.findUnique({ where: { settingKey: 'litc_ticket_routes' } });
+      if (!setting?.settingValue) return res.status(404).json({ success: false, message: 'قائمة المسارات غير موجودة' });
+
+      const routes = JSON.parse(setting.settingValue);
+      const idx = routes.findIndex((r: any) => r.id === flowId);
+      if (idx === -1) return res.status(404).json({ success: false, message: 'المسار غير موجود' });
+
+      const currentFormConfig = routes[idx].formConfig || {};
+      const updatedFormConfig = {
+        ...currentFormConfig,
+        allowMultipleOpenTickets: allowMultipleOpenTickets !== false,
+        maxConcurrentOpenTickets: Math.max(0, parseInt(maxConcurrentOpenTickets) || 0),
+        requireRatingBeforeNewTicket: !!requireRatingBeforeNewTicket,
+        maxUnratedTicketsAllowed: Math.max(0, parseInt(maxUnratedTicketsAllowed) || 0)
+      };
+
+      routes[idx].formConfig = updatedFormConfig;
+
+      await prisma.systemSetting.update({
+        where: { settingKey: 'litc_ticket_routes' },
+        data: { settingValue: JSON.stringify(routes) }
+      });
+
+      await prisma.flowAuditLog.create({
+        data: {
+          flowId,
+          actorId: user.id,
+          actionType: 'SUBMISSION_GOVERNANCE_UPDATE',
+          details: JSON.stringify({
+            allowMultipleOpenTickets: updatedFormConfig.allowMultipleOpenTickets,
+            maxConcurrentOpenTickets: updatedFormConfig.maxConcurrentOpenTickets,
+            requireRatingBeforeNewTicket: updatedFormConfig.requireRatingBeforeNewTicket,
+            maxUnratedTicketsAllowed: updatedFormConfig.maxUnratedTicketsAllowed
+          })
+        }
+      });
+
+      return res.json({ 
+        success: true, 
+        message: 'تم حفظ ضوابط استقبال الطلبات والحدود المسموح بها بنجاح 🛡️', 
+        formConfig: updatedFormConfig 
+      });
+    } catch (err: any) {
+      console.error('[FlowGovernance] saveSubmissionGovernance error:', err);
+      return res.status(500).json({ success: false, message: 'فشل حفظ ضوابط استقبال الطلبات' });
+    }
+  }
+
   /** PATCH /api/v1/flow-governance/tickets/:ticketId/calibrate-priority - Calibrate Official Business Priority */
   static async calibrateTicketPriority(req: Request, res: Response) {
     try {

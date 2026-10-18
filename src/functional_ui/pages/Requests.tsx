@@ -237,9 +237,25 @@ export default function RequestsPage() {
     r.rating !== undefined ||
     (r as any).statusName === 'CLOSED';
 
+  // المعاملات المكتملة التي تحتاج إلى تقييم الموظف
+  const isNeedsRating = (r: UserRecentRequest) =>
+    isDone(r) && (r.rating === undefined || r.rating === null || r.rating === 0);
+
+  const stats = useMemo(() => {
+    return {
+      // 1. المعاملات النشطة (كل المعاملات التي تم تقديمها ولم تكتمل)
+      active: userRequests.filter(r => !isDone(r)).length,
+      // 2. طلبات تحتاج إلى التقييم
+      needsRating: userRequests.filter(r => isNeedsRating(r)).length,
+      // 3. أرشيف المعاملات (المعاملات المكتملة السابقة)
+      archived: userRequests.filter(r => isDone(r)).length,
+    };
+  }, [userRequests]);
+
   const filteredRequests = useMemo(() => {
     return userRequests.filter(r => {
       const archived = isDone(r);
+      const needsRating = isNeedsRating(r);
 
       const matchSearch = searchQuery === '' ||
         (isRtl ? r.title : r.titleEn || r.title).toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -248,34 +264,18 @@ export default function RequestsPage() {
       
       if (!matchSearch) return false;
 
-      // في سجل إجمالي المعاملات: المعاملات النشطة والجارية فقط (المكتملة تختفي تلقائياً)
-      if (filterStatus === 'all') {
-        return !archived;
+      // 2. طلبات تحتاج إلى التقييم
+      if (filterStatus === 'needs_rating') {
+        return needsRating;
       }
-      // في أرشيف الطلبات السابقة: المعاملات المكتملة والمؤرشفة فقط
-      if (filterStatus === 'completed') {
+      // 3. أرشيف المعاملات (المعاملات المكتملة السابقة)
+      if (filterStatus === 'completed' || filterStatus === 'archived') {
         return archived;
       }
-      if (filterStatus === 'pending') {
-        return r.status === 'pending' && !archived;
-      }
-      if (filterStatus === 'in_progress') {
-        return r.status === 'in_progress' && !archived;
-      }
-      return r.status === filterStatus;
+      // 1. المعاملات النشطة (active, create, all) - كل المعاملات التي لم تكتمل
+      return !archived;
     });
   }, [userRequests, searchQuery, filterStatus, isRtl]);
-
-  const stats = useMemo(() => {
-    return {
-      // إجمالي المعاملات النشطة الجارية فقط لسهولة المتابعة والتنظيم
-      total: userRequests.filter(r => !isDone(r)).length,
-      pending: userRequests.filter(r => r.status === 'pending' && !isDone(r)).length,
-      inProgress: userRequests.filter(r => r.status === 'in_progress' && !isDone(r)).length,
-      // أرشيف الطلبات السابقة
-      completed: userRequests.filter(r => isDone(r)).length,
-    };
-  }, [userRequests]);
 
   return (
     <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
@@ -481,94 +481,80 @@ export default function RequestsPage() {
               </div>
             </div>
           </CinemaTicketFrame>
-
-          {/* Rail Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '2px 4px 8px',
-            borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-          }}>
-            <span style={{
-              fontSize: '12px',
-              fontWeight: 700,
-              color: darkMode ? '#cbd5e1' : '#1e293b',
-              fontFamily: "'Cairo', sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}>
-              <Filter size={13} color={darkMode ? "#60a5fa" : "#1e3a52"} />
-              <span>تصنيف الحالات</span>
-            </span>
-            <span style={{
-              fontSize: '10.5px',
-              color: '#64748b',
-              fontFamily: "'Cairo', sans-serif",
-            }}>
-              تصفية سريعة
-            </span>
-          </div>
-
-          <MetricTile
-            label="إجمالي المعاملات النشطة"
-            value={stats.total}
-            sublabel="المعاملات الجارية قيد المتابعة"
-            icon={FileText}
-            accentColor={darkMode ? "#60a5fa" : "#1e3a52"}
-            isSelected={filterStatus === 'all'}
-            onClick={() => setFilterStatus('all')}
-            darkMode={darkMode}
-          />
-          <MetricTile
-            label="قيد الانتظار"
-            value={stats.pending}
-            sublabel="بانتظار المراجعة والاعتماد"
-            icon={Clock}
-            accentColor={darkMode ? "#fbbf24" : "#d97706"}
-            isSelected={filterStatus === 'pending'}
-            onClick={() => setFilterStatus('pending')}
-            darkMode={darkMode}
-          />
-          <MetricTile
-            label="قيد المعالجة"
-            value={stats.inProgress}
-            sublabel="يجري التنفيذ لدى الإدارة"
-            icon={Activity}
-            accentColor={darkMode ? "#38bdf8" : "#0284c7"}
-            isSelected={filterStatus === 'in_progress'}
-            onClick={() => setFilterStatus('in_progress')}
-            darkMode={darkMode}
-          />
-          <MetricTile
-            label="أرشيف الطلبات السابقة"
-            value={stats.completed}
-            sublabel="المعاملات المنجزة والمقيمة سابقاً"
-            icon={Archive}
-            accentColor="#10b981"
-            isSelected={filterStatus === 'completed'}
-            onClick={() => setFilterStatus('completed')}
-            darkMode={darkMode}
-          />
         </aside>
 
-        {/* ── LEFT COLUMN: WORKSPACE SECTION (RED CIRCLE: INLINE CREATION OR LEDGER TABLE) ── */}
-        <section style={{ minWidth: 0 }}>
-          {filterStatus === 'create' ? (
-            <InlineRequestCreator
-              onCancel={() => setFilterStatus('all')}
-              onSuccess={() => setFilterStatus('all')}
+        {/* ── LEFT COLUMN: WORKSPACE SECTION (3 CARDS + ROUTE CREATOR + LEDGER TABLE) ── */}
+        <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+          {/* ── 1. ROUTE PICKER & CREATOR (When in create mode) ── */}
+          <AnimatePresence>
+            {filterStatus === 'create' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <InlineRequestCreator
+                  onCancel={() => setFilterStatus('active')}
+                  onSuccess={() => setFilterStatus('active')}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── 2. THREE PRIMARY HORIZONTAL KPI TILES (1: المعاملات النشطة | 2: طلبات تحتاج إلى التقييم | 3: أرشيف المعاملات) ── */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '14px',
+          }}>
+            {/* Box 1 (Right): المعاملات النشطة */}
+            <MetricTile
+              label="المعاملات النشطة"
+              value={stats.active}
+              sublabel="جميع المعاملات الجارية ولم تكتمل"
+              icon={Activity}
+              accentColor={darkMode ? "#38bdf8" : "#0284c7"}
+              isSelected={filterStatus === 'active' || filterStatus === 'all'}
+              onClick={() => setFilterStatus('active')}
+              darkMode={darkMode}
             />
-          ) : (
-            <div style={{
-              backgroundColor: darkMode ? '#111827' : '#ffffff',
-              borderRadius: '8px',
-              border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-              overflow: 'hidden',
-              boxShadow: darkMode ? '0 8px 30px rgba(0, 0, 0, 0.35)' : '0 4px 20px -2px rgba(30, 58, 82, 0.08)',
-              transition: 'all 0.25s ease',
-            }}>
+
+            {/* Box 2 (Center): طلبات تحتاج الي التقييم */}
+            <MetricTile
+              label="طلبات تحتاج الي التقييم"
+              value={stats.needsRating}
+              sublabel="معاملات مكتملة بانتظار تقييمك"
+              icon={Sparkles}
+              accentColor="#f59e0b"
+              isSelected={filterStatus === 'needs_rating'}
+              onClick={() => setFilterStatus('needs_rating')}
+              darkMode={darkMode}
+            />
+
+            {/* Box 3 (Left): أرشيف المعاملات */}
+            <MetricTile
+              label="أرشيف المعاملات"
+              value={stats.archived}
+              sublabel="المعاملات المنجزة والمقيمة سابقاً"
+              icon={Archive}
+              accentColor="#10b981"
+              isSelected={filterStatus === 'completed' || filterStatus === 'archived'}
+              onClick={() => setFilterStatus('completed')}
+              darkMode={darkMode}
+            />
+          </div>
+
+          {/* ── 3. TRANSACTIONS LEDGER TABLE (سجل المعاملات المصفاة) ── */}
+          <div style={{
+            backgroundColor: darkMode ? '#111827' : '#ffffff',
+            borderRadius: '8px',
+            border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+            overflow: 'hidden',
+            boxShadow: darkMode ? '0 8px 30px rgba(0, 0, 0, 0.35)' : '0 4px 20px -2px rgba(30, 58, 82, 0.08)',
+            transition: 'all 0.25s ease',
+          }}>
         {/* Table Toolbar */}
         <div style={{
           padding: '12px 18px',
@@ -591,7 +577,11 @@ export default function RequestsPage() {
               letterSpacing: '-0.01em',
               fontFamily: "'Tajawal', sans-serif",
             }}>
-              {filterStatus === 'completed' ? 'أرشيف الطلبات والمعاملات السابقة' : 'سجل المعاملات والطلبات النشطة'}
+              {filterStatus === 'completed' || filterStatus === 'archived'
+                ? 'أرشيف المعاملات المكتملة السابقة'
+                : filterStatus === 'needs_rating'
+                ? 'طلبات تحتاج إلى التقييم ⭐'
+                : 'سجل المعاملات والطلبات النشطة'}
             </h2>
             <span style={{
               fontSize: '11px',
@@ -603,13 +593,16 @@ export default function RequestsPage() {
               border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1',
               fontVariantNumeric: 'tabular-nums',
             }}>
-              {filteredRequests.length} {filterStatus === 'completed' ? 'معاملة سابقة' : 'معاملة نشطة'}
+              {filteredRequests.length} {
+                filterStatus === 'completed' || filterStatus === 'archived' ? 'معاملة سابقة' :
+                filterStatus === 'needs_rating' ? 'بانتظار التقييم' : 'معاملة نشطة'
+              }
             </span>
 
-            {/* Quick Filter Reset Badge when not 'all' */}
-            {filterStatus !== 'all' && (
+            {/* Quick Filter Reset Badge when not 'active' */}
+            {filterStatus !== 'active' && filterStatus !== 'create' && filterStatus !== 'all' && (
               <button
-                onClick={() => setFilterStatus('all')}
+                onClick={() => setFilterStatus('active')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -628,9 +621,8 @@ export default function RequestsPage() {
                 title="إلغاء التصفية والعودة للمعاملات النشطة"
               >
                 <span>تصفية: {
-                  filterStatus === 'pending' ? 'قيد الانتظار' :
-                  filterStatus === 'in_progress' ? 'قيد المعالجة' :
-                  filterStatus === 'completed' ? 'أرشيف الطلبات السابقة' : filterStatus
+                  filterStatus === 'needs_rating' ? 'طلبات تحتاج إلى التقييم' :
+                  filterStatus === 'completed' || filterStatus === 'archived' ? 'أرشيف المعاملات' : filterStatus
                 }</span>
                 <X size={12} />
               </button>
@@ -801,7 +793,7 @@ export default function RequestsPage() {
                         <StatusBadge status={req.status} />
                       </td>
 
-                      {/* Action Button (outline button) */}
+                      {/* Action Button (outline button or rating action) */}
                       <td style={{ whiteSpace: 'nowrap', textAlign: 'start' }}>
                         <button
                           onClick={e => {
@@ -812,31 +804,37 @@ export default function RequestsPage() {
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
+                            gap: '5px',
                             padding: '4px 10px',
-                            borderRadius: '5px',
-                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
-                            color: darkMode ? '#cbd5e1' : '#1e3a52',
+                            borderRadius: '6px',
+                            border: isNeedsRating(req)
+                              ? '1px solid #f59e0b'
+                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                            backgroundColor: isNeedsRating(req)
+                              ? (darkMode ? 'rgba(245, 158, 11, 0.18)' : '#fffbeb')
+                              : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
+                            color: isNeedsRating(req)
+                              ? '#d97706'
+                              : (darkMode ? '#cbd5e1' : '#1e3a52'),
                             fontSize: '11.5px',
-                            fontWeight: 600,
+                            fontWeight: isNeedsRating(req) ? 700 : 600,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
                             fontFamily: "'Cairo', sans-serif",
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = darkMode ? 'rgba(37, 99, 235, 0.2)' : 'rgba(30, 58, 82, 0.1)';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = darkMode ? 'rgba(59, 130, 246, 0.4)' : '#1e3a52';
-                            (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#ffffff' : '#1e3a52';
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc';
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1';
-                            (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#cbd5e1' : '#1e3a52';
+                            boxShadow: isNeedsRating(req) ? '0 2px 8px rgba(245, 158, 11, 0.2)' : 'none',
                           }}
                         >
-                          <span>تتبع المسار</span>
-                          <ChevronLeft size={12} />
+                          {isNeedsRating(req) ? (
+                            <>
+                              <span>⭐ قيّم الطلب</span>
+                              <ChevronLeft size={12} />
+                            </>
+                          ) : (
+                            <>
+                              <span>تتبع المسار</span>
+                              <ChevronLeft size={12} />
+                            </>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -847,7 +845,6 @@ export default function RequestsPage() {
           </div>
         )}
           </div>
-        )}
         </section>
       </div>
 

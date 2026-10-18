@@ -255,6 +255,7 @@ router.post('/flow-governance/:flowId/priority-config', authMiddleware, (req, re
 router.post('/flow-governance/:flowId/closure-approvers', authMiddleware, (req, res) => FlowGovernanceController.saveClosureApprovers(req, res));
 router.post('/flow-governance/:flowId/transfer-config', authMiddleware, (req, res) => FlowGovernanceController.saveTransferConfig(req, res));
 router.post('/flow-governance/:flowId/sub-ticket-config', authMiddleware, (req, res) => FlowGovernanceController.saveSubTicketConfig(req, res));
+router.post('/flow-governance/:flowId/submission-governance', authMiddleware, (req, res) => FlowGovernanceController.saveSubmissionGovernance(req, res));
 router.patch('/flow-governance/tickets/:ticketId/calibrate-priority', authMiddleware, (req, res) => FlowGovernanceController.calibrateTicketPriority(req, res));
 
 // =========================================================================
