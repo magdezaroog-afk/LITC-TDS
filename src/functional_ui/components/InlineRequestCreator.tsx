@@ -1,9 +1,11 @@
 /**
- * InlineRequestCreator — Unified Ticket-Frame Architecture (NEXUS TDS 2026 Standards)
+ * InlineRequestCreator — Unified Ticket Architecture (NEXUS TDS 2026 Standards)
  * - Identical Luxury Ticket Silhouette from Stage 1 to Final Stage
- * - Side-by-Side Modern Option Chips & Custom Glass Popover Selectors
- * - Zero Vertical Scrolling Required (Balanced 2-Column Responsive Grid)
- * - Realistic Progressive Top-to-Bottom Tear Animation on Approval
+ * - Main Selectors as Modern Lists -> Sub-Issues & Sub-Options as Visual Interactive Icons/Chips
+ * - Technical Support Taxonomy Sub-Issues fully rendered as icon buttons
+ * - Dynamic Admin Stage Configuration (1 stage, 2 stages, or N custom stages)
+ * - Zero Stacking Clipping (Dropdown floats above KPI cards)
+ * - Realistic Progressive Top-to-Bottom Tear Animation
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -14,10 +16,12 @@ import {
   Send, AlertTriangle, CheckCircle2, Loader2,
   Building2, UserCheck, ArrowRightLeft, FileText, Check,
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
-  Search
+  Search, Wrench, Monitor, Cpu, HardDrive, Wifi, Printer,
+  HelpCircle, Settings, Laptop, Radio, AlertCircle
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { CinemaTicketFrame } from './CinemaTicketFrame';
+import { RouteFormStage } from '../../services/ticketRouting.helpers';
 import {
   getTopLevelDepartments,
   getDivisionsForDepartment,
@@ -32,14 +36,27 @@ const resolveIcon = (name?: string, size = 20, color = 'currentColor') => {
     '💻': 'Monitor', '🏗️': 'Building2', '📋': 'ClipboardList', '🔧': 'Wrench',
     '📡': 'Radio', '🔒': 'Lock', '📊': 'BarChart3', '🏥': 'HeartPulse',
     '📞': 'Phone', '🖨️': 'Printer', '⚡': 'Zap', '🌐': 'Globe',
-    '🗄️': 'Archive', '📱': 'Smartphone', '🔑': 'Key'
+    '🗄️': 'Archive', '📱': 'Smartphone', '🔑': 'Key', '🛠️': 'Wrench'
   };
   const iconName = emojiMap[name] || name;
   const IconComp = (LucideIcons as any)[iconName] || FileText;
   return <IconComp size={size} color={color} strokeWidth={2} />;
 };
 
-// ── 2026 Modern Option Selector (Chips Side-by-Side or Custom Glass Popover) ──
+// ── Sub-Issue Smart Icon Resolver ──────────────────────────
+const resolveSubIssueIcon = (label: string) => {
+  const l = label.toLowerCase();
+  if (l.includes('شاشة') || l.includes('عرض') || l.includes('screen')) return <Monitor size={15} />;
+  if (l.includes('طابع') || l.includes('ورق') || l.includes('حبر') || l.includes('printer')) return <Printer size={15} />;
+  if (l.includes('شبك') || l.includes('انترنت') || l.includes('واي فاي') || l.includes('network') || l.includes('wifi')) return <Wifi size={15} />;
+  if (l.includes('نظام') || l.includes('برنامج') || l.includes('ويندوز') || l.includes('software')) return <Laptop size={15} />;
+  if (l.includes('قرص') || l.includes('تخزين') || l.includes('ذاكرة') || l.includes('ram')) return <HardDrive size={15} />;
+  if (l.includes('معالج') || l.includes('بطء') || l.includes('تعليق')) return <Cpu size={15} />;
+  if (l.includes('عطل') || l.includes('صيانة') || l.includes('قطع')) return <Wrench size={15} />;
+  return <Sparkles size={15} />;
+};
+
+// ── 2026 Modern Popover Select (المستدلة الرئيسية تظهر كاختيار من قائمة) ──
 function ModernSelect({
   label,
   options,
@@ -82,54 +99,8 @@ function ModernSelect({
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [isOpen]);
 
-  const selectedItem = normalizedOpts.find(o => o.value === value);
+  const selectedItem = normalizedOpts.find(o => o.value === value || o.label === value);
 
-  // If 5 or fewer options: display directly as interactive side-by-side chips (الخيارات بجانب بعضها)
-  const useChipsLayout = normalizedOpts.length > 0 && normalizedOpts.length <= 5;
-
-  if (useChipsLayout) {
-    return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', width: '100%' }}>
-        {normalizedOpts.map(opt => {
-          const isSelected = value === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(opt.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: isSelected
-                  ? '1.5px solid #38bdf8'
-                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                backgroundColor: isSelected
-                  ? (darkMode ? 'rgba(56, 189, 248, 0.2)' : 'rgba(37, 99, 235, 0.1)')
-                  : (darkMode ? '#101728' : '#ffffff'),
-                color: isSelected
-                  ? (darkMode ? '#38bdf8' : '#2563eb')
-                  : (darkMode ? '#cbd5e1' : '#334155'),
-                fontSize: '11.5px',
-                fontWeight: isSelected ? 800 : 600,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s ease',
-                boxShadow: isSelected ? '0 0 10px rgba(56, 189, 248, 0.25)' : 'none',
-              }}
-            >
-              {isSelected && <span style={{ fontSize: '10px' }}>✓</span>}
-              <span>{opt.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
-  // Otherwise, render a custom glassmorphism dropdown popover
   const filteredOpts = normalizedOpts.filter(o =>
     o.label.toLowerCase().includes(search.toLowerCase())
   );
@@ -146,7 +117,7 @@ function ModernSelect({
           borderRadius: '7px',
           border: isOpen
             ? '1.5px solid #38bdf8'
-            : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+            : (darkMode ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #cbd5e1'),
           backgroundColor: darkMode ? '#101728' : '#ffffff',
           color: selectedItem
             ? (darkMode ? '#ffffff' : '#0f172a')
@@ -161,7 +132,7 @@ function ModernSelect({
           gap: '8px',
           textAlign: 'right',
           outline: 'none',
-          boxShadow: isOpen ? '0 0 12px rgba(56, 189, 248, 0.2)' : 'none',
+          boxShadow: isOpen ? '0 0 14px rgba(56, 189, 248, 0.3)' : 'none',
           transition: 'all 0.15s ease',
           boxSizing: 'border-box',
         }}
@@ -169,7 +140,7 @@ function ModernSelect({
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selectedItem
             ? selectedItem.label
-            : (normalizedOpts.length === 0 ? `لا توجد خيارات متاحة` : `اختر ${label}...`)}
+            : (normalizedOpts.length === 0 ? `لا توجد خيارات متاحة (${label})` : `اختر من القائمة: ${label}...`)}
         </span>
         <ChevronLeft
           size={14}
@@ -182,13 +153,13 @@ function ModernSelect({
         />
       </button>
 
-      {/* Floating Modern Popover */}
+      {/* Floating Popover (Always high z-index and floats over KPI cards) */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
             style={{
               position: 'absolute',
@@ -196,26 +167,26 @@ function ModernSelect({
               insetInlineStart: 0,
               width: '100%',
               minWidth: '220px',
-              maxHeight: '190px',
+              maxHeight: '210px',
               backgroundColor: darkMode ? '#0f172a' : '#ffffff',
-              border: darkMode ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid #cbd5e1',
+              border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.45)' : '1.5px solid #cbd5e1',
               borderRadius: '8px',
               boxShadow: darkMode
-                ? '0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.15)'
-                : '0 10px 25px rgba(30, 58, 82, 0.15)',
-              zIndex: 100,
+                ? '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.25)'
+                : '0 14px 35px rgba(30, 58, 82, 0.22)',
+              zIndex: 99999,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
             }}
           >
-            {normalizedOpts.length > 6 && (
+            {normalizedOpts.length > 5 && (
               <div style={{ padding: '6px 8px', borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0' }}>
                 <input
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="بحث سريع في الخيارات..."
+                  placeholder="بحث سريع..."
                   style={{
                     width: '100%',
                     padding: '5px 8px',
@@ -233,29 +204,29 @@ function ModernSelect({
               </div>
             )}
 
-            <div style={{ overflowY: 'auto', maxHeight: '150px', padding: '4px' }}>
+            <div style={{ overflowY: 'auto', maxHeight: '170px', padding: '4px' }}>
               {filteredOpts.length === 0 ? (
                 <div style={{ padding: '8px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
                   لا توجد نتائج مطابقة
                 </div>
               ) : (
                 filteredOpts.map(opt => {
-                  const isSelected = value === opt.value;
+                  const isSelected = value === opt.value || value === opt.label;
                   return (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => {
-                        onChange(opt.value);
+                        onChange(opt.label);
                         setIsOpen(false);
                       }}
                       style={{
                         width: '100%',
-                        padding: '6px 10px',
+                        padding: '7px 10px',
                         borderRadius: '5px',
                         border: 'none',
                         backgroundColor: isSelected
-                          ? (darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.1)')
+                          ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
                           : 'transparent',
                         color: isSelected
                           ? (darkMode ? '#38bdf8' : '#2563eb')
@@ -309,7 +280,7 @@ function FieldInput({
     width: '100%',
     padding: '8px 12px',
     borderRadius: '7px',
-    border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+    border: darkMode ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #cbd5e1',
     background: darkMode ? '#101728' : '#ffffff',
     fontSize: '12px',
     fontFamily: "'Cairo', sans-serif",
@@ -320,7 +291,7 @@ function FieldInput({
   };
 
   const focusBorder = darkMode ? '#38bdf8' : '#2563eb';
-  const borderDefault = darkMode ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1';
+  const borderDefault = darkMode ? 'rgba(255, 255, 255, 0.14)' : '#cbd5e1';
 
   // 1. SELECT TYPES -> ROUTE TO MODERN SELECT
   if (field.type === 'select') {
@@ -375,7 +346,7 @@ function FieldInput({
     }, [mode, startDate, endDate, discreteDates, hourlyDate, timeFrom, timeTo, singleDate]);
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
         {allowedMode === 'ANY' && (
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {[
@@ -389,11 +360,11 @@ function FieldInput({
                 type="button"
                 onClick={() => setMode(tab.id as any)}
                 style={{
-                  padding: '4px 8px', borderRadius: '5px',
+                  padding: '3px 7px', borderRadius: '4px',
                   border: mode === tab.id ? '1px solid #38bdf8' : 'none',
                   background: mode === tab.id ? 'rgba(56, 189, 248, 0.18)' : (darkMode ? 'rgba(255,255,255,0.05)' : '#e2e8f0'),
                   color: mode === tab.id ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b'),
-                  fontWeight: mode === tab.id ? 800 : 600, fontSize: '10.5px',
+                  fontWeight: mode === tab.id ? 800 : 600, fontSize: '10px',
                   cursor: 'pointer', transition: 'all 0.15s'
                 }}
               >
@@ -574,6 +545,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         next.team = '';
       } else if (name === 'division') {
         next.team = '';
+      } else if (name === 'taxonomyMain') {
+        // Cascade clear sub-issue if main changes
+        next.taxonomySub = '';
       }
       return next;
     });
@@ -597,36 +571,69 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }, 100);
   };
 
+  // ── Smart Dynamic Stages Architecture (Supports Admin Custom Configuration or Logical Standards) ──
+  const adminStages = (selectedFlow as any)?.formConfig?.stages as RouteFormStage[] | undefined;
+
   const totalStages = useMemo(() => {
     if (!selectedFlow) return 2;
+    // If Admin defined custom stages in route builder:
+    if (adminStages && adminStages.length > 0) {
+      return adminStages.length + 1; // Stages + Final Ticket Review
+    }
+    // Default standard criteria:
     return selectedFlow.fields.length > 3 ? 3 : 2;
-  }, [selectedFlow]);
+  }, [selectedFlow, adminStages]);
 
-  const stepFields = useMemo(() => {
-    if (!selectedFlow) return { step1: [], step2: [] };
+  const currentStageDefinition = useMemo(() => {
+    if (!selectedFlow) return null;
+    if (adminStages && adminStages.length > 0) {
+      if (currentStep <= adminStages.length) {
+        return adminStages[currentStep - 1];
+      }
+      return { id: 'final', title: 'مراجعة التذكرة والاعتماد', fieldNames: [] };
+    }
+    return null;
+  }, [selectedFlow, adminStages, currentStep]);
+
+  // Fields mapping per stage
+  const stageFieldsToRender = useMemo(() => {
+    if (!selectedFlow) return [];
     const all = selectedFlow.fields;
 
+    // 1. If Admin configured custom stages:
+    if (adminStages && adminStages.length > 0) {
+      if (currentStep > adminStages.length) return []; // Final review
+      const cfg = adminStages[currentStep - 1];
+      return all.filter(f => cfg.fieldNames.includes(f.name));
+    }
+
+    // 2. Default Standard Criteria:
     if (totalStages === 2) {
-      return { step1: all, step2: [] };
+      return currentStep === 1 ? all : [];
     }
 
+    // 3 Stages Default:
+    // Stage 1: Routing & Core Classification (department, division, team, taxonomyMain, title)
+    // Stage 2: Details & Operational Requirements (dyn_..., scheduleEngine, description, etc.)
     const isCore = (name: string) =>
-      ['department', 'division', 'team', 'title', 'subject', 'category', 'priority', 'urgency'].includes(name);
+      ['department', 'division', 'team', 'title', 'subject', 'category', 'taxonomyMain', 'priority'].includes(name);
 
-    let step1 = all.filter(f => isCore(f.name));
-    let step2 = all.filter(f => !isCore(f.name));
-
-    if (step1.length === 0) {
-      step1 = all.slice(0, 2);
-      step2 = all.slice(2);
+    if (currentStep === 1) {
+      let s1 = all.filter(f => isCore(f.name));
+      if (s1.length === 0) s1 = all.slice(0, 2);
+      return s1;
     }
-
-    return { step1, step2 };
-  }, [selectedFlow, totalStages]);
+    if (currentStep === 2) {
+      let s2 = all.filter(f => !isCore(f.name));
+      if (s2.length === 0) s2 = all.slice(2);
+      return s2;
+    }
+    return [];
+  }, [selectedFlow, adminStages, currentStep, totalStages]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
-    const currentFields = currentStep === 1 ? stepFields.step1 : stepFields.step2;
+    const currentFields = stageFieldsToRender;
 
     const missingRequired = currentFields.find(f => {
       if (!f.required) return false;
@@ -638,6 +645,18 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     if (missingRequired) {
       setErrorMsg(`يرجى تحديد أو إدخال: (${missingRequired.label})`);
       return false;
+    }
+
+    // Taxonomy Sub-Issue validation if main issue has active sub-issues
+    if (formData.taxonomyMain) {
+      const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
+        (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
+      );
+      const activeSubs = mainTax?.subIssues?.filter((s: any) => s.isActive !== false) || [];
+      if (activeSubs.length > 0 && !formData.taxonomySub) {
+        setErrorMsg('يرجى اختيار المشكلة الفرعية المناسبة قبل المتابعة');
+        return false;
+      }
     }
 
     setErrorMsg('');
@@ -673,7 +692,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return;
     }
 
-    // 1. Cut Seam starts at the Top Notch and travels down (650ms)
     setTearState('ripping');
     setLoading(true);
     setErrorMsg('');
@@ -697,6 +715,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         targetDepartmentName: flowAny.targetDepartmentName || undefined,
         targetDivisionName: flowAny.targetDivisionName || undefined,
         targetTeamName: flowAny.targetTeamName || undefined,
+        taxonomyMain: formData.taxonomyMain || undefined,
+        taxonomySub: formData.taxonomySub || undefined,
         description: formData.description?.trim() || Object.entries(formData).map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
         fields: formData,
         routingMetadata: {
@@ -708,10 +728,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       }),
     }).then(r => r.json());
 
-    // Wait until progressive cut travels from top to bottom
     await new Promise(r => setTimeout(r, 650));
-
-    // 2. Flight of both severed pieces (850ms)
     setTearState('departing');
 
     const [data] = await Promise.all([
@@ -892,6 +909,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
       {/* ══════════════════════════════════════════════════════════════
           2. UNIFIED TICKET FRAME WORKSPACE (نفس شكل التذكرة الموحد من المرحلة 1 للنهاية)
+          - Dropdown lists for main options -> Sub-options as rich interactive icons/chips
           - No Vertical Scrolling! Fields displayed side-by-side in balanced 2-column grid.
           ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
@@ -904,6 +922,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'relative',
+              zIndex: 30, // Ensures popovers float OVER any lower elements
               display: 'flex',
               flexDirection: 'row',
               borderRadius: '12px',
@@ -956,7 +975,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 zIndex: 2,
               }}
             >
-              {/* Stub Top: Sequential Ticket Serial & Emblem */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '9px', fontWeight: 900, color: flowColor, letterSpacing: '0.06em' }}>
@@ -1181,6 +1199,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 position: 'relative',
                 zIndex: 1,
                 minWidth: 0,
+                overflow: 'visible',
               }}
             >
               {/* Header: Title, Target Department, Stepper Pills, and Cancel Button */}
@@ -1220,16 +1239,17 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                 {/* Step Indicators */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {[
-                    { num: 1, title: 'الأساسيات والتوجيه' },
-                    ...(totalStages === 3 ? [{ num: 2, title: 'المتطلبات والجدولة' }] : []),
-                    { num: totalStages, title: 'تذكرة الاعتماد' },
-                  ].map(s => {
-                    const isActive = currentStep === s.num;
-                    const isPassed = currentStep > s.num;
+                  {Array.from({ length: totalStages }).map((_, idx) => {
+                    const stepNum = idx + 1;
+                    const isActive = currentStep === stepNum;
+                    const isPassed = currentStep > stepNum;
+                    const stageTitle = adminStages && adminStages[idx]
+                      ? adminStages[idx].title
+                      : (stepNum === 1 ? 'الأساسيات والتوجيه' : (stepNum === totalStages ? 'تذكرة الاعتماد' : 'المتطلبات والجدولة'));
+
                     return (
                       <div
-                        key={s.num}
+                        key={stepNum}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1247,9 +1267,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           backgroundColor: isActive ? flowColor : (isPassed ? '#10b981' : '#334155'),
                           color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900
                         }}>
-                          {isPassed ? '✓' : s.num}
+                          {isPassed ? '✓' : stepNum}
                         </span>
-                        <span>{s.title}</span>
+                        <span>{stageTitle}</span>
                       </div>
                     );
                   })}
@@ -1275,7 +1295,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               </div>
 
               {/* ── Content Viewport: BALANCED 2-COLUMN GRID (NO SCROLLING NEEDED) ── */}
-              <div style={{ minHeight: '135px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' }}>
+              <div style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0', overflow: 'visible' }}>
                 {/* SUCCESS MESSAGE */}
                 {status === 'success' && (
                   <motion.div
@@ -1303,22 +1323,23 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   </motion.div>
                 )}
 
-                {/* STAGE 1: FIELDS IN 2-COLUMN GRID */}
-                {status !== 'success' && currentStep === 1 && (
+                {/* INPUT STAGES (STAGE 1, 2, ...): FIELDS IN 2-COLUMN GRID */}
+                {status !== 'success' && currentStep < totalStages && (
                   <motion.div
-                    key="step1"
+                    key={`step_${currentStep}`}
                     initial={{ opacity: 0, x: -15 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 15 }}
                     transition={{ duration: 0.18 }}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: stepFields.step1.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
+                      gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
                       gap: '12px',
                       alignItems: 'start',
+                      overflow: 'visible',
                     }}
                   >
-                    {stepFields.step1.map((field) => {
+                    {stageFieldsToRender.map((field) => {
                       let fieldToRender = { ...field };
                       if (field.name === 'department') {
                         fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
@@ -1329,64 +1350,105 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       }
 
                       return (
-                        <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                              {fieldToRender.label}
-                            </label>
-                            {fieldToRender.required && (
-                              <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
-                                مطلوب
-                              </span>
-                            )}
+                        <React.Fragment key={field.name}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
+                                {fieldToRender.label}
+                              </label>
+                              {fieldToRender.required && (
+                                <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
+                                  مطلوب
+                                </span>
+                              )}
+                            </div>
+                            <FieldInput
+                              field={fieldToRender}
+                              value={formData[field.name] || ''}
+                              onChange={v => handleFieldChange(field.name, v)}
+                              darkMode={darkMode}
+                            />
                           </div>
-                          <FieldInput
-                            field={fieldToRender}
-                            value={formData[field.name] || ''}
-                            onChange={v => handleFieldChange(field.name, v)}
-                            darkMode={darkMode}
-                          />
-                        </div>
+
+                          {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED DIRECTLY AS VISUAL ICONS ── */}
+                          {field.name === 'taxonomyMain' && formData.taxonomyMain && (() => {
+                            const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
+                              (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
+                            );
+                            if (!mainTax?.subIssues?.length) return null;
+                            const activeSubs = mainTax.subIssues.filter((s: any) => s.isActive !== false);
+                            if (activeSubs.length === 0) return null;
+
+                            return (
+                              <div
+                                style={{
+                                  gridColumn: '1 / -1',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '8px',
+                                  padding: '12px 14px',
+                                  borderRadius: '8px',
+                                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.05)',
+                                  border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
+                                  animation: 'fadeIn 0.2s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>↳</span>
+                                    <span>المشاكل والخيارات الفرعية التابعة لـ ({formData.taxonomyMain}):</span>
+                                  </span>
+                                  <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                    اختر من الأيقونات أدناه
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  {activeSubs.map((sub: any) => {
+                                    const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
+                                    const isSelected = formData.taxonomySub === subLabel;
+                                    return (
+                                      <button
+                                        key={subLabel}
+                                        type="button"
+                                        onClick={() => handleFieldChange('taxonomySub', subLabel)}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '7px',
+                                          padding: '7px 14px',
+                                          borderRadius: '8px',
+                                          backgroundColor: isSelected
+                                            ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                                            : (darkMode ? '#1e293b' : '#ffffff'),
+                                          border: isSelected
+                                            ? '1.5px solid #38bdf8'
+                                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                                          color: isSelected
+                                            ? (darkMode ? '#38bdf8' : '#2563eb')
+                                            : (darkMode ? '#e2e8f0' : '#1e293b'),
+                                          fontWeight: isSelected ? 800 : 600,
+                                          fontSize: '11.5px',
+                                          cursor: 'pointer',
+                                          boxShadow: isSelected ? '0 0 14px rgba(56, 189, 248, 0.35)' : 'none',
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                      >
+                                        <span style={{ color: isSelected ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b') }}>
+                                          {resolveSubIssueIcon(subLabel)}
+                                        </span>
+                                        <span>{subLabel}</span>
+                                        {isSelected && <Check size={13} strokeWidth={2.6} />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </React.Fragment>
                       );
                     })}
-                  </motion.div>
-                )}
-
-                {/* STAGE 2: DETAILS IN 2-COLUMN GRID */}
-                {status !== 'success' && currentStep === 2 && totalStages === 3 && (
-                  <motion.div
-                    key="step2"
-                    initial={{ opacity: 0, x: -15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 15 }}
-                    transition={{ duration: 0.18 }}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: stepFields.step2.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
-                      gap: '12px',
-                      alignItems: 'start',
-                    }}
-                  >
-                    {stepFields.step2.map((field) => (
-                      <div key={field.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                            {field.label}
-                          </label>
-                          {field.required && (
-                            <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
-                              مطلوب
-                            </span>
-                          )}
-                        </div>
-                        <FieldInput
-                          field={field}
-                          value={formData[field.name] || ''}
-                          onChange={v => handleFieldChange(field.name, v)}
-                          darkMode={darkMode}
-                        />
-                      </div>
-                    ))}
                   </motion.div>
                 )}
 
@@ -1426,7 +1488,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       borderRadius: '7px',
                       backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
                       border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-                      maxHeight: '100px',
+                      maxHeight: '110px',
                       overflowY: 'auto',
                     }}>
                       {selectedFlow.fields.map((f) => {
@@ -1450,6 +1512,18 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           </div>
                         );
                       })}
+
+                      {/* Display Taxonomy Sub-Issue in summary if chosen */}
+                      {formData.taxonomySub && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                          <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>
+                            المشكلة الفرعية المحددة
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>
+                            ⚡ {formData.taxonomySub}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

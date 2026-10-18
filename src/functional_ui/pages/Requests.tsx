@@ -473,7 +473,7 @@ export default function RequestsPage() {
         <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* ── 1. ROUTE PICKER & CREATOR (المسارات دائماً ثابتة بالأعلى والفورم بمراحله أسفلها) ── */}
-          <div ref={creatorRef}>
+          <div ref={creatorRef} style={{ position: 'relative', zIndex: 40 }}>
             <InlineRequestCreator
               onCancel={() => {}}
               onSuccess={() => setFilterStatus('active')}
@@ -482,6 +482,8 @@ export default function RequestsPage() {
 
           {/* ── 2. THREE PRIMARY HORIZONTAL KPI TILES (1: المعاملات النشطة | 2: طلبات تحتاج إلى التقييم | 3: أرشيف المعاملات) ── */}
           <div style={{
+            position: 'relative',
+            zIndex: 1,
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: '14px',

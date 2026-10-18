@@ -72,6 +72,14 @@ export interface RouteFormConfig {
   maxConcurrentOpenTickets?: number;
   maxUnratedTicketsAllowed?: number;
   requireRatingBeforeNewTicket?: boolean;
+  // ─── Customizable Stages Architecture ───
+  stages?: RouteFormStage[];
+}
+
+export interface RouteFormStage {
+  id: string;
+  title: string;
+  fieldNames: string[];
 }
 
 export interface TicketRouteDefinition {

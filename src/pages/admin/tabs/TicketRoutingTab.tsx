@@ -9,6 +9,7 @@ import {
   type DynamicFieldOption,
   type DynamicCustomField,
   type RouteFormConfig,
+  type RouteFormStage,
   type TicketRouteDefinition,
   defaultFormConfig,
   normalizeRoute,
@@ -26,6 +27,7 @@ export type {
   DynamicFieldOption,
   DynamicCustomField,
   RouteFormConfig,
+  RouteFormStage,
   TicketRouteDefinition,
 };
 
@@ -1540,6 +1542,131 @@ export const TicketRoutingTab: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 5. منظم وتوزيع مراحل النموذج (Form Stage Organizer) */}
+        <div style={{ padding: '16px', background: '#fff', borderRadius: 12, border: `1.5px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>📋</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>منظم وتوزيع مراحل النموذج (Form Stage Organizer)</div>
+                <div style={{ fontSize: 11, color: A.textTer }}>التحكم في طريقة عرض النموذج للموظف (مرحلة واحدة، مرحلتان، أو 3 مراحل بتسميات مخصصة)</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Strategy buttons */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            {/* 1 Stage */}
+            <div
+              onClick={() => {
+                setFC({
+                  stages: [
+                    { id: 'stage_all', title: 'تعبئة واعتماد المعاملة', fieldNames: [] }
+                  ]
+                });
+              }}
+              style={{
+                padding: '12px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                background: wizard.formConfig.stages?.length === 1 ? `${wizard.color}15` : A.bg,
+                border: `1.5px solid ${wizard.formConfig.stages?.length === 1 ? wizard.color : A.sep}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.stages?.length === 1 ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>⚡</span> مرحلة واحدة شاملة
+              </div>
+              <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4 }}>
+                عرض الحقول والتذكرة مباشرة في خطوة واحدة دون تنقل
+              </div>
+            </div>
+
+            {/* 2 Stages */}
+            <div
+              onClick={() => {
+                setFC({
+                  stages: [
+                    { id: 'stage_1', title: 'البيانات والتوجيه الأساسي', fieldNames: ['department', 'division', 'team', 'building', 'taxonomyMain', 'taxonomySub'] },
+                    { id: 'stage_2', title: 'التفاصيل والتذكرة النهائية', fieldNames: [] }
+                  ]
+                });
+              }}
+              style={{
+                padding: '12px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                background: wizard.formConfig.stages?.length === 2 ? `${wizard.color}15` : A.bg,
+                border: `1.5px solid ${wizard.formConfig.stages?.length === 2 ? wizard.color : A.sep}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: wizard.formConfig.stages?.length === 2 ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📑</span> مرحلتان متوازنتان
+              </div>
+              <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4 }}>
+                المرحلة 1: البيانات والتوجيه ➔ المرحلة 2: التذكرة والاعتماد
+              </div>
+            </div>
+
+            {/* 3 Stages (Standard Enterprise) */}
+            <div
+              onClick={() => {
+                setFC({
+                  stages: [
+                    { id: 'stage_1', title: 'التوجيه والتصنيف', fieldNames: ['department', 'division', 'team', 'building', 'taxonomyMain', 'taxonomySub'] },
+                    { id: 'stage_2', title: 'المتطلبات والجدولة', fieldNames: ['scheduleEngine', 'delegateUser', 'description', 'attachment'] },
+                    { id: 'stage_3', title: 'تذكرة الاعتماد والتمزيق', fieldNames: [] }
+                  ]
+                });
+              }}
+              style={{
+                padding: '12px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                background: (!wizard.formConfig.stages || wizard.formConfig.stages?.length === 3) ? `${wizard.color}15` : A.bg,
+                border: `1.5px solid ${(!wizard.formConfig.stages || wizard.formConfig.stages?.length === 3) ? wizard.color : A.sep}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: (!wizard.formConfig.stages || wizard.formConfig.stages?.length === 3) ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>🎯</span> ثلاث مراحل سينمائية (افتراضي)
+              </div>
+              <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4 }}>
+                1: الأساسيات ➔ 2: التفاصيل ➔ 3: التذكرة السينمائية
+              </div>
+            </div>
+          </div>
+
+          {/* Current Stages List with Editable Titles */}
+          {wizard.formConfig.stages && wizard.formConfig.stages.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: A.textSub }}>
+                تسميات المراحل في نموذج الموظف:
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {wizard.formConfig.stages.map((st, idx) => (
+                  <div key={st.id || idx} style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', gap: 6, background: A.bg, padding: '6px 10px', borderRadius: 8, border: `1px solid ${A.sep}` }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: wizard.color }}>{idx + 1}.</span>
+                    <input
+                      type="text"
+                      value={st.title}
+                      onChange={e => {
+                        const newStages = [...(wizard.formConfig.stages || [])];
+                        newStages[idx] = { ...newStages[idx], title: e.target.value };
+                        setFC({ stages: newStages });
+                      }}
+                      className="tr-input"
+                      style={{ fontSize: 11.5, padding: '4px 8px', background: '#fff' }}
+                      placeholder={`عنوان المرحلة ${idx + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {wizard.formConfig.showAttachments && (
