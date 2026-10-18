@@ -89,7 +89,7 @@ export const Login: React.FC = () => {
             'OPERATIONAL_MANAGER':'tech_director',
             'SECTION_HEAD':       'dept_head',
             'TEAM_LEADER':        'team_leader',
-            'OPERATIONAL_USER':   'employee',
+            'OPERATIONAL_USER':   'operational_user',
             'Employee':           'employee',
             'EMPLOYEE':           'employee',
           };
@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
         'OPERATIONAL_MANAGER':'tech_director',
         'SECTION_HEAD':       'dept_head',
         'TEAM_LEADER':        'team_leader',
-        'OPERATIONAL_USER':   'employee',
+        'OPERATIONAL_USER':   'operational_user',
         'Employee':           'employee',
         'EMPLOYEE':           'employee',
       };

@@ -4,7 +4,7 @@
  */
 import React, { createContext, useContext, useState } from 'react';
 
-export type Role = 'system_director' | 'super_admin' | 'co_admin' | 'tech_director' | 'dept_head' | 'team_leader' | 'employee';
+export type Role = 'system_director' | 'super_admin' | 'co_admin' | 'tech_director' | 'dept_head' | 'team_leader' | 'operational_user' | 'employee';
 
 export interface User {
   id: string;
@@ -56,12 +56,12 @@ const readStoredSession = (): User | null => {
             'OPERATIONAL_MANAGER': 'tech_director',
             'SECTION_HEAD': 'dept_head',
             'TEAM_LEADER': 'team_leader',
-            'OPERATIONAL_USER': 'employee',
+            'OPERATIONAL_USER': 'operational_user',
           };
           return {
             id: found.id,
             name: found.name,
-            role: roleMap[found.role] || 'employee',
+            role: roleMap[found.role] || 'operational_user',
             email: found.email,
             department: found.departmentId || 'unassigned'
           };
@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Define broad role capabilities here
     // Currently relying on role-based routing and Taskbar checks.
     if (permission === 'use_taskbar') {
-      return ['super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user.role);
+      return ['super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user'].includes(user.role);
     }
     
     // Default deny for unspecified specific permissions

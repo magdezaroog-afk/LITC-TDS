@@ -69,6 +69,7 @@ export const UnifiedProfileDropdown: React.FC<{ currentUserRole?: string }> = ({
     tech_director: 'مدير العمليات الفنية',
     dept_head: 'رئيس قسم / إدارة',
     team_leader: 'قائد فريق عمل',
+    operational_user: 'عضو كادر تشغيلي',
     employee: 'موظف مؤسسي',
     co_admin: 'مشرف نظام'
   };

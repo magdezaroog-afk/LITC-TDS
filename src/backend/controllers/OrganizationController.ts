@@ -1329,6 +1329,7 @@ export class OrganizationController {
   }
 
   /** GET /api/v1/org/users/:userId/interface - جلب الواجهة المخصصة للمستخدم */
+  /** GET /api/v1/org/users/:userId/interface - جلب الواجهة المخصصة للمستخدم مع الاستكشاف التلقائي للكوادر التشغيلية */
   static async getUserInterface(req: Request, res: Response) {
     try {
       const userId = parseInt(req.params.userId);
@@ -1336,10 +1337,18 @@ export class OrganizationController {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { role: true, department: true }
+        include: { 
+          role: true, 
+          department: true,
+          teams: { include: { team: true } }
+        }
       });
 
       if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const userTeamIds = user.teams?.map(t => t.teamId).filter(Boolean) as number[] || [];
+      const teamNames = user.teams?.map(t => t.team?.name).filter(Boolean) as string[] || [];
+      const primaryTeam = user.teams?.[0]?.team;
 
       // 1. User Specific Interface (Highest Priority)
       let ui = await prisma.interface.findFirst({
@@ -1347,18 +1356,93 @@ export class OrganizationController {
         orderBy: { updatedAt: 'desc' }
       });
 
-      // 2. Department + Role Specific Interface
+      // 2. Team Specific Interface (فحص واجهات الفريق التشغيلي المنتمي إليه المستخدم)
+      if (!ui && userTeamIds.length > 0) {
+        ui = await prisma.interface.findFirst({
+          where: { teamId: { in: userTeamIds } },
+          orderBy: { updatedAt: 'desc' }
+        });
+      }
+
+      // 3. Department + Role Specific Interface
       if (!ui && user.departmentId && user.role) {
         ui = await prisma.interface.findFirst({
           where: { 
             departmentId: user.departmentId,
-            roleType: user.role.name // Assuming Role.name matches CoreRole
+            OR: [
+              { roleType: user.role.name },
+              { roleType: 'OPERATIONAL_USER' },
+              { interfaceType: 'OPERATIONAL' }
+            ]
           },
           orderBy: { updatedAt: 'desc' }
         });
       }
 
-      // 3. Fallback Global Functional Interface
+      // 4. استحقاق تلقائي للواجهة التشغيلية لأي عضو في كادر أو فريق تشغيلي (Auto-Provisioning for Operational Cadres)
+      const isOperationalCadre = 
+        userTeamIds.length > 0 || 
+        ['OPERATIONAL_USER', 'OPERATIONAL_MANAGER', 'TEAM_LEADER', 'SECTION_HEAD', 'TECH_DIRECTOR'].includes(user.role?.name || '') ||
+        [22, 25, 26, 27, 28].includes(user.roleId);
+
+      // استخراج المسارات المستهدفة لفريق المستخدم من إعدادات النظام
+      let matchingRoutes: any[] = [];
+      try {
+        const ticketRoutesSetting = await prisma.systemSetting.findUnique({
+          where: { settingKey: 'litc_ticket_routes' }
+        });
+        if (ticketRoutesSetting?.settingValue) {
+          const allRoutes = JSON.parse(ticketRoutesSetting.settingValue);
+          if (Array.isArray(allRoutes)) {
+            matchingRoutes = allRoutes.filter((r: any) => 
+              (r.targetTeamId && userTeamIds.includes(Number(r.targetTeamId))) ||
+              (r.targetDivisionId && r.targetDivisionId === user.departmentId) ||
+              (!r.targetTeamId && user.departmentId === 1)
+            );
+          }
+        }
+      } catch (e) {
+        Logger.warn(`[getUserInterface] Failed to parse litc_ticket_routes: ${e}`);
+      }
+
+      if (!ui && isOperationalCadre) {
+        // إنشاء واجهة تشغيلية ديناميكية تلقائية ومخصصة لفريق ومسارات المستخدم
+        const autoInterface = {
+          id: `dyn_ops_auto_${user.id}`,
+          name: primaryTeam ? `واجهة فريق ${primaryTeam.name}` : `واجهة العمليات - ${user.department?.name || 'الكوادر التشغيلية'}`,
+          interfaceType: 'OPERATIONAL',
+          departmentId: user.departmentId,
+          teamId: primaryTeam?.id || null,
+          roleType: user.role?.name || 'OPERATIONAL_USER',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          configJson: JSON.stringify([
+            { id: 'ops_queue', type: 'QUEUE_VIEW', title: 'حوض التذاكر والمهام الواردة' },
+            { id: 'ops_analytics', type: 'ANALYTICS_VIEW', title: 'التحليلات والمؤشرات' }
+          ]),
+          meta: {
+            interfaceType: 'OPERATIONAL',
+            isAutoAssigned: true,
+            isOperational: true,
+            teams: teamNames,
+            primaryTeamId: primaryTeam?.id || null,
+            primaryTeamName: primaryTeam?.name || null,
+            assignedRoutes: matchingRoutes.map(r => ({ id: r.id, name: r.name, icon: r.icon, color: r.color }))
+          }
+        };
+
+        return res.json({
+          success: true,
+          interface: {
+            config: JSON.parse(autoInterface.configJson),
+            meta: autoInterface.meta,
+            interfaceType: 'OPERATIONAL',
+            assignedRoutes: autoInterface.meta.assignedRoutes
+          }
+        });
+      }
+
+      // 5. Fallback Global Functional Interface (للموظفين العاديين فقط غير التشغيليين)
       if (!ui) {
         ui = await prisma.interface.findFirst({
           where: { interfaceType: 'FUNCTIONAL', departmentId: null, userId: null, teamId: null },
@@ -1375,7 +1459,23 @@ export class OrganizationController {
         }
       }
 
-      res.json({ success: true, interface: ui ? { config: JSON.parse(ui.configJson || '[]'), meta: ui } : null });
+      const metaObj = ui ? {
+        ...(ui as any),
+        interfaceType: isOperationalCadre ? 'OPERATIONAL' : (ui.interfaceType || 'FUNCTIONAL'),
+        teams: teamNames,
+        primaryTeamName: primaryTeam?.name || null,
+        assignedRoutes: matchingRoutes.map(r => ({ id: r.id, name: r.name, icon: r.icon, color: r.color }))
+      } : null;
+
+      res.json({ 
+        success: true, 
+        interface: ui ? { 
+          config: JSON.parse(ui.configJson || '[]'), 
+          meta: metaObj,
+          interfaceType: metaObj?.interfaceType || ui.interfaceType,
+          assignedRoutes: matchingRoutes
+        } : null 
+      });
     } catch (error) {
       Logger.error(`[OperationalStructureController] getUserInterface error: ${error}`);
       res.status(500).json({ error: 'Failed to get user interface' });

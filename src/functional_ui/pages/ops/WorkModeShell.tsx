@@ -13,13 +13,27 @@ export const WorkModeShell: React.FC = () => {
     if (!user) return;
     
     // Fetch the dynamic interface from the resolution engine
-    fetch(`/api/v1/org/users/${user.id}/interface`)
+    const token = localStorage.getItem('litc_token') || localStorage.getItem('token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(`/api/v1/org/users/${user.id}/interface`, {
+      credentials: 'include',
+      headers
+    })
       .then(r => r.json())
       .then(res => {
-        if (res.success && res.interface && res.interface.config && res.interface.config.length > 0) {
+        // Only use PageRenderer if components are standard atomic components in registry
+        if (
+          res.success && 
+          res.interface && 
+          Array.isArray(res.interface.config) && 
+          res.interface.config.length > 0 &&
+          res.interface.config.some((c: any) => c.type !== 'QUEUE_VIEW' && c.type !== 'ANALYTICS_VIEW')
+        ) {
           setLayout({ components: res.interface.config });
         } else {
-          setLayout('FALLBACK'); // Render the hardcoded queue if no layout is configured
+          setLayout('FALLBACK'); // Render the full OperationalQueueView
         }
       })
       .catch(err => {

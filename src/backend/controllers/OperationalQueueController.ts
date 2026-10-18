@@ -159,13 +159,21 @@ export class OperationalQueueController {
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { departmentId: true, role: { select: { name: true } } }
+        select: { 
+          departmentId: true, 
+          role: { select: { name: true } },
+          teams: { select: { teamId: true } }
+        }
       });
 
       if (!fullUser) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-      const roleName = fullUser.role?.name || 'USER';
-      if (!canDo(roleName, 20)) {
+      const isOperationalCadre = (fullUser.teams && fullUser.teams.length > 0);
+      const roleName = isOperationalCadre && (!fullUser.role || ['EMPLOYEE', 'Employee', 'USER', 'End_User'].includes(fullUser.role.name))
+        ? 'OPERATIONAL_USER'
+        : (fullUser.role?.name || 'USER');
+
+      if (!canDo(roleName, 20) && !isOperationalCadre) {
         return res.status(403).json({ success: false, message: 'غير مخول بعرض الطلبات التشغيلية' });
       }
 
@@ -227,9 +235,16 @@ export class OperationalQueueController {
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { departmentId: true, role: { select: { name: true } } }
+        select: { 
+          departmentId: true, 
+          role: { select: { name: true } },
+          teams: { select: { teamId: true } }
+        }
       });
-      const roleName = fullUser?.role?.name || 'USER';
+      const isOperationalCadre = (fullUser?.teams && fullUser.teams.length > 0);
+      const roleName = isOperationalCadre && (!fullUser?.role || ['EMPLOYEE', 'Employee', 'USER', 'End_User'].includes(fullUser.role.name))
+        ? 'OPERATIONAL_USER'
+        : (fullUser?.role?.name || 'USER');
 
       const ticket = await prisma.ticket.findFirst({
         where: { id: ticketId, isDeleted: false },
@@ -901,11 +916,18 @@ export class OperationalQueueController {
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { departmentId: true, role: { select: { name: true } } }
+        select: { 
+          departmentId: true, 
+          role: { select: { name: true } },
+          teams: { select: { teamId: true } }
+        }
       });
-      const roleName = fullUser?.role?.name || 'USER';
+      const isOperationalCadre = (fullUser?.teams && fullUser.teams.length > 0);
+      const roleName = isOperationalCadre && (!fullUser?.role || ['EMPLOYEE', 'Employee', 'USER', 'End_User'].includes(fullUser.role.name))
+        ? 'OPERATIONAL_USER'
+        : (fullUser?.role?.name || 'USER');
 
-      if (!canDo(roleName, 20)) {
+      if (!canDo(roleName, 20) && !isOperationalCadre) {
         return res.status(403).json({ success: false, message: 'غير مخول' });
       }
 

@@ -113,9 +113,37 @@ export class OperationalAdminController {
   static async assignUserToTeam(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId, teamId } = req.body;
-      const userTeam = await prisma.userTeam.create({
-        data: { userId: Number(userId), teamId: Number(teamId) }
+      const uid = Number(userId);
+      const tid = Number(teamId);
+
+      const team = await prisma.team.findUnique({
+        where: { id: tid },
+        select: { id: true, departmentId: true }
       });
+
+      const userTeam = await prisma.userTeam.upsert({
+        where: { userId_teamId: { userId: uid, teamId: tid } },
+        create: { userId: uid, teamId: tid },
+        update: {}
+      });
+
+      // Ensure user role is upgraded to OPERATIONAL_USER (roleId: 26) if currently regular employee
+      if (team?.departmentId) {
+        await prisma.user.updateMany({
+          where: { id: uid, roleId: { notIn: [1, 22, 23, 24, 25] } },
+          data: { departmentId: team.departmentId, roleId: 26 }
+        });
+        await prisma.user.updateMany({
+          where: { id: uid, departmentId: null },
+          data: { departmentId: team.departmentId }
+        });
+      } else {
+        await prisma.user.updateMany({
+          where: { id: uid, roleId: { notIn: [1, 22, 23, 24, 25] } },
+          data: { roleId: 26 }
+        });
+      }
+
       res.status(201).json(userTeam);
     } catch (err) { next(err); }
   }

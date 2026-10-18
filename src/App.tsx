@@ -150,11 +150,18 @@ const Navigation: React.FC = () => {
 
   React.useEffect(() => {
     if (user?.id) {
-      fetch(`/api/v1/org/users/${user.id}/interface`, { credentials: 'include' })
+      const token = localStorage.getItem('litc_token') || localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      fetch(`/api/v1/org/users/${user.id}/interface`, { 
+        credentials: 'include',
+        headers
+      })
         .then(r => r.json())
         .then(res => {
-          if (res.success && res.interface && res.interface.meta) {
-            const type = res.interface.meta.interfaceType;
+          if (res.success && res.interface) {
+            const type = res.interface.interfaceType || res.interface.meta?.interfaceType;
             if (type === 'OPERATIONAL' || type === 'LEADERSHIP') {
               setHasOpsInterface(true);
             }
@@ -325,7 +332,7 @@ const Navigation: React.FC = () => {
           </Link>
 
           {/* رابط مود العمل التشغيلي */}
-          {(['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface) && (
+          {(['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'OPERATIONAL_USER'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface) && (
             <Link
               to="/ops"
               style={{
@@ -485,6 +492,7 @@ const UniversalWorkspaceRouter: React.FC<{ user: any, systemMode: string }> = ({
     case 'tech_director':
     case 'dept_head':
     case 'team_leader':
+    case 'operational_user':
     case 'employee':
     default:
       // Operational Roles -> Load WorkModeShell!
