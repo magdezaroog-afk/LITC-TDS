@@ -485,7 +485,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [isDispenserOpen, setIsDispenserOpen] = useState(false);
 
   // ── Realistic Progressive Tearing States ──
-  const [tearState, setTearState] = useState<'idle' | 'ripping' | 'departing' | 'completed'>('idle');
+  const [tearState, setTearState] = useState<'idle' | 'dispensing' | 'ripping' | 'departing' | 'completed'>('idle');
   const [previewSerial, setPreviewSerial] = useState('');
 
   // ── Organizational Structure & Dynamic Fields Store ──
@@ -692,7 +692,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return;
     }
 
-    setTearState('ripping');
+    // Step 1: Start physical extrusion from machine slot
+    setTearState('dispensing');
     setLoading(true);
     setErrorMsg('');
 
@@ -728,6 +729,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       }),
     }).then(r => r.json());
 
+    // Allow 800ms to visibly slide out of the slot mouth
+    await new Promise(r => setTimeout(r, 800));
+    setTearState('ripping');
+    // Allow 650ms for laser cutter tear
     await new Promise(r => setTimeout(r, 650));
     setTearState('departing');
 
@@ -769,7 +774,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       <div
         style={{
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: isDispenserOpen && selectedFlow ? '940px' : (isDispenserOpen ? '760px' : '680px'),
           borderRadius: '16px',
           background: darkMode
             ? 'linear-gradient(180deg, #162032 0%, #0d1527 100%)'
@@ -778,14 +783,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
           boxShadow: darkMode
             ? '0 12px 36px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
             : '0 8px 24px rgba(30, 58, 82, 0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
-          padding: '14px 22px',
+          padding: '14px 20px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
           position: 'relative',
           zIndex: 45,
-          transition: 'all 0.3s ease',
+          transition: 'max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease',
         }}
       >
         {/* Machine Header Status */}
@@ -795,8 +800,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: isDispenserOpen ? '#38bdf8' : '#10b981',
-              boxShadow: isDispenserOpen ? '0 0 10px #38bdf8' : '0 0 10px #10b981',
+              backgroundColor: tearState !== 'idle' ? '#f59e0b' : (isDispenserOpen ? '#38bdf8' : '#10b981'),
+              boxShadow: tearState !== 'idle' ? '0 0 12px #f59e0b' : (isDispenserOpen ? '0 0 10px #38bdf8' : '0 0 10px #10b981'),
             }} />
             <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#cbd5e1' : '#475569', letterSpacing: '0.04em' }}>
               ماكينة التذاكر الذكية • NEXUS TICKET DISPENSER
@@ -805,17 +810,17 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
           <span style={{
             fontSize: '9.5px',
-            color: isDispenserOpen ? '#38bdf8' : '#10b981',
+            color: tearState !== 'idle' ? '#f59e0b' : (isDispenserOpen ? '#38bdf8' : '#10b981'),
             fontWeight: 800,
-            backgroundColor: isDispenserOpen ? 'rgba(56, 189, 248, 0.12)' : 'rgba(16, 185, 129, 0.1)',
+            backgroundColor: tearState !== 'idle' ? 'rgba(245, 158, 11, 0.15)' : (isDispenserOpen ? 'rgba(56, 189, 248, 0.12)' : 'rgba(16, 185, 129, 0.1)'),
             padding: '2px 8px',
             borderRadius: '9999px',
-            border: isDispenserOpen ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(16, 185, 129, 0.25)',
+            border: tearState !== 'idle' ? '1px solid rgba(245, 158, 11, 0.35)' : (isDispenserOpen ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(16, 185, 129, 0.25)'),
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
           }}>
-            {isDispenserOpen ? 'التذكرة قيد الخروج' : 'جاهزة للاستخراج'}
+            {tearState === 'dispensing' ? '⚡ جاري استخراج التذكرة...' : (tearState === 'ripping' ? '✂️ قص التذكرة...' : (isDispenserOpen ? 'لوحة إعداد المسار نشطة' : 'جاهزة للاستخراج'))}
           </span>
         </div>
 
@@ -832,6 +837,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               setIsDispenserOpen(true);
             }
           }}
+          disabled={tearState !== 'idle'}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -847,7 +853,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             fontSize: '14.5px',
             fontWeight: 800,
             fontFamily: "'Tajawal', sans-serif",
-            cursor: 'pointer',
+            cursor: tearState !== 'idle' ? 'not-allowed' : 'pointer',
             boxShadow: '0 6px 20px rgba(243, 108, 33, 0.35), inset 0 1px 0 rgba(255,255,255,0.3)',
             transform: isDispenserOpen ? 'scale(0.98)' : 'scale(1)',
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -856,7 +862,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
           <Ticket size={17} strokeWidth={2.4} />
           <span>
             {isDispenserOpen
-              ? (selectedFlow ? 'إلغاء التذكرة وإعادتها للماكينة' : 'إغلاق الماكينة')
+              ? (selectedFlow ? 'إلغاء وإعادة التعيين' : 'إغلاق الماكينة')
               : 'إنشاء طلب جديد • سحب تذكرة'}
           </span>
           <ChevronDown
@@ -868,59 +874,555 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
           />
         </button>
 
+        {/* ── CONSOLE WORKSPACE BAY (مربع اختيار نوع الطلب ومسار الحقول المحددة من الإدارة) ── */}
+        <AnimatePresence>
+          {isDispenserOpen && tearState === 'idle' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, scale: 0.98 }}
+              animate={{ opacity: 1, height: 'auto', scale: 1 }}
+              exit={{ opacity: 0, height: 0, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                width: '100%',
+                overflow: 'hidden',
+                backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                borderRadius: '12px',
+                border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
+                padding: '16px',
+                boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.06)',
+              }}
+            >
+              {!selectedFlow ? (
+                /* ── Phase 1: مربع اختيار نوع الطلب من المسارات المتاحة ── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={16} color="#38bdf8" />
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                        اختر نوع الخدمة / المعاملة لبدء إعداد المسار:
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      {requests.length} مسارات متاحة
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: '12px',
+                  }}>
+                    {requests.map(flow => {
+                      const fColor = flow.color || '#38bdf8';
+                      const block = canCreateRequest(flow.id);
+                      const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+
+                      return (
+                        <div
+                          key={flow.id}
+                          onClick={() => block.allowed && handleSelectFlow(flow)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                            cursor: block.allowed ? 'pointer' : 'not-allowed',
+                            opacity: block.allowed ? 1 : 0.6,
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onMouseEnter={e => {
+                            if (block.allowed) {
+                              e.currentTarget.style.backgroundColor = `${fColor}15`;
+                              e.currentTarget.style.borderColor = `${fColor}50`;
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (block.allowed) {
+                              e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc';
+                              e.currentTarget.style.borderColor = darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0';
+                              e.currentTarget.style.transform = 'none';
+                            }
+                          }}
+                        >
+                          <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '8px',
+                            backgroundColor: `${fColor}20`,
+                            border: `1.5px solid ${fColor}50`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: fColor,
+                            flexShrink: 0,
+                          }}>
+                            {resolveIcon(flow.icon, 18, fColor)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                              {flow.title}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                              {targetDept} • {flow.fields.length} حقول
+                            </div>
+                          </div>
+                          <ChevronLeft size={16} color={fColor} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                /* ── Phase 2: خيارات المسار التي تم تحديدها من قبل الإدارة ── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Step Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                    paddingBottom: '10px',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '7px',
+                        backgroundColor: `${flowColor}20`,
+                        border: `1.5px solid ${flowColor}60`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: flowColor,
+                        flexShrink: 0,
+                      }}>
+                        {resolveIcon(selectedFlow.icon, 17, flowColor)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                          {selectedFlow.title}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
+                          🎯 جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step Indicators */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {Array.from({ length: totalStages }).map((_, idx) => {
+                        const stepNum = idx + 1;
+                        const isActive = currentStep === stepNum;
+                        const isPassed = currentStep > stepNum;
+                        const stageTitle = adminStages && adminStages[idx]
+                          ? adminStages[idx].title
+                          : (stepNum === 1 ? 'الأساسيات والتوجيه' : (stepNum === totalStages ? 'تذكرة الاعتماد' : 'المتطلبات والجدولة'));
+
+                        return (
+                          <div
+                            key={stepNum}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '10.5px',
+                              fontWeight: isActive ? 800 : 600,
+                              color: isActive ? flowColor : (isPassed ? '#10b981' : '#64748b'),
+                              backgroundColor: isActive ? `${flowColor}15` : 'transparent',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            <span style={{
+                              width: '14px', height: '14px', borderRadius: '50%',
+                              backgroundColor: isActive ? flowColor : (isPassed ? '#10b981' : '#334155'),
+                              color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900
+                            }}>
+                              {isPassed ? '✓' : stepNum}
+                            </span>
+                            <span>{stageTitle}</span>
+                          </div>
+                        );
+                      })}
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFlow(null)}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          background: 'none',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                          color: darkMode ? '#94a3b8' : '#64748b',
+                          fontSize: '10.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          marginInlineStart: '4px',
+                        }}
+                      >
+                        تغيير المسار ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Form Fields: Stages 1 & 2 */}
+                  {status !== 'success' && currentStep < totalStages && (
+                    <motion.div
+                      key={`step_${currentStep}`}
+                      initial={{ opacity: 0, x: -15 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 15 }}
+                      transition={{ duration: 0.18 }}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
+                        gap: '12px',
+                        alignItems: 'start',
+                        overflow: 'visible',
+                      }}
+                    >
+                      {stageFieldsToRender.map((field) => {
+                        let fieldToRender = { ...field };
+                        if (field.name === 'department') {
+                          fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
+                        } else if (field.name === 'division') {
+                          fieldToRender.options = divisionOptions;
+                        } else if (field.name === 'team') {
+                          fieldToRender.options = teamOptions;
+                        }
+
+                        return (
+                          <React.Fragment key={field.name}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e3a52' }}>
+                                  {fieldToRender.label}
+                                </label>
+                                {fieldToRender.required && (
+                                  <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
+                                    مطلوب
+                                  </span>
+                                )}
+                              </div>
+                              <FieldInput
+                                field={fieldToRender}
+                                value={formData[field.name] || ''}
+                                onChange={v => handleFieldChange(field.name, v)}
+                                darkMode={darkMode}
+                              />
+                            </div>
+
+                            {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED DIRECTLY AS VISUAL ICONS ── */}
+                            {field.name === 'taxonomyMain' && formData.taxonomyMain && (() => {
+                              const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
+                                (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
+                              );
+                              if (!mainTax?.subIssues?.length) return null;
+                              const activeSubs = mainTax.subIssues.filter((s: any) => s.isActive !== false);
+                              if (activeSubs.length === 0) return null;
+
+                              return (
+                                <div
+                                  style={{
+                                    gridColumn: '1 / -1',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                    padding: '12px 14px',
+                                    borderRadius: '8px',
+                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.05)',
+                                    border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
+                                    animation: 'fadeIn 0.2s ease',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span>↳</span>
+                                      <span>المشاكل والخيارات الفرعية التابعة لـ ({formData.taxonomyMain}):</span>
+                                    </span>
+                                    <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                      اختر من الأيقونات أدناه
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {activeSubs.map((sub: any) => {
+                                      const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
+                                      const isSelected = formData.taxonomySub === subLabel;
+                                      return (
+                                        <button
+                                          key={subLabel}
+                                          type="button"
+                                          onClick={() => handleFieldChange('taxonomySub', subLabel)}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '7px',
+                                            padding: '7px 14px',
+                                            borderRadius: '8px',
+                                            backgroundColor: isSelected
+                                              ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                                              : (darkMode ? '#1e293b' : '#ffffff'),
+                                            border: isSelected
+                                              ? '1.5px solid #38bdf8'
+                                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                                            color: isSelected
+                                              ? (darkMode ? '#38bdf8' : '#2563eb')
+                                              : (darkMode ? '#e2e8f0' : '#1e3a52'),
+                                            fontWeight: isSelected ? 800 : 600,
+                                            fontSize: '11.5px',
+                                            cursor: 'pointer',
+                                            boxShadow: isSelected ? '0 0 14px rgba(56, 189, 248, 0.35)' : 'none',
+                                            transition: 'all 0.15s ease',
+                                          }}
+                                        >
+                                          <span style={{ color: isSelected ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b') }}>
+                                            {resolveSubIssueIcon(subLabel)}
+                                          </span>
+                                          <span>{subLabel}</span>
+                                          {isSelected && <Check size={13} strokeWidth={2.6} />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </React.Fragment>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+
+                  {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار */}
+                  {currentStep === totalStages && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 800, color: '#34d399' }}>
+                          <ShieldCheck size={16} />
+                          <span>اكتملت بيانات المعاملة: جاهزة للإصدار والطباعة من الماكينة</span>
+                        </div>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: 700 }}>
+                          رقم متوقع: {previewSerial}
+                        </span>
+                      </div>
+
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: '8px',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                      }}>
+                        {selectedFlow.fields.map(f => {
+                          const val = formData[f.name];
+                          if (!val) return null;
+                          return (
+                            <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                              <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600 }}>{f.label}</span>
+                              <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{val}</span>
+                            </div>
+                          );
+                        })}
+                        {formData.taxonomySub && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                            <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>المشكلة الفرعية</span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>⚡ {formData.taxonomySub}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {errorMsg && (
+                    <div style={{
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#f87171',
+                      fontSize: '11px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <AlertTriangle size={13} />
+                      <span>{errorMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Navigation Buttons Footer */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                    paddingTop: '10px',
+                    gap: '8px',
+                  }}>
+                    <div>
+                      {currentStep > 1 && (
+                        <button
+                          type="button"
+                          onClick={handlePrevStep}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            backgroundColor: 'transparent',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
+                            color: darkMode ? '#cbd5e1' : '#475569',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontFamily: "'Cairo', sans-serif",
+                          }}
+                        >
+                          <ChevronRight size={13} />
+                          <span>السابق</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {currentStep < totalStages && (
+                        <button
+                          type="button"
+                          onClick={handleNextStep}
+                          style={{
+                            padding: '7px 18px',
+                            borderRadius: '6px',
+                            background: `linear-gradient(135deg, ${flowColor} 0%, #2563eb 100%)`,
+                            border: 'none',
+                            color: '#ffffff',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: `0 4px 12px ${flowColor}35`,
+                            fontFamily: "'Cairo', sans-serif",
+                          }}
+                        >
+                          <span>متابعة للمرحلة التالية</span>
+                          <ChevronLeft size={14} />
+                        </button>
+                      )}
+
+                      {currentStep === totalStages && (
+                        <button
+                          type="button"
+                          onClick={handleTearAndSubmit}
+                          disabled={loading || tearState !== 'idle'}
+                          style={{
+                            padding: '8px 24px',
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #f36c21 50%, #135d79 100%)',
+                            border: 'none',
+                            color: '#ffffff',
+                            fontSize: '13px',
+                            fontWeight: 900,
+                            cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            boxShadow: '0 6px 18px rgba(243, 108, 33, 0.4)',
+                            fontFamily: "'Cairo', sans-serif",
+                          }}
+                        >
+                          <Scissors size={15} />
+                          <span>إرسال واعتماد الطلب • استخراج التذكرة 🚀</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Physical Dispenser Slit Mouth (فتحة خروج التذاكر) */}
         <div style={{
-          width: '90%',
-          height: '10px',
-          borderRadius: '5px',
+          width: '92%',
+          height: '11px',
+          borderRadius: '5.5px',
           backgroundColor: '#050914',
-          border: '1px solid rgba(255, 255, 255, 0.16)',
-          boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 12px rgba(56, 189, 248, 0.25)',
+          border: '1px solid rgba(255, 255, 255, 0.18)',
+          boxShadow: tearState === 'dispensing'
+            ? 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 20px #f36c21, 0 0 30px #38bdf8'
+            : 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(56, 189, 248, 0.25)',
           position: 'relative',
           overflow: 'hidden',
           marginTop: '2px',
+          transition: 'box-shadow 0.3s ease',
         }}>
           {/* Laser guide line inside slot */}
           <div style={{
             position: 'absolute',
             top: '50%',
-            left: '8%',
-            right: '8%',
+            left: '6%',
+            right: '6%',
             height: '2px',
             transform: 'translateY(-50%)',
-            background: isDispenserOpen
-              ? 'linear-gradient(90deg, transparent, #f36c21, #38bdf8, transparent)'
-              : 'linear-gradient(90deg, transparent, #10b981, transparent)',
-            boxShadow: isDispenserOpen ? '0 0 8px #f36c21' : '0 0 6px #10b981',
+            background: tearState === 'dispensing'
+              ? 'linear-gradient(90deg, transparent, #f36c21, #f59e0b, #38bdf8, transparent)'
+              : (isDispenserOpen
+                ? 'linear-gradient(90deg, transparent, #38bdf8, transparent)'
+                : 'linear-gradient(90deg, transparent, #10b981, transparent)'),
+            boxShadow: tearState === 'dispensing'
+              ? '0 0 12px #f36c21, 0 0 18px #38bdf8'
+              : (isDispenserOpen ? '0 0 8px #38bdf8' : '0 0 6px #10b981'),
           }} />
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          2. THE EMERGING TICKET (نزول التذكرة لأسفل من فتحة الماكينة)
+          2. THE EMITTED PRINTED TICKET (خروج التذكرة الفعلي من شق الماكينة)
           ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {isDispenserOpen && (
+        {tearState !== 'idle' && selectedFlow && (
           <motion.div
-            initial={{ opacity: 0, y: -35, scaleY: 0.85 }}
+            initial={{ opacity: 0, y: -180, scaleY: 0.2 }}
             animate={{
               opacity: 1,
               y: 0,
               scaleY: 1,
-              transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] }
+              transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
             }}
             exit={{
               opacity: 0,
-              y: tearState === 'departing' ? -70 : -35,
-              scaleY: 0.85,
-              transition: { duration: 0.3, ease: 'easeInOut' }
+              y: tearState === 'departing' ? -100 : -40,
+              scale: 0.85,
+              transition: { duration: 0.35, ease: 'easeInOut' }
             }}
             style={{
               width: '100%',
-              maxWidth: '960px',
+              maxWidth: '940px',
               margin: '-4px auto 0',
               position: 'relative',
               zIndex: 35,
+              transformOrigin: 'top center',
             }}
           >
             {/* Top cutter laser line during reverse cutting */}
@@ -941,875 +1443,199 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               />
             )}
 
-            {!selectedFlow ? (
-              /* ── STATE A: EMERGING TICKET HEAD WITH SERVICE SELECTION ICONS ── */
-              <div
+            {/* Cinema Ticket Split: Stub on Right + Verified Payload on Left */}
+            <div
+              className="enterprise-ticket-split"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'row',
+                borderRadius: '12px',
+                overflow: 'visible',
+                backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                border: darkMode ? `1.5px solid ${flowColor}50` : `1.5px solid ${flowColor}70`,
+                boxShadow: darkMode
+                  ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px ${flowColor}25`
+                  : '0 12px 30px rgba(30, 58, 82, 0.12)',
+                minHeight: '260px',
+                width: '100%',
+              }}
+            >
+              {/* STUB ON RIGHT */}
+              <motion.div
+                className="ticket-stub-col"
+                animate={
+                  tearState === 'ripping'
+                    ? { rotate: 1.5, x: 4, transformOrigin: 'bottom right' }
+                    : tearState === 'departing'
+                    ? { y: 130, x: 50, rotate: 6, scale: 0.65, opacity: 0, filter: 'blur(2px)' }
+                    : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
+                }
+                transition={
+                  tearState === 'ripping'
+                    ? { duration: 0.65, ease: 'easeOut' }
+                    : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
+                }
                 style={{
-                  backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-                  border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid #cbd5e1',
-                  borderRadius: '14px',
-                  padding: '20px',
-                  boxShadow: darkMode
-                    ? '0 16px 40px rgba(0,0,0,0.6), 0 0 25px rgba(56, 189, 248, 0.15)'
-                    : '0 12px 30px rgba(30, 58, 82, 0.12)',
+                  width: '215px',
+                  flexShrink: 0,
+                  padding: '16px 14px',
+                  backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.96)' : '#f8fafc',
+                  borderInlineEnd: tearState === 'departing' ? 'none' : (darkMode ? '2px dashed rgba(255, 255, 255, 0.18)' : '2px dashed #cbd5e1'),
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '14px',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  position: 'relative',
+                  zIndex: 2,
                 }}
               >
-                {/* Emerging Ticket Title */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #e2e8f0', paddingBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles size={16} color="#38bdf8" />
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                      اختر نوع الخدمة / المعاملة لبدء استخراج التذكرة:
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em' }}>NEXUS TDS STUB</span>
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', letterSpacing: '0.03em', fontVariantNumeric: 'tabular-nums', fontFamily: 'monospace' }}>
+                    {previewSerial || 'REQ-2026-TDS'}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '8px',
+                  borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '15px', letterSpacing: '2px', color: darkMode ? '#cbd5e1' : '#334155' }}>
+                    ||||| | |||| ||| |||
+                  </div>
+                  <div style={{ fontSize: '7.5px', color: '#64748b', marginTop: '2px', letterSpacing: '0.05em' }}>
+                    NEXUS-VERIFIED-2026
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '9.5px', color: '#64748b', marginBottom: '2px' }}>
+                    مقدم الطلب: <span style={{ color: darkMode ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>{user?.name || 'مساحة الإدارة'}</span>
+                  </div>
+                  <div style={{
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    color: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    justifyContent: 'center',
+                  }}>
+                    <span>📥 حوض المعاملات النشطة</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Perforation Seam */}
+              <div style={{
+                width: '1px',
+                borderInlineStart: darkMode ? '2px dashed rgba(255, 255, 255, 0.18)' : '2px dashed #cbd5e1',
+                position: 'relative',
+              }} />
+
+              {/* BODY PAYLOAD */}
+              <motion.div
+                animate={
+                  tearState === 'ripping'
+                    ? { rotate: -2, x: -6, transformOrigin: 'bottom left' }
+                    : tearState === 'departing'
+                    ? { y: -150, x: -60, rotate: -8, scale: 0.85, opacity: 0, filter: 'blur(3px)' }
+                    : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
+                }
+                transition={
+                  tearState === 'ripping'
+                    ? { duration: 0.65, ease: 'easeOut' }
+                    : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
+                }
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: `${flowColor}20`, border: `1.5px solid ${flowColor}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: flowColor }}>
+                        {resolveIcon(selectedFlow.icon, 17, flowColor)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                          {selectedFlow.title}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
+                          🎯 جهة الاختصاص: {targetDeptName}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 800, backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '6px' }}>
+                      تذكرة صادرة وموثقة ✓
                     </span>
                   </div>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    {requests.length} مسارات متاحة
-                  </span>
-                </div>
 
-                {/* Service Icons Grid inside Emerging Ticket */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                  gap: '12px',
-                }}>
-                  {requests.map(flow => {
-                    const fColor = flow.color || '#38bdf8';
-                    const block = canCreateRequest(flow.id);
-                    const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
-
-                    return (
-                      <div
-                        key={flow.id}
-                        onClick={() => block.allowed && handleSelectFlow(flow)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '12px 14px',
-                          borderRadius: '10px',
-                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                          cursor: block.allowed ? 'pointer' : 'not-allowed',
-                          opacity: block.allowed ? 1 : 0.6,
-                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        }}
-                        onMouseEnter={e => {
-                          if (block.allowed) {
-                            e.currentTarget.style.backgroundColor = `${fColor}15`;
-                            e.currentTarget.style.borderColor = `${fColor}50`;
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (block.allowed) {
-                            e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc';
-                            e.currentTarget.style.borderColor = darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0';
-                            e.currentTarget.style.transform = 'none';
-                          }
-                        }}
-                      >
-                        <div style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '8px',
-                          backgroundColor: `${fColor}20`,
-                          border: `1.5px solid ${fColor}50`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: fColor,
-                          flexShrink: 0,
-                        }}>
-                          {resolveIcon(flow.icon, 18, fColor)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                            {flow.title}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                            {targetDept} • {flow.fields.length} حقول
-                          </div>
-                        </div>
-                        <ChevronLeft size={16} color={fColor} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              /* ── STATE B: FULL UNIFIED TICKET FRAME (STUB + FORM BODY) ── */
-              <div
-                ref={formTopRef}
-                className="enterprise-ticket-split"
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  borderRadius: '12px',
-                  overflow: 'visible',
-                  backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-                  border: darkMode ? `1.5px solid ${flowColor}45` : `1.5px solid ${flowColor}60`,
-                  boxShadow: darkMode
-                    ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px ${flowColor}20`
-                    : '0 12px 30px rgba(30, 58, 82, 0.12)',
-                  minHeight: '280px',
-                  width: '100%',
-                }}
-              >
-                {/* ══ 1. THE RIGHT COLUMN: TICKET STUB (كعب التذكرة الموحد - حاضر في جميع المراحل) ══ */}
-            <motion.div
-              className="ticket-stub-col"
-              animate={
-                tearState === 'ripping'
-                  ? {
-                      rotate: 1.5,
-                      x: 4,
-                      transformOrigin: 'bottom right',
-                    }
-                  : tearState === 'departing'
-                  ? {
-                      y: 130,
-                      x: 50,
-                      rotate: 6,
-                      scale: 0.65,
-                      opacity: 0,
-                      filter: 'blur(2px)',
-                    }
-                  : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
-              }
-              transition={
-                tearState === 'ripping'
-                  ? { duration: 0.65, ease: 'easeOut' }
-                  : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-              }
-              style={{
-                width: '215px',
-                flexShrink: 0,
-                padding: '16px 14px',
-                backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.96)' : '#f8fafc',
-                borderInlineEnd: tearState === 'departing' ? 'none' : (darkMode ? '2px dashed rgba(255, 255, 255, 0.18)' : '2px dashed #cbd5e1'),
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '8px',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 900, color: flowColor, letterSpacing: '0.06em' }}>
-                    NEXUS TDS STUB
-                  </span>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-                </div>
-                <div style={{
-                  fontSize: '13px',
-                  fontWeight: 900,
-                  color: darkMode ? '#ffffff' : '#0f172a',
-                  fontFamily: "'Courier New', monospace",
-                  marginTop: '2px',
-                  letterSpacing: '0.04em',
-                }}>
-                  {previewSerial}
-                </div>
-              </div>
-
-              {/* Barcode Graphic Simulation */}
-              <div style={{
-                padding: '6px 8px',
-                borderRadius: '6px',
-                backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
-                border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '3px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '20px', width: '100%', justifyContent: 'center' }}>
-                  {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 2].map((w, i) => (
-                    <span key={i} style={{ width: `${w * 1.5}px`, height: '100%', backgroundColor: darkMode ? '#94a3b8' : '#334155' }} />
-                  ))}
-                </div>
-                <span style={{ fontSize: '7.5px', color: '#64748b', fontFamily: 'monospace' }}>2026-NEXUS-VERIFIED</span>
-              </div>
-
-              {/* Issuer & Progress Tag */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <div style={{ fontSize: '10px', color: darkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
-                  مقدم الطلب: <strong style={{ color: darkMode ? '#ffffff' : '#0f172a' }}>{user?.name || 'الموظف'}</strong>
-                </div>
-                <div style={{
-                  fontSize: '9px',
-                  fontWeight: 800,
-                  color: '#38bdf8',
-                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}>
-                  <span>📥 حوض المعاملات النشطة</span>
-                </div>
-              </div>
-
-              {/* Live Stage Badge inside the Stub */}
-              <div style={{
-                padding: '3px 8px',
-                borderRadius: '5px',
-                backgroundColor: `${flowColor}15`,
-                border: `1px solid ${flowColor}40`,
-                color: flowColor,
-                fontSize: '9.5px',
-                fontWeight: 800,
-                textAlign: 'center',
-              }}>
-                المرحلة {currentStep} من {totalStages}
-              </div>
-
-              {/* Floating Stub Departure Badge */}
-              {tearState === 'departing' && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: 'rgba(2, 132, 199, 0.94)',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  padding: '8px',
-                }}>
-                  📥 إيداع بالحوض النشط...
-                </div>
-              )}
-            </motion.div>
-
-            {/* ══ 2. PERFORATION SEAM & PROGRESSIVE TOP-TO-BOTTOM CUTTER ══ */}
-            {tearState === 'ripping' && (
-              <>
-                <motion.div
-                  initial={{ height: '0%' }}
-                  animate={{ height: '100%' }}
-                  transition={{ duration: 0.65, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute',
-                    insetInlineStart: '215px',
-                    top: 0,
-                    width: '3.5px',
-                    background: 'linear-gradient(to bottom, #ef4444 0%, #f59e0b 60%, #38bdf8 100%)',
-                    boxShadow: '0 0 14px #f59e0b, 0 0 25px #ef4444',
-                    zIndex: 15,
-                  }}
-                />
-                <motion.div
-                  initial={{ top: '0%' }}
-                  animate={{ top: '100%' }}
-                  transition={{ duration: 0.65, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute',
-                    insetInlineStart: '215px',
-                    width: '26px',
-                    height: '26px',
-                    transform: 'translate(-50%, -50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    backgroundColor: '#f59e0b',
-                    borderRadius: '50%',
-                    zIndex: 16,
-                    boxShadow: '0 0 12px #f59e0b',
-                  }}
-                >
-                  <Scissors size={14} style={{ transform: 'rotate(90deg)' }} />
-                </motion.div>
-              </>
-            )}
-
-            {/* Static Perforation Notches */}
-            {tearState !== 'departing' && (
-              <div
-                className="hide-on-mobile"
-                style={{
-                  position: 'absolute',
-                  insetInlineStart: '207px',
-                  top: 0,
-                  bottom: 0,
-                  width: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  pointerEvents: 'none',
-                  zIndex: 5,
-                }}
-              >
-                <div style={{
-                  width: '16px',
-                  height: '8px',
-                  backgroundColor: darkMode ? '#111827' : '#ffffff',
-                  borderBottomLeftRadius: '10px',
-                  borderBottomRightRadius: '10px',
-                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
-                  borderTop: 'none',
-                }} />
-
-                {tearState === 'idle' && (
-                  <div style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: darkMode ? '#1e293b' : '#e2e8f0',
-                    border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #cbd5e1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: flowColor,
-                  }}>
-                    <Scissors size={10} />
-                  </div>
-                )}
-
-                <div style={{
-                  width: '16px',
-                  height: '8px',
-                  backgroundColor: darkMode ? '#111827' : '#ffffff',
-                  borderTopLeftRadius: '10px',
-                  borderTopRightRadius: '10px',
-                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
-                  borderBottom: 'none',
-                }} />
-              </div>
-            )}
-
-            {/* ══ 3. THE LEFT COLUMN: MAIN PAYLOAD AREA (متن المعاملة - الحقول بجانب بعضها دون تمرير) ══ */}
-            <motion.div
-              animate={
-                tearState === 'ripping'
-                  ? {
-                      rotate: -2.5,
-                      x: -8,
-                      transformOrigin: 'bottom left',
-                    }
-                  : tearState === 'departing'
-                  ? {
-                      y: -160,
-                      x: -75,
-                      rotate: -9,
-                      scale: 0.85,
-                      opacity: 0,
-                      filter: 'blur(3px)',
-                    }
-                  : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
-              }
-              transition={
-                tearState === 'ripping'
-                  ? { duration: 0.65, ease: 'easeOut' }
-                  : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-              }
-              style={{
-                flex: 1,
-                padding: '16px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                position: 'relative',
-                zIndex: 1,
-                minWidth: 0,
-                overflow: 'visible',
-              }}
-            >
-              {/* Header: Title, Target Department, Stepper Pills, and Cancel Button */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                paddingBottom: '10px',
-                gap: '8px',
-                flexWrap: 'wrap',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '7px',
-                    backgroundColor: `${flowColor}20`,
-                    border: `1.5px solid ${flowColor}60`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: flowColor,
-                    flexShrink: 0,
-                  }}>
-                    {resolveIcon(selectedFlow.icon, 17, flowColor)}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                      {selectedFlow.title}
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
-                      🎯 جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step Indicators */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {Array.from({ length: totalStages }).map((_, idx) => {
-                    const stepNum = idx + 1;
-                    const isActive = currentStep === stepNum;
-                    const isPassed = currentStep > stepNum;
-                    const stageTitle = adminStages && adminStages[idx]
-                      ? adminStages[idx].title
-                      : (stepNum === 1 ? 'الأساسيات والتوجيه' : (stepNum === totalStages ? 'تذكرة الاعتماد' : 'المتطلبات والجدولة'));
-
-                    return (
-                      <div
-                        key={stepNum}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '10.5px',
-                          fontWeight: isActive ? 800 : 600,
-                          color: isActive ? flowColor : (isPassed ? '#10b981' : '#64748b'),
-                          backgroundColor: isActive ? `${flowColor}15` : 'transparent',
-                          padding: '2px 7px',
-                          borderRadius: '4px',
-                        }}
-                      >
-                        <span style={{
-                          width: '14px', height: '14px', borderRadius: '50%',
-                          backgroundColor: isActive ? flowColor : (isPassed ? '#10b981' : '#334155'),
-                          color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900
-                        }}>
-                          {isPassed ? '✓' : stepNum}
-                        </span>
-                        <span>{stageTitle}</span>
-                      </div>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFlow(null)}
-                    style={{
-                      padding: '3px 8px',
-                      borderRadius: '5px',
-                      background: 'none',
-                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                      color: darkMode ? '#94a3b8' : '#64748b',
-                      fontSize: '10.5px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      marginInlineStart: '4px',
-                    }}
-                  >
-                    إلغاء ✕
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Content Viewport: BALANCED 2-COLUMN GRID (NO SCROLLING NEEDED) ── */}
-              <div style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0', overflow: 'visible' }}>
-                {/* SUCCESS MESSAGE */}
-                {status === 'success' && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    style={{
-                      textAlign: 'center',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '16px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                    }}
-                  >
-                    <CheckCircle2 size={30} color="#34d399" />
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#34d399', fontFamily: "'Tajawal', sans-serif" }}>
-                      تم تمزيق التذكرة وإرسال المعاملة بنجاح!
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: darkMode ? '#cbd5e1' : '#475569' }}>
-                      تمت إحالة الطلب إلى ({targetDeptName}) وأُودع الكعب في حوض المعاملات النشطة.
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* INPUT STAGES (STAGE 1, 2, ...): FIELDS IN 2-COLUMN GRID */}
-                {status !== 'success' && currentStep < totalStages && (
-                  <motion.div
-                    key={`step_${currentStep}`}
-                    initial={{ opacity: 0, x: -15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 15 }}
-                    transition={{ duration: 0.18 }}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
-                      gap: '12px',
-                      alignItems: 'start',
-                      overflow: 'visible',
-                    }}
-                  >
-                    {stageFieldsToRender.map((field) => {
-                      let fieldToRender = { ...field };
-                      if (field.name === 'department') {
-                        fieldToRender.options = deptOptions.length > 0 ? deptOptions : field.options;
-                      } else if (field.name === 'division') {
-                        fieldToRender.options = divisionOptions;
-                      } else if (field.name === 'team') {
-                        fieldToRender.options = teamOptions;
-                      }
-
+                  {/* Summary grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', padding: '10px', borderRadius: '8px', backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc' }}>
+                    {selectedFlow.fields.map(f => {
+                      const val = formData[f.name];
+                      if (!val) return null;
                       return (
-                        <React.Fragment key={field.name}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                                {fieldToRender.label}
-                              </label>
-                              {fieldToRender.required && (
-                                <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
-                                  مطلوب
-                                </span>
-                              )}
-                            </div>
-                            <FieldInput
-                              field={fieldToRender}
-                              value={formData[field.name] || ''}
-                              onChange={v => handleFieldChange(field.name, v)}
-                              darkMode={darkMode}
-                            />
-                          </div>
-
-                          {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED DIRECTLY AS VISUAL ICONS ── */}
-                          {field.name === 'taxonomyMain' && formData.taxonomyMain && (() => {
-                            const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
-                              (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
-                            );
-                            if (!mainTax?.subIssues?.length) return null;
-                            const activeSubs = mainTax.subIssues.filter((s: any) => s.isActive !== false);
-                            if (activeSubs.length === 0) return null;
-
-                            return (
-                              <div
-                                style={{
-                                  gridColumn: '1 / -1',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '8px',
-                                  padding: '12px 14px',
-                                  borderRadius: '8px',
-                                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.05)',
-                                  border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
-                                  animation: 'fadeIn 0.2s ease',
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>↳</span>
-                                    <span>المشاكل والخيارات الفرعية التابعة لـ ({formData.taxonomyMain}):</span>
-                                  </span>
-                                  <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                                    اختر من الأيقونات أدناه
-                                  </span>
-                                </div>
-
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                  {activeSubs.map((sub: any) => {
-                                    const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
-                                    const isSelected = formData.taxonomySub === subLabel;
-                                    return (
-                                      <button
-                                        key={subLabel}
-                                        type="button"
-                                        onClick={() => handleFieldChange('taxonomySub', subLabel)}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '7px',
-                                          padding: '7px 14px',
-                                          borderRadius: '8px',
-                                          backgroundColor: isSelected
-                                            ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
-                                            : (darkMode ? '#1e293b' : '#ffffff'),
-                                          border: isSelected
-                                            ? '1.5px solid #38bdf8'
-                                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                                          color: isSelected
-                                            ? (darkMode ? '#38bdf8' : '#2563eb')
-                                            : (darkMode ? '#e2e8f0' : '#1e293b'),
-                                          fontWeight: isSelected ? 800 : 600,
-                                          fontSize: '11.5px',
-                                          cursor: 'pointer',
-                                          boxShadow: isSelected ? '0 0 14px rgba(56, 189, 248, 0.35)' : 'none',
-                                          transition: 'all 0.15s ease',
-                                        }}
-                                      >
-                                        <span style={{ color: isSelected ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b') }}>
-                                          {resolveSubIssueIcon(subLabel)}
-                                        </span>
-                                        <span>{subLabel}</span>
-                                        {isSelected && <Check size={13} strokeWidth={2.6} />}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </React.Fragment>
+                        <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                          <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600 }}>{f.label}</span>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{val}</span>
+                        </div>
                       );
                     })}
-                  </motion.div>
-                )}
-
-                {/* STAGE FINAL: COMPILED TICKET DETAILS SUMMARY */}
-                {status !== 'success' && currentStep === totalStages && (
-                  <motion.div
-                    key="stepTicket"
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '5px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                      border: '1px solid rgba(16, 185, 129, 0.25)',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#34d399' }}>
-                        <ShieldCheck size={14} />
-                        <span>اكتملت المعاملة: اضغط "موافقة وتمزيق التذكرة للإرسال" لقصها وترحيلها</span>
+                    {formData.taxonomySub && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>المشكلة المحددة</span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>⚡ {formData.taxonomySub}</span>
                       </div>
-                      <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
-                        قص من الأعلى لأسفل
-                      </span>
-                    </div>
+                    )}
+                  </div>
+                </div>
 
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '7px',
-                      backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-                      maxHeight: '110px',
-                      overflowY: 'auto',
-                    }}>
-                      {selectedFlow.fields.map((f) => {
-                        const val = formData[f.name];
-                        if (!val) return null;
-                        return (
-                          <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                            <span style={{ fontSize: '9.5px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                              {f.label}
-                            </span>
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              color: darkMode ? '#ffffff' : '#0f172a',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              {val}
-                            </span>
-                          </div>
-                        );
-                      })}
-
-                      {/* Display Taxonomy Sub-Issue in summary if chosen */}
-                      {formData.taxonomySub && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                          <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>
-                            المشكلة الفرعية المحددة
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>
-                            ⚡ {formData.taxonomySub}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
+                {/* Floating Departure Overlay */}
+                {tearState === 'departing' && (
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundColor: 'rgba(19, 93, 121, 0.95)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    padding: '14px',
+                    zIndex: 20,
+                  }}>
+                    <span style={{ fontSize: '24px' }}>✈️</span>
+                    <span>تحليق وإحالة فورية إلى: {targetDeptName}</span>
+                  </div>
                 )}
-              </div>
-
-              {/* Error Message */}
-              {errorMsg && (
-                <div style={{
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#f87171',
-                  fontSize: '11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginBottom: '6px',
-                }}>
-                  <AlertTriangle size={13} />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              {/* ── Footer Navigation Buttons ── */}
-              {status !== 'success' && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                  paddingTop: '10px',
-                  gap: '8px',
-                }}>
-                  <div>
-                    {currentStep > 1 && (
-                      <button
-                        type="button"
-                        onClick={handlePrevStep}
-                        disabled={loading || tearState !== 'idle'}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: '6px',
-                          backgroundColor: 'transparent',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
-                          color: darkMode ? '#cbd5e1' : '#475569',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontFamily: "'Cairo', sans-serif",
-                        }}
-                      >
-                        <ChevronRight size={13} />
-                        <span>السابق</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {currentStep < totalStages && (
-                      <button
-                        type="button"
-                        onClick={handleNextStep}
-                        style={{
-                          padding: '7px 18px',
-                          borderRadius: '6px',
-                          background: `linear-gradient(135deg, ${flowColor} 0%, #2563eb 100%)`,
-                          border: 'none',
-                          color: '#ffffff',
-                          fontSize: '11.5px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: `0 4px 12px ${flowColor}35`,
-                          fontFamily: "'Cairo', sans-serif",
-                        }}
-                      >
-                        <span>متابعة للمرحلة التالية</span>
-                        <ChevronLeft size={14} />
-                      </button>
-                    )}
-
-                    {currentStep === totalStages && (
-                      <button
-                        type="button"
-                        onClick={handleTearAndSubmit}
-                        disabled={loading || tearState !== 'idle'}
-                        style={{
-                          padding: '8px 22px',
-                          borderRadius: '7px',
-                          background: `linear-gradient(135deg, #f59e0b 0%, #f36c21 50%, #135d79 100%)`,
-                          border: 'none',
-                          color: '#ffffff',
-                          fontSize: '12.5px',
-                          fontWeight: 900,
-                          cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '7px',
-                          boxShadow: '0 6px 18px rgba(243, 108, 33, 0.4)',
-                          fontFamily: "'Cairo', sans-serif",
-                          transform: tearState !== 'idle' ? 'scale(0.96)' : 'none',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        {tearState === 'ripping' ? (
-                          <>
-                            <Scissors size={15} style={{ animation: 'bounce 0.5s infinite' }} />
-                            <span>جاري القص من الأعلى للأسفل...</span>
-                          </>
-                        ) : tearState === 'departing' || loading ? (
-                          <>
-                            <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
-                            <span>جاري ترحيل التذكرة وإيداع الكعب...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Scissors size={15} />
-                            <span>موافقة وتمزيق التذكرة للإرسال 🚀</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Floating Departure Overlay */}
-              {tearState === 'departing' && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: 'rgba(19, 93, 121, 0.95)',
-                  color: '#ffffff',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  padding: '14px',
-                }}>
-                  <span style={{ fontSize: '24px' }}>✈️</span>
-                  <span>تحليق وإحالة فورية إلى: {targetDeptName}</span>
-                </div>
-              )}
-            </motion.div>
-          </div>
+              </motion.div>
+            </div>
+          </motion.div>
         )}
-      </motion.div>
-    )}
-  </AnimatePresence>
-</div>
-);
+      </AnimatePresence>
+    </div>
+  );
 }

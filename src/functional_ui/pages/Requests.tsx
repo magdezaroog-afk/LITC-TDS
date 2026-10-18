@@ -95,11 +95,11 @@ function MetricTile({
       accentColor={accentColor}
       isSelected={isSelected}
       onClick={onClick}
-      cornerCutout={9}
-      notchRadius={4}
+      cornerCutout={7}
+      notchRadius={3.5}
       numNotches={2}
-      dashIndent={12}
-      contentPadding="10px 14px"
+      dashIndent={9}
+      contentPadding="clamp(6px, 1.2vw, 9px) clamp(6px, 1.5vw, 12px)"
       role="button"
       tabIndex={0}
       style={{
@@ -107,12 +107,12 @@ function MetricTile({
         cursor: 'pointer',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
           <div style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '6px',
+            width: 'clamp(18px, 3.5vw, 22px)',
+            height: 'clamp(18px, 3.5vw, 22px)',
+            borderRadius: '5px',
             backgroundColor: isSelected ? `${accentColor}25` : (darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(30, 58, 82, 0.06)'),
             border: isSelected ? `1px solid ${accentColor}50` : (darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(30, 58, 82, 0.12)'),
             display: 'flex',
@@ -121,14 +121,16 @@ function MetricTile({
             flexShrink: 0,
             color: accentColor,
           }}>
-            <Icon size={12} strokeWidth={isSelected ? 2.5 : 2} />
+            <Icon size={11} strokeWidth={isSelected ? 2.5 : 2} />
           </div>
           <span style={{
-            fontSize: '12px',
-            fontWeight: isSelected ? 800 : 600,
+            fontSize: 'clamp(9px, 2vw, 11.5px)',
+            fontWeight: isSelected ? 800 : 700,
             color: isSelected ? (darkMode ? '#ffffff' : '#0f172a') : (darkMode ? '#94a3b8' : '#475569'),
             fontFamily: "'Cairo', sans-serif",
             whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}>
             {label}
           </span>
@@ -138,19 +140,20 @@ function MetricTile({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '4px',
+          flexShrink: 0,
         }}>
           {isSelected && (
             <span style={{
-              width: '5px',
-              height: '5px',
+              width: '4px',
+              height: '4px',
               borderRadius: '50%',
               backgroundColor: accentColor,
               boxShadow: `0 0 6px ${accentColor}`,
             }} />
           )}
           <span style={{
-            fontSize: '18px',
+            fontSize: 'clamp(13px, 3vw, 17px)',
             fontWeight: 800,
             color: isSelected ? accentColor : (darkMode ? '#ffffff' : '#0f172a'),
             fontFamily: "'Tajawal', sans-serif",
@@ -163,9 +166,9 @@ function MetricTile({
       </div>
 
       <div style={{
-        fontSize: '9.5px',
+        fontSize: 'clamp(7.5px, 1.6vw, 9px)',
         color: isSelected ? (darkMode ? '#cbd5e1' : '#334155') : '#64748b',
-        marginTop: '4px',
+        marginTop: '3px',
         fontWeight: 500,
         fontFamily: "'Cairo', sans-serif",
         overflow: 'hidden',
@@ -179,30 +182,30 @@ function MetricTile({
 }
 
 // ── Status Badge Component (Anti-AI Cliché, Crisp & Symmetrical) ──
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, compact = false }: { status: string; compact?: boolean }) {
   const cfg = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
   return (
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '6px',
-      padding: '3px 9px',
+      gap: compact ? '3px' : '6px',
+      padding: compact ? '2px 6px' : '3px 9px',
       borderRadius: '9999px',
       backgroundColor: cfg.bg,
       border: `1px solid ${cfg.border}`,
       color: cfg.color,
-      fontSize: '11.5px',
+      fontSize: compact ? '8.5px' : '11.5px',
       fontWeight: 700,
       fontFamily: "'Cairo', sans-serif",
       whiteSpace: 'nowrap',
     }}>
       <span style={{
-        width: '5px',
-        height: '5px',
+        width: compact ? '3.5px' : '5px',
+        height: compact ? '3.5px' : '5px',
         borderRadius: '50%',
         backgroundColor: cfg.dot,
         flexShrink: 0,
-        boxShadow: `0 0 6px ${cfg.dot}`,
+        boxShadow: `0 0 4px ${cfg.dot}`,
       }} />
       {cfg.label}
     </span>
@@ -771,13 +774,18 @@ export default function RequestsPage() {
             </table>
           </div>
         ) : (
-          /* ── 2. CARDS / GRID VIEW (نظام البطاقات السينمائية الأنيقة) ── */
-          <div style={{
-            padding: '16px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '14px',
-          }}>
+          /* ── 2. CARDS / GRID VIEW (نظام البطاقات السينمائية الأنيقة - 3 كروت بجانب بعضها دائماً) ── */
+          <div
+            className="enterprise-cards-grid-3col"
+            style={{
+              padding: 'clamp(8px, 1.4vw, 14px)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 'clamp(6px, 1.2vw, 12px)',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
             {displayedRequests.map(req => {
               const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
               const routeColor = matchedFlow?.color || '#38bdf8';
@@ -786,11 +794,11 @@ export default function RequestsPage() {
                 <CinemaTicketFrame
                   key={req.id}
                   accentColor={routeColor}
-                  cornerCutout={10}
-                  notchRadius={4.5}
+                  cornerCutout={7}
+                  notchRadius={3.5}
                   numNotches={2}
-                  dashIndent={13}
-                  contentPadding="13px 15px"
+                  dashIndent={10}
+                  contentPadding="clamp(7px, 1.4vw, 12px) clamp(6px, 1.2vw, 12px)"
                   role="button"
                   tabIndex={0}
                   onClick={() => {
@@ -804,28 +812,30 @@ export default function RequestsPage() {
                   }}
                 >
                   {/* Card Header: Code & Status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
-                    <TicketCodeBadge code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`} color={routeColor} />
-                    <StatusBadge status={req.status} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <TicketCodeBadge code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`} color={routeColor} compact />
+                    <StatusBadge status={req.status} compact />
                   </div>
 
                   {/* Card Title */}
                   <div style={{
                     fontWeight: 700,
                     color: darkMode ? '#ffffff' : '#0f172a',
-                    fontSize: '13.5px',
+                    fontSize: 'clamp(10px, 2vw, 13px)',
                     fontFamily: "'Tajawal', sans-serif",
-                    marginBottom: '4px',
+                    marginBottom: '3px',
+                    lineHeight: 1.3,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
                   }}>
                     {isRtl ? req.title : req.titleEn || req.title}
                   </div>
 
                   {/* Stage subtitle */}
                   {req.stage && (
-                    <div style={{ fontSize: '10.5px', color: '#64748b', marginBottom: '8px', fontFamily: "'Cairo', sans-serif" }}>
+                    <div style={{ fontSize: 'clamp(7.5px, 1.6vw, 9.5px)', color: '#64748b', marginBottom: '6px', fontFamily: "'Cairo', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       المرحلة: <span style={{ color: darkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>{req.stage}</span>
                     </div>
                   )}
@@ -835,35 +845,36 @@ export default function RequestsPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    paddingTop: '8px',
+                    paddingTop: '6px',
                     borderTop: darkMode ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
-                    fontSize: '11px',
+                    fontSize: 'clamp(7.5px, 1.6vw, 10px)',
                     color: '#64748b',
-                    fontFamily: "'Cairo', sans-serif"
+                    fontFamily: "'Cairo', sans-serif",
+                    gap: '4px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <Building2 size={12} color="#64748b" />
-                      <span>{req.department || 'إدارة الشؤون الفنية'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                      <Building2 size={11} color="#64748b" style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.department || 'إدارة الشؤون الفنية'}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontVariantNumeric: 'tabular-nums' }}>
-                      <Clock size={12} color="#64748b" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                      <Clock size={11} color="#64748b" />
                       <span>{req.date || 'اليوم'}</span>
                     </div>
                   </div>
 
                   {/* Action Link Footer */}
-                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
                     <span style={{
-                      fontSize: '11px',
+                      fontSize: 'clamp(8.5px, 1.8vw, 10.5px)',
                       fontWeight: 700,
                       color: isNeedsRating(req) ? '#d97706' : (darkMode ? '#38bdf8' : '#1e3a52'),
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      gap: '3px',
                       fontFamily: "'Cairo', sans-serif"
                     }}>
                       {isNeedsRating(req) ? '⭐ قيّم المعاملة' : 'متابعة وتتبع'}
-                      <ChevronLeft size={12} />
+                      <ChevronLeft size={11} />
                     </span>
                   </div>
                 </CinemaTicketFrame>

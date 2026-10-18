@@ -275,6 +275,7 @@ export interface TicketCodeBadgeProps {
   onClick?: () => void;
   style?: React.CSSProperties;
   className?: string;
+  compact?: boolean;
 }
 
 export function TicketCodeBadge({
@@ -283,13 +284,14 @@ export function TicketCodeBadge({
   onClick,
   style,
   className,
+  compact = false,
 }: TicketCodeBadgeProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const w = 88;
-  const h = 24;
-  const cr = 3.5;
-  const nr = 2;
-  const dashIndent = 8;
+  const w = compact ? 64 : 88;
+  const h = compact ? 19 : 24;
+  const cr = compact ? 2.5 : 3.5;
+  const nr = compact ? 1.5 : 2;
+  const dashIndent = compact ? 6 : 8;
 
   const d = `
     M ${cr} 0
@@ -375,7 +377,7 @@ export function TicketCodeBadge({
           zIndex: 2,
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
           fontWeight: 700,
-          fontSize: '11px',
+          fontSize: compact ? '9px' : '11px',
           color: isHovered ? '#ffffff' : color,
           letterSpacing: '0.02em',
           fontVariantNumeric: 'tabular-nums',

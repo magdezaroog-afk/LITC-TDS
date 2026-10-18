@@ -490,10 +490,16 @@ html, body {
   }
 
 
-  /* Metric cards collapse gracefully */
+  /* Metric cards stay side-by-side in 3 columns across all devices */
   .enterprise-kpi-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  /* Cards grid stays 3-columns side-by-side */
+  .enterprise-cards-grid-3col {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
   }
 
   /* Ticket creation frame turns vertical on mobile */
