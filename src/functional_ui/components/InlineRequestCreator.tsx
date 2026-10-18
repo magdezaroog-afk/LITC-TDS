@@ -17,7 +17,8 @@ import {
   Building2, UserCheck, ArrowRightLeft, FileText, Check,
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
   Search, Wrench, Monitor, Cpu, HardDrive, Wifi, Printer,
-  HelpCircle, Settings, Laptop, Radio, AlertCircle
+  HelpCircle, Settings, Laptop, Radio, AlertCircle,
+  Ticket, ChevronDown
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { CinemaTicketFrame } from './CinemaTicketFrame';
@@ -481,6 +482,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [highlightPulse, setHighlightPulse] = useState(false);
+  const [isDispenserOpen, setIsDispenserOpen] = useState(false);
 
   // ── Realistic Progressive Tearing States ──
   const [tearState, setTearState] = useState<'idle' | 'ripping' | 'departing' | 'completed'>('idle');
@@ -510,6 +512,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     };
 
     const handleFocusRoutes = () => {
+      setIsDispenserOpen(true);
       setHighlightPulse(true);
       setTimeout(() => setHighlightPulse(false), 1400);
     };
@@ -554,11 +557,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   };
 
   const handleSelectFlow = (flow: typeof requests[0]) => {
-    if (selectedFlow?.id === flow.id) {
-      setSelectedFlow(null);
-      return;
-    }
     setSelectedFlow(flow);
+    setIsDispenserOpen(true);
     setFormData({});
     setCurrentStep(1);
     setStatus('idle');
@@ -761,183 +761,306 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const targetDivName = (selectedFlow as any)?.targetDivisionName;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
 
       {/* ══════════════════════════════════════════════════════════════
-          1. PERMANENT ROUTE OPTIONS GRID (المسارات ثابتة ومحددة دائماً بالأعلى)
+          1. THE SMART TICKET DISPENSER CONSOLE (ماكينة استخراج التذاكر الذكية)
           ══════════════════════════════════════════════════════════════ */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '14px',
-          padding: highlightPulse ? '4px' : '0px',
-          borderRadius: '12px',
+          width: '100%',
+          maxWidth: '680px',
+          borderRadius: '16px',
+          background: darkMode
+            ? 'linear-gradient(180deg, #162032 0%, #0d1527 100%)'
+            : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+          border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1',
+          boxShadow: darkMode
+            ? '0 12px 36px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
+            : '0 8px 24px rgba(30, 58, 82, 0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
+          padding: '14px 22px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px',
+          position: 'relative',
+          zIndex: 45,
           transition: 'all 0.3s ease',
-          boxShadow: highlightPulse ? '0 0 20px rgba(56, 189, 248, 0.4)' : 'none',
         }}
       >
-        {requests.map((flow) => {
-          const fColor = flow.color || '#38bdf8';
-          const block = canCreateRequest(flow.id);
-          const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
-          const isCurrentSelected = selectedFlow?.id === flow.id;
+        {/* Machine Header Status */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isDispenserOpen ? '#38bdf8' : '#10b981',
+              boxShadow: isDispenserOpen ? '0 0 10px #38bdf8' : '0 0 10px #10b981',
+            }} />
+            <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#cbd5e1' : '#475569', letterSpacing: '0.04em' }}>
+              ماكينة التذاكر الذكية • NEXUS TICKET DISPENSER
+            </span>
+          </div>
 
-          return (
-            <CinemaTicketFrame
-              key={flow.id}
-              accentColor={fColor}
-              isSelected={isCurrentSelected}
-              alwaysGlow={isCurrentSelected}
-              cornerCutout={12}
-              notchRadius={5}
-              numNotches={2}
-              dashIndent={14}
-              showDashedLines={false}
-              contentPadding="13px 16px"
-              role="button"
-              tabIndex={block.allowed ? 0 : -1}
-              onClick={() => block.allowed && handleSelectFlow(flow)}
-              style={{
-                width: '100%',
-                cursor: block.allowed ? 'pointer' : 'not-allowed',
-                opacity: block.allowed ? 1 : 0.55,
-                transform: isCurrentSelected ? 'scale(1.02)' : 'none',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '8px',
-                    backgroundColor: isCurrentSelected ? `${fColor}30` : `${fColor}18`,
-                    border: isCurrentSelected ? `2px solid ${fColor}` : `1.5px solid ${fColor}50`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    color: fColor,
-                    boxShadow: isCurrentSelected ? `0 0 12px ${fColor}50` : 'none',
-                  }}
-                >
-                  {resolveIcon(flow.icon, 20, fColor)}
-                </div>
+          <span style={{
+            fontSize: '9.5px',
+            color: isDispenserOpen ? '#38bdf8' : '#10b981',
+            fontWeight: 800,
+            backgroundColor: isDispenserOpen ? 'rgba(56, 189, 248, 0.12)' : 'rgba(16, 185, 129, 0.1)',
+            padding: '2px 8px',
+            borderRadius: '9999px',
+            border: isDispenserOpen ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(16, 185, 129, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
+            {isDispenserOpen ? 'التذكرة قيد الخروج' : 'جاهزة للاستخراج'}
+          </span>
+        </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                    <div
-                      style={{
-                        fontSize: '13.5px',
-                        fontWeight: 800,
-                        color: darkMode ? '#ffffff' : '#0f172a',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        fontFamily: "'Tajawal', sans-serif",
-                      }}
-                    >
-                      {flow.title}
-                    </div>
-                    {isCurrentSelected && (
-                      <span style={{
-                        fontSize: '9.5px',
-                        fontWeight: 800,
-                        backgroundColor: `${fColor}25`,
-                        color: fColor,
-                        border: `1px solid ${fColor}50`,
-                        padding: '1px 6px',
-                        borderRadius: '9999px',
-                        flexShrink: 0,
-                      }}>
-                        ✓ محدد
-                      </span>
-                    )}
-                  </div>
+        {/* Center Prominent Button: إنشاء طلب جديد */}
+        <button
+          type="button"
+          onClick={() => {
+            if (isDispenserOpen && !selectedFlow) {
+              setIsDispenserOpen(false);
+            } else if (isDispenserOpen && selectedFlow) {
+              setSelectedFlow(null);
+              setIsDispenserOpen(false);
+            } else {
+              setIsDispenserOpen(true);
+            }
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            padding: '10px 28px',
+            borderRadius: '12px',
+            background: isDispenserOpen
+              ? 'linear-gradient(135deg, #0284c7 0%, #1e3a52 100%)'
+              : 'linear-gradient(135deg, #135d79 0%, #1e3a52 50%, #f36c21 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.22)',
+            color: '#ffffff',
+            fontSize: '14.5px',
+            fontWeight: 800,
+            fontFamily: "'Tajawal', sans-serif",
+            cursor: 'pointer',
+            boxShadow: '0 6px 20px rgba(243, 108, 33, 0.35), inset 0 1px 0 rgba(255,255,255,0.3)',
+            transform: isDispenserOpen ? 'scale(0.98)' : 'scale(1)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          <Ticket size={17} strokeWidth={2.4} />
+          <span>
+            {isDispenserOpen
+              ? (selectedFlow ? 'إلغاء التذكرة وإعادتها للماكينة' : 'إغلاق الماكينة')
+              : 'إنشاء طلب جديد • سحب تذكرة'}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{
+              transform: isDispenserOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.25s ease',
+            }}
+          />
+        </button>
 
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: darkMode ? '#94a3b8' : '#64748b',
-                      marginTop: '2px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <Building2 size={12} color={darkMode ? '#60a5fa' : '#2563eb'} />
-                    <span>{targetDept}</span>
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      color: fColor,
-                      fontWeight: 700,
-                      marginTop: '3px',
-                    }}
-                  >
-                    {!block.allowed ? block.message : `${flow.fields.length} حقول • اضغط للتعبئة`}
-                  </div>
-                </div>
-
-                {block.allowed && (
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: isCurrentSelected ? fColor : 'transparent',
-                    color: isCurrentSelected ? '#ffffff' : fColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.15s ease',
-                  }}>
-                    {isCurrentSelected ? <Check size={14} strokeWidth={3} /> : <ChevronLeft size={16} />}
-                  </div>
-                )}
-              </div>
-            </CinemaTicketFrame>
-          );
-        })}
+        {/* Physical Dispenser Slit Mouth (فتحة خروج التذاكر) */}
+        <div style={{
+          width: '90%',
+          height: '10px',
+          borderRadius: '5px',
+          backgroundColor: '#050914',
+          border: '1px solid rgba(255, 255, 255, 0.16)',
+          boxShadow: 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 12px rgba(56, 189, 248, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
+          marginTop: '2px',
+        }}>
+          {/* Laser guide line inside slot */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '8%',
+            right: '8%',
+            height: '2px',
+            transform: 'translateY(-50%)',
+            background: isDispenserOpen
+              ? 'linear-gradient(90deg, transparent, #f36c21, #38bdf8, transparent)'
+              : 'linear-gradient(90deg, transparent, #10b981, transparent)',
+            boxShadow: isDispenserOpen ? '0 0 8px #f36c21' : '0 0 6px #10b981',
+          }} />
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          2. UNIFIED TICKET FRAME WORKSPACE (نفس شكل التذكرة الموحد من المرحلة 1 للنهاية)
-          - Dropdown lists for main options -> Sub-options as rich interactive icons/chips
-          - No Vertical Scrolling! Fields displayed side-by-side in balanced 2-column grid.
+          2. THE EMERGING TICKET (نزول التذكرة لأسفل من فتحة الماكينة)
           ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {selectedFlow && (
+        {isDispenserOpen && (
           <motion.div
-            ref={formTopRef}
-            className="enterprise-ticket-split"
-            initial={{ opacity: 0, y: -14, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -14, height: 0 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: -35, scaleY: 0.85 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scaleY: 1,
+              transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] }
+            }}
+            exit={{
+              opacity: 0,
+              y: tearState === 'departing' ? -70 : -35,
+              scaleY: 0.85,
+              transition: { duration: 0.3, ease: 'easeInOut' }
+            }}
             style={{
-              position: 'relative',
-              zIndex: 30, // Ensures popovers float OVER any lower elements
-              display: 'flex',
-              flexDirection: 'row',
-              borderRadius: '12px',
-              overflow: 'visible',
-              backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-              border: darkMode ? `1.5px solid ${flowColor}45` : `1.5px solid ${flowColor}60`,
-              boxShadow: darkMode
-                ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px ${flowColor}20`
-                : '0 12px 30px rgba(30, 58, 82, 0.12)',
-              minHeight: '280px',
               width: '100%',
+              maxWidth: '960px',
+              margin: '-4px auto 0',
+              position: 'relative',
+              zIndex: 35,
             }}
           >
-            {/* ══ 1. THE RIGHT COLUMN: TICKET STUB (كعب التذكرة الموحد - حاضر في جميع المراحل) ══ */}
+            {/* Top cutter laser line during reverse cutting */}
+            {tearState === 'ripping' && (
+              <motion.div
+                initial={{ width: '0%', left: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 0.65, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #ef4444, #f59e0b, #38bdf8)',
+                  boxShadow: '0 0 16px #f59e0b, 0 0 25px #ef4444',
+                  zIndex: 60,
+                  borderRadius: '2px',
+                }}
+              />
+            )}
+
+            {!selectedFlow ? (
+              /* ── STATE A: EMERGING TICKET HEAD WITH SERVICE SELECTION ICONS ── */
+              <div
+                style={{
+                  backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                  border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid #cbd5e1',
+                  borderRadius: '14px',
+                  padding: '20px',
+                  boxShadow: darkMode
+                    ? '0 16px 40px rgba(0,0,0,0.6), 0 0 25px rgba(56, 189, 248, 0.15)'
+                    : '0 12px 30px rgba(30, 58, 82, 0.12)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                {/* Emerging Ticket Title */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="#38bdf8" />
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                      اختر نوع الخدمة / المعاملة لبدء استخراج التذكرة:
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    {requests.length} مسارات متاحة
+                  </span>
+                </div>
+
+                {/* Service Icons Grid inside Emerging Ticket */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '12px',
+                }}>
+                  {requests.map(flow => {
+                    const fColor = flow.color || '#38bdf8';
+                    const block = canCreateRequest(flow.id);
+                    const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+
+                    return (
+                      <div
+                        key={flow.id}
+                        onClick={() => block.allowed && handleSelectFlow(flow)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                          cursor: block.allowed ? 'pointer' : 'not-allowed',
+                          opacity: block.allowed ? 1 : 0.6,
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        }}
+                        onMouseEnter={e => {
+                          if (block.allowed) {
+                            e.currentTarget.style.backgroundColor = `${fColor}15`;
+                            e.currentTarget.style.borderColor = `${fColor}50`;
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (block.allowed) {
+                            e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc';
+                            e.currentTarget.style.borderColor = darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0';
+                            e.currentTarget.style.transform = 'none';
+                          }
+                        }}
+                      >
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '8px',
+                          backgroundColor: `${fColor}20`,
+                          border: `1.5px solid ${fColor}50`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: fColor,
+                          flexShrink: 0,
+                        }}>
+                          {resolveIcon(flow.icon, 18, fColor)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                            {flow.title}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                            {targetDept} • {flow.fields.length} حقول
+                          </div>
+                        </div>
+                        <ChevronLeft size={16} color={fColor} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* ── STATE B: FULL UNIFIED TICKET FRAME (STUB + FORM BODY) ── */
+              <div
+                ref={formTopRef}
+                className="enterprise-ticket-split"
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  borderRadius: '12px',
+                  overflow: 'visible',
+                  backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                  border: darkMode ? `1.5px solid ${flowColor}45` : `1.5px solid ${flowColor}60`,
+                  boxShadow: darkMode
+                    ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px ${flowColor}20`
+                    : '0 12px 30px rgba(30, 58, 82, 0.12)',
+                  minHeight: '280px',
+                  width: '100%',
+                }}
+              >
+                {/* ══ 1. THE RIGHT COLUMN: TICKET STUB (كعب التذكرة الموحد - حاضر في جميع المراحل) ══ */}
             <motion.div
               className="ticket-stub-col"
               animate={
@@ -1682,9 +1805,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 </div>
               )}
             </motion.div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
-    </div>
-  );
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
+);
 }

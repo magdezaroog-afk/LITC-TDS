@@ -4,8 +4,9 @@ import { useHub } from '../context/HubContext';
 import * as LucideIcons from 'lucide-react';
 import {
   Plus, CheckCircle2, XCircle, FileText,
-  Search, Clock, ChevronLeft, ChevronUp, Building2,
-  Activity, Layers, X, Sparkles, Filter, Ticket, Archive
+  Search, Clock, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Building2,
+  Activity, Layers, X, Sparkles, Filter, Ticket, Archive,
+  LayoutGrid, List
 } from 'lucide-react';
 import { RequestTrackingModal } from '../components/RequestTrackingModal';
 import { CinemaTicketFrame, TicketCodeBadge } from '../components/CinemaTicketFrame';
@@ -69,7 +70,7 @@ const STATUS_CONFIG = {
   },
 };
 
-// ── Authentic Cinema-Ticket KPI Metric Card (Matching User's Reference Exact Contour) ──
+// ── Compact Cinema-Ticket KPI Metric Card (Refined & Space-Efficient) ──
 function MetricTile({
   label,
   value,
@@ -94,89 +95,84 @@ function MetricTile({
       accentColor={accentColor}
       isSelected={isSelected}
       onClick={onClick}
-      cornerCutout={13}
-      notchRadius={5.5}
-      numNotches={3}
-      dashIndent={18}
+      cornerCutout={9}
+      notchRadius={4}
+      numNotches={2}
+      dashIndent={12}
+      contentPadding="10px 14px"
       role="button"
       tabIndex={0}
       style={{
         width: '100%',
+        cursor: 'pointer',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '6px',
+            backgroundColor: isSelected ? `${accentColor}25` : (darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(30, 58, 82, 0.06)'),
+            border: isSelected ? `1px solid ${accentColor}50` : (darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(30, 58, 82, 0.12)'),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            color: accentColor,
+          }}>
+            <Icon size={12} strokeWidth={isSelected ? 2.5 : 2} />
+          </div>
           <span style={{
             fontSize: '12px',
             fontWeight: isSelected ? 800 : 600,
             color: isSelected ? (darkMode ? '#ffffff' : '#0f172a') : (darkMode ? '#94a3b8' : '#475569'),
             fontFamily: "'Cairo', sans-serif",
-            transition: 'color 0.15s ease',
+            whiteSpace: 'nowrap',
           }}>
             {label}
           </span>
-          {isSelected && (
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '9.5px',
-              fontWeight: 700,
-              color: accentColor,
-              backgroundColor: `${accentColor}18`,
-              border: `1px solid ${accentColor}35`,
-              padding: '1px 6px',
-              borderRadius: '9999px',
-              fontFamily: "'Cairo', sans-serif",
-            }}>
-              <span style={{
-                width: '4.5px',
-                height: '4.5px',
-                borderRadius: '50%',
-                backgroundColor: accentColor,
-                boxShadow: `0 0 6px ${accentColor}`,
-              }} />
-              نشط
-            </span>
-          )}
         </div>
+
+        {/* Value Tag Badge */}
         <div style={{
-          width: '28px',
-          height: '28px',
-          borderRadius: '6px',
-          backgroundColor: isSelected ? `${accentColor}18` : (darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(30, 58, 82, 0.05)'),
-          border: isSelected ? `1px solid ${accentColor}40` : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(30, 58, 82, 0.12)'),
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.15s ease',
-          flexShrink: 0,
+          gap: '6px',
         }}>
-          <Icon size={14} color={accentColor} strokeWidth={isSelected ? 2.3 : 2} />
+          {isSelected && (
+            <span style={{
+              width: '5px',
+              height: '5px',
+              borderRadius: '50%',
+              backgroundColor: accentColor,
+              boxShadow: `0 0 6px ${accentColor}`,
+            }} />
+          )}
+          <span style={{
+            fontSize: '18px',
+            fontWeight: 800,
+            color: isSelected ? accentColor : (darkMode ? '#ffffff' : '#0f172a'),
+            fontFamily: "'Tajawal', sans-serif",
+            fontVariantNumeric: 'tabular-nums',
+            lineHeight: 1,
+          }}>
+            {value}
+          </span>
         </div>
       </div>
 
-      <div style={{ marginTop: '8px' }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 800,
-          color: darkMode ? '#ffffff' : '#0f172a',
-          lineHeight: 1,
-          fontFamily: "'Tajawal', sans-serif",
-          letterSpacing: '-0.02em',
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {value}
-        </div>
-        <div style={{
-          fontSize: '10.5px',
-          color: isSelected ? (darkMode ? '#cbd5e1' : '#334155') : (darkMode ? '#64748b' : '#64748b'),
-          marginTop: '4px',
-          fontWeight: 500,
-          fontFamily: "'Cairo', sans-serif",
-        }}>
-          {sublabel}
-        </div>
+      <div style={{
+        fontSize: '9.5px',
+        color: isSelected ? (darkMode ? '#cbd5e1' : '#334155') : '#64748b',
+        marginTop: '4px',
+        fontWeight: 500,
+        fontFamily: "'Cairo', sans-serif",
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {sublabel}
       </div>
     </CinemaTicketFrame>
   );
@@ -223,6 +219,10 @@ export default function RequestsPage() {
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'needs_rating' | 'completed'>('active');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const PAGE_SIZE = 6;
   const creatorRef = useRef<HTMLDivElement>(null);
   const [stubLanded, setStubLanded] = useState(false);
 
@@ -235,11 +235,10 @@ export default function RequestsPage() {
     window.addEventListener('litc_stub_landed', handleStubLanded);
     return () => window.removeEventListener('litc_stub_landed', handleStubLanded);
   }, []);
-  
-  const handleSelectFlow = (flow: any) => {
-    setActiveRequest(flow);
-    setRequestOpen(true);
-  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery]);
 
   // تمييز ما إذا كانت المعاملة مكتملة ومؤرشفة
   const isDone = (r: UserRecentRequest) =>
@@ -255,11 +254,8 @@ export default function RequestsPage() {
 
   const stats = useMemo(() => {
     return {
-      // 1. المعاملات النشطة (كل المعاملات التي تم تقديمها ولم تكتمل)
       active: userRequests.filter(r => !isDone(r)).length,
-      // 2. طلبات تحتاج إلى التقييم
       needsRating: userRequests.filter(r => isNeedsRating(r)).length,
-      // 3. أرشيف المعاملات (المعاملات المكتملة السابقة)
       archived: userRequests.filter(r => isDone(r)).length,
     };
   }, [userRequests]);
@@ -276,28 +272,30 @@ export default function RequestsPage() {
       
       if (!matchSearch) return false;
 
-      // 2. طلبات تحتاج إلى التقييم
-      if (filterStatus === 'needs_rating') {
-        return needsRating;
-      }
-      // 3. أرشيف المعاملات (المعاملات المكتملة السابقة)
-      if (filterStatus === 'completed') {
-        return archived;
-      }
-      // 1. المعاملات النشطة (active, create, all) - كل المعاملات التي لم تكتمل
+      if (filterStatus === 'needs_rating') return needsRating;
+      if (filterStatus === 'completed') return archived;
       return !archived;
     });
   }, [userRequests, searchQuery, filterStatus, isRtl]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
+  const displayedRequests = useMemo(() => {
+    if (!isExpanded) {
+      return filteredRequests.slice(0, 3);
+    }
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredRequests.slice(start, start + PAGE_SIZE);
+  }, [filteredRequests, isExpanded, currentPage]);
+
   return (
-    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: '22px', position: 'relative' }}>
 
       {/* ═══ 1. REFINED PAGE HEADER & CONTEXT ═══ */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingBottom: '14px',
+        paddingBottom: '12px',
         borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
         flexWrap: 'wrap',
         gap: '12px',
@@ -309,11 +307,11 @@ export default function RequestsPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            fontSize: '11.5px',
+            fontSize: '11px',
             color: '#64748b',
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 500,
-            marginBottom: '4px',
+            marginBottom: '3px',
           }}>
             <span>بوابة الموظف</span>
             <span>/</span>
@@ -321,7 +319,7 @@ export default function RequestsPage() {
           </div>
 
           <h1 style={{
-            fontSize: '22px',
+            fontSize: '20px',
             fontWeight: 800,
             color: darkMode ? '#ffffff' : '#0f172a',
             margin: '0 0 2px',
@@ -330,14 +328,14 @@ export default function RequestsPage() {
           }}>
             مركز متابعة المعاملات والطلبات
           </h1>
-          <p style={{ fontSize: '12.5px', color: darkMode ? '#94a3b8' : '#475569', margin: 0, fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
+          <p style={{ fontSize: '12px', color: darkMode ? '#94a3b8' : '#475569', margin: 0, fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
             منظومة NEXUS TDS الذكية لمتابعة مسار الإجراءات وحالات الاعتماد وإدارة التذاكر.
           </p>
         </div>
 
         {/* Live Operational Status Indicator */}
         <div style={{
-          fontSize: '11.5px',
+          fontSize: '11px',
           fontWeight: 600,
           color: darkMode ? '#34d399' : '#059669',
           backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)',
@@ -354,197 +352,80 @@ export default function RequestsPage() {
         </div>
       </div>
 
-      {/* ═══ 2. MAIN WORKSPACE: 2-COLUMN LAYOUT (VERTICAL FILTER RAIL ON RIGHT + TABLE ON LEFT) ═══ */}
-      <div className="workspace-grid-layout">
+      {/* ═══ 2. SMART TICKET CREATION CONSOLE (ماكينة استخراج التذاكر الذكية - تتوسط الشاشة) ═══ */}
+      <div ref={creatorRef} style={{ position: 'relative', zIndex: 40, width: '100%', maxWidth: '980px', margin: '0 auto' }}>
+        <InlineRequestCreator
+          onCancel={() => {}}
+          onSuccess={() => setFilterStatus('active')}
+        />
+      </div>
 
-        {/* ── RIGHT COLUMN: VERTICAL KPI STATUS FILTER RAIL (يمين الشاشة تحت بعض) ── */}
-        <aside
-          className="mobile-status-rail"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            position: 'sticky',
-            top: '20px',
-          }}
-        >
-          {/* ── 1. PRIMARY CREATION TICKET: إنشاء طلب جديد (الوضع الفاتح بلمسة ذهبي الشعار) ── */}
-          <CinemaTicketFrame
-            accentColor={darkMode ? "#38bdf8" : "#d97706"}
-            isSelected={false}
-            alwaysGlow={false}
-            cornerCutout={13}
-            notchRadius={5.5}
-            numNotches={3}
-            dashIndent={18}
-            role="button"
-            tabIndex={0}
-            className="mobile-create-ticket"
-            onClick={() => {
-              if (window.scrollY > 100) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-              window.dispatchEvent(new CustomEvent('litc_focus_routes'));
-            }}
-            style={{
-              width: '100%',
-              marginBottom: '2px',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  color: darkMode ? '#ffffff' : '#0f172a',
-                  fontFamily: "'Cairo', sans-serif",
-                }}>
-                  إنشاء طلب جديد
-                </span>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '9.5px',
-                  fontWeight: 700,
-                  color: darkMode ? '#38bdf8' : '#d97706',
-                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(217, 119, 6, 0.12)',
-                  border: `1px solid ${darkMode ? 'rgba(56, 189, 248, 0.35)' : 'rgba(217, 119, 6, 0.3)'}`,
-                  padding: '1px 6px',
-                  borderRadius: '9999px',
-                  fontFamily: "'Cairo', sans-serif",
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  <span style={{
-                    width: '4.5px',
-                    height: '4.5px',
-                    borderRadius: '50%',
-                    backgroundColor: darkMode ? '#38bdf8' : '#d97706',
-                    boxShadow: `0 0 6px ${darkMode ? '#38bdf8' : '#d97706'}`,
-                  }} />
-                  {requests.length} مسارات
-                </span>
-              </div>
-              <div style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
-                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(217, 119, 6, 0.12)',
-                border: darkMode ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(217, 119, 6, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                color: darkMode ? '#38bdf8' : '#d97706',
-              }}>
-                <Plus size={15} strokeWidth={2.4} />
-              </div>
-            </div>
+      {/* ═══ 3. THREE COMPACT KPI METRIC TILES (المعاملات النشطة | التقييم | الأرشيف) ═══ */}
+      <div
+        className="enterprise-kpi-grid"
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: '12px',
+          width: '100%',
+        }}
+      >
+        {/* Box 1 (Right): المعاملات النشطة */}
+        <div style={{
+          position: 'relative',
+          transform: stubLanded ? 'scale(1.03)' : 'none',
+          transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxShadow: stubLanded ? '0 0 24px rgba(56, 189, 248, 0.65)' : 'none',
+          borderRadius: '10px',
+        }}>
+          <MetricTile
+            label="المعاملات النشطة"
+            value={stats.active}
+            sublabel={stubLanded ? "✨ استلمت التذكرة بنجاح في الحوض!" : "جميع المعاملات الجارية ولم تكتمل"}
+            icon={Activity}
+            accentColor={darkMode ? "#38bdf8" : "#0284c7"}
+            isSelected={filterStatus === 'active'}
+            onClick={() => setFilterStatus('active')}
+            darkMode={darkMode}
+          />
+        </div>
 
-            <div style={{ marginTop: '8px' }}>
-              <div style={{
-                fontSize: '17px',
-                fontWeight: 800,
-                color: darkMode ? '#38bdf8' : '#d97706',
-                lineHeight: 1.2,
-                fontFamily: "'Tajawal', sans-serif",
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}>
-                <span>تقديم معاملة جديدة</span>
-                <ChevronLeft size={16} />
-              </div>
-              <div style={{
-                fontSize: '10.5px',
-                color: darkMode ? '#94a3b8' : '#64748b',
-                marginTop: '4px',
-                fontWeight: 500,
-                fontFamily: "'Cairo', sans-serif",
-              }}>
-                انقر للتركيز على مسارات الخدمة وتعبئة الطلب
-              </div>
-            </div>
-          </CinemaTicketFrame>
-        </aside>
+        {/* Box 2 (Center): طلبات تحتاج الي التقييم */}
+        <MetricTile
+          label="طلبات تحتاج الي التقييم"
+          value={stats.needsRating}
+          sublabel="معاملات مكتملة بانتظار تقييمك"
+          icon={Sparkles}
+          accentColor="#f59e0b"
+          isSelected={filterStatus === 'needs_rating'}
+          onClick={() => setFilterStatus('needs_rating')}
+          darkMode={darkMode}
+        />
 
-        {/* ── LEFT COLUMN: WORKSPACE SECTION (3 CARDS + ROUTE CREATOR + LEDGER TABLE) ── */}
-        <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Box 3 (Left): أرشيف المعاملات */}
+        <MetricTile
+          label="أرشيف المعاملات"
+          value={stats.archived}
+          sublabel="المعاملات المنجزة والمقيمة سابقاً"
+          icon={Archive}
+          accentColor="#10b981"
+          isSelected={filterStatus === 'completed'}
+          onClick={() => setFilterStatus('completed')}
+          darkMode={darkMode}
+        />
+      </div>
 
-          {/* ── 1. ROUTE PICKER & CREATOR (المسارات دائماً ثابتة بالأعلى والفورم بمراحله أسفلها) ── */}
-          <div ref={creatorRef} style={{ position: 'relative', zIndex: 40 }}>
-            <InlineRequestCreator
-              onCancel={() => {}}
-              onSuccess={() => setFilterStatus('active')}
-            />
-          </div>
-
-          {/* ── 2. THREE PRIMARY HORIZONTAL KPI TILES (1: المعاملات النشطة | 2: طلبات تحتاج إلى التقييم | 3: أرشيف المعاملات) ── */}
-          <div
-            className="enterprise-kpi-grid"
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '14px',
-            }}
-          >
-            {/* Box 1 (Right): المعاملات النشطة (يتوهج ويتفاعل سينمائياً عند هبوط كعب التذكرة فيه) */}
-            <div style={{
-              position: 'relative',
-              transform: stubLanded ? 'scale(1.04)' : 'none',
-              transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-              boxShadow: stubLanded ? '0 0 28px rgba(56, 189, 248, 0.65)' : 'none',
-              borderRadius: '12px',
-            }}>
-              <MetricTile
-                label="المعاملات النشطة"
-                value={stats.active}
-                sublabel={stubLanded ? "✨ استلمت التذكرة بنجاح في الحوض!" : "جميع المعاملات الجارية ولم تكتمل"}
-                icon={Activity}
-                accentColor={darkMode ? "#38bdf8" : "#0284c7"}
-                isSelected={filterStatus === 'active'}
-                onClick={() => setFilterStatus('active')}
-                darkMode={darkMode}
-              />
-            </div>
-
-            {/* Box 2 (Center): طلبات تحتاج الي التقييم */}
-            <MetricTile
-              label="طلبات تحتاج الي التقييم"
-              value={stats.needsRating}
-              sublabel="معاملات مكتملة بانتظار تقييمك"
-              icon={Sparkles}
-              accentColor="#f59e0b"
-              isSelected={filterStatus === 'needs_rating'}
-              onClick={() => setFilterStatus('needs_rating')}
-              darkMode={darkMode}
-            />
-
-            {/* Box 3 (Left): أرشيف المعاملات */}
-            <MetricTile
-              label="أرشيف المعاملات"
-              value={stats.archived}
-              sublabel="المعاملات المنجزة والمقيمة سابقاً"
-              icon={Archive}
-              accentColor="#10b981"
-              isSelected={filterStatus === 'completed'}
-              onClick={() => setFilterStatus('completed')}
-              darkMode={darkMode}
-            />
-          </div>
-
-          {/* ── 3. TRANSACTIONS LEDGER TABLE (سجل المعاملات المصفاة) ── */}
-          <div style={{
-            backgroundColor: darkMode ? '#111827' : '#ffffff',
-            borderRadius: '8px',
-            border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-            overflow: 'hidden',
-            boxShadow: darkMode ? '0 8px 30px rgba(0, 0, 0, 0.35)' : '0 4px 20px -2px rgba(30, 58, 82, 0.08)',
-            transition: 'all 0.25s ease',
-          }}>
+      {/* ═══ 4. TRANSACTIONS LEDGER (سجل المعاملات: قائمة أو بطاقات مع تمديد لأسفل وترقيم) ═══ */}
+      <div style={{
+        backgroundColor: darkMode ? '#111827' : '#ffffff',
+        borderRadius: '10px',
+        border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+        overflow: 'hidden',
+        boxShadow: darkMode ? '0 8px 30px rgba(0, 0, 0, 0.35)' : '0 4px 20px -2px rgba(30, 58, 82, 0.08)',
+        transition: 'all 0.25s ease',
+      }}>
         {/* Table Toolbar */}
         <div style={{
           padding: '12px 18px',
@@ -560,8 +441,8 @@ export default function RequestsPage() {
           {/* Title & Count Badge & Active Filter Reset */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <h2 style={{
-              fontSize: '14.5px',
-              fontWeight: 700,
+              fontSize: '14px',
+              fontWeight: 800,
               color: darkMode ? '#ffffff' : '#0f172a',
               margin: 0,
               letterSpacing: '-0.01em',
@@ -618,8 +499,64 @@ export default function RequestsPage() {
             )}
           </div>
 
-          {/* Controls: Search Input */}
+          {/* Controls: View Switcher (List vs Cards) & Search Input */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* View Mode Toggle (قائمة / بطاقات) */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: darkMode ? '#0b0f19' : '#e2e8f0',
+              borderRadius: '7px',
+              padding: '2px',
+              border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1',
+            }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                title="عرض جدولي كقائمة"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '5px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: viewMode === 'list' ? (darkMode ? '#2563eb' : '#ffffff') : 'transparent',
+                  color: viewMode === 'list' ? '#ffffff' : (darkMode ? '#94a3b8' : '#64748b'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <List size={13} />
+                <span className="hide-on-mobile">قائمة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                title="عرض كبطاقات وتذاكر"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '5px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: viewMode === 'cards' ? (darkMode ? '#2563eb' : '#ffffff') : 'transparent',
+                  color: viewMode === 'cards' ? '#ffffff' : (darkMode ? '#94a3b8' : '#64748b'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <LayoutGrid size={13} />
+                <span className="hide-on-mobile">بطاقات</span>
+              </button>
+            </div>
+
+            {/* Search Box */}
             <div style={{ position: 'relative' }}>
               <Search
                 size={13}
@@ -648,7 +585,7 @@ export default function RequestsPage() {
                   fontFamily: "'Cairo', sans-serif",
                   color: darkMode ? '#f8fafc' : '#0f172a',
                   outline: 'none',
-                  width: '240px',
+                  width: '210px',
                   transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                 }}
                 onFocus={e => {
@@ -686,52 +623,53 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        {/* Structured Data Table */}
+        {/* Content Area: Empty State vs Table vs Cards Grid */}
         {filteredRequests.length === 0 ? (
           <div style={{
-            padding: '50px 20px',
+            padding: '45px 20px',
             textAlign: 'center',
             backgroundColor: darkMode ? '#111827' : '#ffffff',
           }}>
             <div style={{
-              width: '44px',
-              height: '44px',
+              width: '40px',
+              height: '40px',
               borderRadius: '8px',
               backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(30, 58, 82, 0.05)',
               border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 12px',
+              margin: '0 auto 10px',
             }}>
               <FileText size={18} color="#64748b" />
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b', fontFamily: "'Cairo', sans-serif" }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b', fontFamily: "'Cairo', sans-serif" }}>
               {filterStatus === 'completed' ? 'لا توجد طلبات سابقة في الأرشيف' : 'لا توجد معاملات نشطة حالياً'}
             </div>
-            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', fontFamily: "'Cairo', sans-serif" }}>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontFamily: "'Cairo', sans-serif" }}>
               {searchQuery
                 ? 'لا توجد نتائج مطابقة لبحثك الحالي'
                 : filterStatus === 'completed'
                 ? 'عند إنجاز وتقييم أي معاملة ستنتقل تلقائياً إلى هذا الأرشيف'
-                : 'كافة معاملاتك السابقة مؤرشفة بنجاح. يمكنك تقديم معاملة جديدة عند الحاجة'}
+                : 'كافة معاملاتك السابقة مؤرشفة بنجاح. يمكنك تقديم معاملة جديدة بسحب تذكرة من الماكينة أعلاه'}
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
+          /* ── 1. LIST / TABLE VIEW ── */
           <div style={{ overflowX: 'auto' }}>
             <table className="litc-table">
               <thead>
                 <tr>
                   <th style={{ width: '130px' }}>رمز المعاملة</th>
                   <th>نوع الخدمة والموضوع</th>
-                  <th style={{ width: '200px' }}>الإدارة المستهدفة</th>
-                  <th style={{ width: '120px' }}>تاريخ التقديم</th>
-                  <th style={{ width: '130px' }}>الحالة الإجرائية</th>
+                  <th style={{ width: '190px' }}>الإدارة المستهدفة</th>
+                  <th style={{ width: '110px' }}>تاريخ التقديم</th>
+                  <th style={{ width: '120px' }}>الحالة الإجرائية</th>
                   <th style={{ width: '120px', textAlign: 'start' }}>الإجراء والمتابعة</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRequests.map(req => {
+                {displayedRequests.map(req => {
                   const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
                   const routeColor = matchedFlow?.color || '#38bdf8';
 
@@ -754,11 +692,11 @@ export default function RequestsPage() {
 
                       {/* Title & Service */}
                       <td>
-                        <div style={{ fontWeight: 600, color: darkMode ? '#ffffff' : '#0f172a', fontSize: '13.5px', fontFamily: "'Cairo', sans-serif" }}>
+                        <div style={{ fontWeight: 600, color: darkMode ? '#ffffff' : '#0f172a', fontSize: '13px', fontFamily: "'Cairo', sans-serif" }}>
                           {isRtl ? req.title : req.titleEn || req.title}
                         </div>
                         {req.stage && (
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', fontFamily: "'Cairo', sans-serif" }}>
+                          <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px', fontFamily: "'Cairo', sans-serif" }}>
                             المرحلة الحالية: {req.stage}
                           </div>
                         )}
@@ -766,14 +704,14 @@ export default function RequestsPage() {
 
                       {/* Target Department */}
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', color: darkMode ? '#cbd5e1' : '#334155', fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
-                          <Building2 size={13} color="#64748b" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: darkMode ? '#cbd5e1' : '#334155', fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
+                          <Building2 size={12} color="#64748b" />
                           <span>{req.department || 'إدارة الشؤون الفنية'}</span>
                         </div>
                       </td>
 
                       {/* Tabular Formatted Date */}
-                      <td style={{ whiteSpace: 'nowrap', fontSize: '12px', color: darkMode ? '#94a3b8' : '#64748b', fontVariantNumeric: 'tabular-nums', fontFamily: "'Cairo', sans-serif" }}>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: '11.5px', color: darkMode ? '#94a3b8' : '#64748b', fontVariantNumeric: 'tabular-nums', fontFamily: "'Cairo', sans-serif" }}>
                         {req.date || 'اليوم'}
                       </td>
 
@@ -782,7 +720,7 @@ export default function RequestsPage() {
                         <StatusBadge status={req.status} />
                       </td>
 
-                      {/* Action Button (outline button or rating action) */}
+                      {/* Action Button */}
                       <td style={{ whiteSpace: 'nowrap', textAlign: 'start' }}>
                         <button
                           onClick={e => {
@@ -805,7 +743,7 @@ export default function RequestsPage() {
                             color: isNeedsRating(req)
                               ? '#d97706'
                               : (darkMode ? '#cbd5e1' : '#1e3a52'),
-                            fontSize: '11.5px',
+                            fontSize: '11px',
                             fontWeight: isNeedsRating(req) ? 700 : 600,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
@@ -832,12 +770,228 @@ export default function RequestsPage() {
               </tbody>
             </table>
           </div>
-        )}
+        ) : (
+          /* ── 2. CARDS / GRID VIEW (نظام البطاقات السينمائية الأنيقة) ── */
+          <div style={{
+            padding: '16px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '14px',
+          }}>
+            {displayedRequests.map(req => {
+              const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
+              const routeColor = matchedFlow?.color || '#38bdf8';
+
+              return (
+                <CinemaTicketFrame
+                  key={req.id}
+                  accentColor={routeColor}
+                  cornerCutout={10}
+                  notchRadius={4.5}
+                  numNotches={2}
+                  dashIndent={13}
+                  contentPadding="13px 15px"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setSelectedRequest(req);
+                    setIsTrackingOpen(true);
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    width: '100%',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                >
+                  {/* Card Header: Code & Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+                    <TicketCodeBadge code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`} color={routeColor} />
+                    <StatusBadge status={req.status} />
+                  </div>
+
+                  {/* Card Title */}
+                  <div style={{
+                    fontWeight: 700,
+                    color: darkMode ? '#ffffff' : '#0f172a',
+                    fontSize: '13.5px',
+                    fontFamily: "'Tajawal', sans-serif",
+                    marginBottom: '4px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {isRtl ? req.title : req.titleEn || req.title}
+                  </div>
+
+                  {/* Stage subtitle */}
+                  {req.stage && (
+                    <div style={{ fontSize: '10.5px', color: '#64748b', marginBottom: '8px', fontFamily: "'Cairo', sans-serif" }}>
+                      المرحلة: <span style={{ color: darkMode ? '#cbd5e1' : '#475569', fontWeight: 600 }}>{req.stage}</span>
+                    </div>
+                  )}
+
+                  {/* Meta: Dept & Date */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '8px',
+                    borderTop: darkMode ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
+                    fontSize: '11px',
+                    color: '#64748b',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Building2 size={12} color="#64748b" />
+                      <span>{req.department || 'إدارة الشؤون الفنية'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontVariantNumeric: 'tabular-nums' }}>
+                      <Clock size={12} color="#64748b" />
+                      <span>{req.date || 'اليوم'}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Link Footer */}
+                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: isNeedsRating(req) ? '#d97706' : (darkMode ? '#38bdf8' : '#1e3a52'),
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontFamily: "'Cairo', sans-serif"
+                    }}>
+                      {isNeedsRating(req) ? '⭐ قيّم المعاملة' : 'متابعة وتتبع'}
+                      <ChevronLeft size={12} />
+                    </span>
+                  </div>
+                </CinemaTicketFrame>
+              );
+            })}
           </div>
-        </section>
+        )}
+
+        {/* ── EXPANSION / PAGINATION DRAWER (تمديد لأسفل وترقيم الصفحات) ── */}
+        <div style={{
+          padding: '10px 18px',
+          borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+          backgroundColor: darkMode ? '#0b101d' : '#f8fafc',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          {/* Expansion Toggle Button */}
+          {filteredRequests.length > 3 ? (
+            <button
+              onClick={() => {
+                setIsExpanded(!isExpanded);
+                setCurrentPage(1);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                backgroundColor: isExpanded
+                  ? (darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(30, 58, 82, 0.08)')
+                  : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#ffffff'),
+                border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                color: isExpanded ? '#38bdf8' : (darkMode ? '#cbd5e1' : '#334155'),
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: "'Cairo', sans-serif",
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>{isExpanded ? 'طي السجل (عرض آخر 3 فقط)' : `عرض كافة المعاملات (${filteredRequests.length} معاملة)`}</span>
+              {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {/* Pagination Controls (shown when isExpanded and totalPages > 1) */}
+          {isExpanded && totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                title="الصفحة السابقة"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  background: 'transparent',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                  color: currentPage === 1 ? '#64748b' : (darkMode ? '#fff' : '#000'),
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <ChevronRight size={13} />
+              </button>
+
+              {/* Direct Page Numbers */}
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pNum = idx + 1;
+                const isActive = currentPage === pNum;
+                return (
+                  <button
+                    key={pNum}
+                    onClick={() => setCurrentPage(pNum)}
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      backgroundColor: isActive ? '#38bdf8' : 'transparent',
+                      color: isActive ? '#ffffff' : (darkMode ? '#94a3b8' : '#64748b'),
+                      border: isActive ? 'none' : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: "'Tajawal', sans-serif"
+                    }}
+                  >
+                    {pNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                title="الصفحة التالية"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  background: 'transparent',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                  color: currentPage === totalPages ? '#64748b' : (darkMode ? '#fff' : '#000'),
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <ChevronLeft size={13} />
+              </button>
+            </div>
+          )}
+
+          {/* Records Counter Info */}
+          <div style={{ fontSize: '11px', color: '#64748b', fontFamily: "'Cairo', sans-serif" }}>
+            {!isExpanded
+              ? `عرض آخر ${Math.min(3, filteredRequests.length)} معاملات من إجمالي ${filteredRequests.length}`
+              : `صفحة ${currentPage} من ${totalPages} (إجمالي ${filteredRequests.length} معاملة)`
+            }
+          </div>
+        </div>
       </div>
 
-      {/* ═══ 3. TRACKING MODAL ═══ */}
+      {/* ═══ 5. TRACKING MODAL ═══ */}
       <RequestTrackingModal
         isOpen={isTrackingOpen}
         onClose={() => {
