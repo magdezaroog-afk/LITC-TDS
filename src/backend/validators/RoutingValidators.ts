@@ -88,6 +88,7 @@ export const routeSchema = z.object({
   description: z.string().default(''),
   icon: z.string().default('ClipboardList'),
   color: z.string().default('#007AFF'),
+  routeCategory: z.enum(['OPERATIONAL', 'TIME_OFF', 'FINANCIAL', 'GENERAL']).optional().default('OPERATIONAL'),
   targetDepartmentId: z.union([z.string(), z.number()]).transform(v => String(v)),
   targetDepartmentName: z.string().default(''),
   targetDivisionId: z.union([z.string(), z.number()]).optional().transform(v => v !== undefined && v !== null ? String(v) : ''),

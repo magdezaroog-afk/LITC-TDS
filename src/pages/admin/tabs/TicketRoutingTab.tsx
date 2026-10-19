@@ -26,6 +26,7 @@ import {
   EXECUTIVE_PALETTE,
   renderRouteIcon,
 } from '../../../services/ticketIconLibrary';
+import { EmployeeDelegatePicker } from '../../../functional_ui/components/EmployeeDelegatePicker';
 
 export type {
   IndicatorOption,
@@ -102,9 +103,34 @@ const injectStyles = () => {
 // ═══════════════════════════════════════════════════════════
 // Component
 // ═══════════════════════════════════════════════════════════
+export const ROUTE_CATEGORIES = [
+  {
+    id: 'OPERATIONAL',
+    title: 'مسار عام / دعم فني وتشغيلي',
+    desc: 'طلبات الدعم التقني، الصيانة، الخدمات الإدارية، والمهام العامة',
+    icon: '🏢',
+    color: '#007AFF',
+  },
+  {
+    id: 'TIME_OFF',
+    title: 'مسار إجازات ومغادرات دوام',
+    desc: 'إجازات سنوية ومرضية، أذونات ساعية، تكليف موظف بديل من دليل الشركة',
+    icon: '🏖️',
+    color: '#10B981',
+  },
+  {
+    id: 'FINANCIAL',
+    title: 'مسار مالي ومشتريات',
+    desc: 'سلف، عهد نقدية، فواتير ومشتريات مع دورات اعتماد متقدمة',
+    icon: '💼',
+    color: '#F59E0B',
+  },
+] as const;
+
 type WizardStep = 1 | 2 | 3;
 interface WizardState {
   name: string; description: string; icon: string; color: string;
+  routeCategory: 'OPERATIONAL' | 'TIME_OFF' | 'FINANCIAL' | 'GENERAL';
   targetDepartmentId: string; targetDepartmentName: string;
   targetDivisionId: string; targetDivisionName: string;
   targetTeamId?: string; targetTeamName?: string;
@@ -113,6 +139,7 @@ interface WizardState {
 }
 const defaultWizard = (): WizardState => ({
   name: '', description: '', icon: 'Monitor', color: '#007AFF',
+  routeCategory: 'OPERATIONAL',
   targetDepartmentId: '', targetDepartmentName: '',
   targetDivisionId: '', targetDivisionName: '',
   targetTeamId: '', targetTeamName: '',
@@ -245,6 +272,7 @@ export const TicketRoutingTab: React.FC = () => {
     setEditingId(r.id);
     setWizard({
       name: r.name, description: r.description, icon: r.icon, color: r.color,
+      routeCategory: r.routeCategory || 'OPERATIONAL',
       targetDepartmentId: r.targetDepartmentId, targetDepartmentName: r.targetDepartmentName,
       targetDivisionId: r.targetDivisionId, targetDivisionName: r.targetDivisionName,
       targetTeamId: r.targetTeamId || '', targetTeamName: r.targetTeamName || '',
@@ -260,6 +288,7 @@ export const TicketRoutingTab: React.FC = () => {
     const r: TicketRouteDefinition = {
       id: editingId || `route_${Date.now()}`,
       ...wizard,
+      routeCategory: wizard.routeCategory || 'OPERATIONAL',
       managerId: wizard.managerId ? String(wizard.managerId) : undefined,
       managerName: wizard.managerName || undefined,
       isActive: true,
@@ -748,11 +777,74 @@ export const TicketRoutingTab: React.FC = () => {
 
   const renderStep1 = () => (
     <div className="wizard-step" style={{ display:'flex', flexDirection:'column', gap:22 }}>
+      {/* ── 0. تصنيف وطبيعة المسار المؤسسي (Route Nature & Architecture) ── */}
+      <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 14, border: `1.5px solid ${A.sep}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20 }}>🎯</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>طبيعة وتصنيف المسار المؤسسي (Route Nature & Engine Category)</div>
+              <div style={{ fontSize: 11, color: A.textSub }}>اختر تصنيف المسار لتهيئة المحركات التشغيلية المتخصصة تلقائياً (إجازات ومغادرات، دعم عام، اعتمادات مالية)</div>
+            </div>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 800, color: ROUTE_CATEGORIES.find(c => c.id === (wizard.routeCategory || 'OPERATIONAL'))?.color }}>
+            {ROUTE_CATEGORIES.find(c => c.id === (wizard.routeCategory || 'OPERATIONAL'))?.title}
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+          {ROUTE_CATEGORIES.map(cat => {
+            const isSelected = (wizard.routeCategory || 'OPERATIONAL') === cat.id;
+            return (
+              <div
+                key={cat.id}
+                onClick={() => {
+                  setW({ routeCategory: cat.id as any });
+                  if (cat.id === 'TIME_OFF') {
+                    // Activate schedule engine & global company delegate picker
+                    setFC({
+                      showScheduleEngine: true,
+                      scheduleMode: 'DATE_RANGE',
+                      scheduleLabel: 'فترة الإجازة أو المغادرة',
+                      showDelegateUser: true,
+                      delegateScope: 'ALL_COMPANY_USERS',
+                      delegateUserLabel: 'الموظف المكلف بالعمل / البديل',
+                    });
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: '14px',
+                  borderRadius: 12,
+                  background: isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                  border: isSelected ? `2px solid ${cat.color}` : `1.5px solid ${A.sep}`,
+                  boxShadow: isSelected ? `0 4px 14px ${cat.color}25` : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <span style={{ fontSize: 26, lineHeight: 1 }}>{cat.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: isSelected ? cat.color : A.text }}>{cat.title}</div>
+                    {isSelected && (
+                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: cat.color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>✓</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>{cat.desc}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── 1. الهوية الأساسية ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
         <div>
           <label style={{ fontSize:12, fontWeight:700, color:A.text, display:'block', marginBottom:6 }}>اسم المسار <span style={{ color:A.red }}>*</span></label>
-          <input className="tr-input" placeholder="مثال: طلب دعم فني وتقني" value={wizard.name} onChange={e => setW({ name:e.target.value })} />
+          <input className="tr-input" placeholder="مثال: طلب إجازة سنوية / إذن مغادرة" value={wizard.name} onChange={e => setW({ name:e.target.value })} />
         </div>
         <div>
           <label style={{ fontSize:12, fontWeight:700, color:A.textSub, display:'block', marginBottom:6 }}>وصف مختصر للمسار (اختياري)</label>
@@ -1753,8 +1845,8 @@ export const TicketRoutingTab: React.FC = () => {
                   👤
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>الموظف البديل / تسليم المهام (Delegate Colleague)</div>
-                  <div style={{ fontSize: 11, color: A.textSub }}>تحديد زميل يستلم المهام أو يتابع التنسيق أثناء غياب مقدم الطلب</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>الموظف المكلف بالعمل / البديل (Covering & Delegate Employee)</div>
+                  <div style={{ fontSize: 11, color: A.textSub }}>تحديد زميل لتسليم المهام مع بحث حي فوري عبر كامل دليل موظفي الشركة</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1769,9 +1861,44 @@ export const TicketRoutingTab: React.FC = () => {
               </div>
             </div>
             {wizard.formConfig.showDelegateUser && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}` }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
-                <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: الموظف البديل / تسليم العهدة" value={wizard.formConfig.delegateUserLabel || ''} onChange={e => setFC({ delegateUserLabel: e.target.value })} />
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+                    <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: الموظف المكلف بالعمل / البديل" value={wizard.formConfig.delegateUserLabel || ''} onChange={e => setFC({ delegateUserLabel: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نطاق اختيار الموظف المكلف</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setFC({ delegateScope: 'ALL_COMPANY_USERS' })}
+                        style={{
+                          flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                          border: `1.5px solid ${(!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.sep}`,
+                          background: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? `${wizard.color}15` : '#fff',
+                          color: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.textSub,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        🌐 جميع موظفي الشركة (دليل شامل)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFC({ delegateScope: 'SAME_DEPARTMENT' })}
+                        style={{
+                          flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                          border: `1.5px solid ${wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.sep}`,
+                          background: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? `${wizard.color}15` : '#fff',
+                          color: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.textSub,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        🏛️ نفس الإدارة فقط
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -2479,13 +2606,13 @@ export const TicketRoutingTab: React.FC = () => {
                       if (field.id === 'delegateUser') {
                         return (
                           <div key={field.id}>
-                            <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', marginBottom: 4 }}>
-                              👤 {field.label} {field.isRequired && <span style={{ color: A.red }}>*</span>}
-                            </label>
-                            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: '1.5px solid #E2E8F0', fontSize: 11.5, color: A.textTer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>-- اختر الموظف البديل من الدليل --</span>
-                              <span style={{ fontSize: 9 }}>▼</span>
-                            </div>
+                            <EmployeeDelegatePicker
+                              value={previewSelectedOptions['delegateUser'] || ''}
+                              onChange={(userId) => setPreviewSelectedOptions(p => ({ ...p, delegateUser: userId }))}
+                              label={field.label}
+                              required={field.isRequired}
+                              scope={wizard.formConfig.delegateScope || 'ALL_COMPANY_USERS'}
+                            />
                           </div>
                         );
                       }
@@ -2665,9 +2792,19 @@ export const TicketRoutingTab: React.FC = () => {
                     </div>
                     <div>
                       <div style={{ fontSize:15, fontWeight:700, color:A.text }}>{r.name}</div>
-                      <div style={{ fontSize:12, color:A.textSub, marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
-                        <span style={{ width:8, height:8, borderRadius:'50%', background:r.isActive?A.green:A.red }} />
-                        {r.isActive?'نشط':'متوقف'}
+                      <div style={{ fontSize:12, color:A.textSub, marginTop:3, display:'flex', alignItems:'center', gap:6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ width:7, height:7, borderRadius:'50%', background:r.isActive?A.green:A.red }} />
+                          <span style={{ fontSize: 11, fontWeight: 600 }}>{r.isActive?'نشط':'متوقف'}</span>
+                        </div>
+                        <span style={{
+                          fontSize: 10, padding: '1px 6px', borderRadius: 6, fontWeight: 700,
+                          background: r.routeCategory === 'TIME_OFF' ? '#ecfdf5' : r.routeCategory === 'FINANCIAL' ? '#fffbeb' : '#eff6ff',
+                          color: r.routeCategory === 'TIME_OFF' ? '#059669' : r.routeCategory === 'FINANCIAL' ? '#d97706' : '#2563eb',
+                          border: `1px solid ${r.routeCategory === 'TIME_OFF' ? '#a7f3d0' : r.routeCategory === 'FINANCIAL' ? '#fde68a' : '#bfdbfe'}`
+                        }}>
+                          {r.routeCategory === 'TIME_OFF' ? '🏖️ إجازات ومغادرات' : r.routeCategory === 'FINANCIAL' ? '💼 مالي واعتمادات' : '🏢 دعم وتشغيل'}
+                        </span>
                       </div>
                     </div>
                   </div>

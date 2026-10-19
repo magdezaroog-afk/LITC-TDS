@@ -68,10 +68,11 @@ export interface RouteFormConfig {
   scheduleLabel?: string;
   scheduleMode?: 'ANY' | 'DATE_RANGE' | 'DISCRETE_DAYS' | 'HOURLY_WINDOW' | 'SINGLE_DATE';
 
-  // ─── Delegate Colleague ───
+  // ─── Delegate Colleague (الموظف البديل / تسليم المهام) ───
   showDelegateUser?: boolean;
   mandatoryDelegateUser?: boolean;
   delegateUserLabel?: string;
+  delegateScope?: 'ALL_COMPANY_USERS' | 'SAME_DEPARTMENT';
 
   // ─── Compatibility Fields ───
   showDateRange?: boolean;
@@ -108,6 +109,7 @@ export interface TicketRouteDefinition {
   description: string;
   icon: string;
   color: string;
+  routeCategory?: 'OPERATIONAL' | 'TIME_OFF' | 'FINANCIAL' | 'GENERAL';
   targetDepartmentId: string;
   targetDepartmentName: string;
   targetDivisionId: string;
@@ -154,6 +156,7 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   showDelegateUser: false,
   mandatoryDelegateUser: false,
   delegateUserLabel: 'الموظف البديل / تسليم المهام',
+  delegateScope: 'ALL_COMPANY_USERS',
   // ─── Compatibility Fields ───
   showDateRange: false,
   mandatoryDateRange: false,
@@ -183,6 +186,7 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
     description: r.description || '',
     icon: r.icon || 'Monitor',
     color: r.color || '#007AFF',
+    routeCategory: r.routeCategory || 'OPERATIONAL',
     targetDepartmentId: r.targetDepartmentId || '',
     targetDepartmentName: r.targetDepartmentName || '',
     targetDivisionId: r.targetDivisionId || '',
@@ -200,7 +204,8 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       taxonomyDisplayMode: r.formConfig?.taxonomyDisplayMode || 'dropdown',
       dynamicFieldsDisplayMode: r.formConfig?.dynamicFieldsDisplayMode || {},
       fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
-      routeDynamicFields: Array.isArray(r.formConfig?.routeDynamicFields) ? r.formConfig.routeDynamicFields : []
+      routeDynamicFields: Array.isArray(r.formConfig?.routeDynamicFields) ? r.formConfig.routeDynamicFields : [],
+      delegateScope: r.formConfig?.delegateScope || 'ALL_COMPANY_USERS',
     }
   };
 };

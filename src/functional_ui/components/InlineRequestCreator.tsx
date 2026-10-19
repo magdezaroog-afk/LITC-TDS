@@ -30,6 +30,7 @@ import {
   loadCachedOrRemoteOrgTree
 } from '../../services/institutionalHierarchy.helpers';
 import { renderRouteIcon } from '../../services/ticketIconLibrary';
+import { EmployeeDelegatePicker } from './EmployeeDelegatePicker';
 
 // ── Dynamic Icon Resolver ──────────────────────────────────
 const resolveIcon = (name?: string, size = 20, color = 'currentColor') => {
@@ -466,23 +467,16 @@ function FieldInput({
     );
   }
 
-  // 3. DELEGATE USER
+  // 3. DELEGATE USER (دليل موظفي الشركة الذكي للبحث والفلترة الفورية للموظف المكلف)
   if (field.type === 'delegateUser') {
     return (
-      <div style={{ position: 'relative', width: '100%' }}>
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="ابحث بالاسم أو الرقم الوظيفي..."
-          style={{ ...base, paddingInlineStart: '32px' }}
-          onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = `0 0 0 1px ${focusBorder}`; }}
-          onBlur={e => { e.target.style.borderColor = borderDefault; e.target.style.boxShadow = 'none'; }}
-        />
-        <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', insetInlineStart: '10px', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-          <UserCheck size={14} />
-        </div>
-      </div>
+      <EmployeeDelegatePicker
+        value={value}
+        onChange={val => onChange(val)}
+        required={field.required}
+        placeholder="ابحث باسم الموظف المكلف، الرقم الوظيفي، أو الإدارة..."
+        accentColor={focusBorder || '#135d79'}
+      />
     );
   }
 
