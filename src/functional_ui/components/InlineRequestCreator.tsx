@@ -29,19 +29,11 @@ import {
   getTeamsForDivision,
   loadCachedOrRemoteOrgTree
 } from '../../services/institutionalHierarchy.helpers';
+import { renderRouteIcon } from '../../services/ticketIconLibrary';
 
 // ── Dynamic Icon Resolver ──────────────────────────────────
 const resolveIcon = (name?: string, size = 20, color = 'currentColor') => {
-  if (!name) return <FileText size={size} color={color} strokeWidth={2} />;
-  const emojiMap: Record<string, string> = {
-    '💻': 'Monitor', '🏗️': 'Building2', '📋': 'ClipboardList', '🔧': 'Wrench',
-    '📡': 'Radio', '🔒': 'Lock', '📊': 'BarChart3', '🏥': 'HeartPulse',
-    '📞': 'Phone', '🖨️': 'Printer', '⚡': 'Zap', '🌐': 'Globe',
-    '🗄️': 'Archive', '📱': 'Smartphone', '🔑': 'Key', '🛠️': 'Wrench'
-  };
-  const iconName = emojiMap[name] || name;
-  const IconComp = (LucideIcons as any)[iconName] || FileText;
-  return <IconComp size={size} color={color} strokeWidth={2} />;
+  return renderRouteIcon(name, size, color, 2);
 };
 
 // ── Sub-Issue Smart Icon Resolver ──────────────────────────
@@ -295,7 +287,58 @@ function FieldInput({
   const borderDefault = darkMode ? 'rgba(255, 255, 255, 0.14)' : '#cbd5e1';
 
   // 1. SELECT TYPES -> ROUTE TO MODERN SELECT
+  // 1. SELECT TYPES -> ROUTE TO MODERN SELECT OR CHIPS
   if (field.type === 'select') {
+    const isChips = (field as any).displayMode === 'chips';
+    const opts = (field.options || []).map(opt => {
+      if (typeof opt === 'string') return { value: opt, label: opt };
+      const v = (opt as any).id || (opt as any).name || (opt as any).label || '';
+      const l = (opt as any).label || (opt as any).name || (opt as any).id || '';
+      return { value: v, label: l };
+    });
+
+    if (isChips) {
+      return (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', width: '100%' }}>
+          {opts.map(opt => {
+            const isSelected = value === opt.value || value === opt.label;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onChange(isSelected ? '' : opt.label)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: isSelected
+                    ? '1.5px solid #38bdf8'
+                    : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                  backgroundColor: isSelected
+                    ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                    : (darkMode ? '#101728' : '#ffffff'),
+                  color: isSelected
+                    ? (darkMode ? '#38bdf8' : '#2563eb')
+                    : (darkMode ? '#cbd5e1' : '#334155'),
+                  fontSize: '11.5px',
+                  fontWeight: isSelected ? 800 : 500,
+                  fontFamily: "'Cairo', sans-serif",
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isSelected ? '0 0 10px rgba(56, 189, 248, 0.25)' : 'none',
+                }}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check size={12} color={darkMode ? '#38bdf8' : '#2563eb'} />}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
     return (
       <ModernSelect
         label={field.label}
@@ -442,7 +485,7 @@ function FieldInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         rows={2}
-        placeholder={`أدخل ${field.label}...`}
+        placeholder={(field as any).placeholder || `أدخل ${field.label}...`}
         style={{ ...base, resize: 'none' }}
         onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = `0 0 0 1px ${focusBorder}`; }}
         onBlur={e => { e.target.style.borderColor = borderDefault; e.target.style.boxShadow = 'none'; }}
@@ -450,13 +493,163 @@ function FieldInput({
     );
   }
 
-  // 5. STANDARD INPUTS
+  // 5. FILE / ATTACHMENT (حل مشكلة المرفقات: مكون تفاعلي مع زر استعراض ورفع حقيقي)
+  if (field.type === 'file' || field.type === 'attachment') {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [fileName, setFileName] = useState<string>(value || '');
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleFileChosen = (f: File) => {
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+      const formatted = `${f.name} (${sizeMB} MB)`;
+      setFileName(formatted);
+      onChange(formatted);
+    };
+
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          onChange={e => {
+            if (e.target.files && e.target.files[0]) {
+              handleFileChosen(e.target.files[0]);
+            }
+          }}
+        />
+
+        {fileName ? (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: darkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(37, 99, 235, 0.08)',
+              border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.4)' : '1.5px solid rgba(37, 99, 235, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+              <span style={{ fontSize: '15px' }}>📎</span>
+              <span
+                style={{
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  color: darkMode ? '#ffffff' : '#0f172a',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '220px',
+                }}
+              >
+                {fileName}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: darkMode ? '#38bdf8' : '#2563eb',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                }}
+              >
+                تغيير
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFileName('');
+                  onChange('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                }}
+                title="إزالة المرفق"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={e => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFileChosen(e.dataTransfer.files[0]);
+              }
+            }}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: isDragging
+                ? '2px dashed #38bdf8'
+                : (darkMode ? '1.5px dashed rgba(255, 255, 255, 0.2)' : '1.5px dashed #cbd5e1'),
+              backgroundColor: isDragging
+                ? (darkMode ? 'rgba(56, 189, 248, 0.1)' : 'rgba(37, 99, 235, 0.05)')
+                : (darkMode ? 'rgba(16, 23, 40, 0.6)' : '#f8fafc'),
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '6px',
+                background: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: darkMode ? '#38bdf8' : '#2563eb',
+              }}
+            >
+              <Plus size={15} />
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                استعراض ورفع مرفق
+              </div>
+              <div style={{ fontSize: '9.5px', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                انقر هنا لاختيار الملف من الجهاز أو اسحبه هنا
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 6. STANDARD INPUTS (Text, Number, Date)
   return (
     <input
       type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
       value={value}
       onChange={e => onChange(e.target.value)}
-      placeholder={`أدخل ${field.label}...`}
+      placeholder={(field as any).placeholder || `أدخل ${field.label}...`}
       style={base}
       onFocus={e => { e.target.style.borderColor = focusBorder; e.target.style.boxShadow = `0 0 0 1px ${focusBorder}`; }}
       onBlur={e => { e.target.style.borderColor = borderDefault; e.target.style.boxShadow = 'none'; }}

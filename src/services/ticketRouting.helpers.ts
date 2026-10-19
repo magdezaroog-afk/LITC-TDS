@@ -25,6 +25,16 @@ export interface DynamicCustomField {
   childBindings?: ChildFieldBinding[];
 }
 
+export interface CustomFormInput {
+  id: string;
+  name: string;
+  label: string;
+  type: 'text' | 'textarea' | 'number' | 'date';
+  placeholder?: string;
+  required: boolean;
+  order?: number;
+}
+
 export interface RouteFormConfig {
   showBuildingField?: boolean;
   mandatoryBuilding?: boolean;
@@ -42,6 +52,13 @@ export interface RouteFormConfig {
   taxonomy: MainIssueIndicator[];
   customFieldIds: string[];
   routeDynamicFields: { fieldId: string; isRequired: boolean }[];
+  // ─── Custom Dynamic Inputs (حقول نصية ورقمية إضافية بعدد غير محدود) ───
+  customInputs?: CustomFormInput[];
+  // ─── Display Mode for Lists / Dropdowns (قوائم منسدلة أو كروت وأيقونات) ───
+  taxonomyDisplayMode?: 'dropdown' | 'chips';
+  dynamicFieldsDisplayMode?: Record<string, 'dropdown' | 'chips'>;
+  // ─── Dynamic Field Sorting & Ordering (ترتيب الحقول تصاعدياً وتنازلياً) ───
+  fieldsOrder?: string[];
   // ─── Smart Time & Attendance / Scheduling Engine ───
   showScheduleEngine?: boolean;
   mandatorySchedule?: boolean;
@@ -120,6 +137,10 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   taxonomy: [],
   customFieldIds: [],
   routeDynamicFields: [],
+  customInputs: [],
+  taxonomyDisplayMode: 'dropdown',
+  dynamicFieldsDisplayMode: {},
+  fieldsOrder: [],
   // ─── Smart Time & Attendance / Scheduling Engine ───
   showScheduleEngine: false,
   mandatorySchedule: false,
@@ -170,6 +191,10 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
     formConfig: {
       ...baseConfig,
       ...(r.formConfig || {}),
+      customInputs: Array.isArray(r.formConfig?.customInputs) ? r.formConfig.customInputs : [],
+      taxonomyDisplayMode: r.formConfig?.taxonomyDisplayMode || 'dropdown',
+      dynamicFieldsDisplayMode: r.formConfig?.dynamicFieldsDisplayMode || {},
+      fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
       routeDynamicFields: Array.isArray(r.formConfig?.routeDynamicFields) ? r.formConfig.routeDynamicFields : []
     }
   };

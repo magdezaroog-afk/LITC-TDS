@@ -195,6 +195,7 @@ export const parseRoutesToRequests = (
           name: 'taxonomyMain',
           label: 'التصنيف الرئيسي',
           type: 'select',
+          displayMode: cfg.taxonomyDisplayMode || 'dropdown',
           options: cfg.taxonomy.filter((t: any) => t.isActive !== false).map((t: any) => t.label),
           required: true,
         });
@@ -205,12 +206,27 @@ export const parseRoutesToRequests = (
         cfg.routeDynamicFields.forEach((rdf: any) => {
           const matchedField = (resolvedDynamicFields || []).find((df: any) => df.id === rdf.fieldId);
           const hasOptions = matchedField?.options && Array.isArray(matchedField.options) && matchedField.options.length > 0;
+          const fDisplayMode = cfg.dynamicFieldsDisplayMode?.[rdf.fieldId] || 'dropdown';
           fields.push({
             name: `dyn_${rdf.fieldId}`,
             label: matchedField?.name || rdf.name || 'حقل إضافي',
             type: hasOptions ? 'select' : 'text',
+            displayMode: fDisplayMode,
             options: hasOptions ? matchedField.options.filter((o: any) => o.isActive !== false).map((o: any) => o.label) : undefined,
             required: !!rdf.isRequired,
+          });
+        });
+      }
+
+      // 4.1. Custom Inputs (حقول نصية ورقمية إضافية مخصصة بعدد غير محدود)
+      if (cfg.customInputs && Array.isArray(cfg.customInputs) && cfg.customInputs.length > 0) {
+        cfg.customInputs.forEach((ci: any) => {
+          fields.push({
+            name: `custom_${ci.id}`,
+            label: ci.label || 'حقل مخصص',
+            type: ci.type || 'text',
+            required: !!ci.required,
+            placeholder: ci.placeholder || '',
           });
         });
       }
@@ -253,6 +269,18 @@ export const parseRoutesToRequests = (
           label: `المرفق المطلوب (${(cfg.attachmentTypes || ['PDF', 'PNG', 'JPG', 'DOCX']).join(', ')})`,
           type: 'file',
           required: !!cfg.mandatoryAttachments,
+        });
+      }
+
+      // Apply Admin Custom Fields Order if defined
+      if (cfg.fieldsOrder && Array.isArray(cfg.fieldsOrder) && cfg.fieldsOrder.length > 0) {
+        fields.sort((a: any, b: any) => {
+          const idxA = cfg.fieldsOrder.indexOf(a.name);
+          const idxB = cfg.fieldsOrder.indexOf(b.name);
+          if (idxA === -1 && idxB === -1) return 0;
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
         });
       }
 

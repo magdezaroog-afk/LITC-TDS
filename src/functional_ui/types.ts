@@ -150,6 +150,8 @@ export interface RequestType {
     type: 'text' | 'select' | 'file' | 'textarea' | 'date' | 'number' | string;
     options?: string[];
     required?: boolean;
+    displayMode?: 'dropdown' | 'chips' | string;
+    placeholder?: string;
   }[];
 }
 
