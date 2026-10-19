@@ -21,7 +21,7 @@ import {
   Ticket, ChevronDown
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
-import { RouteFormStage, isDelegateFieldVisible } from '../../services/ticketRouting.helpers';
+import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule } from '../../services/ticketRouting.helpers';
 import {
   getTopLevelDepartments,
   getDivisionsForDepartment,
@@ -802,13 +802,37 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     return null;
   }, [selectedFlow, adminStages, currentStep]);
 
+  const currentOptionBehavior = useMemo(() => {
+    return getOptionBehavior(formData, (selectedFlow as any)?.formConfig);
+  }, [formData, selectedFlow]);
+
   // Fields mapping per stage
   const stageFieldsToRender = useMemo(() => {
     if (!selectedFlow) return [];
     const isDelegateVis = isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig);
     const all = selectedFlow.fields.filter(f => {
       if (f.name === 'delegateUser') return isDelegateVis;
+      if (f.name === 'attachment' && currentOptionBehavior.attachmentRule === 'HIDDEN') return false;
+      if (f.name === 'description' && currentOptionBehavior.descriptionRule === 'HIDDEN') return false;
       return true;
+    }).map(f => {
+      if (f.name === 'attachment') {
+        const isReq = currentOptionBehavior.attachmentRule === 'REQUIRED';
+        return {
+          ...f,
+          required: isReq,
+          label: isReq ? 'المستند والتقرير الطبي / المرفق المطلوب (إلزامي)' : f.label,
+        };
+      }
+      if (f.name === 'description') {
+        const isReq = currentOptionBehavior.descriptionRule === 'REQUIRED';
+        return {
+          ...f,
+          required: isReq,
+          label: isReq ? 'توضيح سبب المعاملة / التفاصيل (إلزامي)' : f.label,
+        };
+      }
+      return f;
     });
 
     // 1. If Admin configured custom stages:
@@ -840,7 +864,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return s2;
     }
     return [];
-  }, [selectedFlow, adminStages, currentStep, totalStages, formData]);
+  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
@@ -849,6 +873,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     const missingRequired = currentFields.find(f => {
       if (!f.required) return false;
       if (f.name === 'delegateUser' && !isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig)) return false;
+      if (f.name === 'attachment' && currentOptionBehavior.attachmentRule !== 'REQUIRED') return false;
+      if (f.name === 'description' && currentOptionBehavior.descriptionRule !== 'REQUIRED') return false;
       if (f.name === 'division' && divisionOptions.length === 0) return false;
       if (f.name === 'team' && teamOptions.length === 0) return false;
       return !formData[f.name]?.trim();
@@ -894,8 +920,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     if (!selectedFlow || loading || tearState !== 'idle') return;
 
     const allRequired = selectedFlow.fields.every(f => {
-      if (!f.required) return true;
-      if (f.name === 'delegateUser' && !isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig)) return true;
+      let isReq = f.required;
+      if (f.name === 'delegateUser') isReq = isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig);
+      if (f.name === 'attachment') isReq = currentOptionBehavior.attachmentRule === 'REQUIRED';
+      if (f.name === 'description') isReq = currentOptionBehavior.descriptionRule === 'REQUIRED';
+      if (!isReq) return true;
       if (f.name === 'division' && divisionOptions.length === 0) return true;
       if (f.name === 'team' && teamOptions.length === 0) return true;
       return !!formData[f.name]?.trim();

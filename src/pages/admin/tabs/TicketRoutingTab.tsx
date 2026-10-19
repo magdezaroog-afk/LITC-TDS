@@ -19,6 +19,9 @@ import {
   loadDynamicFields,
   saveDynamicFields,
   isDelegateFieldVisible,
+  getOptionBehavior,
+  LEAVE_TYPES_PRESET,
+  type OptionBehaviorRule,
 } from '../../../services/ticketRouting.helpers';
 
 import {
@@ -720,6 +723,57 @@ export const TicketRoutingTab: React.FC = () => {
     await saveDynamicFields(updatedFields);
   };
 
+  const updateOptionBehaviorRule = (optId: string, optLabel: string, rule: Partial<OptionBehaviorRule>) => {
+    const currentRules = wizard.formConfig.optionBehaviorRules || {};
+    const existing = currentRules[optId] || currentRules[optLabel] || {};
+    const updatedRule: OptionBehaviorRule = { ...existing, ...rule };
+    setFC({
+      optionBehaviorRules: {
+        ...currentRules,
+        [optId]: updatedRule,
+        [optLabel]: updatedRule,
+      }
+    });
+  };
+
+  const handleApplyLeavePreset = async () => {
+    // Check if an existing leave field is already in dynamicFields
+    let leaveField = dynamicFields.find(f => f.name.includes('نوع الإجازة') || f.name.includes('نوع الطلب'));
+    if (!leaveField) {
+      leaveField = {
+        id: `dyn_leave_${Date.now()}`,
+        name: LEAVE_TYPES_PRESET.name,
+        options: LEAVE_TYPES_PRESET.options.map(o => ({ id: o.id, label: o.label, isActive: true }))
+      };
+      const updatedFields = [leaveField, ...dynamicFields];
+      setDynamicFields(updatedFields);
+      await saveDynamicFields(updatedFields);
+    }
+
+    const currentLinked = wizard.formConfig.routeDynamicFields || [];
+    const isLinked = currentLinked.some(r => r.fieldId === leaveField!.id);
+    const updatedLinked = isLinked ? currentLinked : [{ fieldId: leaveField.id, isRequired: true }, ...currentLinked];
+
+    const nextRules = { ...(wizard.formConfig.optionBehaviorRules || {}) };
+    LEAVE_TYPES_PRESET.options.forEach(o => {
+      nextRules[o.id] = o.rules;
+      nextRules[o.label] = o.rules;
+    });
+
+    setFC({
+      routeDynamicFields: updatedLinked,
+      optionBehaviorRules: nextRules,
+      taxonomyDisplayMode: 'chips',
+      showScheduleEngine: true,
+      mandatorySchedule: true,
+      showDelegateUser: true,
+      delegateTriggerMode: 'ONLY_ON_ASSIGNMENT',
+      showDescription: true,
+      showAttachments: true,
+    });
+
+    showToast('🏖️ تم إدراج حزمة أنواع الإجازات القياسية وضبط شروط المرفقات والتعليقات تلقائياً بنجاح!', 'success');
+  };
 
   // ─── Rendering Steps ───
   const step1Valid = wizard.name.trim().length > 0 && !!wizard.targetDepartmentId;
@@ -1181,6 +1235,34 @@ export const TicketRoutingTab: React.FC = () => {
             </div>
           </div>
 
+          {/* 🏖️ حزمة قوالب الإجازات والمهام القياسية الجاهزة (One-Click Preset) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'linear-gradient(135deg, rgba(19, 93, 121, 0.08), rgba(243, 108, 33, 0.08))', border: '1.5px dashed #135d7960', borderRadius: 12, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 24 }}>🏖️</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#135d79', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>حزمة أنواع الإجازات والمهام القياسية الجاهزة</span>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: '#135d79', color: '#fff', fontWeight: 700 }}>ذكية متكاملة</span>
+                </div>
+                <div style={{ fontSize: 11, color: A.textSub, marginTop: 2 }}>
+                  تجهيز تلقائي لكافة الأنواع (سنوية بدون مرفق، مرضية بتقرير إلزامي، طارئة بشرح إلزامي، إذن ساعي، تكليف ببديل) بنقرة زر واحدة
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleApplyLeavePreset}
+              style={{
+                padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #135d79, #f36c21)',
+                color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(19, 93, 121, 0.25)', display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s'
+              }}
+            >
+              <span>⚡ إدراج حزمة الإجازات الجاهزة</span>
+            </button>
+          </div>
+
           {isBuildingField ? (
             <div className="field-card" style={{ border: `2px solid ${wizard.color}55`, background: '#F8FAFC' }}>
               <div style={{ fontSize:13, fontWeight:700, marginBottom:10, color:A.text }}>{getParentContextTitle()}</div>
@@ -1348,6 +1430,144 @@ export const TicketRoutingTab: React.FC = () => {
                                 </button>
                               </div>
                             </div>
+
+                            {/* Option Behavior Rules: Attachments, Description, Scheduling */}
+                            {(() => {
+                              const optRules = wizard.formConfig.optionBehaviorRules || {};
+                              const currentRule = optRules[opt.id] || optRules[opt.label] || {};
+                              const attachRule = currentRule.attachmentRule || (wizard.formConfig.mandatoryAttachments ? 'REQUIRED' : wizard.formConfig.showAttachments ? 'OPTIONAL' : 'HIDDEN');
+                              const descRule = currentRule.descriptionRule || (wizard.formConfig.mandatoryDescription ? 'REQUIRED' : wizard.formConfig.showDescription ? 'OPTIONAL' : 'HIDDEN');
+                              const schedRule = currentRule.scheduleRule || 'DEFAULT';
+
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', marginTop: 4 }}>
+                                  {/* Attachments rule */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: A.textSub }}>📎 المرفق:</span>
+                                    <div style={{ display: 'flex', gap: 3 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { attachmentRule: 'REQUIRED' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${attachRule === 'REQUIRED' ? '#ef4444' : A.sep}`,
+                                          background: attachRule === 'REQUIRED' ? '#fef2f2' : '#fff',
+                                          color: attachRule === 'REQUIRED' ? '#dc2626' : A.textSub,
+                                        }}
+                                        title="إلزام الموظف برفع مرفق (مثل تقرير طبي)"
+                                      >
+                                        🔴 إلزامي
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { attachmentRule: 'OPTIONAL' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${attachRule === 'OPTIONAL' ? '#3b82f6' : A.sep}`,
+                                          background: attachRule === 'OPTIONAL' ? '#eff6ff' : '#fff',
+                                          color: attachRule === 'OPTIONAL' ? '#2563eb' : A.textSub,
+                                        }}
+                                        title="مرفق اختياري للموظف"
+                                      >
+                                        ⚪ اختياري
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { attachmentRule: 'HIDDEN' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${attachRule === 'HIDDEN' ? '#94a3b8' : A.sep}`,
+                                          background: attachRule === 'HIDDEN' ? '#f1f5f9' : '#fff',
+                                          color: attachRule === 'HIDDEN' ? '#64748b' : A.textSub,
+                                        }}
+                                        title="إخفاء المرفق تماماً عند اختيار هذا الخيار (مثل إجازة اعتيادية)"
+                                      >
+                                        🚫 مخفي
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Description / Comment rule */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: A.textSub }}>✏️ التعليق:</span>
+                                    <div style={{ display: 'flex', gap: 3 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { descriptionRule: 'REQUIRED' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${descRule === 'REQUIRED' ? '#ef4444' : A.sep}`,
+                                          background: descRule === 'REQUIRED' ? '#fef2f2' : '#fff',
+                                          color: descRule === 'REQUIRED' ? '#dc2626' : A.textSub,
+                                        }}
+                                        title="إلزام الموظف بكتابة شرح وتعليق (مثل سبب الإجازة الطارئة)"
+                                      >
+                                        🔴 إلزامي
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { descriptionRule: 'OPTIONAL' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${descRule === 'OPTIONAL' ? '#3b82f6' : A.sep}`,
+                                          background: descRule === 'OPTIONAL' ? '#eff6ff' : '#fff',
+                                          color: descRule === 'OPTIONAL' ? '#2563eb' : A.textSub,
+                                        }}
+                                        title="تعليق وشرح اختياري"
+                                      >
+                                        ⚪ اختياري
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { descriptionRule: 'HIDDEN' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${descRule === 'HIDDEN' ? '#94a3b8' : A.sep}`,
+                                          background: descRule === 'HIDDEN' ? '#f1f5f9' : '#fff',
+                                          color: descRule === 'HIDDEN' ? '#64748b' : A.textSub,
+                                        }}
+                                        title="إخفاء حقل التعليق/الشرح تماماً لهذا الخيار"
+                                      >
+                                        🚫 مخفي
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Schedule Mode rule */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: A.textSub }}>🗓️ الجدولة:</span>
+                                    <div style={{ display: 'flex', gap: 3 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { scheduleRule: 'DATE_RANGE' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${schedRule === 'DATE_RANGE' ? wizard.color : A.sep}`,
+                                          background: schedRule === 'DATE_RANGE' ? `${wizard.color}15` : '#fff',
+                                          color: schedRule === 'DATE_RANGE' ? wizard.color : A.textSub,
+                                        }}
+                                        title="فترة تاريخية متسلسلة أو أيام متفرقة"
+                                      >
+                                        📆 فترة / متفرقة
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateOptionBehaviorRule(opt.id, opt.label, { scheduleRule: 'HOURLY_WINDOW' })}
+                                        style={{
+                                          padding: '3px 8px', borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+                                          border: `1px solid ${schedRule === 'HOURLY_WINDOW' ? '#f59e0b' : A.sep}`,
+                                          background: schedRule === 'HOURLY_WINDOW' ? '#fffbeb' : '#fff',
+                                          color: schedRule === 'HOURLY_WINDOW' ? '#b45309' : A.textSub,
+                                        }}
+                                        title="نافذة ساعية (إذن خروج أو تأخير بالوقت)"
+                                      >
+                                        ⏱️ ساعي (أذونات)
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* Inline Adder Form for Conditional Inputs */}
                             {isAddingInput && (
@@ -2629,17 +2849,28 @@ export const TicketRoutingTab: React.FC = () => {
 
                       // Scheduling Engine
                       if (field.id === 'scheduleEngine') {
+                        const activeBehavior = getOptionBehavior(previewSelectedOptions, wizard.formConfig);
+                        const isHourly = activeBehavior.scheduleRule === 'HOURLY_WINDOW';
                         return (
                           <div key={field.id} style={{ background: '#F8FAFC', borderRadius: 10, padding: 10, border: `1px solid ${wizard.color}35`, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontSize: 11, fontWeight: 700, color: A.text }}>🗓️ {field.label}</span>
-                              <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 8, background: `${wizard.color}15`, color: wizard.color, fontWeight: 700 }}>
-                                محرك تلقائي
+                              <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 8, background: isHourly ? '#fef3c7' : `${wizard.color}15`, color: isHourly ? '#b45309' : wizard.color, fontWeight: 700 }}>
+                                {isHourly ? '⏱️ إذن ساعي' : 'محرك تلقائي'}
                               </span>
                             </div>
                             <div style={{ padding: '6px 10px', borderRadius: 6, background: '#fff', border: '1px solid #E2E8F0', fontSize: 10.5, color: A.textSub, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>من: 2026/10/15  إلى: 2026/10/20</span>
-                              <span style={{ fontWeight: 800, color: '#16a34a' }}>🟢 6 أيام</span>
+                              {isHourly ? (
+                                <>
+                                  <span>تاريخ: اليوم | من: 10:00 ص إلى: 12:00 م</span>
+                                  <span style={{ fontWeight: 800, color: '#f59e0b' }}>⏱️ ساعتان</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>من: 2026/10/15  إلى: 2026/10/20</span>
+                                  <span style={{ fontWeight: 800, color: '#16a34a' }}>🟢 6 أيام</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
@@ -2676,13 +2907,23 @@ export const TicketRoutingTab: React.FC = () => {
 
                       // Problem Description
                       if (field.id === 'description') {
+                        const activeBehavior = getOptionBehavior(previewSelectedOptions, wizard.formConfig);
+                        if (activeBehavior.descriptionRule === 'HIDDEN') {
+                          return (
+                            <div key={field.id} style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px dashed #CBD5E1', fontSize: 10.5, color: A.textSub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🚫</span>
+                              <span>حقل التعليق/الشرح محجوب وغير مطلوب لهذا الخيار (نظيف وتلقائي)</span>
+                            </div>
+                          );
+                        }
+                        const isMandatory = activeBehavior.descriptionRule === 'REQUIRED' || field.isRequired;
                         return (
                           <div key={field.id}>
                             <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', marginBottom: 4 }}>
-                              ✏️ {field.label} {field.isRequired && <span style={{ color: A.red }}>*</span>}
+                              ✏️ {field.label} {isMandatory && <span style={{ color: A.red }}>* (إلزامي)</span>}
                             </label>
-                            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: '1.5px solid #E2E8F0', minHeight: 52, fontSize: 11.5, color: A.textTer }}>
-                              اكتب شرحاً تفصيلياً للمشكلة أو المعاملة...
+                            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: `1.5px solid ${isMandatory ? '#fecaca' : '#E2E8F0'}`, minHeight: 52, fontSize: 11.5, color: A.textTer }}>
+                              {isMandatory ? 'اكتب الشرح أو بيان سبب الطلب (مطلوب إلزامياً)...' : 'اكتب شرحاً تفصيلياً للمشكلة أو المعاملة (اختياري)...'}
                             </div>
                           </div>
                         );
@@ -2690,14 +2931,26 @@ export const TicketRoutingTab: React.FC = () => {
 
                       // Attachments
                       if (field.id === 'attachment') {
+                        const activeBehavior = getOptionBehavior(previewSelectedOptions, wizard.formConfig);
+                        if (activeBehavior.attachmentRule === 'HIDDEN') {
+                          return (
+                            <div key={field.id} style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px dashed #CBD5E1', fontSize: 10.5, color: A.textSub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🚫</span>
+                              <span>المرفقات محجوبة وغير مطلوبة لهذا النوع من الطلبات (نظيف وتلقائي)</span>
+                            </div>
+                          );
+                        }
+                        const isMandatory = activeBehavior.attachmentRule === 'REQUIRED' || field.isRequired;
                         return (
                           <div key={field.id}>
                             <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', marginBottom: 4 }}>
-                              📎 {field.label} {field.isRequired && <span style={{ color: A.red }}>*</span>}
+                              📎 {field.label} {isMandatory && <span style={{ color: A.red }}>* (مرفق إلزامي - مثل التقرير الطبي)</span>}
                             </label>
-                            <div style={{ padding: '12px', borderRadius: 10, background: '#FAFBFE', border: '2px dashed #CBD5E1', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                              <span style={{ fontSize: 20, opacity: 0.6 }}>☁️</span>
-                              <span style={{ fontSize: 11, fontWeight: 600, color: A.textSub }}>استعراض أو سحب الملف هنا</span>
+                            <div style={{ padding: '12px', borderRadius: 10, background: isMandatory ? '#fff5f5' : '#FAFBFE', border: `2px dashed ${isMandatory ? '#f87171' : '#CBD5E1'}`, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 20, opacity: 0.8 }}>{isMandatory ? '📋' : '☁️'}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: isMandatory ? '#b91c1c' : A.textSub }}>
+                                {isMandatory ? 'يرجى إرفاق المستند الرسمي الإلزامي (مثل التقرير الطبي المعتمد)' : 'استعراض أو سحب الملف هنا (اختياري)'}
+                              </span>
                               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
                                 {wizard.formConfig.attachmentTypes.slice(0, 4).map(t => (
                                   <span key={t} style={{ fontSize: 8.5, padding: '2px 5px', borderRadius: 4, background: '#E2E8F0', color: A.textSub, fontWeight: 700 }}>{t}</span>

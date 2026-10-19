@@ -36,6 +36,12 @@ export interface CustomFormInput {
   order?: number;
 }
 
+export interface OptionBehaviorRule {
+  attachmentRule?: 'REQUIRED' | 'OPTIONAL' | 'HIDDEN';
+  descriptionRule?: 'REQUIRED' | 'OPTIONAL' | 'HIDDEN';
+  scheduleRule?: 'DATE_RANGE' | 'DISCRETE_DAYS' | 'HOURLY_WINDOW' | 'DEFAULT';
+}
+
 export interface RouteFormConfig {
   showBuildingField?: boolean;
   mandatoryBuilding?: boolean;
@@ -57,6 +63,8 @@ export interface RouteFormConfig {
   customInputs?: CustomFormInput[];
   // ─── Option-Level Conditional Custom Inputs (حقول مخصصة مشروطة بخيارات المستدلات) ───
   optionCustomInputs?: Record<string, CustomFormInput[]>;
+  // ─── Option-Level Behavioral Rules (شروط المرفقات والتعليقات والجدولة لكل نوع إجازة) ───
+  optionBehaviorRules?: Record<string, OptionBehaviorRule>;
   // ─── Display Mode for Lists / Dropdowns (قوائم منسدلة أو كروت وأيقونات) ───
   taxonomyDisplayMode?: 'dropdown' | 'chips';
   dynamicFieldsDisplayMode?: Record<string, 'dropdown' | 'chips'>;
@@ -146,6 +154,7 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   routeDynamicFields: [],
   customInputs: [],
   optionCustomInputs: {},
+  optionBehaviorRules: {},
   taxonomyDisplayMode: 'dropdown',
   dynamicFieldsDisplayMode: {},
   fieldsOrder: [],
@@ -180,6 +189,110 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   maxUnratedTicketsAllowed: 0,
   requireRatingBeforeNewTicket: false,
 });
+
+/**
+ * Standard Leave Types preset for instantaneous 1-click configuration in Leave Routes.
+ */
+export const LEAVE_TYPES_PRESET = {
+  name: 'نوع الإجازة / الطلب',
+  options: [
+    {
+      id: 'opt_leave_annual',
+      label: 'إجازة سنوية اعتيادية',
+      rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
+    },
+    {
+      id: 'opt_leave_sick',
+      label: 'إجازة مرضية (بتقرير طبي)',
+      rules: { attachmentRule: 'REQUIRED' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
+    },
+    {
+      id: 'opt_leave_emergency',
+      label: 'إجازة طارئة (مع بيان السبب)',
+      rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'REQUIRED' as const, scheduleRule: 'DATE_RANGE' as const }
+    },
+    {
+      id: 'opt_leave_permission',
+      label: 'إذن مغادرة ساعي / تأخير',
+      rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'HOURLY_WINDOW' as const }
+    },
+    {
+      id: 'opt_leave_delegation',
+      label: 'تكليف مؤقت / انتداب عمل',
+      rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
+    },
+  ]
+};
+
+/**
+ * Evaluates the behavioral rules for the selected option in a route form.
+ * Supports explicit Admin configuration and provides intelligent defaults
+ * (e.g. sick leave requires attachment, emergency leave requires explanation, etc.)
+ */
+export const getOptionBehavior = (
+  formData: Record<string, any>,
+  formConfig?: RouteFormConfig
+): OptionBehaviorRule => {
+  const result: OptionBehaviorRule = {
+    attachmentRule: formConfig?.mandatoryAttachments ? 'REQUIRED' : formConfig?.showAttachments ? 'OPTIONAL' : 'HIDDEN',
+    descriptionRule: formConfig?.mandatoryDescription ? 'REQUIRED' : formConfig?.showDescription ? 'OPTIONAL' : 'HIDDEN',
+    scheduleRule: 'DEFAULT',
+  };
+
+  if (!formConfig) return result;
+
+  const rules = formConfig.optionBehaviorRules || {};
+
+  // Check every value selected in formData
+  for (const key of Object.keys(formData)) {
+    const val = String(formData[key] || '').trim();
+    if (!val) continue;
+
+    // 1. Direct key match (by Option ID or Option Label)
+    if (rules[val]) {
+      const r = rules[val];
+      if (r.attachmentRule) result.attachmentRule = r.attachmentRule;
+      if (r.descriptionRule) result.descriptionRule = r.descriptionRule;
+      if (r.scheduleRule) result.scheduleRule = r.scheduleRule;
+      return result;
+    }
+
+    // 2. Intelligent keyword fallback if not explicitly defined by Admin
+    const lower = val.toLowerCase();
+    if (lower.includes('مرضية') || lower.includes('مستشفى') || lower.includes('طبي')) {
+      result.attachmentRule = 'REQUIRED'; // تقرير طبي إلزامي
+      result.descriptionRule = 'OPTIONAL';
+      result.scheduleRule = 'DATE_RANGE';
+      return result;
+    }
+    if (lower.includes('طارئة') || lower.includes('عاجلة')) {
+      result.attachmentRule = 'OPTIONAL';
+      result.descriptionRule = 'REQUIRED'; // تعليق وبيان سبب الطوارئ إلزامي
+      result.scheduleRule = 'DATE_RANGE';
+      return result;
+    }
+    if (lower.includes('إذن') || lower.includes('خروج') || lower.includes('تأخير') || lower.includes('ساعي')) {
+      result.attachmentRule = 'HIDDEN'; // غير مطلوب
+      result.descriptionRule = 'OPTIONAL';
+      result.scheduleRule = 'HOURLY_WINDOW';
+      return result;
+    }
+    if (lower.includes('سنوية') || lower.includes('اعتيادية')) {
+      result.attachmentRule = 'HIDDEN'; // غير مطلوب
+      result.descriptionRule = 'OPTIONAL';
+      result.scheduleRule = 'DATE_RANGE';
+      return result;
+    }
+    if (lower.includes('تكليف')) {
+      result.attachmentRule = 'OPTIONAL';
+      result.descriptionRule = 'OPTIONAL';
+      result.scheduleRule = 'DATE_RANGE';
+      return result;
+    }
+  }
+
+  return result;
+};
 
 /**
  * Checks whether the delegate colleague field should be rendered on screen.
@@ -231,6 +344,7 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       ...(r.formConfig || {}),
       customInputs: Array.isArray(r.formConfig?.customInputs) ? r.formConfig.customInputs : [],
       optionCustomInputs: r.formConfig?.optionCustomInputs || {},
+      optionBehaviorRules: r.formConfig?.optionBehaviorRules || {},
       taxonomyDisplayMode: r.formConfig?.taxonomyDisplayMode || 'dropdown',
       dynamicFieldsDisplayMode: r.formConfig?.dynamicFieldsDisplayMode || {},
       fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
