@@ -297,7 +297,10 @@ export const parseRoutesToRequests = (
         targetDivisionName: r.targetDivisionName || '',
         targetTeamId: r.targetTeamId,
         targetTeamName: r.targetTeamName || '',
-        formConfig: cfg,
+        formConfig: {
+          ...cfg,
+          dynamicFields: resolvedDynamicFields,
+        },
         fields,
       };
     });

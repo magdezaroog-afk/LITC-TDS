@@ -264,7 +264,15 @@ function FieldInput({
   onChange,
   darkMode = true,
 }: {
-  field: { name: string; label: string; type: string; options?: string[]; required?: boolean };
+  field: {
+    name: string;
+    label: string;
+    type: string;
+    options?: string[];
+    required?: boolean;
+    displayMode?: string;
+    placeholder?: string;
+  };
   value: string;
   onChange: (v: string) => void;
   darkMode?: boolean;
@@ -1387,6 +1395,85 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                 </div>
                               );
                             })()}
+
+                            {/* ── Conditional Option Custom Inputs (حقول مخصصة مشروطة بخيار المستدلة) ── */}
+                            {formData[field.name] && (() => {
+                              const selectedVal = formData[field.name];
+                              const cfg = (selectedFlow as any).formConfig;
+                              let conditionalInputs: any[] = [];
+
+                              if (field.name.startsWith('dyn_')) {
+                                const dynId = field.name.replace('dyn_', '');
+                                const dynField = (cfg?.dynamicFields || []).find((df: any) => df.id === dynId);
+                                const matchedOpt = dynField?.options?.find((o: any) => o.label === selectedVal || o.id === selectedVal);
+                                if (matchedOpt) {
+                                  conditionalInputs = cfg?.optionCustomInputs?.[matchedOpt.id] || matchedOpt.customInputs || [];
+                                }
+                                if (conditionalInputs.length === 0 && cfg?.optionCustomInputs?.[selectedVal]) {
+                                  conditionalInputs = cfg.optionCustomInputs[selectedVal];
+                                }
+                              } else if (field.name === 'taxonomyMain') {
+                                const mainTax = cfg?.taxonomy?.find((t: any) => t.label === selectedVal || t.id === selectedVal);
+                                conditionalInputs = cfg?.optionCustomInputs?.[mainTax?.id] || mainTax?.customInputs || cfg?.optionCustomInputs?.[selectedVal] || [];
+                              }
+
+                              if (!conditionalInputs || conditionalInputs.length === 0) return null;
+
+                              return (
+                                <div
+                                  style={{
+                                    gridColumn: '1 / -1',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '10px',
+                                    padding: '12px 14px',
+                                    borderRadius: '8px',
+                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
+                                    border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
+                                    animation: 'fadeIn 0.2s ease',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span>↳</span>
+                                      <span>بيانات ومتطلبات خاصة باختيار «{selectedVal}»:</span>
+                                    </span>
+                                    <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                      {conditionalInputs.length} حقول إضافية
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                                    {conditionalInputs.map((ci: any) => (
+                                      <div key={ci.name || ci.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <label style={{ fontSize: '11px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e3a52' }}>
+                                            {ci.label}
+                                          </label>
+                                          {ci.required && (
+                                            <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
+                                              مطلوب
+                                            </span>
+                                          )}
+                                        </div>
+                                        <FieldInput
+                                          field={{
+                                            name: ci.name || ci.id,
+                                            label: ci.label,
+                                            type: ci.type || 'text',
+                                            required: !!ci.required,
+                                            placeholder: ci.placeholder
+                                          }}
+                                          value={formData[ci.name || ci.id] || ''}
+                                          onChange={v => handleFieldChange(ci.name || ci.id, v)}
+                                          darkMode={darkMode}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </React.Fragment>
                         );
                       })}
@@ -1439,6 +1526,28 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>⚡ {formData.taxonomySub}</span>
                           </div>
                         )}
+                        {/* Conditional option custom fields in review */}
+                        {(() => {
+                          const cfg = (selectedFlow as any).formConfig;
+                          const optionInputsMap = cfg?.optionCustomInputs || {};
+                          const allOptionInputs: any[] = Object.values(optionInputsMap).flat();
+                          (cfg?.dynamicFields || []).forEach((df: any) => {
+                            (df.options || []).forEach((opt: any) => {
+                              if (opt.customInputs) allOptionInputs.push(...opt.customInputs);
+                            });
+                          });
+
+                          return allOptionInputs.map((ci: any) => {
+                            const val = formData[ci.name || ci.id];
+                            if (!val) return null;
+                            return (
+                              <div key={ci.name || ci.id} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>↳ {ci.label}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{String(val)}</span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   )}

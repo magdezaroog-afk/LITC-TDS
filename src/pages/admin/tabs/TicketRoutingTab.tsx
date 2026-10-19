@@ -164,6 +164,18 @@ export const TicketRoutingTab: React.FC = () => {
   // Live Preview Stage Index (Step 3)
   const [previewStageIndex, setPreviewStageIndex] = useState(0);
 
+  // Option-level Conditional Custom Inputs State
+  const [activeOptionInputAdder, setActiveOptionInputAdder] = useState<{ fieldId: string; optionId: string; optionLabel: string } | null>(null);
+  const [optionInputDraft, setOptionInputDraft] = useState<{ label: string; type: 'text' | 'textarea' | 'number' | 'date'; placeholder: string; required: boolean }>({
+    label: '',
+    type: 'text',
+    placeholder: '',
+    required: true,
+  });
+
+  // Interactive Live Preview Selection State
+  const [previewSelectedOptions, setPreviewSelectedOptions] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!wizard.targetDepartmentId) {
       setCandidateManagers([]);
@@ -523,6 +535,103 @@ export const TicketRoutingTab: React.FC = () => {
     if (!parent || !parent.childBindings) return [];
     const childIds = parent.childBindings.filter(cb => cb.triggerValue === optionId).map(cb => cb.childFieldId);
     return dynamicFields.filter(f => childIds.includes(f.id));
+  };
+
+  // ─── Option-Level Conditional Custom Inputs Helpers ───
+  const getInputsForOption = (fieldId: string, optionId: string): CustomFormInput[] => {
+    if (wizard.formConfig.optionCustomInputs?.[optionId]) {
+      return wizard.formConfig.optionCustomInputs[optionId];
+    }
+    const f = dynamicFields.find(df => df.id === fieldId);
+    const opt = f?.options.find(o => o.id === optionId);
+    return opt?.customInputs || [];
+  };
+
+  const addInputToOption = async (fieldId: string, optionId: string) => {
+    if (!optionInputDraft.label.trim()) {
+      showToast('يرجى كتابة تسمية الحقل', 'error');
+      return;
+    }
+    const currentInputs = getInputsForOption(fieldId, optionId);
+    const newInput: CustomFormInput = {
+      id: `oci_${Date.now()}`,
+      name: `opt_input_${Date.now()}`,
+      label: optionInputDraft.label.trim(),
+      type: optionInputDraft.type,
+      placeholder: optionInputDraft.placeholder.trim(),
+      required: optionInputDraft.required,
+      order: currentInputs.length,
+    };
+    const updatedInputs = [...currentInputs, newInput];
+
+    const nextOptionMap = {
+      ...(wizard.formConfig.optionCustomInputs || {}),
+      [optionId]: updatedInputs,
+    };
+    setFC({ optionCustomInputs: nextOptionMap });
+
+    const updatedFields = dynamicFields.map(f => {
+      if (f.id === fieldId) {
+        return {
+          ...f,
+          options: f.options.map(o => o.id === optionId ? { ...o, customInputs: updatedInputs } : o),
+        };
+      }
+      return f;
+    });
+    setDynamicFields(updatedFields);
+    await saveDynamicFields(updatedFields);
+
+    showToast(`✅ تم ربط الحقل «${newInput.label}» بالخيار بنجاح`, 'success');
+    setOptionInputDraft({ label: '', type: 'text', placeholder: '', required: true });
+    setActiveOptionInputAdder(null);
+  };
+
+  const removeInputFromOption = async (fieldId: string, optionId: string, inputId: string) => {
+    const currentInputs = getInputsForOption(fieldId, optionId);
+    const updatedInputs = currentInputs.filter(ci => ci.id !== inputId);
+
+    const nextOptionMap = {
+      ...(wizard.formConfig.optionCustomInputs || {}),
+      [optionId]: updatedInputs,
+    };
+    setFC({ optionCustomInputs: nextOptionMap });
+
+    const updatedFields = dynamicFields.map(f => {
+      if (f.id === fieldId) {
+        return {
+          ...f,
+          options: f.options.map(o => o.id === optionId ? { ...o, customInputs: updatedInputs } : o),
+        };
+      }
+      return f;
+    });
+    setDynamicFields(updatedFields);
+    await saveDynamicFields(updatedFields);
+    showToast('🗑 تم حذف الحقل التابع للخيار', 'success');
+  };
+
+  const toggleInputRequiredForOption = async (fieldId: string, optionId: string, inputId: string) => {
+    const currentInputs = getInputsForOption(fieldId, optionId);
+    const updatedInputs = currentInputs.map(ci => ci.id === inputId ? { ...ci, required: !ci.required } : ci);
+
+    const nextOptionMap = {
+      ...(wizard.formConfig.optionCustomInputs || {}),
+      [optionId]: updatedInputs,
+    };
+    setFC({ optionCustomInputs: nextOptionMap });
+
+    const updatedFields = dynamicFields.map(f => {
+      if (f.id === fieldId) {
+        return {
+          ...f,
+          options: f.options.map(o => o.id === optionId ? { ...o, customInputs: updatedInputs } : o),
+        };
+      }
+      return f;
+    });
+    setDynamicFields(updatedFields);
+    await saveDynamicFields(updatedFields);
   };
 
 
@@ -1013,16 +1122,194 @@ export const TicketRoutingTab: React.FC = () => {
                     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                       {field.options.map(opt => {
                         const children = getChildFieldsForOption(field.id, opt.id);
+                        const conditionalInputs = getInputsForOption(field.id, opt.id);
+                        const isAddingInput = activeOptionInputAdder?.optionId === opt.id;
+
                         return (
-                          <div key={opt.id} style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                            <div style={{ display:'flex', alignItems:'center' }}>
-                              <div className="option-tag" style={{ margin:0 }}>
-                                {opt.label}
-                                <button className="add-subfield-btn" onClick={() => startBuildingField({ parentFieldId: field.id, triggerOptionId: opt.id })} title="إضافة خيارات فرعية لهذا الخيار">+</button>
+                          <div key={opt.id} style={{ display:'flex', flexDirection:'column', gap:8, background: '#fff', padding: '10px 14px', borderRadius: 10, border: `1px solid ${A.sep}` }}>
+                            <div style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div className="option-tag" style={{ margin:0, fontWeight: 700, fontSize: 12.5 }}>
+                                  {opt.label}
+                                </div>
+                                {conditionalInputs.length > 0 && (
+                                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 12, background: `${wizard.color}15`, color: wizard.color, fontWeight: 700 }}>
+                                    📝 {conditionalInputs.length} حقول مشروطة
+                                  </span>
+                                )}
+                                {children.length > 0 && (
+                                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 12, background: '#f1f5f9', color: A.textSub, fontWeight: 700 }}>
+                                    ↳ مستدلة فرعية
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {/* Button to add custom conditional inputs */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isAddingInput) {
+                                      setActiveOptionInputAdder(null);
+                                    } else {
+                                      setActiveOptionInputAdder({ fieldId: field.id, optionId: opt.id, optionLabel: opt.label });
+                                      setOptionInputDraft({ label: '', type: 'text', placeholder: '', required: true });
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 700,
+                                    background: isAddingInput ? `${wizard.color}25` : `${wizard.color}12`,
+                                    color: wizard.color, border: `1px solid ${wizard.color}40`,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                                    transition: 'all 0.15s'
+                                  }}
+                                  title="إضافة حقول نصية أو رقمية مخصصة تظهر عند اختيار هذا الخيار"
+                                >
+                                  <span>📝</span>
+                                  <span>+ حقول مشروطة لهذا الخيار</span>
+                                </button>
+
+                                {/* Button to add cascading sub-issue dropdown */}
+                                <button
+                                  type="button"
+                                  className="add-subfield-btn"
+                                  onClick={() => startBuildingField({ parentFieldId: field.id, triggerOptionId: opt.id })}
+                                  title="إضافة مستدلة وتصنيف فرعي ينبثق عند اختيار هذا الخيار"
+                                  style={{
+                                    padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 700,
+                                    background: '#f8fafc', color: A.textSub, border: `1px solid ${A.sep}`,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                                    width: 'auto', height: 'auto'
+                                  }}
+                                >
+                                  <span>↳</span>
+                                  <span>+ مستدلة فرعية</span>
+                                </button>
                               </div>
                             </div>
+
+                            {/* Inline Adder Form for Conditional Inputs */}
+                            {isAddingInput && (
+                              <div style={{ padding: '12px', background: '#F8FAFC', borderRadius: 8, border: `1.5px dashed ${wizard.color}66`, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                                <div style={{ fontSize: 11.5, fontWeight: 800, color: wizard.color, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span>➕</span>
+                                  <span>إضافة حقل إدخال مشروط بخيار: «{opt.label}»</span>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
+                                  <div>
+                                    <label style={{ fontSize: 10.5, fontWeight: 700, color: A.textSub, display: 'block', marginBottom: 4 }}>تسمية الحقل *</label>
+                                    <input
+                                      className="tr-input"
+                                      style={{ fontSize: 11.5, padding: '5px 8px', background: '#fff' }}
+                                      placeholder="مثال: رقم التقرير الطبي / اسم المستشفى"
+                                      value={optionInputDraft.label}
+                                      onChange={e => setOptionInputDraft(p => ({ ...p, label: e.target.value }))}
+                                      onKeyDown={e => e.key === 'Enter' && addInputToOption(field.id, opt.id)}
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label style={{ fontSize: 10.5, fontWeight: 700, color: A.textSub, display: 'block', marginBottom: 4 }}>نوع الإدخال</label>
+                                    <select
+                                      className="tr-input"
+                                      style={{ fontSize: 11.5, padding: '5px 8px', background: '#fff' }}
+                                      value={optionInputDraft.type}
+                                      onChange={e => setOptionInputDraft(p => ({ ...p, type: e.target.value as any }))}
+                                    >
+                                      <option value="text">🔤 نص قصير (Text)</option>
+                                      <option value="textarea">📝 نص ممتد وشرح (Textarea)</option>
+                                      <option value="number">🔢 رقم / كمية (Number)</option>
+                                      <option value="date">📅 تاريخ محدد (Date)</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label style={{ fontSize: 10.5, fontWeight: 700, color: A.textSub, display: 'block', marginBottom: 4 }}>نص توضيحي (Placeholder)</label>
+                                    <input
+                                      className="tr-input"
+                                      style={{ fontSize: 11.5, padding: '5px 8px', background: '#fff' }}
+                                      placeholder="مثال: اكتب الرقم هنا..."
+                                      value={optionInputDraft.placeholder}
+                                      onChange={e => setOptionInputDraft(p => ({ ...p, placeholder: e.target.value }))}
+                                    />
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: A.text, cursor: 'pointer' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={optionInputDraft.required}
+                                        onChange={e => setOptionInputDraft(p => ({ ...p, required: e.target.checked }))}
+                                      />
+                                      <span>حقل إلزامي عند اختيار هذا الخيار</span>
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveOptionInputAdder(null)}
+                                    style={{ padding: '6px 12px', background: '#fff', border: `1px solid ${A.sep}`, borderRadius: 6, fontSize: 11, cursor: 'pointer', color: A.textSub, fontWeight: 600 }}
+                                  >
+                                    إلغاء
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => addInputToOption(field.id, opt.id)}
+                                    style={{ padding: '6px 14px', background: wizard.color, color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    حفظ وربط الحقل
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* List of Existing Conditional Custom Inputs for this Option */}
+                            {conditionalInputs.length > 0 && (
+                              <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, borderRight: `3px solid ${wizard.color}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: A.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  <span>📝</span>
+                                  <span>حقول إدخال تظهر تلقائياً للموظف عند اختيار ({opt.label}):</span>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                  {conditionalInputs.map(ci => (
+                                    <div key={ci.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '6px 10px', borderRadius: 6, border: `1px solid ${A.sep}` }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 13 }}>{ci.type === 'textarea' ? '📝' : ci.type === 'number' ? '🔢' : ci.type === 'date' ? '📅' : '🔤'}</span>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: A.text }}>{ci.label}</span>
+                                        <span style={{ fontSize: 9.5, padding: '1px 6px', borderRadius: 4, background: '#f1f5f9', color: A.textSub, fontWeight: 600 }}>
+                                          {ci.type === 'textarea' ? 'نص ممتد' : ci.type === 'number' ? 'رقم' : ci.type === 'date' ? 'تاريخ' : 'نص'}
+                                        </span>
+                                      </div>
+
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span
+                                          onClick={() => toggleInputRequiredForOption(field.id, opt.id, ci.id)}
+                                          style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, cursor: 'pointer', background: ci.required ? '#fef2f2' : '#f8fafc', color: ci.required ? A.red : A.textSub, border: `1px solid ${ci.required ? '#fecaca' : A.sep}`, fontWeight: 700 }}
+                                        >
+                                          {ci.required ? '🔴 إلزامي' : '⚪ اختياري'}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeInputFromOption(field.id, opt.id, ci.id)}
+                                          style={{ background: 'none', border: 'none', color: A.red, cursor: 'pointer', fontSize: 12, padding: '2px 4px', fontWeight: 800 }}
+                                          title="حذف الحقل المشروط"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Cascading Subfield (preserved) */}
                             {children.length > 0 && (
-                              <div style={{ marginRight: 20, padding: '10px 14px', background: A.bg, borderRadius: 10, borderRight: `3px solid ${wizard.color}66` }}>
+                              <div style={{ padding: '10px 14px', background: A.bg, borderRadius: 10, borderRight: `3px solid ${wizard.color}66` }}>
                                 {children.map(cf => (
                                   <div key={cf.id} style={{ marginBottom: 8 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -1971,38 +2258,80 @@ export const TicketRoutingTab: React.FC = () => {
                         );
                       }
 
-                      // Dynamic Taxonomies
+                      // Dynamic Taxonomies & Conditional Inputs in Preview
                       if (field.id.startsWith('dynamic_')) {
                         const dynId = field.id.replace('dynamic_', '');
                         const dynField = dynamicFields.find(df => df.id === dynId);
                         const isChips = (wizard.formConfig.taxonomyDisplayMode === 'chips');
+                        const defaultOptId = dynField?.options?.[0]?.id || '';
+                        const selectedOptId = previewSelectedOptions[dynId] || defaultOptId;
+                        const selectedOpt = dynField?.options?.find(o => o.id === selectedOptId);
+                        const conditionalInputs = selectedOpt ? getInputsForOption(dynId, selectedOpt.id) : [];
+
                         return (
-                          <div key={field.id}>
-                            <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', marginBottom: 4 }}>
+                          <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', margin: 0 }}>
                               📋 {field.label} {field.isRequired && <span style={{ color: A.red }}>*</span>}
                             </label>
                             {isChips ? (
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                {(dynField?.options || [{ id: '1', label: 'الخيار الأول' }, { id: '2', label: 'الخيار الثاني' }, { id: '3', label: 'الخيار الثالث' }]).map((opt, oIdx) => (
-                                  <div
-                                    key={opt.id}
-                                    style={{
-                                      padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
-                                      background: oIdx === 0 ? `${wizard.color}15` : '#fff',
-                                      color: oIdx === 0 ? wizard.color : A.textSub,
-                                      border: `1.5px solid ${oIdx === 0 ? wizard.color : A.sep}`,
-                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5
-                                    }}
-                                  >
-                                    {oIdx === 0 && <span>✓</span>}
-                                    <span>{opt.label}</span>
-                                  </div>
-                                ))}
+                                {(dynField?.options || [{ id: '1', label: 'الخيار الأول' }, { id: '2', label: 'الخيار الثاني' }, { id: '3', label: 'الخيار الثالث' }]).map((opt) => {
+                                  const isSel = (selectedOptId === opt.id);
+                                  return (
+                                    <div
+                                      key={opt.id}
+                                      onClick={() => setPreviewSelectedOptions(p => ({ ...p, [dynId]: opt.id }))}
+                                      style={{
+                                        padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                                        background: isSel ? `${wizard.color}15` : '#fff',
+                                        color: isSel ? wizard.color : A.textSub,
+                                        border: `1.5px solid ${isSel ? wizard.color : A.sep}`,
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                                        transition: 'all 0.15s'
+                                      }}
+                                    >
+                                      {isSel && <span>✓</span>}
+                                      <span>{opt.label}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ) : (
-                              <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: '1.5px solid #E2E8F0', fontSize: 11.5, color: A.textTer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>-- اختر {field.label} --</span>
-                                <span style={{ fontSize: 9 }}>▼</span>
+                              <select
+                                className="tr-input"
+                                style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: '1.5px solid #E2E8F0', fontSize: 11.5 }}
+                                value={selectedOptId}
+                                onChange={e => setPreviewSelectedOptions(p => ({ ...p, [dynId]: e.target.value }))}
+                              >
+                                {(dynField?.options || []).map(opt => (
+                                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                ))}
+                              </select>
+                            )}
+
+                            {/* Dynamically expand conditional inputs for the selected option in preview */}
+                            {conditionalInputs.length > 0 && (
+                              <div style={{ marginTop: 4, padding: '10px 12px', background: `${wizard.color}08`, borderRadius: 10, border: `1.5px dashed ${wizard.color}40`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ fontSize: 10.5, fontWeight: 800, color: wizard.color, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span>↳</span>
+                                  <span>متطلبات إضافية مشروطة باختيار «{selectedOpt?.label}»:</span>
+                                </div>
+                                {conditionalInputs.map(ci => (
+                                  <div key={ci.id}>
+                                    <label style={{ fontSize: 10.5, fontWeight: 600, color: A.text, display: 'block', marginBottom: 2 }}>
+                                      {ci.type === 'textarea' ? '📝' : ci.type === 'number' ? '🔢' : ci.type === 'date' ? '📅' : '🔤'} {ci.label} {ci.required && <span style={{ color: A.red }}>*</span>}
+                                    </label>
+                                    {ci.type === 'textarea' ? (
+                                      <div style={{ padding: '6px 10px', borderRadius: 6, background: '#fff', border: '1px solid #E2E8F0', minHeight: 38, fontSize: 11, color: A.textTer }}>
+                                        {ci.placeholder || 'اكتب التفاصيل المطلوبة هنا...'}
+                                      </div>
+                                    ) : (
+                                      <div style={{ padding: '6px 10px', borderRadius: 6, background: '#fff', border: '1px solid #E2E8F0', fontSize: 11, color: A.textTer }}>
+                                        {ci.placeholder || `أدخل ${ci.label}...`}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </div>

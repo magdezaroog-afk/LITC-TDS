@@ -3,9 +3,9 @@
 // Central service module to prevent Vite HMR invalidation in components
 // ═══════════════════════════════════════════════════════════
 
-export interface IndicatorOption { id: string; label: string; isActive: boolean; }
-export interface SubIssueIndicator { id: string; parentMainIssueId: string; label: string; options: IndicatorOption[]; isActive: boolean; }
-export interface MainIssueIndicator { id: string; label: string; subIssues: SubIssueIndicator[]; isActive: boolean; }
+export interface IndicatorOption { id: string; label: string; isActive: boolean; customInputs?: CustomFormInput[]; }
+export interface SubIssueIndicator { id: string; parentMainIssueId: string; label: string; options: IndicatorOption[]; isActive: boolean; customInputs?: CustomFormInput[]; }
+export interface MainIssueIndicator { id: string; label: string; subIssues: SubIssueIndicator[]; isActive: boolean; customInputs?: CustomFormInput[]; }
 
 export interface ChildFieldBinding {
   childFieldId: string;
@@ -16,6 +16,7 @@ export interface DynamicFieldOption {
   id: string;
   label: string;
   isActive: boolean;
+  customInputs?: CustomFormInput[];
 }
 
 export interface DynamicCustomField {
@@ -54,6 +55,8 @@ export interface RouteFormConfig {
   routeDynamicFields: { fieldId: string; isRequired: boolean }[];
   // ─── Custom Dynamic Inputs (حقول نصية ورقمية إضافية بعدد غير محدود) ───
   customInputs?: CustomFormInput[];
+  // ─── Option-Level Conditional Custom Inputs (حقول مخصصة مشروطة بخيارات المستدلات) ───
+  optionCustomInputs?: Record<string, CustomFormInput[]>;
   // ─── Display Mode for Lists / Dropdowns (قوائم منسدلة أو كروت وأيقونات) ───
   taxonomyDisplayMode?: 'dropdown' | 'chips';
   dynamicFieldsDisplayMode?: Record<string, 'dropdown' | 'chips'>;
@@ -138,6 +141,7 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   customFieldIds: [],
   routeDynamicFields: [],
   customInputs: [],
+  optionCustomInputs: {},
   taxonomyDisplayMode: 'dropdown',
   dynamicFieldsDisplayMode: {},
   fieldsOrder: [],
@@ -192,6 +196,7 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       ...baseConfig,
       ...(r.formConfig || {}),
       customInputs: Array.isArray(r.formConfig?.customInputs) ? r.formConfig.customInputs : [],
+      optionCustomInputs: r.formConfig?.optionCustomInputs || {},
       taxonomyDisplayMode: r.formConfig?.taxonomyDisplayMode || 'dropdown',
       dynamicFieldsDisplayMode: r.formConfig?.dynamicFieldsDisplayMode || {},
       fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
