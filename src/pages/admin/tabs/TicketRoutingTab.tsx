@@ -176,6 +176,9 @@ export const TicketRoutingTab: React.FC = () => {
   // Interactive Live Preview Selection State
   const [previewSelectedOptions, setPreviewSelectedOptions] = useState<Record<string, string>>({});
 
+  // Quick Option Adder State per Field
+  const [quickOptionText, setQuickOptionText] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!wizard.targetDepartmentId) {
       setCandidateManagers([]);
@@ -409,7 +412,19 @@ export const TicketRoutingTab: React.FC = () => {
       const opt = parent?.options.find(o => o.id === parentContext.triggerOptionId);
       if (opt?.label) finalName = opt.label;
     }
-    if (!finalName || !fieldDraft.options?.length) {
+
+    // Auto-commit any pending draftOptionText if user typed but did not press "إضافة خيار"
+    let currentOptions = [...(fieldDraft.options || [])];
+    if (draftOptionText.trim()) {
+      currentOptions.push({
+        id: `opt_${Date.now()}`,
+        label: draftOptionText.trim(),
+        isActive: true,
+      });
+      setDraftOptionText('');
+    }
+
+    if (!finalName || !currentOptions.length) {
       showToast(asSubField ? 'الرجاء إضافة خيار فرعي واحد على الأقل.' : 'الرجاء إدخال اسم المستدلة وإضافة خيار واحد على الأقل.', 'error');
       return;
     }
@@ -417,7 +432,7 @@ export const TicketRoutingTab: React.FC = () => {
     if (editingFieldId) {
       const updatedFields = dynamicFields.map(f => {
         if (f.id === editingFieldId) {
-          return { ...f, name: finalName, options: fieldDraft.options || [] };
+          return { ...f, name: finalName, options: currentOptions };
         }
         return f;
       });
@@ -436,7 +451,7 @@ export const TicketRoutingTab: React.FC = () => {
     const newField: DynamicCustomField = {
       id: `df_${Date.now()}`,
       name: finalName,
-      options: fieldDraft.options || [],
+      options: currentOptions,
       childBindings: []
     };
 
@@ -475,6 +490,47 @@ export const TicketRoutingTab: React.FC = () => {
 
     setIsBuildingField(false);
     setParentContext(null);
+  };
+
+  const handleQuickAddOption = async (fieldId: string) => {
+    const text = (quickOptionText[fieldId] || '').trim();
+    if (!text) {
+      showToast('يرجى كتابة نص الخيار الجديد', 'error');
+      return;
+    }
+
+    const targetField = dynamicFields.find(f => f.id === fieldId);
+    if (!targetField) return;
+
+    if ((targetField.options || []).some(o => o.label.trim().toLowerCase() === text.toLowerCase())) {
+      showToast('هذا الخيار موجود بالفعل في هذه المستدلة', 'error');
+      return;
+    }
+
+    const newOption: DynamicFieldOption = {
+      id: `opt_${Date.now()}`,
+      label: text,
+      isActive: true,
+    };
+
+    const updatedFields = dynamicFields.map(f => {
+      if (f.id === fieldId) {
+        return {
+          ...f,
+          options: [...(f.options || []), newOption],
+        };
+      }
+      return f;
+    });
+
+    const result = await saveDynamicFields(updatedFields);
+    if (result.success) {
+      setDynamicFields(updatedFields);
+      setQuickOptionText(p => ({ ...p, [fieldId]: '' }));
+      showToast(`✅ تم إضافة خيار «${text}» وحفظه بنجاح`, 'success');
+    } else {
+      showToast(`❌ ${result.error || 'فشل في حفظ الخيار الجديد'}`, 'error');
+    }
   };
 
   const attachExistingAsSubField = async (childFieldId: string) => {
@@ -1080,8 +1136,20 @@ export const TicketRoutingTab: React.FC = () => {
                 ))}
 
                 <div style={{ display:'flex', gap:6, marginTop: 4 }}>
-                  <input className="tr-input" placeholder="إضافة خيار جديد..." value={draftOptionText} onChange={e => setDraftOptionText(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDraftOption()} style={{ flex: 1 }} />
-                  <button onClick={addDraftOption} style={{ background:A.bg, border:`1px solid ${A.sep}`, borderRadius:8, padding:'0 14px', cursor:'pointer', fontWeight:600, color: A.text }}>إضافة خيار</button>
+                  <input
+                    className="tr-input"
+                    placeholder="إضافة خيار جديد..."
+                    value={draftOptionText}
+                    onChange={e => setDraftOptionText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addDraftOption();
+                      }
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  <button type="button" onClick={addDraftOption} style={{ background:A.bg, border:`1px solid ${A.sep}`, borderRadius:8, padding:'0 14px', cursor:'pointer', fontWeight:600, color: A.text }}>+ إضافة خيار</button>
                 </div>
               </div>
 
@@ -1332,6 +1400,35 @@ export const TicketRoutingTab: React.FC = () => {
                           </div>
                         );
                       })}
+                    </div>
+
+                    {/* Quick Inline Option Adder for this Field */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${A.sep}` }}>
+                      <input
+                        className="tr-input"
+                        placeholder={`+ إضافة خيار رئيسي جديد إلى «${field.name}» مباشرة...`}
+                        value={quickOptionText[field.id] || ''}
+                        onChange={e => setQuickOptionText(p => ({ ...p, [field.id]: e.target.value }))}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleQuickAddOption(field.id);
+                          }
+                        }}
+                        style={{ flex: 1, fontSize: 12, padding: '7px 12px', background: '#F8FAFC' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAddOption(field.id)}
+                        style={{
+                          padding: '7px 14px', borderRadius: 8, fontSize: 11.5, fontWeight: 700,
+                          background: wizard.color, color: '#fff', border: 'none', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <span>+</span>
+                        <span>إضافة وحفظ الخيار</span>
+                      </button>
                     </div>
                   </div>
                 ))

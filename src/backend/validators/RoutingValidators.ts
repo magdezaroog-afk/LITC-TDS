@@ -5,13 +5,14 @@ const dynamicFieldOptionSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   isActive: z.boolean().default(true),
-});
+  customInputs: z.array(z.any()).optional(),
+}).passthrough();
 
 // ─── Child Field Binding ───────────────────────────────────────────────────────
 const childFieldBindingSchema = z.object({
   childFieldId: z.string().min(1),
   triggerValue: z.string().min(1),
-});
+}).passthrough();
 
 // ─── Dynamic Custom Field (stored globally, referenced by routes) ──────────────
 const dynamicCustomFieldSchema = z.object({
@@ -19,12 +20,12 @@ const dynamicCustomFieldSchema = z.object({
   name: z.string().min(1),
   options: z.array(dynamicFieldOptionSchema),
   childBindings: z.array(childFieldBindingSchema).optional(),
-});
+}).passthrough();
 
 // ─── Save Dynamic Fields ──────────────────────────────────────────────────────
 export const saveDynamicFieldsSchema = z.object({
   fields: z.array(dynamicCustomFieldSchema),
-});
+}).passthrough();
 
 // ─── Route Form Config ────────────────────────────────────────────────────────
 const routeFormConfigSchema = z.object({
