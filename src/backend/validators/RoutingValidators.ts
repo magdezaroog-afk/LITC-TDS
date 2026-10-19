@@ -60,6 +60,9 @@ const routeFormConfigSchema = z.object({
   showDelegateUser: z.boolean().optional().default(false),
   mandatoryDelegateUser: z.boolean().optional().default(false),
   delegateUserLabel: z.string().optional().default('الموظف البديل / تسليم المهام'),
+  delegateScope: z.enum(['ALL_COMPANY_USERS', 'SAME_DEPARTMENT']).optional().default('ALL_COMPANY_USERS'),
+  delegateTriggerMode: z.enum(['ONLY_ON_ASSIGNMENT', 'ALWAYS']).optional().default('ONLY_ON_ASSIGNMENT'),
+  delegateTriggerOptionLabel: z.string().optional().default('تكليف'),
 
   // ─── Compatibility Fields ───
   showDateRange: z.boolean().optional().default(false),

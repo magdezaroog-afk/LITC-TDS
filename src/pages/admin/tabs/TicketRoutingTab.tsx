@@ -18,6 +18,7 @@ import {
   saveRoutes,
   loadDynamicFields,
   saveDynamicFields,
+  isDelegateFieldVisible,
 } from '../../../services/ticketRouting.helpers';
 
 import {
@@ -1898,6 +1899,48 @@ export const TicketRoutingTab: React.FC = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* شرط الظهور الذكي لحقل الموظف المكلف */}
+                  <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: A.text, display: 'block', marginBottom: 6 }}>شرط وتوقيت ظهور حقل الموظف المكلف في النموذج</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8 }}>
+                      <div
+                        onClick={() => setFC({ delegateTriggerMode: 'ONLY_ON_ASSIGNMENT' })}
+                        style={{
+                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                          background: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? '#fff' : 'rgba(255,255,255,0.6)',
+                          border: `1.5px solid ${(!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.sep}`,
+                          boxShadow: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? `0 2px 8px ${wizard.color}20` : 'none',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 800, color: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>🎯</span> فقط عند اختيار نوع طلب تكليف مؤقت / انتداب (ذكي موصى به)
+                        </div>
+                        <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
+                          يختفي تماماً في الإجازات والأذونات الساعية، ويظهر للموظف فقط عندما يختار نوع الطلب تكليفاً مؤقتاً
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setFC({ delegateTriggerMode: 'ALWAYS' })}
+                        style={{
+                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                          background: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? '#fff' : 'rgba(255,255,255,0.6)',
+                          border: `1.5px solid ${wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.sep}`,
+                          boxShadow: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? `0 2px 8px ${wizard.color}20` : 'none',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 800, color: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>🌐</span> دائماً في كافة طلبات هذا المسار
+                        </div>
+                        <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
+                          يظهر حقل الزميل البديل دائماً لكافة الموظفين بصرف النظر عن نوع المعاملة
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -2604,6 +2647,20 @@ export const TicketRoutingTab: React.FC = () => {
 
                       // Delegate Colleague
                       if (field.id === 'delegateUser') {
+                        const isVis = isDelegateFieldVisible(previewSelectedOptions, wizard.formConfig);
+                        if (!isVis) {
+                          return (
+                            <div key={field.id} style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: '1.5px dashed #CBD5E1', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: A.textSub, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>🔒</span>
+                                <span>حقل الزميل المكلف محجوب الآن ذكياً</span>
+                              </div>
+                              <div style={{ fontSize: 10, color: A.textTer }}>
+                                لن يظهر للموظف في الإجازات والأذونات العادية، ويظهر فوراً إذا اختار نوع الطلب «تكليف مؤقت».
+                              </div>
+                            </div>
+                          );
+                        }
                         return (
                           <div key={field.id}>
                             <EmployeeDelegatePicker

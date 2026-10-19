@@ -73,6 +73,8 @@ export interface RouteFormConfig {
   mandatoryDelegateUser?: boolean;
   delegateUserLabel?: string;
   delegateScope?: 'ALL_COMPANY_USERS' | 'SAME_DEPARTMENT';
+  delegateTriggerMode?: 'ONLY_ON_ASSIGNMENT' | 'ALWAYS';
+  delegateTriggerOptionLabel?: string;
 
   // ─── Compatibility Fields ───
   showDateRange?: boolean;
@@ -157,6 +159,8 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   mandatoryDelegateUser: false,
   delegateUserLabel: 'الموظف البديل / تسليم المهام',
   delegateScope: 'ALL_COMPANY_USERS',
+  delegateTriggerMode: 'ONLY_ON_ASSIGNMENT',
+  delegateTriggerOptionLabel: 'تكليف',
   // ─── Compatibility Fields ───
   showDateRange: false,
   mandatoryDateRange: false,
@@ -176,6 +180,32 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   maxUnratedTicketsAllowed: 0,
   requireRatingBeforeNewTicket: false,
 });
+
+/**
+ * Checks whether the delegate colleague field should be rendered on screen.
+ * By default ('ONLY_ON_ASSIGNMENT'), it ONLY appears when the user selects a request type
+ * that represents a temporary assignment or task delegation (e.g. 'تكليف مؤقت' or 'انتداب'),
+ * remaining completely hidden on regular leaves, hourly permissions, etc.
+ */
+export const isDelegateFieldVisible = (
+  formData: Record<string, any>,
+  formConfig?: RouteFormConfig
+): boolean => {
+  if (!formConfig?.showDelegateUser) return false;
+  if (formConfig.delegateTriggerMode === 'ALWAYS') return true;
+
+  const target = (formConfig.delegateTriggerOptionLabel || 'تكليف').trim().toLowerCase();
+
+  // Inspect all values selected in formData (main taxonomy, sub-issue, dynamic selects)
+  for (const key of Object.keys(formData)) {
+    const val = String(formData[key] || '').toLowerCase();
+    if (val.includes(target) || val.includes('تكليف') || val.includes('انتداب')) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 export const normalizeRoute = (r: any): TicketRouteDefinition => {
   const baseConfig = defaultFormConfig();
@@ -206,6 +236,8 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
       routeDynamicFields: Array.isArray(r.formConfig?.routeDynamicFields) ? r.formConfig.routeDynamicFields : [],
       delegateScope: r.formConfig?.delegateScope || 'ALL_COMPANY_USERS',
+      delegateTriggerMode: r.formConfig?.delegateTriggerMode || 'ONLY_ON_ASSIGNMENT',
+      delegateTriggerOptionLabel: r.formConfig?.delegateTriggerOptionLabel || 'تكليف',
     }
   };
 };

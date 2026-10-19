@@ -21,8 +21,7 @@ import {
   Ticket, ChevronDown
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
-import { CinemaTicketFrame } from './CinemaTicketFrame';
-import { RouteFormStage } from '../../services/ticketRouting.helpers';
+import { RouteFormStage, isDelegateFieldVisible } from '../../services/ticketRouting.helpers';
 import {
   getTopLevelDepartments,
   getDivisionsForDepartment,
@@ -258,12 +257,12 @@ function ModernSelect({
   );
 }
 
-// ── Smart Field Input Router ─────────────────────────────────
 function FieldInput({
   field,
   value,
   onChange,
   darkMode = true,
+  allFormData,
 }: {
   field: {
     name: string;
@@ -277,6 +276,7 @@ function FieldInput({
   value: string;
   onChange: (v: string) => void;
   darkMode?: boolean;
+  allFormData?: Record<string, string>;
 }) {
   const base: React.CSSProperties = {
     width: '100%',
@@ -374,6 +374,18 @@ function FieldInput({
     const [timeFrom, setTimeFrom] = useState('09:00');
     const [timeTo, setTimeTo] = useState('13:00');
     const [singleDate, setSingleDate] = useState('');
+
+    // Automatically adapt schedule engine mode based on the user's selected request type
+    React.useEffect(() => {
+      if (allowedMode === 'ANY' && allFormData) {
+        const textBlob = Object.values(allFormData).join(' ').toLowerCase();
+        if (textBlob.includes('إذن') || textBlob.includes('خروج') || textBlob.includes('تأخير') || textBlob.includes('ساعي') || textBlob.includes('ساعة')) {
+          setMode('HOURLY_WINDOW');
+        } else if (textBlob.includes('إجازة') || textBlob.includes('تكليف')) {
+          setMode('DATE_RANGE');
+        }
+      }
+    }, [allFormData, allowedMode]);
 
     React.useEffect(() => {
       if (mode === 'DATE_RANGE') {
@@ -793,7 +805,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   // Fields mapping per stage
   const stageFieldsToRender = useMemo(() => {
     if (!selectedFlow) return [];
-    const all = selectedFlow.fields;
+    const isDelegateVis = isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig);
+    const all = selectedFlow.fields.filter(f => {
+      if (f.name === 'delegateUser') return isDelegateVis;
+      return true;
+    });
 
     // 1. If Admin configured custom stages:
     if (adminStages && adminStages.length > 0) {
@@ -824,7 +840,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return s2;
     }
     return [];
-  }, [selectedFlow, adminStages, currentStep, totalStages]);
+  }, [selectedFlow, adminStages, currentStep, totalStages, formData]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
@@ -832,6 +848,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
     const missingRequired = currentFields.find(f => {
       if (!f.required) return false;
+      if (f.name === 'delegateUser' && !isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig)) return false;
       if (f.name === 'division' && divisionOptions.length === 0) return false;
       if (f.name === 'team' && teamOptions.length === 0) return false;
       return !formData[f.name]?.trim();
@@ -878,6 +895,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
     const allRequired = selectedFlow.fields.every(f => {
       if (!f.required) return true;
+      if (f.name === 'delegateUser' && !isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig)) return true;
       if (f.name === 'division' && divisionOptions.length === 0) return true;
       if (f.name === 'team' && teamOptions.length === 0) return true;
       return !!formData[f.name]?.trim();
@@ -1310,6 +1328,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                 value={formData[field.name] || ''}
                                 onChange={v => handleFieldChange(field.name, v)}
                                 darkMode={darkMode}
+                                allFormData={formData}
                               />
                             </div>
 
