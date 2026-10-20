@@ -18,7 +18,7 @@ import {
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
   Search, Wrench, Monitor, Cpu, HardDrive, Wifi, Printer,
   HelpCircle, Settings, Laptop, Radio, AlertCircle,
-  Ticket, ChevronDown
+  Ticket, ChevronDown, Calendar, CalendarDays, Paperclip, Download
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon } from '../../services/ticketRouting.helpers';
@@ -135,7 +135,11 @@ function ModernSelect({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-          {selectedItem?.icon && <span style={{ fontSize: '14px', flexShrink: 0 }}>{selectedItem.icon}</span>}
+          {selectedItem?.icon && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: darkMode ? '#38bdf8' : '#2563eb', flexShrink: 0 }}>
+              {resolveIcon(selectedItem.icon, 15)}
+            </span>
+          )}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {selectedItem
               ? selectedItem.label
@@ -249,7 +253,11 @@ function ModernSelect({
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                        {opt.icon && <span style={{ fontSize: '13px', flexShrink: 0 }}>{opt.icon}</span>}
+                        {opt.icon && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'), flexShrink: 0 }}>
+                            {resolveIcon(opt.icon, 15)}
+                          </span>
+                        )}
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {opt.label}
                         </span>
@@ -321,7 +329,13 @@ function FieldInput({
 
     if (isChips) {
       return (
-        <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+          gap: '10px',
+          width: '100%',
+          marginTop: '6px'
+        }}>
           {opts.map(opt => {
             const isSelected = value === opt.value || value === opt.label;
             return (
@@ -330,31 +344,70 @@ function FieldInput({
                 type="button"
                 onClick={() => onChange(isSelected ? '' : opt.label)}
                 style={{
-                  padding: '7px 13px',
-                  borderRadius: '8px',
+                  position: 'relative',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
                   border: isSelected
-                    ? '1.5px solid #38bdf8'
-                    : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                    ? '2px solid #38bdf8'
+                    : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0'),
                   backgroundColor: isSelected
-                    ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                    : (darkMode ? '#101728' : '#ffffff'),
+                    ? (darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(37, 99, 235, 0.08)')
+                    : (darkMode ? 'rgba(16, 23, 40, 0.7)' : '#ffffff'),
                   color: isSelected
                     ? (darkMode ? '#38bdf8' : '#2563eb')
-                    : (darkMode ? '#cbd5e1' : '#334155'),
-                  fontSize: '11.5px',
-                  fontWeight: isSelected ? 800 : 500,
+                    : (darkMode ? '#e2e8f0' : '#1e293b'),
                   fontFamily: "'Cairo', sans-serif",
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '8px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: isSelected ? '0 0 10px rgba(56, 189, 248, 0.25)' : 'none',
+                  textAlign: 'right',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: isSelected
+                    ? (darkMode ? '0 4px 18px rgba(56, 189, 248, 0.25)' : '0 4px 16px rgba(37, 99, 235, 0.15)')
+                    : '0 1px 3px rgba(0,0,0,0.04)',
+                  transform: isSelected ? 'translateY(-2px)' : 'none',
                 }}
               >
-                {opt.icon && <span style={{ fontSize: '13.5px', lineHeight: 1 }}>{opt.icon}</span>}
-                <span>{opt.label}</span>
-                {isSelected && <Check size={12} color={darkMode ? '#38bdf8' : '#2563eb'} />}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div
+                    style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '9px',
+                      backgroundColor: isSelected
+                        ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                        : (darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'),
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {resolveIcon(opt.icon, 18, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'))}
+                  </div>
+                  {isSelected && (
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                    }}>
+                      <Check size={11} strokeWidth={3} />
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: isSelected ? 800 : 600, lineHeight: 1.4 }}>
+                  {opt.label}
+                </span>
               </button>
             );
           })}
@@ -427,27 +480,31 @@ function FieldInput({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
         {allowedMode === 'ANY' && (
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {[
-              { id: 'DATE_RANGE', label: '📆 فترة متصلة' },
-              { id: 'DISCRETE_DAYS', label: '🗓️ أيام متفرقة' },
-              { id: 'HOURLY_WINDOW', label: '⏱️ إذن خروج' },
-              { id: 'SINGLE_DATE', label: '📅 موعد محدد' },
+              { id: 'DATE_RANGE', label: 'فترة متصلة', icon: 'Calendar' },
+              { id: 'DISCRETE_DAYS', label: 'أيام متفرقة', icon: 'CalendarDays' },
+              { id: 'HOURLY_WINDOW', label: 'إذن خروج ساعي', icon: 'Clock' },
+              { id: 'SINGLE_DATE', label: 'موعد محدد', icon: 'Calendar' },
             ].map(tab => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setMode(tab.id as any)}
                 style={{
-                  padding: '3px 7px', borderRadius: '4px',
-                  border: mode === tab.id ? '1px solid #38bdf8' : 'none',
-                  background: mode === tab.id ? 'rgba(56, 189, 248, 0.18)' : (darkMode ? 'rgba(255,255,255,0.05)' : '#e2e8f0'),
+                  padding: '4px 9px', borderRadius: '5px',
+                  border: mode === tab.id ? '1.5px solid #38bdf8' : (darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid #cbd5e1'),
+                  background: mode === tab.id ? 'rgba(56, 189, 248, 0.18)' : (darkMode ? 'rgba(255,255,255,0.04)' : '#f1f5f9'),
                   color: mode === tab.id ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b'),
-                  fontWeight: mode === tab.id ? 800 : 600, fontSize: '10px',
+                  fontWeight: mode === tab.id ? 800 : 600, fontSize: '10.5px',
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
                   cursor: 'pointer', transition: 'all 0.15s'
                 }}
               >
-                {tab.label}
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {resolveIcon(tab.icon, 12, mode === tab.id ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b'))}
+                </span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -521,17 +578,44 @@ function FieldInput({
     );
   }
 
-  // 5. FILE / ATTACHMENT (حل مشكلة المرفقات: مكون تفاعلي مع زر استعراض ورفع حقيقي)
+  // 5. FILE / ATTACHMENT (حل جذري وشامل للمرفقات: قراءة حقيقية للملف وتمريره للباك إند وقاعدة البيانات)
   if (field.type === 'file' || field.type === 'attachment') {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [fileName, setFileName] = useState<string>(value || '');
+    const [fileName, setFileName] = useState<string>(() => {
+      if (!value) return '';
+      try {
+        const p = JSON.parse(value);
+        return p.fileName || p.name || value;
+      } catch {
+        return value;
+      }
+    });
     const [isDragging, setIsDragging] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleFileChosen = (f: File) => {
-      const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
-      const formatted = `${f.name} (${sizeMB} MB)`;
-      setFileName(formatted);
-      onChange(formatted);
+      setIsProcessing(true);
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(2);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = reader.result as string;
+        const meta = {
+          name: f.name,
+          fileName: f.name,
+          sizeBytes: f.size,
+          sizeMB,
+          mimeType: f.type || 'application/octet-stream',
+          base64: base64Data,
+          uploadedAt: new Date().toISOString(),
+        };
+        setFileName(`${f.name} (${sizeMB} MB)`);
+        onChange(JSON.stringify(meta));
+        setIsProcessing(false);
+      };
+      reader.onerror = () => {
+        setIsProcessing(false);
+      };
+      reader.readAsDataURL(f);
     };
 
     return (
@@ -761,6 +845,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     return getTeamsForDivision(orgTree, formData.division).map(t => t.name);
   }, [orgTree, formData.division]);
 
+  const effectiveDynamicFields = useMemo(() => {
+    const map = new Map<string, any>();
+    allDynamicFields.forEach(df => { if (df?.id) map.set(df.id, df); });
+    const flowFields = (selectedFlow as any)?.formConfig?.dynamicFields || [];
+    flowFields.forEach((df: any) => { if (df?.id) map.set(df.id, { ...map.get(df.id), ...df }); });
+    return Array.from(map.values());
+  }, [allDynamicFields, selectedFlow]);
+
   const handleFieldChange = (name: string, val: string) => {
     setFormData(prev => {
       const next = { ...prev, [name]: val };
@@ -772,9 +864,106 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       } else if (name === 'taxonomyMain') {
         // Cascade clear sub-issue if main changes
         next.taxonomySub = '';
+      } else if (name.startsWith('dyn_')) {
+        const parentId = name.replace('dyn_', '');
+        const parentDef = effectiveDynamicFields.find(df => df.id === parentId);
+        if (parentDef?.childBindings) {
+          parentDef.childBindings.forEach((b: any) => {
+            delete next[`dyn_${b.childFieldId}`];
+          });
+        }
       }
       return next;
     });
+  };
+
+  // ── Cascading Child Fields Renderer for Dynamic Fields ──
+  const renderCascadingChildFields = (parentId: string, parentVal: string, level = 1): React.ReactNode => {
+    if (!parentVal) return null;
+    const parentDef = effectiveDynamicFields.find(df => df.id === parentId || df.name === parentId);
+    if (!parentDef || !parentDef.childBindings || parentDef.childBindings.length === 0) return null;
+
+    let selectedOptId = '';
+    let selectedOptLabel = parentVal;
+    if (Array.isArray(parentDef.options)) {
+      const optObj = parentDef.options.find((o: any) =>
+        (typeof o === 'string' && o === parentVal) ||
+        (typeof o === 'object' && (o.id === parentVal || o.label === parentVal))
+      );
+      if (optObj) {
+        selectedOptId = typeof optObj === 'object' ? optObj.id : optObj;
+        selectedOptLabel = typeof optObj === 'object' ? optObj.label : optObj;
+      }
+    }
+
+    const matchingBindings = parentDef.childBindings.filter((b: any) => {
+      const trig = b.triggerValue?.trim();
+      return trig === parentVal || trig === selectedOptId || trig === selectedOptLabel;
+    });
+
+    if (matchingBindings.length === 0) return null;
+
+    return (
+      <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+        {matchingBindings.map((b: any) => {
+          const childDef = effectiveDynamicFields.find(df => df.id === b.childFieldId);
+          if (!childDef) return null;
+          const childFieldName = `dyn_${childDef.id}`;
+          const childVal = formData[childFieldName] || '';
+          const childOpts = (childDef.options || [])
+            .filter((o: any) => typeof o === 'string' || o.isActive !== false)
+            .map((o: any) => {
+              if (typeof o === 'string') return o;
+              return {
+                id: o.id || o.label,
+                label: o.label || o.id,
+                icon: o.icon || getOptionIcon({ id: o.id, label: o.label })
+              };
+            });
+
+          return (
+            <div
+              key={childDef.id}
+              style={{
+                padding: '12px 14px',
+                borderRadius: '10px',
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
+                border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                animation: 'fadeIn 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>↳</span>
+                  <span>{childDef.name}</span>
+                </label>
+                <span style={{ fontSize: '9.5px', fontWeight: 700, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                  مستدلة فرعية تابعة لـ ({parentVal})
+                </span>
+              </div>
+              <FieldInput
+                field={{
+                  name: childFieldName,
+                  label: childDef.name,
+                  type: 'select',
+                  options: childOpts,
+                  required: false,
+                  displayMode: childDef.displayMode || 'chips',
+                }}
+                value={childVal}
+                onChange={v => handleFieldChange(childFieldName, v)}
+                darkMode={darkMode}
+                allFormData={formData}
+              />
+              {renderCascadingChildFields(childDef.id, childVal, level + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const handleSelectFlow = (flow: typeof requests[0]) => {
@@ -957,6 +1146,15 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
+    let attachmentObj: any = null;
+    if (formData.attachment) {
+      try {
+        attachmentObj = JSON.parse(formData.attachment);
+      } catch {
+        attachmentObj = { fileName: formData.attachment, name: formData.attachment };
+      }
+    }
+
     const flowAny = selectedFlow as any;
     const reqPromise = fetch('/api/v1/functional/requests', {
       method: 'POST',
@@ -974,10 +1172,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         targetTeamName: flowAny.targetTeamName || undefined,
         taxonomyMain: formData.taxonomyMain || undefined,
         taxonomySub: formData.taxonomySub || undefined,
-        description: formData.description?.trim() || Object.entries(formData).map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
+        description: formData.description?.trim() || Object.entries(formData).filter(([k]) => k !== 'attachment').map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
         fields: formData,
+        attachments: attachmentObj ? [attachmentObj] : [],
         routingMetadata: {
           formData,
+          fields: formData,
+          dynamicFields: formData,
+          attachments: attachmentObj ? [attachmentObj] : [],
           targetDepartmentName: flowAny.targetDepartmentName,
           targetDivisionName: flowAny.targetDivisionName,
           targetTeamName: flowAny.targetTeamName,
@@ -1353,9 +1555,22 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           fieldToRender.options = teamOptions;
                         }
 
+                        const isFullWidthField =
+                          (fieldToRender as any).displayMode === 'chips' ||
+                          fieldToRender.type === 'scheduleEngine' ||
+                          fieldToRender.type === 'file' ||
+                          fieldToRender.type === 'attachment' ||
+                          fieldToRender.type === 'textarea';
+
                         return (
                           <React.Fragment key={field.name}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }}>
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
+                              position: 'relative',
+                              gridColumn: isFullWidthField ? '1 / -1' : undefined
+                            }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e3a52' }}>
                                   {fieldToRender.label}
@@ -1375,7 +1590,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                               />
                             </div>
 
-                            {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED DIRECTLY AS VISUAL ICONS ── */}
+                            {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED AS VISUAL CARDS GRID ── */}
                             {field.name === 'taxonomyMain' && formData.taxonomyMain && (() => {
                               const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
                                 (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
@@ -1390,10 +1605,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                     gridColumn: '1 / -1',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '8px',
-                                    padding: '12px 14px',
-                                    borderRadius: '8px',
-                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.06)' : 'rgba(37, 99, 235, 0.05)',
+                                    gap: '10px',
+                                    padding: '14px 16px',
+                                    borderRadius: '12px',
+                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
                                     border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
                                     animation: 'fadeIn 0.2s ease',
                                   }}
@@ -1403,47 +1618,93 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                       <span>↳</span>
                                       <span>المشاكل والخيارات الفرعية التابعة لـ ({formData.taxonomyMain}):</span>
                                     </span>
-                                    <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                                      اختر من الأيقونات أدناه
+                                    <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }}>
+                                      انقر لتحديد الخيار المطلوب
                                     </span>
                                   </div>
 
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  <div
+                                    style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                                      gap: '10px',
+                                      width: '100%',
+                                    }}
+                                  >
                                     {activeSubs.map((sub: any) => {
                                       const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
+                                      const subIcon = (typeof sub === 'object' && sub.icon) ? sub.icon : getOptionIcon({ label: subLabel });
                                       const isSelected = formData.taxonomySub === subLabel;
                                       return (
                                         <button
                                           key={subLabel}
                                           type="button"
-                                          onClick={() => handleFieldChange('taxonomySub', subLabel)}
+                                          onClick={() => handleFieldChange('taxonomySub', isSelected ? '' : subLabel)}
                                           style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '7px',
-                                            padding: '7px 14px',
-                                            borderRadius: '8px',
-                                            backgroundColor: isSelected
-                                              ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
-                                              : (darkMode ? '#1e293b' : '#ffffff'),
+                                            position: 'relative',
+                                            padding: '12px 14px',
+                                            borderRadius: '12px',
                                             border: isSelected
-                                              ? '1.5px solid #38bdf8'
-                                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                                              ? '2px solid #38bdf8'
+                                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0'),
+                                            backgroundColor: isSelected
+                                              ? (darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(37, 99, 235, 0.08)')
+                                              : (darkMode ? 'rgba(16, 23, 40, 0.7)' : '#ffffff'),
                                             color: isSelected
                                               ? (darkMode ? '#38bdf8' : '#2563eb')
                                               : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                                            fontWeight: isSelected ? 800 : 600,
-                                            fontSize: '11.5px',
+                                            fontFamily: "'Cairo', sans-serif",
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            justifyContent: 'space-between',
+                                            gap: '8px',
                                             cursor: 'pointer',
-                                            boxShadow: isSelected ? '0 0 14px rgba(56, 189, 248, 0.35)' : 'none',
-                                            transition: 'all 0.15s ease',
+                                            textAlign: 'right',
+                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                            boxShadow: isSelected
+                                              ? (darkMode ? '0 4px 18px rgba(56, 189, 248, 0.25)' : '0 4px 16px rgba(37, 99, 235, 0.15)')
+                                              : '0 1px 3px rgba(0,0,0,0.04)',
+                                            transform: isSelected ? 'translateY(-2px)' : 'none',
                                           }}
                                         >
-                                          <span style={{ color: isSelected ? '#38bdf8' : (darkMode ? '#94a3b8' : '#64748b') }}>
-                                            {resolveSubIssueIcon(subLabel)}
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                            <div
+                                              style={{
+                                                width: '34px',
+                                                height: '34px',
+                                                borderRadius: '9px',
+                                                backgroundColor: isSelected
+                                                  ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                                                  : (darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'),
+                                                transition: 'all 0.2s ease',
+                                              }}
+                                            >
+                                              {resolveIcon(subIcon, 18, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'))}
+                                            </div>
+                                            {isSelected && (
+                                              <div style={{
+                                                width: '18px',
+                                                height: '18px',
+                                                borderRadius: '50%',
+                                                backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
+                                                color: '#ffffff',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '10px',
+                                              }}>
+                                                <Check size={11} strokeWidth={3} />
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span style={{ fontSize: '12px', fontWeight: isSelected ? 800 : 600, lineHeight: 1.4 }}>
+                                            {subLabel}
                                           </span>
-                                          <span>{subLabel}</span>
-                                          {isSelected && <Check size={13} strokeWidth={2.6} />}
                                         </button>
                                       );
                                     })}
@@ -1451,6 +1712,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                 </div>
                               );
                             })()}
+
+                            {/* ── Cascading Child Fields for Dynamic Fields (المستدلات الفرعية المتسلسلة) ── */}
+                            {field.name.startsWith('dyn_') && formData[field.name] && (
+                              renderCascadingChildFields(field.name.replace('dyn_', ''), formData[field.name])
+                            )}
 
                             {/* ── Conditional Option Custom Inputs (حقول مخصصة مشروطة بخيار المستدلة) ── */}
                             {formData[field.name] && (() => {
@@ -1536,74 +1802,352 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </motion.div>
                   )}
 
-                  {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار */}
+                  {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار - تصميم تذكرة طيران مؤسسية فاخرة */}
                   {currentStep === totalStages && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {/* Executive Status Banner */}
                       <div style={{
-                        padding: '10px 14px',
-                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        border: '1.5px solid rgba(16, 185, 129, 0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        gap: '12px',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 800, color: '#34d399' }}>
-                          <ShieldCheck size={16} />
-                          <span>اكتملت بيانات المعاملة: جاهزة للإصدار والطباعة من الماكينة</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 800, color: '#34d399' }}>
+                          <ShieldCheck size={18} />
+                          <span>اكتملت بيانات المعاملة الرسمية: جاهزة للمصادقة وتوليد القيد الرقمي</span>
                         </div>
-                        <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: 700 }}>
-                          رقم متوقع: {previewSerial}
-                        </span>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: darkMode ? 'rgba(0,0,0,0.3)' : '#ffffff',
+                          border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
+                          fontSize: '11px',
+                          color: darkMode ? '#38bdf8' : '#0284c7',
+                          fontWeight: 800,
+                        }}>
+                          <Hash size={13} />
+                          <span>{previewSerial}</span>
+                        </div>
                       </div>
 
+                      {/* Luxury Perforated Ticket Card */}
                       <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                        gap: '8px',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                        position: 'relative',
+                        borderRadius: '14px',
+                        backgroundColor: darkMode ? '#101728' : '#ffffff',
+                        border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1',
+                        boxShadow: darkMode ? '0 10px 30px rgba(0,0,0,0.5)' : '0 8px 24px rgba(30,58,82,0.08)',
+                        overflow: 'hidden',
                       }}>
-                        {selectedFlow.fields.map(f => {
-                          const val = formData[f.name];
-                          if (!val) return null;
-                          return (
-                            <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                              <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600 }}>{f.label}</span>
-                              <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{val}</span>
-                            </div>
-                          );
-                        })}
-                        {formData.taxonomySub && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                            <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>المشكلة الفرعية</span>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>⚡ {formData.taxonomySub}</span>
-                          </div>
-                        )}
-                        {/* Conditional option custom fields in review */}
-                        {(() => {
-                          const cfg = (selectedFlow as any).formConfig;
-                          const optionInputsMap = cfg?.optionCustomInputs || {};
-                          const allOptionInputs: any[] = Object.values(optionInputsMap).flat();
-                          (cfg?.dynamicFields || []).forEach((df: any) => {
-                            (df.options || []).forEach((opt: any) => {
-                              if (opt.customInputs) allOptionInputs.push(...opt.customInputs);
-                            });
-                          });
+                        {/* Top Header Strip with Flow Color */}
+                        <div style={{
+                          height: '4px',
+                          width: '100%',
+                          backgroundColor: flowColor,
+                        }} />
 
-                          return allOptionInputs.map((ci: any) => {
-                            const val = formData[ci.name || ci.id];
-                            if (!val) return null;
+                        {/* Ticket Header */}
+                        <div style={{
+                          padding: '14px 18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.12)' : '1px dashed #e2e8f0',
+                          backgroundColor: darkMode ? 'rgba(255,255,255,0.02)' : '#f8fafc',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '9px',
+                              backgroundColor: `${flowColor}20`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: flowColor,
+                            }}>
+                              {resolveIcon(selectedFlow.icon, 20, flowColor)}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                                {selectedFlow.title}
+                              </span>
+                              <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                {selectedFlow.description || 'طلب إلكتروني موثق'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                              color: darkMode ? '#38bdf8' : '#2563eb',
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                            }}>
+                              {(selectedFlow as any).targetRole || 'موجه للإدارة'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Highlights Bento Row (Taxonomy, Schedule, Delegate, Attachment) */}
+                        <div style={{
+                          padding: '14px 18px',
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                          gap: '10px',
+                        }}>
+                          {/* 1. Taxonomy Main & Sub */}
+                          {formData.taxonomyMain && (
+                            <div style={{
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : 'rgba(37, 99, 235, 0.05)',
+                              border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}>
+                              <span style={{ fontSize: '10px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 700 }}>
+                                التصنيف المعتمد والنوع:
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{
+                                  width: '26px', height: '26px', borderRadius: '7px',
+                                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.2)' : 'rgba(37, 99, 235, 0.15)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: darkMode ? '#38bdf8' : '#2563eb',
+                                }}>
+                                  {resolveIcon(getOptionIcon({ label: formData.taxonomyMain }), 15)}
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                                  {formData.taxonomyMain}
+                                </span>
+                              </div>
+                              {formData.taxonomySub && (
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  marginTop: '4px',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: darkMode ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                                  border: darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  color: darkMode ? '#38bdf8' : '#0284c7',
+                                }}>
+                                  {resolveIcon(getOptionIcon({ label: formData.taxonomySub }), 13)}
+                                  <span>{formData.taxonomySub}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 2. Schedule Engine / Date Window */}
+                          {formData.scheduleEngine && (
+                            <div style={{
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.08)' : 'rgba(217, 119, 6, 0.06)',
+                              border: darkMode ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(217, 119, 6, 0.15)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}>
+                              <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 700 }}>
+                                الجدولة والمدة الزمنية:
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{
+                                  width: '26px', height: '26px', borderRadius: '7px',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: '#f59e0b',
+                                }}>
+                                  <Clock size={15} />
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                                  {formData.scheduleEngine}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 3. Delegate Colleague */}
+                          {formData.delegateUser && (
+                            <div style={{
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              backgroundColor: darkMode ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.06)',
+                              border: darkMode ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(79, 70, 229, 0.15)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}>
+                              <span style={{ fontSize: '10px', color: '#818cf8', fontWeight: 700 }}>
+                                الزميل المكلف / البديل:
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{
+                                  width: '26px', height: '26px', borderRadius: '7px',
+                                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: '#818cf8',
+                                }}>
+                                  <UserCheck size={15} />
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                                  {formData.delegateUser}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 4. Uploaded Attachment */}
+                          {formData.attachment && (() => {
+                            let attName = formData.attachment;
+                            let attSize = '';
+                            try {
+                              const parsed = JSON.parse(formData.attachment);
+                              attName = parsed.fileName || parsed.name || formData.attachment;
+                              attSize = parsed.sizeMB ? `${parsed.sizeMB} MB` : '';
+                            } catch {}
+
                             return (
-                              <div key={ci.name || ci.id} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                                <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>↳ {ci.label}</span>
-                                <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{String(val)}</span>
+                              <div style={{
+                                padding: '12px 14px',
+                                borderRadius: '10px',
+                                backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)',
+                                border: darkMode ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(16, 185, 129, 0.15)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                              }}>
+                                <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700 }}>
+                                  المستند والمرفق المعتمد:
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                                  <div style={{
+                                    width: '26px', height: '26px', borderRadius: '7px',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#10b981', flexShrink: 0
+                                  }}>
+                                    <FileText size={15} />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {attName}
+                                    </span>
+                                    {attSize && (
+                                      <span style={{ fontSize: '9.5px', color: '#64748b' }}>{attSize} • جاهز للرفع والأرشفة</span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             );
-                          });
-                        })()}
+                          })()}
+                        </div>
+
+                        {/* Perforated Divider */}
+                        <div style={{
+                          position: 'relative',
+                          width: '100%',
+                          padding: '0 18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}>
+                          <div style={{
+                            flex: 1,
+                            borderBottom: darkMode ? '1.5px dashed rgba(255,255,255,0.14)' : '1.5px dashed #cbd5e1'
+                          }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Scissors size={12} />
+                            <span>قسيمة تفاصيل المعاملة</span>
+                          </span>
+                          <div style={{
+                            flex: 1,
+                            borderBottom: darkMode ? '1.5px dashed rgba(255,255,255,0.14)' : '1.5px dashed #cbd5e1'
+                          }} />
+                        </div>
+
+                        {/* Detailed Form Fields Grid */}
+                        <div style={{
+                          padding: '16px 18px',
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: '10px',
+                        }}>
+                          {selectedFlow.fields.map(f => {
+                            if (['taxonomyMain', 'taxonomySub', 'scheduleEngine', 'delegateUser', 'attachment'].includes(f.name)) return null;
+                            const val = formData[f.name];
+                            if (!val) return null;
+                            return (
+                              <div
+                                key={f.name}
+                                style={{
+                                  padding: '8px 12px',
+                                  borderRadius: '8px',
+                                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '2px',
+                                  gridColumn: f.type === 'textarea' ? '1 / -1' : undefined
+                                }}
+                              >
+                                <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>{f.label}</span>
+                                <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', whiteSpace: 'pre-wrap' }}>{val}</span>
+                              </div>
+                            );
+                          })}
+
+                          {/* Dynamic Fields & Conditional Options */}
+                          {(() => {
+                            const cfg = (selectedFlow as any).formConfig;
+                            const optionInputsMap = cfg?.optionCustomInputs || {};
+                            const allOptionInputs: any[] = Object.values(optionInputsMap).flat();
+                            (cfg?.dynamicFields || []).forEach((df: any) => {
+                              (df.options || []).forEach((opt: any) => {
+                                if (opt.customInputs) allOptionInputs.push(...opt.customInputs);
+                              });
+                            });
+
+                            return allOptionInputs.map((ci: any) => {
+                              const val = formData[ci.name || ci.id];
+                              if (!val) return null;
+                              return (
+                                <div
+                                  key={ci.name || ci.id}
+                                  style={{
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.04)' : 'rgba(37, 99, 235, 0.03)',
+                                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.12)' : '1px solid rgba(37, 99, 235, 0.08)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '2px',
+                                  }}
+                                >
+                                  <span style={{ fontSize: '10px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 600 }}>↳ {ci.label}</span>
+                                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{String(val)}</span>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
                       </div>
                     </div>
                   )}

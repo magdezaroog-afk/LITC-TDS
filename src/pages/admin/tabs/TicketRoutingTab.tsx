@@ -1388,7 +1388,9 @@ export const TicketRoutingTab: React.FC = () => {
                             }}
                             title="تحديد شكل الأيقونة لهذا الخيار (تلقائي بحسب المحتوى)"
                           >
-                            <span>{draftIcon}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              {renderRouteIcon(draftIcon, 15, wizard.color)}
+                            </span>
                             <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
                           </button>
                         )}
@@ -1411,10 +1413,11 @@ export const TicketRoutingTab: React.FC = () => {
                               onClick={() => updateDraftOptionIcon(o.id, ic)}
                               style={{
                                 width: 28, height: 28, borderRadius: 6, border: ic === draftIcon ? `1.5px solid ${wizard.color}` : '1px solid #e2e8f0',
-                                background: ic === draftIcon ? `${wizard.color}15` : '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                background: ic === draftIcon ? `${wizard.color}15` : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
+                              title={ic}
                             >
-                              {ic}
+                              {renderRouteIcon(ic, 16, ic === draftIcon ? wizard.color : '#475569')}
                             </button>
                           ))}
                         </div>
@@ -1493,13 +1496,15 @@ export const TicketRoutingTab: React.FC = () => {
                                     type="button"
                                     onClick={() => setOpenIconPickerOptionId(isIconPickerOpen ? null : `opt_${opt.id}`)}
                                     style={{
-                                      padding: '3px 8px', borderRadius: 8, fontSize: 14,
+                                      padding: '3px 8px', borderRadius: 8, fontSize: 13,
                                       background: '#F8FAFC', border: `1.5px solid ${isIconPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
-                                      display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.15s'
+                                      display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                                     }}
-                                    title="تغيير أيقونة هذا الخيار (تلقائي بحسب المحتوى)"
+                                    title="تغيير أيقونة هذا الخيار (أيقونة فكتور ذكية)"
                                   >
-                                    <span>{optIcon}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', color: wizard.color }}>
+                                      {renderRouteIcon(optIcon, 15, wizard.color)}
+                                    </span>
                                     <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
                                   </button>
                                 )}
@@ -1565,20 +1570,23 @@ export const TicketRoutingTab: React.FC = () => {
 
                             {/* Icon Picker Popover */}
                             {taxMode === 'chips' && isIconPickerOpen && (
-                              <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: `1.5px dashed ${wizard.color}60`, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+                              <div style={{ padding: '12px 14px', background: '#FFFFFF', borderRadius: 12, border: `1.5px solid ${wizard.color}60`, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <span style={{ fontSize: 11, fontWeight: 800, color: wizard.color }}>
-                                    🎨 اختر أيقونة لخيار «{opt.label}»:
-                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 800, color: wizard.color }}>
+                                      🎨 اختيار أيقونة فكتور لخيار «{opt.label}»:
+                                    </span>
+                                    <span style={{ fontSize: 10.5, color: '#64748b' }}>(مكتبة Lucide 2026)</span>
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => setOpenIconPickerOptionId(null)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10.5, color: A.textSub, fontWeight: 700 }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: A.textSub, fontWeight: 700 }}
                                   >
-                                    إلغاء ✕
+                                    إغلاق ✕
                                   </button>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(38px, 1fr))', gap: 6, maxHeight: 180, overflowY: 'auto', padding: 4 }}>
                                   {POPULAR_OPTION_ICONS.map(ic => {
                                     const isCurrent = optIcon === ic;
                                     return (
@@ -1587,13 +1595,14 @@ export const TicketRoutingTab: React.FC = () => {
                                         type="button"
                                         onClick={() => handleSetOptionIcon(field.id, opt.id, opt.label, ic)}
                                         style={{
-                                          width: 32, height: 32, borderRadius: 8, border: isCurrent ? `2px solid ${wizard.color}` : '1px solid #e2e8f0',
-                                          background: isCurrent ? `${wizard.color}20` : '#fff', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          boxShadow: isCurrent ? `0 2px 6px ${wizard.color}35` : 'none',
-                                          transition: 'transform 0.1s'
+                                          width: 38, height: 38, borderRadius: 8, border: isCurrent ? `2px solid ${wizard.color}` : '1px solid #e2e8f0',
+                                          background: isCurrent ? `${wizard.color}20` : '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          boxShadow: isCurrent ? `0 2px 8px ${wizard.color}40` : 'none',
+                                          transition: 'all 0.15s'
                                         }}
+                                        title={ic}
                                       >
-                                        {ic}
+                                        {renderRouteIcon(ic, 18, isCurrent ? wizard.color : '#475569')}
                                       </button>
                                     );
                                   })}

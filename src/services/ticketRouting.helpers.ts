@@ -195,12 +195,14 @@ export const defaultFormConfig = (): RouteFormConfig => ({
 });
 
 /**
- * Popular icons for dynamic field options & request types.
+ * Popular Lucide vector icons for dynamic field options & request types (NEXUS TDS 2026).
  */
 export const POPULAR_OPTION_ICONS = [
-  '🌴', '🏥', '⚡', '⏱️', '👤', '📋', '📄', '🎯', '📅', '✈️', '🚗', '🏢',
-  '💻', '🔧', '🖨️', '🌐', '🔒', '📱', '🛠️', '⚙️', '💡', '📡', '🔌', '🖥️',
-  '💳', '💰', '📦', '🛒', '🍽️', '☕', '⚖️', '🎓', '🏷️', '🤝', '✨', '🔔',
+  'Palmtree', 'HeartPulse', 'Zap', 'Clock', 'UserCheck', 'FileText', 'Calendar', 'Plane', 'Car', 'Building2',
+  'Monitor', 'Laptop', 'Wrench', 'Printer', 'Wifi', 'Lock', 'Smartphone', 'Settings', 'Lightbulb', 'Server',
+  'CreditCard', 'Coins', 'Package', 'ShoppingCart', 'Scale', 'GraduationCap', 'Handshake', 'Sparkles', 'Bell',
+  'ShieldCheck', 'HelpCircle', 'Flame', 'CheckCircle2', 'FileSpreadsheet', 'Briefcase', 'FolderKanban',
+  'Cpu', 'HardDrive', 'Network', 'Radio', 'KeyRound', 'Stamp', 'Droplets', 'Award', 'BadgeCheck'
 ];
 
 /**
@@ -212,63 +214,81 @@ export const LEAVE_TYPES_PRESET = {
     {
       id: 'opt_leave_annual',
       label: 'إجازة سنوية اعتيادية',
-      icon: '🌴',
+      icon: 'Palmtree',
       rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_sick',
       label: 'إجازة مرضية (بتقرير طبي)',
-      icon: '🏥',
+      icon: 'HeartPulse',
       rules: { attachmentRule: 'REQUIRED' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_emergency',
       label: 'إجازة طارئة (مع بيان السبب)',
-      icon: '⚡',
+      icon: 'Zap',
       rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'REQUIRED' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_permission',
       label: 'إذن مغادرة ساعي / تأخير',
-      icon: '⏱️',
+      icon: 'Clock',
       rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'HOURLY_WINDOW' as const }
     },
     {
       id: 'opt_leave_delegation',
       label: 'تكليف مؤقت / انتداب عمل',
-      icon: '👤',
+      icon: 'UserCheck',
       rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
   ]
 };
 
 /**
- * Resolves the visual icon for any option using explicit Admin choice or smart keyword fallback.
+ * Map legacy emojis to Lucide icon identifiers for flawless backward compatibility.
+ */
+export const EMOJI_TO_LUCIDE_MAP: Record<string, string> = {
+  '🌴': 'Palmtree', '🏥': 'HeartPulse', '⚡': 'Zap', '⏱️': 'Clock', '👤': 'UserCheck',
+  '📋': 'ClipboardList', '📄': 'FileText', '🎯': 'Target', '📅': 'Calendar', '✈️': 'Plane',
+  '🚗': 'Car', '🏢': 'Building2', '💻': 'Laptop', '🔧': 'Wrench', '🖨️': 'Printer',
+  '🌐': 'Wifi', '🔒': 'Lock', '📱': 'Smartphone', '🛠️': 'Wrench', '⚙️': 'Settings',
+  '💡': 'Lightbulb', '📡': 'Radio', '🔌': 'Zap', '🖥️': 'Monitor', '💳': 'CreditCard',
+  '💰': 'Coins', '📦': 'Package', '🛒': 'ShoppingCart', '🍽️': 'Coffee', '☕': 'Coffee',
+  '⚖️': 'Scale', '🎓': 'GraduationCap', '🏷️': 'Tag', '🤝': 'Handshake', '✨': 'Sparkles',
+  '🔔': 'Bell', '🏖️': 'Palmtree', '💼': 'Briefcase', '🛡️': 'ShieldCheck', '🚚': 'Truck'
+};
+
+/**
+ * Resolves the visual Lucide vector icon for any option using explicit Admin choice or smart keyword fallback.
  */
 export const getOptionIcon = (
   option: { id?: string; label?: string; icon?: string },
   formConfig?: RouteFormConfig
 ): string => {
-  if (option.icon && option.icon.trim()) return option.icon.trim();
-  if (option.id && formConfig?.optionIcons?.[option.id]) return formConfig.optionIcons[option.id];
-  if (option.label && formConfig?.optionIcons?.[option.label]) return formConfig.optionIcons[option.label];
+  const rawIcon = (option.icon && option.icon.trim())
+    || (option.id && formConfig?.optionIcons?.[option.id])
+    || (option.label && formConfig?.optionIcons?.[option.label]);
+
+  if (rawIcon) {
+    return EMOJI_TO_LUCIDE_MAP[rawIcon] || rawIcon;
+  }
 
   const lbl = (option.label || '').toLowerCase();
-  if (lbl.includes('سنوية') || lbl.includes('اعتيادية') || lbl.includes('استجمام')) return '🌴';
-  if (lbl.includes('مرضية') || lbl.includes('مستشفى') || lbl.includes('طبي') || lbl.includes('علاج')) return '🏥';
-  if (lbl.includes('طارئة') || lbl.includes('عاجلة') || lbl.includes('وفاة')) return '⚡';
-  if (lbl.includes('إذن') || lbl.includes('ساعي') || lbl.includes('خروج') || lbl.includes('تأخير') || lbl.includes('مغادرة')) return '⏱️';
-  if (lbl.includes('تكليف') || lbl.includes('انتداب') || lbl.includes('بديل') || lbl.includes('مهمة')) return '👤';
-  if (lbl.includes('صيانة') || lbl.includes('عطل') || lbl.includes('تصليح') || lbl.includes('فني')) return '🔧';
-  if (lbl.includes('حاسوب') || lbl.includes('كمبيوتر') || lbl.includes('لابتوب') || lbl.includes('شاشة')) return '💻';
-  if (lbl.includes('شبكة') || lbl.includes('انترنت') || lbl.includes('واي فاي')) return '🌐';
-  if (lbl.includes('طابعة') || lbl.includes('حبر') || lbl.includes('سكانر')) return '🖨️';
-  if (lbl.includes('شراء') || lbl.includes('مشتريات') || lbl.includes('صرف') || lbl.includes('فاتورة')) return '💳';
-  if (lbl.includes('سيارة') || lbl.includes('نقل') || lbl.includes('حركة') || lbl.includes('وقود')) return '🚗';
-  if (lbl.includes('مقر') || lbl.includes('مكتب') || lbl.includes('مبنى')) return '🏢';
-  if (lbl.includes('قانون') || lbl.includes('عقد') || lbl.includes('استشارة')) return '⚖️';
-  if (lbl.includes('تدريب') || lbl.includes('دورة') || lbl.includes('شهادة')) return '🎓';
-  return '📋';
+  if (lbl.includes('سنوية') || lbl.includes('اعتيادية') || lbl.includes('استجمام') || lbl.includes('راحة')) return 'Palmtree';
+  if (lbl.includes('مرضية') || lbl.includes('مستشفى') || lbl.includes('طبي') || lbl.includes('علاج')) return 'HeartPulse';
+  if (lbl.includes('طارئة') || lbl.includes('عاجلة') || lbl.includes('وفاة')) return 'Zap';
+  if (lbl.includes('إذن') || lbl.includes('ساعي') || lbl.includes('خروج') || lbl.includes('تأخير') || lbl.includes('مغادرة')) return 'Clock';
+  if (lbl.includes('تكليف') || lbl.includes('انتداب') || lbl.includes('بديل') || lbl.includes('مهمة')) return 'UserCheck';
+  if (lbl.includes('صيانة') || lbl.includes('عطل') || lbl.includes('تصليح') || lbl.includes('فني')) return 'Wrench';
+  if (lbl.includes('حاسوب') || lbl.includes('كمبيوتر') || lbl.includes('لابتوب') || lbl.includes('شاشة')) return 'Laptop';
+  if (lbl.includes('شبكة') || lbl.includes('انترنت') || lbl.includes('واي فاي')) return 'Wifi';
+  if (lbl.includes('طابعة') || lbl.includes('حبر') || lbl.includes('سكانر')) return 'Printer';
+  if (lbl.includes('شراء') || lbl.includes('مشتريات') || lbl.includes('صرف') || lbl.includes('فاتورة')) return 'CreditCard';
+  if (lbl.includes('سيارة') || lbl.includes('نقل') || lbl.includes('حركة') || lbl.includes('وقود')) return 'Car';
+  if (lbl.includes('مقر') || lbl.includes('مكتب') || lbl.includes('مبنى')) return 'Building2';
+  if (lbl.includes('قانون') || lbl.includes('عقد') || lbl.includes('استشارة')) return 'Scale';
+  if (lbl.includes('تدريب') || lbl.includes('دورة') || lbl.includes('شهادة')) return 'GraduationCap';
+  return 'ClipboardList';
 };
 
 /**

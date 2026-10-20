@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../db/client';
+import path from 'path';
+import { storageService } from '../infrastructure/StorageService';
 
 export class FunctionalController {
   
@@ -608,6 +610,13 @@ export class FunctionalController {
         (mergedMeta as any).autoAssignedTechId = autoAssignedTechId;
       }
 
+      const rawIncomingAttachments = req.body.attachments || (req.body.attachment ? [req.body.attachment] : (fields?.attachment ? [fields.attachment] : []));
+      const normalizedAttachments = Array.isArray(rawIncomingAttachments) ? rawIncomingAttachments : [rawIncomingAttachments];
+
+      (mergedMeta as any).attachments = normalizedAttachments;
+      (mergedMeta as any).formData = fields || {};
+      (mergedMeta as any).dynamicFields = fields || {};
+
       const routingMetadata = JSON.stringify(mergedMeta);
       const reqPriority = (req.body.priority || 'MEDIUM').toUpperCase();
 
@@ -628,6 +637,40 @@ export class FunctionalController {
           channel: 'PORTAL',
         }
       });
+
+      // ── Process and Store Ticket Attachments in Database ──
+      for (const att of normalizedAttachments) {
+        if (!att) continue;
+        try {
+          const parsed = typeof att === 'string' && att.startsWith('{') ? JSON.parse(att) : att;
+          const fileName = typeof parsed === 'string' ? parsed : (parsed.fileName || parsed.name || 'مرفق_طلب');
+          const mimeType = parsed.mimeType || parsed.type || 'application/octet-stream';
+          let storageKey = parsed.storageKey || parsed.fileUrl || parsed.url || `att_${ticket.id}_${Date.now()}`;
+          let sizeBytes = BigInt(parsed.sizeBytes || parsed.size || 2048);
+
+          // If base64 payload is provided, persist it to disk / storage
+          if (parsed.base64 && typeof parsed.base64 === 'string') {
+            const cleanBase64 = parsed.base64.includes(';base64,') ? parsed.base64.split(';base64,').pop()! : parsed.base64;
+            const fileBuffer = Buffer.from(cleanBase64, 'base64');
+            const uploadedUrl = await storageService.uploadFile(fileName, fileBuffer, mimeType);
+            storageKey = uploadedUrl;
+            sizeBytes = BigInt(fileBuffer.length);
+          }
+
+          await prisma.ticketFile.create({
+            data: {
+              ticketId: ticket.id,
+              fileName: fileName.replace(/\s*\(\d+(\.\d+)?\s*MB\)$/i, ''),
+              mimeType,
+              sizeBytes,
+              storageKey: `${ticket.id}_${Date.now()}_${path.basename(storageKey)}`,
+              uploadedById: user.id
+            }
+          });
+        } catch (fileErr) {
+          console.error('[FunctionalController] Failed to persist ticket attachment:', fileErr);
+        }
+      }
 
       // If auto-assigned to a technician via rule
       if (autoAssignedTechId) {

@@ -13,7 +13,7 @@ import {
   AlertTriangle, CheckCircle2, ChevronRight, Send, CornerDownLeft,
   MessageSquare, RotateCcw, FileCheck, XCircle, History,
   ArrowRightLeft, Hourglass, Plus, PlusCircle, GitBranch, ArrowLeft, ExternalLink,
-  GitPullRequest, Zap, Sun, Moon, BarChart3
+  GitPullRequest, Zap, Sun, Moon, BarChart3, Paperclip, Download, Eye
 } from 'lucide-react';
 
 // --- Types ---
@@ -2082,30 +2082,256 @@ export const OperationalQueueView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Dynamic Fields / Metadata if available */}
-                    {inspectTicket.routingMetadata && inspectTicket.routingMetadata.dynamicFields && (
-                      <div>
-                        <h4 style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
-                          البيانات المعبأة في نموذج المسار:
-                        </h4>
+                    {/* ── Form Fields & Detailed Route Data Bento Card ── */}
+                    {(() => {
+                      const rawMeta = inspectTicketDetails?.routingMetadata || inspectTicket?.routingMetadata;
+                      let resolvedMeta: any = {};
+                      if (rawMeta) {
+                        resolvedMeta = typeof rawMeta === 'object' ? rawMeta : (() => {
+                          try { return JSON.parse(rawMeta); } catch { return {}; }
+                        })();
+                      }
+                      const fieldsData = resolvedMeta.formData || resolvedMeta.dynamicFields || resolvedMeta.fields || {};
+                      const fieldEntries = Object.entries(fieldsData).filter(([k, v]) => {
+                        if (!v) return false;
+                        if (['submittedAt', 'targetDepartmentName', 'targetDivisionName', 'targetTeamName', 'attachment'].includes(k)) return false;
+                        return true;
+                      });
+
+                      const getFieldLabel = (key: string) => {
+                        if (key === 'taxonomyMain') return 'التصنيف والمستدلة الرئيسية';
+                        if (key === 'taxonomySub') return 'المشكلة / الخيار الفرعي';
+                        if (key === 'building' || key === 'buildingId') return 'المبنى والموقع';
+                        if (key === 'department') return 'الإدارة المعنية بالطلب';
+                        if (key === 'division') return 'القسم المؤسسي';
+                        if (key === 'team') return 'الفريق / الوحدة';
+                        if (key === 'scheduleEngine' || key === 'dateRange') return 'فترة السريان / الجدولة';
+                        if (key === 'delegateUser') return 'الموظف البديل المكلف';
+                        if (key.startsWith('dyn_')) return 'مستدلة ديناميكية مخصصة';
+                        if (key.startsWith('custom_') || key.startsWith('opt_input_')) return 'بيان إضافي مطلوب';
+                        return key;
+                      };
+
+                      if (fieldEntries.length === 0) return null;
+
+                      return (
                         <div style={{
-                          padding: '16px',
-                          borderRadius: '14px',
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
+                          background: isDark ? '#111827' : '#ffffff',
+                          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                          borderRadius: '16px',
+                          padding: '16px 18px',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '8px'
+                          gap: '12px'
                         }}>
-                          {Object.entries(inspectTicket.routingMetadata.dynamicFields).map(([key, val]: any) => (
-                            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #edf2f7', paddingBottom: '6px' }}>
-                              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{key}:</span>
-                              <span style={{ fontSize: '12px', color: '#0f172a', fontWeight: 700 }}>{String(val)}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '28px', height: '28px', borderRadius: '8px',
+                                background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                                color: isDark ? '#38bdf8' : '#2563eb',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}>
+                                <FileText size={16} />
+                              </div>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                                بيانات نموذج المسار المعبأة:
+                              </h4>
                             </div>
-                          ))}
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                              {fieldEntries.length} حقول مدخلة
+                            </span>
+                          </div>
+
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                            gap: '10px'
+                          }}>
+                            {fieldEntries.map(([key, val]: any) => {
+                              const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                              return (
+                                <div
+                                  key={key}
+                                  style={{
+                                    padding: '10px 12px',
+                                    borderRadius: '10px',
+                                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                                    border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '3px'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                                    {getFieldLabel(key)}
+                                  </span>
+                                  <span style={{ fontSize: '12.5px', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 800, wordBreak: 'break-word' }}>
+                                    {displayVal}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
+
+                    {/* ── Official Attachments & Documents Bento Card ── */}
+                    {(() => {
+                      const rawMeta = inspectTicketDetails?.routingMetadata || inspectTicket?.routingMetadata;
+                      let resolvedMeta: any = {};
+                      if (rawMeta) {
+                        resolvedMeta = typeof rawMeta === 'object' ? rawMeta : (() => {
+                          try { return JSON.parse(rawMeta); } catch { return {}; }
+                        })();
+                      }
+                      const dbFiles: any[] = inspectTicketDetails?.files || [];
+                      const metaAttachments: any[] = resolvedMeta.attachments || (resolvedMeta.formData?.attachment ? [resolvedMeta.formData.attachment] : []);
+
+                      // Combine files cleanly
+                      const combinedFiles: any[] = [...dbFiles];
+                      metaAttachments.forEach(ma => {
+                        const parsed = typeof ma === 'string' && ma.startsWith('{') ? JSON.parse(ma) : ma;
+                        const name = typeof parsed === 'string' ? parsed : (parsed.fileName || parsed.name);
+                        if (!name) return;
+                        const alreadyIn = combinedFiles.some(f => (f.fileName || f.name) === name);
+                        if (!alreadyIn) {
+                          combinedFiles.push({
+                            id: parsed.id || `meta_${Date.now()}`,
+                            fileName: name,
+                            sizeBytes: parsed.sizeBytes || parsed.size,
+                            sizeMB: parsed.sizeMB,
+                            mimeType: parsed.mimeType || parsed.type,
+                            fileUrl: parsed.url || parsed.fileUrl || parsed.base64,
+                            uploadedAt: parsed.uploadedAt || inspectTicket.createdAt,
+                            uploadedBy: inspectTicketDetails?.creator || { fullName: inspectTicket.creatorName }
+                          });
+                        }
+                      });
+
+                      return (
+                        <div style={{
+                          background: isDark ? '#111827' : '#ffffff',
+                          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                          borderRadius: '16px',
+                          padding: '16px 18px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '28px', height: '28px', borderRadius: '8px',
+                                background: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                                color: '#10b981',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}>
+                                <Paperclip size={16} />
+                              </div>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                                المرفقات والوثائق الرسمية ({combinedFiles.length}):
+                              </h4>
+                            </div>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                              {combinedFiles.length > 0 ? 'مستندات ثبوتية معتمدة' : 'لا توجد مرفقات'}
+                            </span>
+                          </div>
+
+                          {combinedFiles.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {combinedFiles.map((file, idx) => {
+                                const fName = file.fileName || file.name || `مستند_${idx + 1}`;
+                                const fSize = file.sizeMB
+                                  ? `${file.sizeMB} MB`
+                                  : (file.sizeBytes ? `${(Number(file.sizeBytes) / (1024 * 1024)).toFixed(2)} MB` : '');
+                                const fileTarget = file.fileUrl || file.storageKey || (file.id ? `/api/v1/storage/${file.fileName}` : '#');
+
+                                return (
+                                  <div
+                                    key={file.id || idx}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: '10px 14px',
+                                      borderRadius: '12px',
+                                      background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                                      gap: '12px'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                                      <div style={{
+                                        width: '32px', height: '32px', borderRadius: '8px',
+                                        background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                                        color: isDark ? '#38bdf8' : '#2563eb',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        flexShrink: 0
+                                      }}>
+                                        <FileText size={18} />
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                        <span style={{
+                                          fontSize: '12.5px', fontWeight: 700,
+                                          color: isDark ? '#ffffff' : '#0f172a',
+                                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                          maxWidth: '280px'
+                                        }}>
+                                          {fName}
+                                        </span>
+                                        <span style={{ fontSize: '10.5px', color: '#64748b' }}>
+                                          {fSize && `${fSize} • `}مرفوع بواسطة: {file.uploadedBy?.fullName || inspectTicket.creatorName || 'صاحب الطلب'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                      {fileTarget && fileTarget !== '#' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (file.fileUrl && file.fileUrl.startsWith('data:')) {
+                                              const win = window.open();
+                                              if (win) {
+                                                win.document.write(`<iframe src="${file.fileUrl}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                              }
+                                            } else {
+                                              window.open(fileTarget, '_blank');
+                                            }
+                                          }}
+                                          style={{
+                                            padding: '5px 10px', borderRadius: '7px',
+                                            border: isDark ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid #bfdbfe',
+                                            background: isDark ? 'rgba(56, 189, 248, 0.12)' : '#eff6ff',
+                                            color: isDark ? '#38bdf8' : '#2563eb',
+                                            fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '5px'
+                                          }}
+                                        >
+                                          <Eye size={13} />
+                                          <span>معاينة</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div style={{
+                              padding: '14px', borderRadius: '10px',
+                              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                              border: isDark ? '1px dashed rgba(255, 255, 255, 0.06)' : '1px dashed #e2e8f0',
+                              textAlign: 'center', color: '#94a3b8', fontSize: '12px'
+                            }}>
+                              لم يُرفق صاحب المعاملة أي ملفات إضافية مع هذا الطلب.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Linked Parent Ticket Info if this is a sub-ticket */}
                     {(inspectTicketDetails?.parentTicket || inspectTicket.parentId) && (
