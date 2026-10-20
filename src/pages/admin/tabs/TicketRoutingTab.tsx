@@ -896,16 +896,34 @@ export const TicketRoutingTab: React.FC = () => {
               <div
                 key={cat.id}
                 onClick={() => {
-                  setW({ routeCategory: cat.id as any });
-                  if (cat.id === 'TIME_OFF') {
-                    // Activate schedule engine & global company delegate picker
+                  const catId = cat.id as any;
+                  setW({ routeCategory: catId });
+                  if (catId === 'TIME_OFF') {
+                    // Activate schedule engine & global company delegate picker for HR
                     setFC({
                       showScheduleEngine: true,
                       scheduleMode: 'DATE_RANGE',
                       scheduleLabel: 'فترة الإجازة أو المغادرة',
                       showDelegateUser: true,
                       delegateScope: 'ALL_COMPANY_USERS',
-                      delegateUserLabel: 'الموظف المكلف بالعمل / البديل',
+                      delegateTriggerMode: 'ONLY_ON_ASSIGNMENT',
+                      showAmountField: false,
+                    });
+                  } else if (catId === 'FINANCIAL') {
+                    // Activate financial amount field and disable HR engines
+                    setFC({
+                      showScheduleEngine: false,
+                      showDelegateUser: false,
+                      showAmountField: true,
+                      mandatoryAmount: true,
+                      amountFieldLabel: 'المبلغ المالي المطلوب (د.ل)',
+                    });
+                  } else {
+                    // OPERATIONAL / GENERAL: Clean professional IT & operational setup
+                    setFC({
+                      showScheduleEngine: false,
+                      showDelegateUser: false,
+                      showAmountField: false,
                     });
                   }
                 }}
@@ -1278,33 +1296,42 @@ export const TicketRoutingTab: React.FC = () => {
             </div>
           </div>
 
-          {/* 🏖️ حزمة قوالب الإجازات والمهام القياسية الجاهزة (One-Click Preset) */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'linear-gradient(135deg, rgba(19, 93, 121, 0.08), rgba(243, 108, 33, 0.08))', border: '1.5px dashed #135d7960', borderRadius: 12, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 24 }}>🏖️</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#135d79', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>حزمة أنواع الإجازات والمهام القياسية الجاهزة</span>
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: '#135d79', color: '#fff', fontWeight: 700 }}>ذكية متكاملة</span>
-                </div>
-                <div style={{ fontSize: 11, color: A.textSub, marginTop: 2 }}>
-                  تجهيز تلقائي لكافة الأنواع (سنوية بدون مرفق، مرضية بتقرير إلزامي، طارئة بشرح إلزامي، إذن ساعي، تكليف ببديل) بنقرة زر واحدة
+          {taxMode === 'chips' && (
+            <div style={{ padding: '8px 12px', background: `${wizard.color}10`, border: `1px dashed ${wizard.color}40`, borderRadius: 8, marginBottom: 14, fontSize: 11, color: wizard.color, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🎨</span>
+              <span><strong>نمط الأيقونات نشط:</strong> يقوم النظام تلقائياً بتحديد شكل أيقونة مناسب بحسب نوع المحتوى، ويمكنك تخصيص شكل أي أيقونة بالنقر على الزر بجانب كل خيار.</span>
+            </div>
+          )}
+
+          {/* 🏖️ حزمة قوالب الإجازات والمهام القياسية الجاهزة (تظهر فقط في مسارات الموارد البشرية والإجازات) */}
+          {wizard.routeCategory === 'TIME_OFF' && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(19, 93, 121, 0.08))', border: '1.5px dashed #10b98160', borderRadius: 12, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 24 }}>🏖️</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>حزمة أنواع الإجازات والمهام القياسية الجاهزة</span>
+                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: '#10b981', color: '#fff', fontWeight: 700 }}>ذكية متكاملة</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: A.textSub, marginTop: 2 }}>
+                    تجهيز تلقائي لكافة الأنواع (سنوية بدون مرفق، مرضية بتقرير إلزامي، طارئة بشرح إلزامي، إذن ساعي، تكليف ببديل) بنقرة زر واحدة
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={handleApplyLeavePreset}
+                style={{
+                  padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #10b981, #135d79)',
+                  color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>⚡ إدراج حزمة الإجازات الجاهزة</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleApplyLeavePreset}
-              style={{
-                padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #135d79, #f36c21)',
-                color: '#fff', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer',
-                boxShadow: '0 2px 10px rgba(19, 93, 121, 0.25)', display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'all 0.15s'
-              }}
-            >
-              <span>⚡ إدراج حزمة الإجازات الجاهزة</span>
-            </button>
-          </div>
+          )}
 
           {isBuildingField ? (
             <div className="field-card" style={{ border: `2px solid ${wizard.color}55`, background: '#F8FAFC' }}>
@@ -1349,20 +1376,22 @@ export const TicketRoutingTab: React.FC = () => {
                           <button onClick={() => moveDraftOption(idx, 1)} disabled={idx === (fieldDraft.options?.length || 0) - 1} style={{ background: 'none', border: 'none', cursor: idx === (fieldDraft.options?.length || 0) - 1 ? 'default' : 'pointer', opacity: idx === (fieldDraft.options?.length || 0) - 1 ? 0.3 : 1, padding: 0, fontSize: 10, color: A.textSub }}>▼</button>
                         </div>
 
-                        {/* Icon Button with Popover */}
-                        <button
-                          type="button"
-                          onClick={() => setOpenIconPickerOptionId(isPickerOpen ? null : `draft_${o.id}`)}
-                          style={{
-                            padding: '3px 8px', borderRadius: 6, fontSize: 14, background: '#F8FAFC',
-                            border: `1.5px solid ${isPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: 4
-                          }}
-                          title="اختر أيقونة لهذا الخيار"
-                        >
-                          <span>{draftIcon}</span>
-                          <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
-                        </button>
+                        {/* Icon Button with Popover - only in chips mode */}
+                        {taxMode === 'chips' && (
+                          <button
+                            type="button"
+                            onClick={() => setOpenIconPickerOptionId(isPickerOpen ? null : `draft_${o.id}`)}
+                            style={{
+                              padding: '3px 8px', borderRadius: 6, fontSize: 14, background: '#F8FAFC',
+                              border: `1.5px solid ${isPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', gap: 4
+                            }}
+                            title="تحديد شكل الأيقونة لهذا الخيار (تلقائي بحسب المحتوى)"
+                          >
+                            <span>{draftIcon}</span>
+                            <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
+                          </button>
+                        )}
 
                         <input 
                           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 600, color: A.text }} 
@@ -1373,7 +1402,7 @@ export const TicketRoutingTab: React.FC = () => {
                       </div>
 
                       {/* Icon Picker Popover */}
-                      {isPickerOpen && (
+                      {taxMode === 'chips' && isPickerOpen && (
                         <div style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: `1px solid ${wizard.color}40`, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                           {POPULAR_OPTION_ICONS.map(ic => (
                             <button
@@ -1458,20 +1487,22 @@ export const TicketRoutingTab: React.FC = () => {
                           <div key={opt.id} style={{ display:'flex', flexDirection:'column', gap:8, background: '#fff', padding: '10px 14px', borderRadius: 10, border: `1px solid ${A.sep}` }}>
                             <div style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {/* Icon Button with Popover */}
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenIconPickerOptionId(isIconPickerOpen ? null : `opt_${opt.id}`)}
-                                  style={{
-                                    padding: '3px 8px', borderRadius: 8, fontSize: 14,
-                                    background: '#F8FAFC', border: `1.5px solid ${isIconPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
-                                    display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.15s'
-                                  }}
-                                  title="تغيير أيقونة هذا الخيار"
-                                >
-                                  <span>{optIcon}</span>
-                                  <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
-                                </button>
+                                {/* Icon Button with Popover - only shown when chips mode is active */}
+                                {taxMode === 'chips' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenIconPickerOptionId(isIconPickerOpen ? null : `opt_${opt.id}`)}
+                                    style={{
+                                      padding: '3px 8px', borderRadius: 8, fontSize: 14,
+                                      background: '#F8FAFC', border: `1.5px solid ${isIconPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
+                                      display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.15s'
+                                    }}
+                                    title="تغيير أيقونة هذا الخيار (تلقائي بحسب المحتوى)"
+                                  >
+                                    <span>{optIcon}</span>
+                                    <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
+                                  </button>
+                                )}
 
                                 <div className="option-tag" style={{ margin:0, fontWeight: 700, fontSize: 12.5 }}>
                                   {opt.label}
@@ -1533,7 +1564,7 @@ export const TicketRoutingTab: React.FC = () => {
                             </div>
 
                             {/* Icon Picker Popover */}
-                            {isIconPickerOpen && (
+                            {taxMode === 'chips' && isIconPickerOpen && (
                               <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: `1.5px dashed ${wizard.color}60`, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   <span style={{ fontSize: 11, fontWeight: 800, color: wizard.color }}>
@@ -1570,8 +1601,8 @@ export const TicketRoutingTab: React.FC = () => {
                               </div>
                             )}
 
-                            {/* Option Behavior Rules: Attachments, Description, Scheduling */}
-                            {(() => {
+                            {/* Option Behavior Rules: Only for HR / TIME_OFF routes */}
+                            {wizard.routeCategory === 'TIME_OFF' && (() => {
                               const optRules = wizard.formConfig.optionBehaviorRules || {};
                               const currentRule = optRules[opt.id] || optRules[opt.label] || {};
                               const attachRule = currentRule.attachmentRule || (wizard.formConfig.mandatoryAttachments ? 'REQUIRED' : wizard.formConfig.showAttachments ? 'OPTIONAL' : 'HIDDEN');
@@ -2139,171 +2170,215 @@ export const TicketRoutingTab: React.FC = () => {
           </div>
         </div>
 
-        {/* ── 4. محركات الوظائف المتخصصة (Scheduling, Delegate, Description, Attachments) ── */}
+        {/* ── 4. المحركات التشغيلية المتخصصة حسب طبيعة المسار ── */}
         <div style={{ background: '#fff', borderRadius: 14, border: `1px solid ${A.sep}`, padding: '18px', boxShadow: A.shadow, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: A.text, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span>⚡</span>
-            <span>المحركات التشغيلية والمرفقات</span>
+            <span>
+              {wizard.routeCategory === 'TIME_OFF'
+                ? 'المحركات التشغيلية لمسارات الإجازات والموارد البشرية'
+                : wizard.routeCategory === 'FINANCIAL'
+                ? 'المحركات والبيانات المالية للمسار'
+                : 'المحركات التشغيلية للمسار المهني والدعم الفني'}
+            </span>
           </div>
 
-          {/* Smart Scheduling Engine */}
-          {(() => {
-            const isScheduleActive = !!(wizard.formConfig.showScheduleEngine || wizard.formConfig.showDateRange);
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', padding: '14px', background: '#F8FAFC', borderRadius: 12, border: `1px solid ${isScheduleActive ? wizard.color + '45' : A.sep}`, transition: 'all 0.2s' }}>
+          {/* ── مسارات الموارد البشرية (TIME_OFF): محرك الجدولة الزمنية + الموظف المكلف ── */}
+          {wizard.routeCategory === 'TIME_OFF' && (
+            <>
+              {/* Smart Scheduling Engine */}
+              {(() => {
+                const isScheduleActive = !!(wizard.formConfig.showScheduleEngine || wizard.formConfig.showDateRange);
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', padding: '14px', background: '#F8FAFC', borderRadius: 12, border: `1px solid ${isScheduleActive ? wizard.color + '45' : A.sep}`, transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: isScheduleActive ? `${wizard.color}15` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, border: `1px solid ${A.sep}` }}>
+                          🗓️
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>محرك الجدولة الزمنية والوقت الذكي (Scheduling Engine)</div>
+                          <div style={{ fontSize: 11, color: A.textSub }}>فترات إجازة بعداد تلقائي، أيام متفرقة، وأذونات ساعية</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {isScheduleActive && (
+                          <div onClick={() => setFC({ mandatorySchedule: !wizard.formConfig.mandatorySchedule, mandatoryDateRange: !wizard.formConfig.mandatorySchedule })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? A.red : A.textSub, fontWeight: 700, background: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fef2f2' : '#fff', padding: '4px 10px', borderRadius: 6, border: `1px solid ${(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fecaca' : A.sep}`, userSelect: 'none' }}>
+                            {(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '🔴 إلزامي' : '⚪ اختياري'}
+                          </div>
+                        )}
+                        <div onClick={() => setFC({ showScheduleEngine: !isScheduleActive, showDateRange: !isScheduleActive })} style={{ width: 40, height: 22, borderRadius: 11, background: isScheduleActive ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', top: 2, left: isScheduleActive ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {isScheduleActive && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نمط الجدولة الزمنية المطلوب</label>
+                            <select className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} value={wizard.formConfig.scheduleMode || 'ANY'} onChange={e => setFC({ scheduleMode: e.target.value as any })}>
+                              <option value="ANY">🔀 نمط مرن وشامل (فترة، أيام متفرقة، أو إذن ساعي)</option>
+                              <option value="DATE_RANGE">📆 فترة متصلة بأيام محسوبة (من - إلى مع عداد الأيام)</option>
+                              <option value="DISCRETE_DAYS">🗓️ أيام متعددة متفرقة (اختيار تواريخ متفرقة مع عداد)</option>
+                              <option value="HOURLY_WINDOW">⏱️ إذن ساعي (تاريخ + من وإلى الساعة بدقة الدقائق)</option>
+                              <option value="SINGLE_DATE">📅 موعد أو تاريخ محدد (يوم واحد فقط)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+                            <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: فترة الإجازة / الموعد المحدد" value={wizard.formConfig.scheduleLabel || wizard.formConfig.dateRangeLabel || ''} onChange={e => setFC({ scheduleLabel: e.target.value, dateRangeLabel: e.target.value })} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Delegate Colleague */}
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '14px', background: '#F8FAFC', borderRadius: 12, border: `1px solid ${wizard.formConfig.showDelegateUser ? wizard.color + '45' : A.sep}`, transition: 'all 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 10, background: isScheduleActive ? `${wizard.color}15` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, border: `1px solid ${A.sep}` }}>
-                      🗓️
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: wizard.formConfig.showDelegateUser ? `${wizard.color}15` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, border: `1px solid ${A.sep}` }}>
+                      👤
                     </div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>محرك الجدولة الزمنية والوقت الذكي (Scheduling Engine)</div>
-                      <div style={{ fontSize: 11, color: A.textSub }}>فترات إجازة بعداد تلقائي، أيام متفرقة، وأذونات ساعية</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>الموظف المكلف بالعمل / البديل (Covering & Delegate Employee)</div>
+                      <div style={{ fontSize: 11, color: A.textSub }}>تحديد زميل لتسليم المهام مع بحث حي فوري عبر كامل دليل موظفي الشركة</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {isScheduleActive && (
-                      <div onClick={() => setFC({ mandatorySchedule: !wizard.formConfig.mandatorySchedule, mandatoryDateRange: !wizard.formConfig.mandatorySchedule })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? A.red : A.textSub, fontWeight: 700, background: (wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fef2f2' : '#fff', padding: '4px 10px', borderRadius: 6, border: `1px solid ${(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '#fecaca' : A.sep}`, userSelect: 'none' }}>
-                        {(wizard.formConfig.mandatorySchedule || wizard.formConfig.mandatoryDateRange) ? '🔴 إلزامي' : '⚪ اختياري'}
+                    {wizard.formConfig.showDelegateUser && (
+                      <div onClick={() => setFC({ mandatoryDelegateUser: !wizard.formConfig.mandatoryDelegateUser })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDelegateUser ? A.red : A.textSub, fontWeight: 700, background: wizard.formConfig.mandatoryDelegateUser ? '#fef2f2' : '#fff', padding: '4px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDelegateUser ? '#fecaca' : A.sep}`, userSelect: 'none' }}>
+                        {wizard.formConfig.mandatoryDelegateUser ? '🔴 إلزامي' : '⚪ اختياري'}
                       </div>
                     )}
-                    <div onClick={() => setFC({ showScheduleEngine: !isScheduleActive, showDateRange: !isScheduleActive })} style={{ width: 40, height: 22, borderRadius: 11, background: isScheduleActive ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-                      <div style={{ position: 'absolute', top: 2, left: isScheduleActive ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                    <div onClick={() => setFC({ showDelegateUser: !wizard.formConfig.showDelegateUser })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDelegateUser ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                      <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDelegateUser ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
                     </div>
                   </div>
                 </div>
-
-                {isScheduleActive && (
+                {wizard.formConfig.showDelegateUser && (
                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نمط الجدولة الزمنية المطلوب</label>
-                        <select className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} value={wizard.formConfig.scheduleMode || 'ANY'} onChange={e => setFC({ scheduleMode: e.target.value as any })}>
-                          <option value="ANY">🔀 نمط مرن وشامل (فترة، أيام متفرقة، أو إذن ساعي)</option>
-                          <option value="DATE_RANGE">📆 فترة متصلة بأيام محسوبة (من - إلى مع عداد الأيام)</option>
-                          <option value="DISCRETE_DAYS">🗓️ أيام متعددة متفرقة (اختيار تواريخ متفرقة مع عداد)</option>
-                          <option value="HOURLY_WINDOW">⏱️ إذن ساعي (تاريخ + من وإلى الساعة بدقة الدقائق)</option>
-                          <option value="SINGLE_DATE">📅 موعد أو تاريخ محدد (يوم واحد فقط)</option>
-                        </select>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+                        <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: الموظف المكلف بالعمل / البديل" value={wizard.formConfig.delegateUserLabel || ''} onChange={e => setFC({ delegateUserLabel: e.target.value })} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
-                        <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: فترة الإجازة / الموعد المحدد" value={wizard.formConfig.scheduleLabel || wizard.formConfig.dateRangeLabel || ''} onChange={e => setFC({ scheduleLabel: e.target.value, dateRangeLabel: e.target.value })} />
+                        <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نطاق اختيار الموظف المكلف</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => setFC({ delegateScope: 'ALL_COMPANY_USERS' })}
+                            style={{
+                              flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              border: `1.5px solid ${(!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.sep}`,
+                              background: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? `${wizard.color}15` : '#fff',
+                              color: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.textSub,
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            🌐 جميع موظفي الشركة (دليل شامل)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFC({ delegateScope: 'SAME_DEPARTMENT' })}
+                            style={{
+                              flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              border: `1.5px solid ${wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.sep}`,
+                              background: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? `${wizard.color}15` : '#fff',
+                              color: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.textSub,
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            🏛️ نفس الإدارة فقط
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* شرط الظهور الذكي لحقل الموظف المكلف */}
+                      <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: A.text, display: 'block', marginBottom: 6 }}>شرط وتوقيت ظهور حقل الموظف المكلف في النموذج</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8 }}>
+                          <div
+                            onClick={() => setFC({ delegateTriggerMode: 'ONLY_ON_ASSIGNMENT' })}
+                            style={{
+                              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                              background: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? '#fff' : 'rgba(255,255,255,0.6)',
+                              border: `1.5px solid ${(!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.sep}`,
+                              boxShadow: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? `0 2px 8px ${wizard.color}20` : 'none',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <div style={{ fontSize: 12, fontWeight: 800, color: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🎯</span> فقط عند اختيار نوع طلب تكليف مؤقت / انتداب (ذكي موصى به)
+                            </div>
+                            <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
+                              يختفي تماماً في الإجازات والأذونات الساعية، ويظهر للموظف فقط عندما يختار نوع الطلب تكليفاً مؤقتاً
+                            </div>
+                          </div>
+
+                          <div
+                            onClick={() => setFC({ delegateTriggerMode: 'ALWAYS' })}
+                            style={{
+                              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                              background: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? '#fff' : 'rgba(255,255,255,0.6)',
+                              border: `1.5px solid ${wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.sep}`,
+                              boxShadow: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? `0 2px 8px ${wizard.color}20` : 'none',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <div style={{ fontSize: 12, fontWeight: 800, color: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🌐</span> دائماً في كافة طلبات هذا المسار
+                            </div>
+                            <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
+                              يظهر حقل الزميل البديل دائماً لكافة الموظفين بصرف النظر عن نوع المعاملة
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            );
-          })()}
+            </>
+          )}
 
-          {/* Delegate Colleague */}
-          <div style={{ display: 'flex', flexDirection: 'column', padding: '14px', background: '#F8FAFC', borderRadius: 12, border: `1px solid ${wizard.formConfig.showDelegateUser ? wizard.color + '45' : A.sep}`, transition: 'all 0.2s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: wizard.formConfig.showDelegateUser ? `${wizard.color}15` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, border: `1px solid ${A.sep}` }}>
-                  👤
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>الموظف المكلف بالعمل / البديل (Covering & Delegate Employee)</div>
-                  <div style={{ fontSize: 11, color: A.textSub }}>تحديد زميل لتسليم المهام مع بحث حي فوري عبر كامل دليل موظفي الشركة</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {wizard.formConfig.showDelegateUser && (
-                  <div onClick={() => setFC({ mandatoryDelegateUser: !wizard.formConfig.mandatoryDelegateUser })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryDelegateUser ? A.red : A.textSub, fontWeight: 700, background: wizard.formConfig.mandatoryDelegateUser ? '#fef2f2' : '#fff', padding: '4px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryDelegateUser ? '#fecaca' : A.sep}`, userSelect: 'none' }}>
-                    {wizard.formConfig.mandatoryDelegateUser ? '🔴 إلزامي' : '⚪ اختياري'}
+          {/* ── مسارات المالية (FINANCIAL): حقل المبلغ المالي المطلوب ── */}
+          {wizard.routeCategory === 'FINANCIAL' && (
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '14px', background: '#F8FAFC', borderRadius: 12, border: `1px solid ${wizard.formConfig.showAmountField ? wizard.color + '45' : A.sep}`, transition: 'all 0.2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: wizard.formConfig.showAmountField ? `${wizard.color}15` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, border: `1px solid ${A.sep}` }}>
+                    💰
                   </div>
-                )}
-                <div onClick={() => setFC({ showDelegateUser: !wizard.formConfig.showDelegateUser })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showDelegateUser ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-                  <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showDelegateUser ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: A.text }}>حقل المبلغ المالي المطلوب (Financial Amount & Currency)</div>
+                    <div style={{ fontSize: 11, color: A.textSub }}>تحديد المبلغ النقدي المطلوب للصرف أو المشتريات بالدينار الليبي</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {wizard.formConfig.showAmountField && (
+                    <div onClick={() => setFC({ mandatoryAmount: !wizard.formConfig.mandatoryAmount })} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: wizard.formConfig.mandatoryAmount ? A.red : A.textSub, fontWeight: 700, background: wizard.formConfig.mandatoryAmount ? '#fef2f2' : '#fff', padding: '4px 10px', borderRadius: 6, border: `1px solid ${wizard.formConfig.mandatoryAmount ? '#fecaca' : A.sep}`, userSelect: 'none' }}>
+                      {wizard.formConfig.mandatoryAmount ? '🔴 إلزامي' : '⚪ اختياري'}
+                    </div>
+                  )}
+                  <div onClick={() => setFC({ showAmountField: !wizard.formConfig.showAmountField })} style={{ width: 40, height: 22, borderRadius: 11, background: wizard.formConfig.showAmountField ? wizard.color : '#d1d5db', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: wizard.formConfig.showAmountField ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.2s' }} />
+                  </div>
                 </div>
               </div>
+              {wizard.formConfig.showAmountField && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}` }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
+                  <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: المبلغ المالي المطلوب (د.ل)" value={wizard.formConfig.amountFieldLabel || ''} onChange={e => setFC({ amountFieldLabel: e.target.value })} />
+                </div>
+              )}
             </div>
-            {wizard.formConfig.showDelegateUser && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${A.sep}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
-                  <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>تسمية الحقل في النموذج</label>
-                    <input className="tr-input" style={{ fontSize: 12, padding: '7px 10px', background: '#fff' }} placeholder="مثال: الموظف المكلف بالعمل / البديل" value={wizard.formConfig.delegateUserLabel || ''} onChange={e => setFC({ delegateUserLabel: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: A.textSub, display: 'block', marginBottom: 5 }}>نطاق اختيار الموظف المكلف</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={() => setFC({ delegateScope: 'ALL_COMPANY_USERS' })}
-                        style={{
-                          flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                          border: `1.5px solid ${(!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.sep}`,
-                          background: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? `${wizard.color}15` : '#fff',
-                          color: (!wizard.formConfig.delegateScope || wizard.formConfig.delegateScope === 'ALL_COMPANY_USERS') ? wizard.color : A.textSub,
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        🌐 جميع موظفي الشركة (دليل شامل)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFC({ delegateScope: 'SAME_DEPARTMENT' })}
-                        style={{
-                          flex: 1, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                          border: `1.5px solid ${wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.sep}`,
-                          background: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? `${wizard.color}15` : '#fff',
-                          color: wizard.formConfig.delegateScope === 'SAME_DEPARTMENT' ? wizard.color : A.textSub,
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        🏛️ نفس الإدارة فقط
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* شرط الظهور الذكي لحقل الموظف المكلف */}
-                  <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: A.text, display: 'block', marginBottom: 6 }}>شرط وتوقيت ظهور حقل الموظف المكلف في النموذج</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8 }}>
-                      <div
-                        onClick={() => setFC({ delegateTriggerMode: 'ONLY_ON_ASSIGNMENT' })}
-                        style={{
-                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                          background: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? '#fff' : 'rgba(255,255,255,0.6)',
-                          border: `1.5px solid ${(!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.sep}`,
-                          boxShadow: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? `0 2px 8px ${wizard.color}20` : 'none',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <div style={{ fontSize: 12, fontWeight: 800, color: (!wizard.formConfig.delegateTriggerMode || wizard.formConfig.delegateTriggerMode === 'ONLY_ON_ASSIGNMENT') ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>🎯</span> فقط عند اختيار نوع طلب تكليف مؤقت / انتداب (ذكي موصى به)
-                        </div>
-                        <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
-                          يختفي تماماً في الإجازات والأذونات الساعية، ويظهر للموظف فقط عندما يختار نوع الطلب تكليفاً مؤقتاً
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => setFC({ delegateTriggerMode: 'ALWAYS' })}
-                        style={{
-                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                          background: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? '#fff' : 'rgba(255,255,255,0.6)',
-                          border: `1.5px solid ${wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.sep}`,
-                          boxShadow: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? `0 2px 8px ${wizard.color}20` : 'none',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <div style={{ fontSize: 12, fontWeight: 800, color: wizard.formConfig.delegateTriggerMode === 'ALWAYS' ? wizard.color : A.text, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>🌐</span> دائماً في كافة طلبات هذا المسار
-                        </div>
-                        <div style={{ fontSize: 10.5, color: A.textSub, marginTop: 4, lineHeight: 1.4 }}>
-                          يظهر حقل الزميل البديل دائماً لكافة الموظفين بصرف النظر عن نوع المعاملة
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Problem Description */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#F8FAFC', borderRadius: 10, border: `1px solid ${wizard.formConfig.showDescription ? wizard.color + '40' : A.sep}`, transition: 'all 0.2s' }}>
@@ -2438,6 +2513,9 @@ export const TicketRoutingTab: React.FC = () => {
     }
     if (fc.showDelegateUser) {
       items.push({ id: 'delegateUser', label: fc.delegateUserLabel || 'الموظف البديل / تسليم المهام', typeLabel: 'تفويض مؤسسي', icon: '👤', isRequired: !!fc.mandatoryDelegateUser });
+    }
+    if (fc.showAmountField) {
+      items.push({ id: 'amount', label: fc.amountFieldLabel || 'المبلغ المالي المطلوب', typeLabel: 'بيانات مالية', icon: '💰', isRequired: !!fc.mandatoryAmount });
     }
     if (fc.showDescription) {
       items.push({ id: 'description', label: 'وصف المشكلة / الطلب', typeLabel: 'شرح وملاحظات', icon: '✏️', isRequired: !!fc.mandatoryDescription });
@@ -3082,6 +3160,21 @@ export const TicketRoutingTab: React.FC = () => {
                               required={field.isRequired}
                               scope={wizard.formConfig.delegateScope || 'ALL_COMPANY_USERS'}
                             />
+                          </div>
+                        );
+                      }
+
+                      // Financial Amount Field
+                      if (field.id === 'amount') {
+                        return (
+                          <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <label style={{ fontSize: 11, fontWeight: 600, color: A.text, display: 'block', margin: 0 }}>
+                              💰 {field.label} {field.isRequired && <span style={{ color: A.red }}>*</span>}
+                            </label>
+                            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#F8FAFC', border: '1.5px solid #E2E8F0', fontSize: 11.5, color: A.textTer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>مثال: 1,500 د.ل</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: A.textSub }}>LYD</span>
+                            </div>
                           </div>
                         );
                       }

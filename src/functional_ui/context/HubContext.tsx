@@ -262,6 +262,17 @@ export const parseRoutesToRequests = (
         });
       }
 
+      // 6.1. Financial Amount Field (حقل المبلغ المالي لمسارات المالية)
+      if (cfg.showAmountField) {
+        fields.push({
+          name: 'amount',
+          label: cfg.amountFieldLabel || 'المبلغ المالي المطلوب',
+          type: 'text',
+          required: !!cfg.mandatoryAmount,
+          placeholder: 'مثال: 1,500 د.ل',
+        });
+      }
+
       // 7. Description (Always present for user to describe their issue/request unless explicitly hidden)
       if (cfg.showDescription !== false) {
         fields.push({
