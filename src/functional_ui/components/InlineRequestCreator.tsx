@@ -21,7 +21,7 @@ import {
   Ticket, ChevronDown
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
-import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule } from '../../services/ticketRouting.helpers';
+import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon } from '../../services/ticketRouting.helpers';
 import {
   getTopLevelDepartments,
   getDivisionsForDepartment,
@@ -60,7 +60,7 @@ function ModernSelect({
   darkMode = true,
 }: {
   label: string;
-  options: (string | { id?: string; label?: string; name?: string })[];
+  options: (string | { id?: string; label?: string; name?: string; icon?: string })[];
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
@@ -73,10 +73,14 @@ function ModernSelect({
 
   const normalizedOpts = useMemo(() => {
     return options.map(opt => {
-      if (typeof opt === 'string') return { value: opt, label: opt };
+      if (typeof opt === 'string') {
+        const icon = getOptionIcon({ id: opt, label: opt });
+        return { value: opt, label: opt, icon };
+      }
       const v = opt.id || opt.name || opt.label || '';
       const l = opt.label || opt.name || opt.id || '';
-      return { value: v, label: l };
+      const icon = opt.icon || getOptionIcon({ id: v, label: l });
+      return { value: v, label: l, icon };
     });
   }, [options]);
 
@@ -130,11 +134,14 @@ function ModernSelect({
           boxSizing: 'border-box',
         }}
       >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selectedItem
-            ? selectedItem.label
-            : (normalizedOpts.length === 0 ? `لا توجد خيارات متاحة (${label})` : `اختر من القائمة: ${label}...`)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+          {selectedItem?.icon && <span style={{ fontSize: '14px', flexShrink: 0 }}>{selectedItem.icon}</span>}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedItem
+              ? selectedItem.label
+              : (normalizedOpts.length === 0 ? `لا توجد خيارات متاحة (${label})` : `اختر من القائمة: ${label}...`)}
+          </span>
+        </div>
         <ChevronLeft
           size={14}
           style={{
@@ -241,9 +248,12 @@ function ModernSelect({
                         if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
                       }}
                     >
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {opt.label}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        {opt.icon && <span style={{ fontSize: '13px', flexShrink: 0 }}>{opt.icon}</span>}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {opt.label}
+                        </span>
+                      </div>
                       {isSelected && <Check size={13} color={darkMode ? '#38bdf8' : '#2563eb'} />}
                     </button>
                   );
@@ -295,20 +305,23 @@ function FieldInput({
   const focusBorder = darkMode ? '#38bdf8' : '#2563eb';
   const borderDefault = darkMode ? 'rgba(255, 255, 255, 0.14)' : '#cbd5e1';
 
-  // 1. SELECT TYPES -> ROUTE TO MODERN SELECT
   // 1. SELECT TYPES -> ROUTE TO MODERN SELECT OR CHIPS
   if (field.type === 'select') {
     const isChips = (field as any).displayMode === 'chips';
     const opts = (field.options || []).map(opt => {
-      if (typeof opt === 'string') return { value: opt, label: opt };
+      if (typeof opt === 'string') {
+        const icon = getOptionIcon({ id: opt, label: opt });
+        return { value: opt, label: opt, icon };
+      }
       const v = (opt as any).id || (opt as any).name || (opt as any).label || '';
       const l = (opt as any).label || (opt as any).name || (opt as any).id || '';
-      return { value: v, label: l };
+      const icon = (opt as any).icon || getOptionIcon({ id: v, label: l });
+      return { value: v, label: l, icon };
     });
 
     if (isChips) {
       return (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', width: '100%' }}>
           {opts.map(opt => {
             const isSelected = value === opt.value || value === opt.label;
             return (
@@ -317,7 +330,7 @@ function FieldInput({
                 type="button"
                 onClick={() => onChange(isSelected ? '' : opt.label)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '7px 13px',
                   borderRadius: '8px',
                   border: isSelected
                     ? '1.5px solid #38bdf8'
@@ -339,6 +352,7 @@ function FieldInput({
                   boxShadow: isSelected ? '0 0 10px rgba(56, 189, 248, 0.25)' : 'none',
                 }}
               >
+                {opt.icon && <span style={{ fontSize: '13.5px', lineHeight: 1 }}>{opt.icon}</span>}
                 <span>{opt.label}</span>
                 {isSelected && <Check size={12} color={darkMode ? '#38bdf8' : '#2563eb'} />}
               </button>
@@ -351,7 +365,7 @@ function FieldInput({
     return (
       <ModernSelect
         label={field.label}
-        options={field.options || []}
+        options={opts}
         value={value}
         onChange={onChange}
         required={field.required}

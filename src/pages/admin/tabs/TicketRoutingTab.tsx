@@ -20,6 +20,8 @@ import {
   saveDynamicFields,
   isDelegateFieldVisible,
   getOptionBehavior,
+  getOptionIcon,
+  POPULAR_OPTION_ICONS,
   LEAVE_TYPES_PRESET,
   type OptionBehaviorRule,
 } from '../../../services/ticketRouting.helpers';
@@ -209,6 +211,8 @@ export const TicketRoutingTab: React.FC = () => {
 
   // Quick Option Adder State per Field
   const [quickOptionText, setQuickOptionText] = useState<Record<string, string>>({});
+  // Active Option Icon Picker Popover ID
+  const [openIconPickerOptionId, setOpenIconPickerOptionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wizard.targetDepartmentId) {
@@ -736,6 +740,39 @@ export const TicketRoutingTab: React.FC = () => {
     });
   };
 
+  const handleSetOptionIcon = async (fieldId: string, optionId: string, optionLabel: string, icon: string) => {
+    // 1. Update dynamicFields state and storage
+    const updatedFields = dynamicFields.map(f => {
+      if (f.id === fieldId) {
+        return {
+          ...f,
+          options: f.options.map(o => o.id === optionId ? { ...o, icon } : o)
+        };
+      }
+      return f;
+    });
+    setDynamicFields(updatedFields);
+    await saveDynamicFields(updatedFields);
+
+    // 2. Update wizard formConfig optionIcons
+    const nextOptionIcons = {
+      ...(wizard.formConfig.optionIcons || {}),
+      [optionId]: icon,
+      [optionLabel]: icon,
+    };
+    setFC({ optionIcons: nextOptionIcons });
+    setOpenIconPickerOptionId(null);
+    showToast(`✅ تم تعيين الأيقونة ${icon} لخيار «${optionLabel}» بنجاح`, 'success');
+  };
+
+  const updateDraftOptionIcon = (optId: string, icon: string) => {
+    setFieldDraft(prev => ({
+      ...prev,
+      options: (prev.options || []).map(o => o.id === optId ? { ...o, icon } : o)
+    }));
+    setOpenIconPickerOptionId(null);
+  };
+
   const handleApplyLeavePreset = async () => {
     // Check if an existing leave field is already in dynamicFields
     let leaveField = dynamicFields.find(f => f.name.includes('نوع الإجازة') || f.name.includes('نوع الطلب'));
@@ -743,7 +780,7 @@ export const TicketRoutingTab: React.FC = () => {
       leaveField = {
         id: `dyn_leave_${Date.now()}`,
         name: LEAVE_TYPES_PRESET.name,
-        options: LEAVE_TYPES_PRESET.options.map(o => ({ id: o.id, label: o.label, isActive: true }))
+        options: LEAVE_TYPES_PRESET.options.map(o => ({ id: o.id, label: o.label, icon: o.icon, isActive: true }))
       };
       const updatedFields = [leaveField, ...dynamicFields];
       setDynamicFields(updatedFields);
@@ -755,14 +792,20 @@ export const TicketRoutingTab: React.FC = () => {
     const updatedLinked = isLinked ? currentLinked : [{ fieldId: leaveField.id, isRequired: true }, ...currentLinked];
 
     const nextRules = { ...(wizard.formConfig.optionBehaviorRules || {}) };
+    const nextIcons = { ...(wizard.formConfig.optionIcons || {}) };
     LEAVE_TYPES_PRESET.options.forEach(o => {
       nextRules[o.id] = o.rules;
       nextRules[o.label] = o.rules;
+      if (o.icon) {
+        nextIcons[o.id] = o.icon;
+        nextIcons[o.label] = o.icon;
+      }
     });
 
     setFC({
       routeDynamicFields: updatedLinked,
       optionBehaviorRules: nextRules,
+      optionIcons: nextIcons,
       taxonomyDisplayMode: 'chips',
       showScheduleEngine: true,
       mandatorySchedule: true,
@@ -1295,20 +1338,61 @@ export const TicketRoutingTab: React.FC = () => {
               )}
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                {(fieldDraft.options || []).map((o, idx) => (
-                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', padding: '6px 12px', borderRadius: 8, border: `1px solid ${A.sep}` }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <button onClick={() => moveDraftOption(idx, -1)} disabled={idx === 0} style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1, padding: 0, fontSize: 10, color: A.textSub }}>▲</button>
-                      <button onClick={() => moveDraftOption(idx, 1)} disabled={idx === (fieldDraft.options?.length || 0) - 1} style={{ background: 'none', border: 'none', cursor: idx === (fieldDraft.options?.length || 0) - 1 ? 'default' : 'pointer', opacity: idx === (fieldDraft.options?.length || 0) - 1 ? 0.3 : 1, padding: 0, fontSize: 10, color: A.textSub }}>▼</button>
+                {(fieldDraft.options || []).map((o, idx) => {
+                  const draftIcon = o.icon || getOptionIcon(o);
+                  const isPickerOpen = openIconPickerOptionId === `draft_${o.id}`;
+                  return (
+                    <div key={o.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', padding: '6px 12px', borderRadius: 8, border: `1px solid ${A.sep}` }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <button onClick={() => moveDraftOption(idx, -1)} disabled={idx === 0} style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1, padding: 0, fontSize: 10, color: A.textSub }}>▲</button>
+                          <button onClick={() => moveDraftOption(idx, 1)} disabled={idx === (fieldDraft.options?.length || 0) - 1} style={{ background: 'none', border: 'none', cursor: idx === (fieldDraft.options?.length || 0) - 1 ? 'default' : 'pointer', opacity: idx === (fieldDraft.options?.length || 0) - 1 ? 0.3 : 1, padding: 0, fontSize: 10, color: A.textSub }}>▼</button>
+                        </div>
+
+                        {/* Icon Button with Popover */}
+                        <button
+                          type="button"
+                          onClick={() => setOpenIconPickerOptionId(isPickerOpen ? null : `draft_${o.id}`)}
+                          style={{
+                            padding: '3px 8px', borderRadius: 6, fontSize: 14, background: '#F8FAFC',
+                            border: `1.5px solid ${isPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 4
+                          }}
+                          title="اختر أيقونة لهذا الخيار"
+                        >
+                          <span>{draftIcon}</span>
+                          <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
+                        </button>
+
+                        <input 
+                          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 600, color: A.text }} 
+                          value={o.label}
+                          onChange={e => updateDraftOptionLabel(o.id, e.target.value)}
+                        />
+                        <button onClick={() => removeDraftOption(o.id)} style={{ background: 'none', border: 'none', color: A.red, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 8px' }}>حذف</button>
+                      </div>
+
+                      {/* Icon Picker Popover */}
+                      {isPickerOpen && (
+                        <div style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: `1px solid ${wizard.color}40`, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {POPULAR_OPTION_ICONS.map(ic => (
+                            <button
+                              key={ic}
+                              type="button"
+                              onClick={() => updateDraftOptionIcon(o.id, ic)}
+                              style={{
+                                width: 28, height: 28, borderRadius: 6, border: ic === draftIcon ? `1.5px solid ${wizard.color}` : '1px solid #e2e8f0',
+                                background: ic === draftIcon ? `${wizard.color}15` : '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}
+                            >
+                              {ic}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <input 
-                      style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontWeight: 600, color: A.text }} 
-                      value={o.label}
-                      onChange={e => updateDraftOptionLabel(o.id, e.target.value)}
-                    />
-                    <button onClick={() => removeDraftOption(o.id)} style={{ background: 'none', border: 'none', color: A.red, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '4px 8px' }}>حذف</button>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <div style={{ display:'flex', gap:6, marginTop: 4 }}>
                   <input
@@ -1367,11 +1451,28 @@ export const TicketRoutingTab: React.FC = () => {
                         const children = getChildFieldsForOption(field.id, opt.id);
                         const conditionalInputs = getInputsForOption(field.id, opt.id);
                         const isAddingInput = activeOptionInputAdder?.optionId === opt.id;
+                        const optIcon = getOptionIcon(opt, wizard.formConfig);
+                        const isIconPickerOpen = openIconPickerOptionId === `opt_${opt.id}`;
 
                         return (
                           <div key={opt.id} style={{ display:'flex', flexDirection:'column', gap:8, background: '#fff', padding: '10px 14px', borderRadius: 10, border: `1px solid ${A.sep}` }}>
                             <div style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {/* Icon Button with Popover */}
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenIconPickerOptionId(isIconPickerOpen ? null : `opt_${opt.id}`)}
+                                  style={{
+                                    padding: '3px 8px', borderRadius: 8, fontSize: 14,
+                                    background: '#F8FAFC', border: `1.5px solid ${isIconPickerOpen ? wizard.color : A.sep}`, cursor: 'pointer',
+                                    display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.15s'
+                                  }}
+                                  title="تغيير أيقونة هذا الخيار"
+                                >
+                                  <span>{optIcon}</span>
+                                  <span style={{ fontSize: 9, color: A.textSub }}>▼</span>
+                                </button>
+
                                 <div className="option-tag" style={{ margin:0, fontWeight: 700, fontSize: 12.5 }}>
                                   {opt.label}
                                 </div>
@@ -1430,6 +1531,44 @@ export const TicketRoutingTab: React.FC = () => {
                                 </button>
                               </div>
                             </div>
+
+                            {/* Icon Picker Popover */}
+                            {isIconPickerOpen && (
+                              <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: `1.5px dashed ${wizard.color}60`, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: wizard.color }}>
+                                    🎨 اختر أيقونة لخيار «{opt.label}»:
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenIconPickerOptionId(null)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10.5, color: A.textSub, fontWeight: 700 }}
+                                  >
+                                    إلغاء ✕
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                  {POPULAR_OPTION_ICONS.map(ic => {
+                                    const isCurrent = optIcon === ic;
+                                    return (
+                                      <button
+                                        key={ic}
+                                        type="button"
+                                        onClick={() => handleSetOptionIcon(field.id, opt.id, opt.label, ic)}
+                                        style={{
+                                          width: 32, height: 32, borderRadius: 8, border: isCurrent ? `2px solid ${wizard.color}` : '1px solid #e2e8f0',
+                                          background: isCurrent ? `${wizard.color}20` : '#fff', cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          boxShadow: isCurrent ? `0 2px 6px ${wizard.color}35` : 'none',
+                                          transition: 'transform 0.1s'
+                                        }}
+                                      >
+                                        {ic}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Option Behavior Rules: Attachments, Description, Scheduling */}
                             {(() => {
@@ -2640,10 +2779,46 @@ export const TicketRoutingTab: React.FC = () => {
 
         {/* ── 3. المعاينة التفاعلية المباشرة لتجربة الموظف والتذكرة السينمائية (Live Preview) ── */}
         <div style={{ padding: 20, background: 'linear-gradient(135deg, rgba(19,93,121,0.06), rgba(243,108,33,0.06))', borderRadius: 18, border: '1px solid rgba(19,93,121,0.15)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: A.text, marginBottom: 14, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: A.text, marginBottom: 12, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ fontSize: 18 }}>👁️</span>
             <span>معاينة تفاعلية مباشرة لتجربة الموظف</span>
             <span style={{ fontSize: 9.5, padding: '2px 8px', borderRadius: 20, background: `${wizard.color}18`, color: wizard.color, fontWeight: 800 }}>LIVE PREVIEW</span>
+          </div>
+
+          {/* Quick Display Mode Switcher in Step 3 Live Preview */}
+          <div style={{ maxWidth: 420, margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '8px 12px', borderRadius: 12, border: `1px solid ${A.sep}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14 }}>🎨</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: A.text }}>طريقة عرض الخيارات للموظف:</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => setFC({ taxonomyDisplayMode: 'dropdown' })}
+                style={{
+                  padding: '5px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  border: `1.5px solid ${wizard.formConfig.taxonomyDisplayMode === 'dropdown' ? wizard.color : A.sep}`,
+                  background: wizard.formConfig.taxonomyDisplayMode === 'dropdown' ? `${wizard.color}15` : '#fff',
+                  color: wizard.formConfig.taxonomyDisplayMode === 'dropdown' ? wizard.color : A.textSub,
+                  transition: 'all 0.15s'
+                }}
+              >
+                🔘 قائمة منسدلة (Dropdown)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFC({ taxonomyDisplayMode: 'chips' })}
+                style={{
+                  padding: '5px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  border: `1.5px solid ${wizard.formConfig.taxonomyDisplayMode === 'chips' ? wizard.color : A.sep}`,
+                  background: wizard.formConfig.taxonomyDisplayMode === 'chips' ? `${wizard.color}15` : '#fff',
+                  color: wizard.formConfig.taxonomyDisplayMode === 'chips' ? wizard.color : A.textSub,
+                  transition: 'all 0.15s'
+                }}
+              >
+                🔲 كروت وأيقونات (Chips & Cards)
+              </button>
+            </div>
           </div>
 
           {/* Stepper Tabs */}
@@ -2764,21 +2939,24 @@ export const TicketRoutingTab: React.FC = () => {
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                 {(dynField?.options || [{ id: '1', label: 'الخيار الأول' }, { id: '2', label: 'الخيار الثاني' }, { id: '3', label: 'الخيار الثالث' }]).map((opt) => {
                                   const isSel = (selectedOptId === opt.id);
+                                  const optIcon = getOptionIcon(opt, wizard.formConfig);
                                   return (
                                     <div
                                       key={opt.id}
                                       onClick={() => setPreviewSelectedOptions(p => ({ ...p, [dynId]: opt.id }))}
                                       style={{
-                                        padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                                        padding: '7px 12px', borderRadius: 9, fontSize: 11.5, fontWeight: 700,
                                         background: isSel ? `${wizard.color}15` : '#fff',
                                         color: isSel ? wizard.color : A.textSub,
                                         border: `1.5px solid ${isSel ? wizard.color : A.sep}`,
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                                        boxShadow: isSel ? `0 2px 8px ${wizard.color}25` : 'none',
                                         transition: 'all 0.15s'
                                       }}
                                     >
-                                      {isSel && <span>✓</span>}
+                                      {optIcon && <span style={{ fontSize: 13 }}>{optIcon}</span>}
                                       <span>{opt.label}</span>
+                                      {isSel && <span style={{ fontWeight: 900, marginInlineStart: 2 }}>✓</span>}
                                     </div>
                                   );
                                 })}
@@ -2790,9 +2968,12 @@ export const TicketRoutingTab: React.FC = () => {
                                 value={selectedOptId}
                                 onChange={e => setPreviewSelectedOptions(p => ({ ...p, [dynId]: e.target.value }))}
                               >
-                                {(dynField?.options || []).map(opt => (
-                                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                                ))}
+                                {(dynField?.options || []).map(opt => {
+                                  const optIcon = getOptionIcon(opt, wizard.formConfig);
+                                  return (
+                                    <option key={opt.id} value={opt.id}>{optIcon} {opt.label}</option>
+                                  );
+                                })}
                               </select>
                             )}
 

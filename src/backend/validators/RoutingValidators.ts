@@ -55,6 +55,7 @@ const routeFormConfigSchema = z.object({
     descriptionRule: z.enum(['REQUIRED', 'OPTIONAL', 'HIDDEN']).optional(),
     scheduleRule: z.enum(['DATE_RANGE', 'DISCRETE_DAYS', 'HOURLY_WINDOW', 'DEFAULT']).optional(),
   })).optional().default({}),
+  optionIcons: z.record(z.string(), z.string()).optional().default({}),
   // ─── Smart Time & Scheduling Engine (نظام الجدولة والوقت الذكي) ───
   showScheduleEngine: z.boolean().optional().default(false),
   mandatorySchedule: z.boolean().optional().default(false),

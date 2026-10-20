@@ -196,7 +196,12 @@ export const parseRoutesToRequests = (
           label: 'التصنيف الرئيسي',
           type: 'select',
           displayMode: cfg.taxonomyDisplayMode || 'dropdown',
-          options: cfg.taxonomy.filter((t: any) => t.isActive !== false).map((t: any) => t.label),
+          options: cfg.taxonomy.filter((t: any) => t.isActive !== false).map((t: any) => ({
+            id: t.id || t.label,
+            value: t.label,
+            label: t.label,
+            icon: t.icon || cfg.optionIcons?.[t.id] || cfg.optionIcons?.[t.label],
+          })),
           required: true,
         });
       }
@@ -206,13 +211,18 @@ export const parseRoutesToRequests = (
         cfg.routeDynamicFields.forEach((rdf: any) => {
           const matchedField = (resolvedDynamicFields || []).find((df: any) => df.id === rdf.fieldId);
           const hasOptions = matchedField?.options && Array.isArray(matchedField.options) && matchedField.options.length > 0;
-          const fDisplayMode = cfg.dynamicFieldsDisplayMode?.[rdf.fieldId] || 'dropdown';
+          const fDisplayMode = cfg.dynamicFieldsDisplayMode?.[rdf.fieldId] || cfg.taxonomyDisplayMode || 'dropdown';
           fields.push({
             name: `dyn_${rdf.fieldId}`,
             label: matchedField?.name || rdf.name || 'حقل إضافي',
             type: hasOptions ? 'select' : 'text',
             displayMode: fDisplayMode,
-            options: hasOptions ? matchedField.options.filter((o: any) => o.isActive !== false).map((o: any) => o.label) : undefined,
+            options: hasOptions ? matchedField.options.filter((o: any) => o.isActive !== false).map((o: any) => ({
+              id: o.id,
+              value: o.label,
+              label: o.label,
+              icon: o.icon || cfg.optionIcons?.[o.id] || cfg.optionIcons?.[o.label],
+            })) : undefined,
             required: !!rdf.isRequired,
           });
         });

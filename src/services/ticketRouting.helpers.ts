@@ -15,6 +15,7 @@ export interface ChildFieldBinding {
 export interface DynamicFieldOption {
   id: string;
   label: string;
+  icon?: string;
   isActive: boolean;
   customInputs?: CustomFormInput[];
 }
@@ -65,6 +66,8 @@ export interface RouteFormConfig {
   optionCustomInputs?: Record<string, CustomFormInput[]>;
   // ─── Option-Level Behavioral Rules (شروط المرفقات والتعليقات والجدولة لكل نوع إجازة) ───
   optionBehaviorRules?: Record<string, OptionBehaviorRule>;
+  // ─── Option Icons Mapping (تحديد أيقونة بجانب كل خيار) ───
+  optionIcons?: Record<string, string>;
   // ─── Display Mode for Lists / Dropdowns (قوائم منسدلة أو كروت وأيقونات) ───
   taxonomyDisplayMode?: 'dropdown' | 'chips';
   dynamicFieldsDisplayMode?: Record<string, 'dropdown' | 'chips'>;
@@ -155,6 +158,7 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   customInputs: [],
   optionCustomInputs: {},
   optionBehaviorRules: {},
+  optionIcons: {},
   taxonomyDisplayMode: 'dropdown',
   dynamicFieldsDisplayMode: {},
   fieldsOrder: [],
@@ -191,6 +195,15 @@ export const defaultFormConfig = (): RouteFormConfig => ({
 });
 
 /**
+ * Popular icons for dynamic field options & request types.
+ */
+export const POPULAR_OPTION_ICONS = [
+  '🌴', '🏥', '⚡', '⏱️', '👤', '📋', '📄', '🎯', '📅', '✈️', '🚗', '🏢',
+  '💻', '🔧', '🖨️', '🌐', '🔒', '📱', '🛠️', '⚙️', '💡', '📡', '🔌', '🖥️',
+  '💳', '💰', '📦', '🛒', '🍽️', '☕', '⚖️', '🎓', '🏷️', '🤝', '✨', '🔔',
+];
+
+/**
  * Standard Leave Types preset for instantaneous 1-click configuration in Leave Routes.
  */
 export const LEAVE_TYPES_PRESET = {
@@ -199,29 +212,63 @@ export const LEAVE_TYPES_PRESET = {
     {
       id: 'opt_leave_annual',
       label: 'إجازة سنوية اعتيادية',
+      icon: '🌴',
       rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_sick',
       label: 'إجازة مرضية (بتقرير طبي)',
+      icon: '🏥',
       rules: { attachmentRule: 'REQUIRED' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_emergency',
       label: 'إجازة طارئة (مع بيان السبب)',
+      icon: '⚡',
       rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'REQUIRED' as const, scheduleRule: 'DATE_RANGE' as const }
     },
     {
       id: 'opt_leave_permission',
       label: 'إذن مغادرة ساعي / تأخير',
+      icon: '⏱️',
       rules: { attachmentRule: 'HIDDEN' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'HOURLY_WINDOW' as const }
     },
     {
       id: 'opt_leave_delegation',
       label: 'تكليف مؤقت / انتداب عمل',
+      icon: '👤',
       rules: { attachmentRule: 'OPTIONAL' as const, descriptionRule: 'OPTIONAL' as const, scheduleRule: 'DATE_RANGE' as const }
     },
   ]
+};
+
+/**
+ * Resolves the visual icon for any option using explicit Admin choice or smart keyword fallback.
+ */
+export const getOptionIcon = (
+  option: { id?: string; label?: string; icon?: string },
+  formConfig?: RouteFormConfig
+): string => {
+  if (option.icon && option.icon.trim()) return option.icon.trim();
+  if (option.id && formConfig?.optionIcons?.[option.id]) return formConfig.optionIcons[option.id];
+  if (option.label && formConfig?.optionIcons?.[option.label]) return formConfig.optionIcons[option.label];
+
+  const lbl = (option.label || '').toLowerCase();
+  if (lbl.includes('سنوية') || lbl.includes('اعتيادية') || lbl.includes('استجمام')) return '🌴';
+  if (lbl.includes('مرضية') || lbl.includes('مستشفى') || lbl.includes('طبي') || lbl.includes('علاج')) return '🏥';
+  if (lbl.includes('طارئة') || lbl.includes('عاجلة') || lbl.includes('وفاة')) return '⚡';
+  if (lbl.includes('إذن') || lbl.includes('ساعي') || lbl.includes('خروج') || lbl.includes('تأخير') || lbl.includes('مغادرة')) return '⏱️';
+  if (lbl.includes('تكليف') || lbl.includes('انتداب') || lbl.includes('بديل') || lbl.includes('مهمة')) return '👤';
+  if (lbl.includes('صيانة') || lbl.includes('عطل') || lbl.includes('تصليح') || lbl.includes('فني')) return '🔧';
+  if (lbl.includes('حاسوب') || lbl.includes('كمبيوتر') || lbl.includes('لابتوب') || lbl.includes('شاشة')) return '💻';
+  if (lbl.includes('شبكة') || lbl.includes('انترنت') || lbl.includes('واي فاي')) return '🌐';
+  if (lbl.includes('طابعة') || lbl.includes('حبر') || lbl.includes('سكانر')) return '🖨️';
+  if (lbl.includes('شراء') || lbl.includes('مشتريات') || lbl.includes('صرف') || lbl.includes('فاتورة')) return '💳';
+  if (lbl.includes('سيارة') || lbl.includes('نقل') || lbl.includes('حركة') || lbl.includes('وقود')) return '🚗';
+  if (lbl.includes('مقر') || lbl.includes('مكتب') || lbl.includes('مبنى')) return '🏢';
+  if (lbl.includes('قانون') || lbl.includes('عقد') || lbl.includes('استشارة')) return '⚖️';
+  if (lbl.includes('تدريب') || lbl.includes('دورة') || lbl.includes('شهادة')) return '🎓';
+  return '📋';
 };
 
 /**
@@ -345,6 +392,7 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       customInputs: Array.isArray(r.formConfig?.customInputs) ? r.formConfig.customInputs : [],
       optionCustomInputs: r.formConfig?.optionCustomInputs || {},
       optionBehaviorRules: r.formConfig?.optionBehaviorRules || {},
+      optionIcons: r.formConfig?.optionIcons || {},
       taxonomyDisplayMode: r.formConfig?.taxonomyDisplayMode || 'dropdown',
       dynamicFieldsDisplayMode: r.formConfig?.dynamicFieldsDisplayMode || {},
       fieldsOrder: Array.isArray(r.formConfig?.fieldsOrder) ? r.formConfig.fieldsOrder : [],
