@@ -291,7 +291,7 @@ export default function RequestsPage() {
   }, [filteredRequests, isExpanded, currentPage]);
 
   return (
-    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: '22px', position: 'relative' }}>
+    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: '22px', position: 'relative', paddingBottom: '84px' }}>
 
       {/* ═══ 1. REFINED PAGE HEADER & CONTEXT ═══ */}
       <div style={{
@@ -659,120 +659,215 @@ export default function RequestsPage() {
           </div>
         ) : viewMode === 'list' ? (
           /* ── 1. LIST / TABLE VIEW ── */
-          <div style={{ overflowX: 'auto' }}>
-            <table className="litc-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '130px' }}>رمز المعاملة</th>
-                  <th>نوع الخدمة والموضوع</th>
-                  <th style={{ width: '190px' }}>الإدارة المستهدفة</th>
-                  <th style={{ width: '110px' }}>تاريخ التقديم</th>
-                  <th style={{ width: '120px' }}>الحالة الإجرائية</th>
-                  <th style={{ width: '120px', textAlign: 'start' }}>الإجراء والمتابعة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedRequests.map(req => {
-                  const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
-                  const routeColor = matchedFlow?.color || '#38bdf8';
+          <>
+            {/* Desktop Table View */}
+            <div className="desktop-table-view litc-table-wrapper" style={{ overflowX: 'auto' }}>
+              <table className="litc-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '130px' }}>رمز المعاملة</th>
+                    <th>نوع الخدمة والموضوع</th>
+                    <th style={{ width: '190px' }}>الإدارة المستهدفة</th>
+                    <th style={{ width: '110px' }}>تاريخ التقديم</th>
+                    <th style={{ width: '120px' }}>الحالة الإجرائية</th>
+                    <th style={{ width: '120px', textAlign: 'start' }}>الإجراء والمتابعة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedRequests.map(req => {
+                    const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
+                    const routeColor = matchedFlow?.color || '#38bdf8';
 
-                  return (
-                    <tr
-                      key={req.id}
-                      onClick={() => {
-                        setSelectedRequest(req);
-                        setIsTrackingOpen(true);
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {/* Monospace Code with Cinema Ticket Badge */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <TicketCodeBadge
-                          code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`}
-                          color={routeColor}
-                        />
-                      </td>
+                    return (
+                      <tr
+                        key={req.id}
+                        onClick={() => {
+                          setSelectedRequest(req);
+                          setIsTrackingOpen(true);
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {/* Monospace Code with Cinema Ticket Badge */}
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <TicketCodeBadge
+                            code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`}
+                            color={routeColor}
+                          />
+                        </td>
 
-                      {/* Title & Service */}
-                      <td>
-                        <div style={{ fontWeight: 600, color: darkMode ? '#ffffff' : '#0f172a', fontSize: '13px', fontFamily: "'Cairo', sans-serif" }}>
-                          {isRtl ? req.title : req.titleEn || req.title}
-                        </div>
-                        {req.stage && (
-                          <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px', fontFamily: "'Cairo', sans-serif" }}>
-                            المرحلة الحالية: {req.stage}
+                        {/* Title & Service */}
+                        <td>
+                          <div style={{ fontWeight: 600, color: darkMode ? '#ffffff' : '#0f172a', fontSize: '13px', fontFamily: "'Cairo', sans-serif" }}>
+                            {isRtl ? req.title : req.titleEn || req.title}
                           </div>
-                        )}
-                      </td>
-
-                      {/* Target Department */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: darkMode ? '#cbd5e1' : '#334155', fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
-                          <Building2 size={12} color="#64748b" />
-                          <span>{req.department || 'إدارة الشؤون الفنية'}</span>
-                        </div>
-                      </td>
-
-                      {/* Tabular Formatted Date */}
-                      <td style={{ whiteSpace: 'nowrap', fontSize: '11.5px', color: darkMode ? '#94a3b8' : '#64748b', fontVariantNumeric: 'tabular-nums', fontFamily: "'Cairo', sans-serif" }}>
-                        {req.date || 'اليوم'}
-                      </td>
-
-                      {/* Semantic Status Badge */}
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <StatusBadge status={req.status} />
-                      </td>
-
-                      {/* Action Button */}
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'start' }}>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            setSelectedRequest(req);
-                            setIsTrackingOpen(true);
-                          }}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            border: isNeedsRating(req)
-                              ? '1px solid #f59e0b'
-                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                            backgroundColor: isNeedsRating(req)
-                              ? (darkMode ? 'rgba(245, 158, 11, 0.18)' : '#fffbeb')
-                              : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
-                            color: isNeedsRating(req)
-                              ? '#d97706'
-                              : (darkMode ? '#cbd5e1' : '#1e3a52'),
-                            fontSize: '11px',
-                            fontWeight: isNeedsRating(req) ? 700 : 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            fontFamily: "'Cairo', sans-serif",
-                            boxShadow: isNeedsRating(req) ? '0 2px 8px rgba(245, 158, 11, 0.2)' : 'none',
-                          }}
-                        >
-                          {isNeedsRating(req) ? (
-                            <>
-                              <span>⭐ قيّم الطلب</span>
-                              <ChevronLeft size={12} />
-                            </>
-                          ) : (
-                            <>
-                              <span>تتبع المسار</span>
-                              <ChevronLeft size={12} />
-                            </>
+                          {req.stage && (
+                            <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px', fontFamily: "'Cairo', sans-serif" }}>
+                              المرحلة الحالية: {req.stage}
+                            </div>
                           )}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+
+                        {/* Target Department */}
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: darkMode ? '#cbd5e1' : '#334155', fontFamily: "'Cairo', sans-serif", fontWeight: 500 }}>
+                            <Building2 size={12} color="#64748b" />
+                            <span>{req.department || 'إدارة الشؤون الفنية'}</span>
+                          </div>
+                        </td>
+
+                        {/* Tabular Formatted Date */}
+                        <td style={{ whiteSpace: 'nowrap', fontSize: '11.5px', color: darkMode ? '#94a3b8' : '#64748b', fontVariantNumeric: 'tabular-nums', fontFamily: "'Cairo', sans-serif" }}>
+                          {req.date || 'اليوم'}
+                        </td>
+
+                        {/* Semantic Status Badge */}
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <StatusBadge status={req.status} />
+                        </td>
+
+                        {/* Action Button */}
+                        <td style={{ whiteSpace: 'nowrap', textAlign: 'start' }}>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setSelectedRequest(req);
+                              setIsTrackingOpen(true);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              border: isNeedsRating(req)
+                                ? '1px solid #f59e0b'
+                                : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                              backgroundColor: isNeedsRating(req)
+                                ? (darkMode ? 'rgba(245, 158, 11, 0.18)' : '#fffbeb')
+                                : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
+                              color: isNeedsRating(req)
+                                ? '#d97706'
+                                : (darkMode ? '#cbd5e1' : '#1e3a52'),
+                              fontSize: '11px',
+                              fontWeight: isNeedsRating(req) ? 700 : 600,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              fontFamily: "'Cairo', sans-serif",
+                              boxShadow: isNeedsRating(req) ? '0 2px 8px rgba(245, 158, 11, 0.2)' : 'none',
+                            }}
+                          >
+                            {isNeedsRating(req) ? (
+                              <>
+                                <span>⭐ قيّم الطلب</span>
+                                <ChevronLeft size={12} />
+                              </>
+                            ) : (
+                              <>
+                                <span>تتبع المسار</span>
+                                <ChevronLeft size={12} />
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Adaptive Cards View (Linear/Stripe Enterprise Mobile Benchmark) */}
+            <div className="mobile-cards-view">
+              {displayedRequests.map(req => {
+                const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
+                const routeColor = matchedFlow?.color || '#38bdf8';
+
+                return (
+                  <div
+                    key={req.id}
+                    onClick={() => {
+                      setSelectedRequest(req);
+                      setIsTrackingOpen(true);
+                    }}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: darkMode ? '#111827' : '#ffffff',
+                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.05)',
+                      transition: 'all 0.15s ease',
+                      fontFamily: "'Cairo', sans-serif",
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                      <TicketCodeBadge
+                        code={req.code || `#REQ-${req.id.slice(-4).toUpperCase()}`}
+                        color={routeColor}
+                      />
+                      <StatusBadge status={req.status} compact />
+                    </div>
+
+                    <div style={{ fontWeight: 700, color: darkMode ? '#ffffff' : '#0f172a', fontSize: '13px' }}>
+                      {isRtl ? req.title : req.titleEn || req.title}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748b' }}>
+                      <Building2 size={12} color="#64748b" />
+                      <span>{req.department || 'إدارة الشؤون الفنية'}</span>
+                      {req.stage && <span>• {req.stage}</span>}
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #f1f5f9',
+                      paddingTop: '8px',
+                      marginTop: '2px',
+                    }}>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>
+                        📅 {req.date || 'اليوم'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedRequest(req);
+                          setIsTrackingOpen(true);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: isNeedsRating(req)
+                            ? '1px solid #f59e0b'
+                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                          backgroundColor: isNeedsRating(req)
+                            ? (darkMode ? 'rgba(245, 158, 11, 0.18)' : '#fffbeb')
+                            : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f8fafc'),
+                          color: isNeedsRating(req)
+                            ? '#d97706'
+                            : (darkMode ? '#38bdf8' : '#0284c7'),
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>{isNeedsRating(req) ? '⭐ قيّم الطلب' : 'تتبع المسار'}</span>
+                        <ChevronLeft size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
           /* ── 2. CARDS / GRID VIEW (نظام البطاقات السينمائية الأنيقة - 3 كروت بجانب بعضها دائماً) ── */
           <div

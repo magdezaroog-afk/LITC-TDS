@@ -18,7 +18,7 @@ import {
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
   Search, Wrench, Monitor, Cpu, HardDrive, Wifi, Printer,
   HelpCircle, Settings, Laptop, Radio, AlertCircle,
-  Ticket, ChevronDown, Calendar, CalendarDays, Paperclip, Download
+  Ticket, ChevronDown, Calendar, CalendarDays, Paperclip, Download, X
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon } from '../../services/ticketRouting.helpers';
@@ -110,7 +110,8 @@ function ModernSelect({
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          padding: '8px 12px',
+          minHeight: '42px',
+          padding: '9px 12px',
           borderRadius: '7px',
           border: isOpen
             ? '1.5px solid #38bdf8'
@@ -298,7 +299,8 @@ function FieldInput({
 }) {
   const base: React.CSSProperties = {
     width: '100%',
-    padding: '8px 12px',
+    minHeight: '42px',
+    padding: '9px 12px',
     borderRadius: '7px',
     border: darkMode ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #cbd5e1',
     background: darkMode ? '#101728' : '#ffffff',
@@ -331,7 +333,7 @@ function FieldInput({
       return (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 130px), 1fr))',
           gap: '10px',
           width: '100%',
           marginTop: '6px'
@@ -1017,6 +1019,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       if (f.name === 'delegateUser') return isDelegateVis;
       if (f.name === 'attachment' && currentOptionBehavior.attachmentRule === 'HIDDEN') return false;
       if (f.name === 'description' && currentOptionBehavior.descriptionRule === 'HIDDEN') return false;
+      if (f.name === 'division' && divisionOptions.length === 0) return false;
+      if (f.name === 'team' && teamOptions.length === 0) return false;
       return true;
     }).map(f => {
       if (f.name === 'attachment') {
@@ -1067,7 +1071,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return s2;
     }
     return [];
-  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior]);
+  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
@@ -1437,95 +1441,156 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               ) : (
                 /* ── Phase 2: خيارات المسار التي تم تحديدها من قبل الإدارة ── */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Step Header */}
+                  {/* Step Header: 2-Tier Linear/Stripe Enterprise Segmented Stepper */}
                   <div style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
+                    gap: '12px',
                     borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    paddingBottom: '10px',
-                    gap: '8px',
-                    flexWrap: 'wrap',
+                    paddingBottom: '12px',
+                    width: '100%',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '7px',
-                        backgroundColor: `${flowColor}20`,
-                        border: `1.5px solid ${flowColor}60`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: flowColor,
-                        flexShrink: 0,
-                      }}>
-                        {resolveIcon(selectedFlow.icon, 17, flowColor)}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                          {selectedFlow.title}
+                    {/* Tier 1: Service Identity & Change Route Action */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '9px',
+                          backgroundColor: `${flowColor}20`,
+                          border: `1.5px solid ${flowColor}60`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: flowColor,
+                          flexShrink: 0,
+                          boxShadow: `0 2px 8px ${flowColor}25`,
+                        }}>
+                          {resolveIcon(selectedFlow.icon, 19, flowColor)}
                         </div>
-                        <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
-                          🎯 جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Step Indicators */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {Array.from({ length: totalStages }).map((_, idx) => {
-                        const stepNum = idx + 1;
-                        const isActive = currentStep === stepNum;
-                        const isPassed = currentStep > stepNum;
-                        const stageTitle = adminStages && adminStages[idx]
-                          ? adminStages[idx].title
-                          : (stepNum === 1 ? 'الأساسيات والتوجيه' : (stepNum === totalStages ? 'تذكرة الاعتماد' : 'المتطلبات والجدولة'));
-
-                        return (
-                          <div
-                            key={stepNum}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '10.5px',
-                              fontWeight: isActive ? 800 : 600,
-                              color: isActive ? flowColor : (isPassed ? '#10b981' : '#64748b'),
-                              backgroundColor: isActive ? `${flowColor}15` : 'transparent',
-                              padding: '2px 7px',
-                              borderRadius: '4px',
-                            }}
-                          >
-                            <span style={{
-                              width: '14px', height: '14px', borderRadius: '50%',
-                              backgroundColor: isActive ? flowColor : (isPassed ? '#10b981' : '#334155'),
-                              color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900
-                            }}>
-                              {isPassed ? '✓' : stepNum}
-                            </span>
-                            <span>{stageTitle}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            fontSize: '14px',
+                            fontWeight: 800,
+                            color: darkMode ? '#ffffff' : '#0f172a',
+                            fontFamily: "'Tajawal', sans-serif",
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {selectedFlow.title}
                           </div>
-                        );
-                      })}
+                          <div style={{
+                            fontSize: '11px',
+                            color: flowColor,
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}>
+                            <span>🎯</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => setSelectedFlow(null)}
                         style={{
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
                           border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                          color: darkMode ? '#94a3b8' : '#64748b',
-                          fontSize: '10.5px',
-                          fontWeight: 600,
+                          color: darkMode ? '#cbd5e1' : '#475569',
+                          fontSize: '11px',
+                          fontWeight: 700,
                           cursor: 'pointer',
-                          marginInlineStart: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          flexShrink: 0,
+                          fontFamily: "'Cairo', sans-serif",
+                          transition: 'all 0.15s ease',
                         }}
                       >
-                        تغيير المسار ✕
+                        <X size={13} />
+                        <span>تغيير المسار</span>
                       </button>
+                    </div>
+
+                    {/* Tier 2: Linear-Style Segmented Stepper */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${totalStages}, 1fr)`,
+                        gap: '6px',
+                        width: '100%',
+                      }}>
+                        {Array.from({ length: totalStages }).map((_, idx) => {
+                          const stepNum = idx + 1;
+                          const isPassed = currentStep > stepNum;
+                          const isActive = currentStep === stepNum;
+                          return (
+                            <div
+                              key={stepNum}
+                              style={{
+                                height: '4px',
+                                borderRadius: '9999px',
+                                backgroundColor: isPassed
+                                  ? '#10b981'
+                                  : (isActive ? flowColor : (darkMode ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0')),
+                                boxShadow: isActive ? `0 0 10px ${flowColor}` : 'none',
+                                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Current Step Label & Meta */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: 900,
+                            padding: '2px 7px',
+                            borderRadius: '5px',
+                            backgroundColor: `${flowColor}20`,
+                            color: flowColor,
+                            border: `1px solid ${flowColor}40`,
+                            flexShrink: 0,
+                          }}>
+                            المرحلة {currentStep} من {totalStages}
+                          </span>
+                          <span style={{
+                            color: darkMode ? '#ffffff' : '#0f172a',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {adminStages && adminStages[currentStep - 1]
+                              ? adminStages[currentStep - 1].title
+                              : (currentStep === 1 ? 'البيانات الأساسية والتوجيه' : (currentStep === totalStages ? 'مراجعة التذكرة والاعتماد النهائي' : 'المتطلبات والجدولة'))}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', flexShrink: 0 }}>
+                          {currentStep === totalStages ? '⚡ الخطوة الأخيرة' : `متبقي ${totalStages - currentStep} مراحل`}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1539,7 +1604,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       transition={{ duration: 0.18 }}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(230px, 1fr))' : '1fr',
+                        gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' : '1fr',
                         gap: '12px',
                         alignItems: 'start',
                         overflow: 'visible',
@@ -2176,8 +2241,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    paddingTop: '10px',
-                    gap: '8px',
+                    paddingTop: '14px',
+                    gap: '10px',
+                    flexWrap: 'wrap',
                   }}>
                     <div>
                       {currentStep > 1 && (
@@ -2185,49 +2251,53 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           type="button"
                           onClick={handlePrevStep}
                           style={{
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            backgroundColor: 'transparent',
+                            minHeight: '42px',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
                             border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
                             color: darkMode ? '#cbd5e1' : '#475569',
-                            fontSize: '11px',
+                            fontSize: '12px',
                             fontWeight: 700,
                             cursor: 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
+                            gap: '6px',
                             fontFamily: "'Cairo', sans-serif",
+                            transition: 'all 0.15s ease',
                           }}
                         >
-                          <ChevronRight size={13} />
+                          <ChevronRight size={15} />
                           <span>السابق</span>
                         </button>
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       {currentStep < totalStages && (
                         <button
                           type="button"
                           onClick={handleNextStep}
                           style={{
-                            padding: '7px 18px',
-                            borderRadius: '6px',
+                            minHeight: '44px',
+                            padding: '10px 22px',
+                            borderRadius: '9px',
                             background: `linear-gradient(135deg, ${flowColor} 0%, #2563eb 100%)`,
-                            border: 'none',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
-                            fontSize: '11.5px',
+                            fontSize: '12.5px',
                             fontWeight: 800,
                             cursor: 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: `0 4px 12px ${flowColor}35`,
+                            gap: '8px',
+                            boxShadow: `0 4px 14px ${flowColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
                             fontFamily: "'Cairo', sans-serif",
+                            transition: 'all 0.15s ease',
                           }}
                         >
-                          <span>متابعة للمرحلة التالية</span>
-                          <ChevronLeft size={14} />
+                          <span>متابعة للمرحلة التالية ({currentStep + 1}/{totalStages})</span>
+                          <ChevronLeft size={16} />
                         </button>
                       )}
 
@@ -2237,22 +2307,24 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           onClick={handleTearAndSubmit}
                           disabled={loading || tearState !== 'idle'}
                           style={{
-                            padding: '8px 24px',
-                            borderRadius: '8px',
+                            minHeight: '46px',
+                            padding: '12px 28px',
+                            borderRadius: '10px',
                             background: 'linear-gradient(135deg, #f59e0b 0%, #f36c21 50%, #135d79 100%)',
-                            border: 'none',
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
                             color: '#ffffff',
-                            fontSize: '13px',
+                            fontSize: '13.5px',
                             fontWeight: 900,
                             cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '7px',
-                            boxShadow: '0 6px 18px rgba(243, 108, 33, 0.4)',
+                            gap: '8px',
+                            boxShadow: '0 6px 20px rgba(243, 108, 33, 0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
                             fontFamily: "'Cairo', sans-serif",
+                            transition: 'all 0.15s ease',
                           }}
                         >
-                          <Scissors size={15} />
+                          <Scissors size={16} />
                           <span>إرسال واعتماد الطلب • استخراج التذكرة 🚀</span>
                         </button>
                       )}

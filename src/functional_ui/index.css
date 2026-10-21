@@ -565,3 +565,22 @@ html, body {
   }
 }
 
+/* ── Responsive Table vs Card Transformation (Enterprise Mobile Benchmark) ── */
+.mobile-cards-view {
+  display: none !important;
+}
+.desktop-table-view {
+  display: block !important;
+}
+
+@media (max-width: 768px) {
+  .desktop-table-view {
+    display: none !important;
+  }
+  .mobile-cards-view {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+}
