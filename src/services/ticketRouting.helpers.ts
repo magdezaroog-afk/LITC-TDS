@@ -108,6 +108,8 @@ export interface RouteFormConfig {
   requireRatingBeforeNewTicket?: boolean;
   // ─── Customizable Stages Architecture ───
   stages?: RouteFormStage[];
+  // ─── Visual Field Widths Control (عرض الحقل: 100%، 50%، 33.3%) ───
+  fieldWidths?: Record<string, '100%' | '50%' | '33.3%'>;
 }
 
 export interface RouteFormStage {
@@ -162,6 +164,7 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   taxonomyDisplayMode: 'dropdown',
   dynamicFieldsDisplayMode: {},
   fieldsOrder: [],
+  fieldWidths: {},
   // ─── Smart Time & Attendance / Scheduling Engine ───
   showScheduleEngine: false,
   mandatorySchedule: false,

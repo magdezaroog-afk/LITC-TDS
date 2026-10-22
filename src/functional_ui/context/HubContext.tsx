@@ -305,6 +305,11 @@ export const parseRoutesToRequests = (
         });
       }
 
+      const resolvedFields = fields.map((f: any) => ({
+        ...f,
+        width: cfg.fieldWidths?.[f.name] || '100%',
+      }));
+
       return {
         id: r.id,
         title: r.name,
@@ -322,7 +327,7 @@ export const parseRoutesToRequests = (
           ...cfg,
           dynamicFields: resolvedDynamicFields,
         },
-        fields,
+        fields: resolvedFields,
       };
     });
 };

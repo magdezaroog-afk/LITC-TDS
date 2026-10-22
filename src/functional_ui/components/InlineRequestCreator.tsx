@@ -110,13 +110,13 @@ function ModernSelect({
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          minHeight: '42px',
-          padding: '9px 12px',
-          borderRadius: '7px',
+          minHeight: '44px',
+          padding: '8px 12px',
+          borderRadius: '10px',
           border: isOpen
             ? '1.5px solid #38bdf8'
-            : (darkMode ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #cbd5e1'),
-          backgroundColor: darkMode ? '#101728' : '#ffffff',
+            : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+          backgroundColor: darkMode ? '#0f172a' : '#ffffff',
           color: selectedItem
             ? (darkMode ? '#ffffff' : '#0f172a')
             : (darkMode ? '#94a3b8' : '#64748b'),
@@ -130,16 +130,26 @@ function ModernSelect({
           gap: '8px',
           textAlign: 'right',
           outline: 'none',
-          boxShadow: isOpen ? '0 0 14px rgba(56, 189, 248, 0.3)' : 'none',
+          boxShadow: isOpen ? '0 0 16px rgba(56, 189, 248, 0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
           transition: 'all 0.15s ease',
           boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
           {selectedItem?.icon && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', color: darkMode ? '#38bdf8' : '#2563eb', flexShrink: 0 }}>
-              {resolveIcon(selectedItem.icon, 15)}
-            </span>
+            <div style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: darkMode ? '#38bdf8' : '#2563eb',
+              flexShrink: 0
+            }}>
+              {resolveIcon(selectedItem.icon, 14)}
+            </div>
           )}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {selectedItem
@@ -172,14 +182,16 @@ function ModernSelect({
               insetInlineStart: 0,
               width: '100%',
               minWidth: '220px',
-              maxHeight: '210px',
-              backgroundColor: darkMode ? '#0f172a' : '#ffffff',
+              maxHeight: '260px',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
               border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.45)' : '1.5px solid #cbd5e1',
-              borderRadius: '8px',
+              borderRadius: '12px',
               boxShadow: darkMode
-                ? '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.25)'
-                : '0 14px 35px rgba(30, 58, 82, 0.22)',
-              zIndex: 99999,
+                ? '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.25)'
+                : '0 18px 40px rgba(30, 58, 82, 0.22)',
+              zIndex: 999999,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -194,12 +206,12 @@ function ModernSelect({
                   placeholder="بحث سريع..."
                   style={{
                     width: '100%',
-                    padding: '5px 8px',
-                    borderRadius: '5px',
+                    padding: '6px 10px',
+                    borderRadius: '7px',
                     border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
                     backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
                     color: darkMode ? '#ffffff' : '#0f172a',
-                    fontSize: '11px',
+                    fontSize: '11.5px',
                     fontFamily: "'Cairo', sans-serif",
                     outline: 'none',
                     boxSizing: 'border-box',
@@ -209,9 +221,9 @@ function ModernSelect({
               </div>
             )}
 
-            <div style={{ overflowY: 'auto', maxHeight: '170px', padding: '4px' }}>
+            <div style={{ overflowY: 'auto', maxHeight: '210px', padding: '6px' }}>
               {filteredOpts.length === 0 ? (
-                <div style={{ padding: '8px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
+                <div style={{ padding: '12px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
                   لا توجد نتائج مطابقة
                 </div>
               ) : (
@@ -227,8 +239,8 @@ function ModernSelect({
                       }}
                       style={{
                         width: '100%',
-                        padding: '7px 10px',
-                        borderRadius: '5px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
                         border: 'none',
                         backgroundColor: isSelected
                           ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
@@ -244,10 +256,11 @@ function ModernSelect({
                         justifyContent: 'space-between',
                         cursor: 'pointer',
                         textAlign: 'right',
-                        transition: 'background-color 0.1s',
+                        transition: 'background-color 0.15s',
+                        marginBottom: '2px',
                       }}
                       onMouseEnter={e => {
-                        if (!isSelected) e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9';
+                        if (!isSelected) e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9';
                       }}
                       onMouseLeave={e => {
                         if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
@@ -255,15 +268,41 @@ function ModernSelect({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                         {opt.icon && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'), flexShrink: 0 }}>
-                            {resolveIcon(opt.icon, 15)}
-                          </span>
+                          <div style={{
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '50%',
+                            backgroundColor: isSelected
+                              ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
+                              : (darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'),
+                            flexShrink: 0
+                          }}>
+                            {resolveIcon(opt.icon, 14)}
+                          </div>
                         )}
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {opt.label}
                         </span>
                       </div>
-                      {isSelected && <Check size={13} color={darkMode ? '#38bdf8' : '#2563eb'} />}
+                      {isSelected && (
+                        <div style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>
+                          <Check size={11} strokeWidth={3} />
+                        </div>
+                      )}
                     </button>
                   );
                 })
@@ -332,9 +371,10 @@ function FieldInput({
     if (isChips) {
       return (
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 130px), 1fr))',
-          gap: '10px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '14px',
+          alignItems: 'flex-start',
           width: '100%',
           marginTop: '6px'
         }}>
@@ -346,53 +386,53 @@ function FieldInput({
                 type="button"
                 onClick={() => onChange(isSelected ? '' : opt.label)}
                 style={{
-                  position: 'relative',
-                  padding: '12px 14px',
-                  borderRadius: '12px',
-                  border: isSelected
-                    ? '2px solid #38bdf8'
-                    : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0'),
-                  backgroundColor: isSelected
-                    ? (darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(37, 99, 235, 0.08)')
-                    : (darkMode ? 'rgba(16, 23, 40, 0.7)' : '#ffffff'),
-                  color: isSelected
-                    ? (darkMode ? '#38bdf8' : '#2563eb')
-                    : (darkMode ? '#e2e8f0' : '#1e293b'),
-                  fontFamily: "'Cairo', sans-serif",
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   gap: '8px',
-                  cursor: 'pointer',
-                  textAlign: 'right',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  boxShadow: isSelected
-                    ? (darkMode ? '0 4px 18px rgba(56, 189, 248, 0.25)' : '0 4px 16px rgba(37, 99, 235, 0.15)')
-                    : '0 1px 3px rgba(0,0,0,0.04)',
-                  transform: isSelected ? 'translateY(-2px)' : 'none',
+                  width: '84px',
+                  outline: 'none',
+                  textAlign: 'center',
+                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div
-                    style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '9px',
-                      backgroundColor: isSelected
-                        ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
-                        : (darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'),
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {resolveIcon(opt.icon, 18, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'))}
-                  </div>
+                {/* Orbital Circular Disc - NO OUTER SQUARE BOX! */}
+                <div style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: isSelected
+                    ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                    : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                  border: isSelected
+                    ? '2px solid #38bdf8'
+                    : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                  boxShadow: isSelected
+                    ? (darkMode ? '0 0 20px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
+                    : '0 2px 6px rgba(0,0,0,0.04)',
+                  color: isSelected
+                    ? (darkMode ? '#38bdf8' : '#2563eb')
+                    : (darkMode ? '#cbd5e1' : '#475569'),
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}>
+                  {resolveIcon(opt.icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+
+                  {/* Floating Selected Check Badge */}
                   {isSelected && (
                     <div style={{
+                      position: 'absolute',
+                      top: '-2px',
+                      insetInlineEnd: '-2px',
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
@@ -401,13 +441,25 @@ function FieldInput({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '10px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
                     }}>
                       <Check size={11} strokeWidth={3} />
                     </div>
                   )}
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: isSelected ? 800 : 600, lineHeight: 1.4 }}>
+
+                {/* Floating Label - completely unboxed */}
+                <span style={{
+                  fontSize: '11.5px',
+                  fontWeight: isSelected ? 800 : 600,
+                  color: isSelected
+                    ? (darkMode ? '#38bdf8' : '#2563eb')
+                    : (darkMode ? '#e2e8f0' : '#1e293b'),
+                  fontFamily: "'Cairo', sans-serif",
+                  lineHeight: 1.35,
+                  wordBreak: 'break-word',
+                  maxWidth: '84px',
+                }}>
                   {opt.label}
                 </span>
               </button>
@@ -1346,21 +1398,21 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: '100%',
-                overflow: 'hidden',
+                overflow: 'visible',
                 backgroundColor: darkMode ? '#0e172a' : '#ffffff',
                 borderRadius: '12px',
                 border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-                padding: '16px',
+                padding: '20px 16px',
                 boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.06)',
               }}
             >
               {!selectedFlow ? (
-                /* ── Phase 1: مربع اختيار نوع الطلب من المسارات المتاحة ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                /* ── Phase 1: اختيار مسار المعاملة عبر أيقونات دائرية حرة بدون مربعات ── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #e2e8f0', paddingBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Sparkles size={16} color="#38bdf8" />
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
                         اختر نوع الخدمة / المعاملة لبدء إعداد المسار:
                       </span>
                     </div>
@@ -1369,10 +1421,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </span>
                   </div>
 
+                  {/* Free-Floating Orbital Service Route Icons (دون حبس في مربعات) */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                    gap: '12px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '24px',
+                    justifyContent: 'center',
+                    alignItems: 'flex-start',
+                    padding: '10px 4px',
                   }}>
                     {requests.map(flow => {
                       const fColor = flow.color || '#38bdf8';
@@ -1380,60 +1436,79 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
 
                       return (
-                        <div
+                        <button
                           key={flow.id}
+                          type="button"
+                          disabled={!block.allowed}
                           onClick={() => block.allowed && handleSelectFlow(flow)}
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px 14px',
-                            borderRadius: '10px',
-                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
-                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                            background: 'none',
+                            border: 'none',
+                            padding: '6px',
                             cursor: block.allowed ? 'pointer' : 'not-allowed',
-                            opacity: block.allowed ? 1 : 0.6,
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            opacity: block.allowed ? 1 : 0.5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px',
+                            width: '125px',
+                            outline: 'none',
+                            textAlign: 'center',
+                            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                           }}
                           onMouseEnter={e => {
                             if (block.allowed) {
-                              e.currentTarget.style.backgroundColor = `${fColor}15`;
-                              e.currentTarget.style.borderColor = `${fColor}50`;
-                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
                             }
                           }}
                           onMouseLeave={e => {
                             if (block.allowed) {
-                              e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc';
-                              e.currentTarget.style.borderColor = darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0';
                               e.currentTarget.style.transform = 'none';
                             }
                           }}
                         >
+                          {/* Free-Floating Orbital Circular Disc */}
                           <div style={{
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '8px',
-                            backgroundColor: `${fColor}20`,
-                            border: `1.5px solid ${fColor}50`,
+                            position: 'relative',
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            backgroundColor: darkMode ? `${fColor}18` : `${fColor}12`,
+                            border: `2px solid ${fColor}55`,
                             color: fColor,
-                            flexShrink: 0,
+                            boxShadow: `0 4px 18px ${fColor}25`,
+                            transition: 'all 0.25s ease',
                           }}>
-                            {resolveIcon(flow.icon, 18, fColor)}
+                            {resolveIcon(flow.icon, 28, fColor)}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+
+                          {/* Free-Floating Typography Labels */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                            <span style={{
+                              fontSize: '12.5px',
+                              fontWeight: 800,
+                              color: darkMode ? '#ffffff' : '#0f172a',
+                              fontFamily: "'Tajawal', sans-serif",
+                              lineHeight: 1.3,
+                              textAlign: 'center',
+                            }}>
                               {flow.title}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                              {targetDept} • {flow.fields.length} حقول
-                            </div>
+                            </span>
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              color: darkMode ? '#94a3b8' : '#64748b',
+                              lineHeight: 1.2,
+                              textAlign: 'center',
+                              maxWidth: '115px',
+                            }}>
+                              {targetDept}
+                            </span>
                           </div>
-                          <ChevronLeft size={16} color={fColor} />
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -1690,9 +1765,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                                   <div
                                     style={{
-                                      display: 'grid',
-                                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                                      gap: '10px',
+                                      display: 'flex',
+                                      flexWrap: 'wrap',
+                                      gap: '14px',
+                                      alignItems: 'flex-start',
                                       width: '100%',
                                     }}
                                   >
@@ -1706,68 +1782,78 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                           type="button"
                                           onClick={() => handleFieldChange('taxonomySub', isSelected ? '' : subLabel)}
                                           style={{
-                                            position: 'relative',
-                                            padding: '12px 14px',
-                                            borderRadius: '12px',
-                                            border: isSelected
-                                              ? '2px solid #38bdf8'
-                                              : (darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0'),
-                                            backgroundColor: isSelected
-                                              ? (darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(37, 99, 235, 0.08)')
-                                              : (darkMode ? 'rgba(16, 23, 40, 0.7)' : '#ffffff'),
-                                            color: isSelected
-                                              ? (darkMode ? '#38bdf8' : '#2563eb')
-                                              : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                                            fontFamily: "'Cairo', sans-serif",
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: '4px',
+                                            cursor: 'pointer',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            alignItems: 'flex-start',
-                                            justifyContent: 'space-between',
-                                            gap: '8px',
-                                            cursor: 'pointer',
-                                            textAlign: 'right',
-                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                            boxShadow: isSelected
-                                              ? (darkMode ? '0 4px 18px rgba(56, 189, 248, 0.25)' : '0 4px 16px rgba(37, 99, 235, 0.15)')
-                                              : '0 1px 3px rgba(0,0,0,0.04)',
-                                            transform: isSelected ? 'translateY(-2px)' : 'none',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            width: '80px',
+                                            outline: 'none',
+                                            textAlign: 'center',
+                                            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                                           }}
+                                          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                                          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
                                         >
-                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                            <div
-                                              style={{
-                                                width: '34px',
-                                                height: '34px',
-                                                borderRadius: '9px',
-                                                backgroundColor: isSelected
-                                                  ? (darkMode ? 'rgba(56, 189, 248, 0.25)' : 'rgba(37, 99, 235, 0.15)')
-                                                  : (darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'),
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'),
-                                                transition: 'all 0.2s ease',
-                                              }}
-                                            >
-                                              {resolveIcon(subIcon, 18, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#94a3b8' : '#64748b'))}
-                                            </div>
+                                          {/* Orbital Sub-Issue Disc */}
+                                          <div style={{
+                                            position: 'relative',
+                                            width: '48px',
+                                            height: '48px',
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: isSelected
+                                              ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                                              : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                                            border: isSelected
+                                              ? '2px solid #38bdf8'
+                                              : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                                            boxShadow: isSelected
+                                              ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                                              : '0 2px 6px rgba(0,0,0,0.04)',
+                                            color: isSelected
+                                              ? (darkMode ? '#38bdf8' : '#2563eb')
+                                              : (darkMode ? '#cbd5e1' : '#475569'),
+                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                          }}>
+                                            {resolveIcon(subIcon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+
                                             {isSelected && (
                                               <div style={{
-                                                width: '18px',
-                                                height: '18px',
+                                                position: 'absolute',
+                                                top: '-2px',
+                                                insetInlineEnd: '-2px',
+                                                width: '16px',
+                                                height: '16px',
                                                 borderRadius: '50%',
                                                 backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
                                                 color: '#ffffff',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                fontSize: '10px',
+                                                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
                                               }}>
-                                                <Check size={11} strokeWidth={3} />
+                                                <Check size={10} strokeWidth={3} />
                                               </div>
                                             )}
                                           </div>
-                                          <span style={{ fontSize: '12px', fontWeight: isSelected ? 800 : 600, lineHeight: 1.4 }}>
+
+                                          <span style={{
+                                            fontSize: '11px',
+                                            fontWeight: isSelected ? 800 : 600,
+                                            color: isSelected
+                                              ? (darkMode ? '#38bdf8' : '#2563eb')
+                                              : (darkMode ? '#e2e8f0' : '#1e3a52'),
+                                            fontFamily: "'Cairo', sans-serif",
+                                            lineHeight: 1.3,
+                                            wordBreak: 'break-word',
+                                            maxWidth: '80px',
+                                          }}>
                                             {subLabel}
                                           </span>
                                         </button>
