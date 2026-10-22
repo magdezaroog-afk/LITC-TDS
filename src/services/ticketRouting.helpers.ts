@@ -25,6 +25,7 @@ export interface DynamicCustomField {
   name: string;
   options: DynamicFieldOption[];
   childBindings?: ChildFieldBinding[];
+  displayMode?: 'dropdown' | 'chips';
 }
 
 export interface CustomFormInput {

@@ -244,6 +244,13 @@ export const TicketRoutingTab: React.FC = () => {
     options: string;
   }>({ name: '', options: '' });
 
+  // Live Interactive Canvas Simulation State (المعاينة الحية والتجربة التفاعلية للآدمن)
+  const [canvasSimulatedValues, setCanvasSimulatedValues] = useState<Record<string, string>>({});
+  // Child Sub-Dropdown Direct Editor Drawer / Modal
+  const [editingChildFieldId, setEditingChildFieldId] = useState<string | null>(null);
+  // Option Label Inline Editor
+  const [editingOptionTitle, setEditingOptionTitle] = useState<{ fieldId: string; optionId: string; label: string } | null>(null);
+
   // Candidate Route Managers
   const [candidateManagers, setCandidateManagers] = useState<any[]>([]);
 
@@ -630,6 +637,62 @@ export const TicketRoutingTab: React.FC = () => {
     await saveDynamicFields(updated);
     setQuickOptionInput(p => ({ ...p, [fieldId]: '' }));
     showToast(`✅ تم إضافة خيار «${text}»`, 'success');
+  };
+
+  // Update option label directly
+  const handleUpdateOptionLabel = async (fieldId: string, optionId: string, newLabel: string) => {
+    const clean = newLabel.trim();
+    if (!clean) return;
+    const updated = dynamicFields.map(f => {
+      if (f.id !== fieldId) return f;
+      return {
+        ...f,
+        options: f.options.map(o => o.id === optionId ? { ...o, label: clean } : o)
+      };
+    });
+    setDynamicFields(updated);
+    await saveDynamicFields(updated);
+    setEditingOptionTitle(null);
+    showToast(`✅ تم تحديث اسم الخيار إلى «${clean}»`, 'success');
+  };
+
+  // Delete option from field
+  const handleDeleteOption = async (fieldId: string, optionId: string) => {
+    const targetF = dynamicFields.find(f => f.id === fieldId);
+    if (!targetF) return;
+    if (targetF.options.length <= 1) {
+      showToast('يجب أن تحتوي المستدلة على خيار واحد على الأقل', 'error');
+      return;
+    }
+    const updated = dynamicFields.map(f => {
+      if (f.id !== fieldId) return f;
+      return {
+        ...f,
+        options: f.options.filter(o => o.id !== optionId)
+      };
+    });
+    setDynamicFields(updated);
+    await saveDynamicFields(updated);
+    showToast('🗑 تم حذف الخيار', 'success');
+  };
+
+  // Toggle display mode (dropdown vs chips) for any dynamic field (parent or child)
+  const handleToggleDynamicFieldMode = async (fieldId: string) => {
+    const targetField = dynamicFields.find(df => df.id === fieldId);
+    const curWizardModes = { ...(wizard.formConfig.dynamicFieldsDisplayMode || {}) };
+    const currentMode = curWizardModes[fieldId] || targetField?.displayMode || 'chips';
+    const nextMode: 'dropdown' | 'chips' = currentMode === 'chips' ? 'dropdown' : 'chips';
+
+    // 1. Update in route wizard config
+    curWizardModes[fieldId] = nextMode;
+    setFC({ dynamicFieldsDisplayMode: curWizardModes });
+
+    // 2. Also persist to target dynamic field definition
+    const updatedFields = dynamicFields.map(df => df.id === fieldId ? { ...df, displayMode: nextMode } : df);
+    setDynamicFields(updatedFields);
+    await saveDynamicFields(updatedFields);
+
+    showToast(`تم تحويل عرض «${targetField?.name || 'المستدلة'}» إلى: ${nextMode === 'chips' ? '🔲 أيقونات' : '🔘 قائمة منسدلة'}`, 'success');
   };
 
   const setOptionIcon = async (fieldId: string, optionId: string, optionLabel: string, icon: string) => {
@@ -1484,17 +1547,17 @@ export const TicketRoutingTab: React.FC = () => {
                       const isReq = (wizard.formConfig.routeDynamicFields || []).find(r => r.fieldId === fid)?.isRequired ?? true;
 
                       return (
-                        <div key={fn} className="field-canvas-card" style={{ gridColumn: gridSpan, padding: 12, borderRadius: 12, border: `1.5px solid ${A.sep}`, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div key={fn} className="field-canvas-card" style={{ gridColumn: gridSpan, padding: 14, borderRadius: 12, border: `1.5px solid ${A.sep}`, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 10 }}>
                           {/* Top Controls */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${A.sep}`, paddingBottom: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${A.sep}`, paddingBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 13 }}>📋</span>
-                              <strong style={{ fontSize: 12, color: A.text }}>{fDef?.name || 'مستدلة ديناميكية'}</strong>
+                              <span style={{ fontSize: 14 }}>📋</span>
+                              <strong style={{ fontSize: 12.5, color: A.text }}>{fDef?.name || 'مستدلة ديناميكية'}</strong>
                               <button
                                 type="button"
                                 onClick={() => toggleFieldRequired(fn)}
                                 style={{
-                                  fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                                  fontSize: 9.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, border: 'none', cursor: 'pointer',
                                   background: isReq ? '#fef2f2' : '#f1f5f9', color: isReq ? A.red : A.textSub
                                 }}
                               >
@@ -1502,104 +1565,322 @@ export const TicketRoutingTab: React.FC = () => {
                               </button>
                             </div>
 
-                            {/* Width & Move & Delete Tools */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {/* Display mode toggle */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const curModes = { ...(wizard.formConfig.dynamicFieldsDisplayMode || {}) };
-                                  curModes[fid] = isChips ? 'dropdown' : 'chips';
-                                  setFC({ dynamicFieldsDisplayMode: curModes });
-                                }}
-                                style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5, border: `1px solid ${A.sep}`, background: '#fff', cursor: 'pointer', color: wizard.color }}
-                                title="التبديل بين قائمة منسدلة أو كروت وأيقونات دائرية"
-                              >
-                                {isChips ? '🔲 أيقونات' : '🔘 منسدلة'}
-                              </button>
-
-                              {/* Width buttons */}
-                              {(['100%', '50%', '33.3%'] as const).map(w => (
+                            {/* Display Mode, Width & Reorder Tools */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                              {/* Display mode segmented pill toggle: أيقونات دائرية مقابل قائمة منسدلة */}
+                              <div style={{ display: 'inline-flex', background: '#e2e8f0', borderRadius: 6, padding: 2, gap: 2 }}>
                                 <button
-                                  key={w}
                                   type="button"
-                                  onClick={() => setFieldWidth(fn, w)}
+                                  onClick={() => handleToggleDynamicFieldMode(fid)}
                                   style={{
-                                    fontSize: 9.5, fontWeight: widthSetting === w ? 900 : 500, padding: '2px 5px', borderRadius: 4,
-                                    border: widthSetting === w ? `1.5px solid ${wizard.color}` : `1px solid ${A.sep}`,
-                                    background: widthSetting === w ? `${wizard.color}20` : '#fff', color: widthSetting === w ? wizard.color : A.textSub, cursor: 'pointer'
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    padding: '3px 8px',
+                                    fontSize: 10,
+                                    fontWeight: isChips ? 800 : 500,
+                                    background: isChips ? wizard.color : 'transparent',
+                                    color: isChips ? '#fff' : A.textSub,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                    transition: 'all 0.15s ease'
                                   }}
+                                  title="عرض كأيقونات دائرية تفاعلية تحاكي واجهة الموظف"
                                 >
-                                  {w === '100%' ? 'كامل' : (w === '50%' ? '½' : '⅓')}
+                                  <span>🔲</span>
+                                  <span>أيقونات</span>
                                 </button>
-                              ))}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleDynamicFieldMode(fid)}
+                                  style={{
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    padding: '3px 8px',
+                                    fontSize: 10,
+                                    fontWeight: !isChips ? 800 : 500,
+                                    background: !isChips ? wizard.color : 'transparent',
+                                    color: !isChips ? '#fff' : A.textSub,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title="عرض كقائمة منسدلة حديثة ModernSelect"
+                                >
+                                  <span>🔘</span>
+                                  <span>قائمة</span>
+                                </button>
+                              </div>
+
+                              {/* Width buttons (100% كامل، 50% نصف، 33.3% ثلث) */}
+                              <div style={{ display: 'inline-flex', border: `1px solid ${A.sep}`, borderRadius: 6, overflow: 'hidden', background: '#fff' }}>
+                                {([
+                                  { w: '100%', lbl: 'كامل 100%' },
+                                  { w: '50%', lbl: '½ 50%' },
+                                  { w: '33.3%', lbl: '⅓ 33%' }
+                                ] as const).map(item => (
+                                  <button
+                                    key={item.w}
+                                    type="button"
+                                    onClick={() => setFieldWidth(fn, item.w)}
+                                    style={{
+                                      fontSize: 9.5,
+                                      fontWeight: widthSetting === item.w ? 900 : 500,
+                                      padding: '3px 7px',
+                                      border: 'none',
+                                      borderInlineEnd: `1px solid ${A.sep}`,
+                                      background: widthSetting === item.w ? `${wizard.color}25` : '#fff',
+                                      color: widthSetting === item.w ? wizard.color : A.textSub,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.1s'
+                                    }}
+                                    title={`ضبط عرض الحقل: ${item.lbl}`}
+                                  >
+                                    {item.lbl}
+                                  </button>
+                                ))}
+                              </div>
 
                               {/* Reorder */}
-                              <button type="button" onClick={() => moveFieldInStage(fn, -1)} disabled={idx === 0} style={{ border: 'none', background: 'none', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: 11 }}>▲</button>
-                              <button type="button" onClick={() => moveFieldInStage(fn, 1)} disabled={idx === stageFieldNames.length - 1} style={{ border: 'none', background: 'none', cursor: idx === stageFieldNames.length - 1 ? 'default' : 'pointer', opacity: idx === stageFieldNames.length - 1 ? 0.3 : 1, fontSize: 11 }}>▼</button>
+                              <button type="button" onClick={() => moveFieldInStage(fn, -1)} disabled={idx === 0} style={{ border: `1px solid ${A.sep}`, background: '#fff', borderRadius: 5, padding: '2px 5px', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: 10 }} title="تحريك للأعلى">▲</button>
+                              <button type="button" onClick={() => moveFieldInStage(fn, 1)} disabled={idx === stageFieldNames.length - 1} style={{ border: `1px solid ${A.sep}`, background: '#fff', borderRadius: 5, padding: '2px 5px', cursor: idx === stageFieldNames.length - 1 ? 'default' : 'pointer', opacity: idx === stageFieldNames.length - 1 ? 0.3 : 1, fontSize: 10 }} title="تحريك للأسفل">▼</button>
 
                               {/* Delete */}
-                              <button type="button" onClick={() => removeFieldFromStage(fn)} style={{ border: 'none', background: 'none', color: A.red, cursor: 'pointer', fontSize: 12 }}>🗑</button>
+                              <button type="button" onClick={() => removeFieldFromStage(fn)} style={{ border: `1px solid ${A.sep}`, background: '#fff', borderRadius: 5, padding: '2px 6px', color: A.red, cursor: 'pointer', fontSize: 11 }} title="إزالة الحقل من هذه المرحلة">🗑</button>
                             </div>
                           </div>
 
-                          {/* Options Preview with Cascading Sub-Dropdown Linking */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {/* Options Preview & Interactive Simulation (تحاكي تماماً ما يراه الموظف) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10.5, color: A.textSub }}>
+                              <span>
+                                {isChips ? 'نمط الأيقونات الدائرية (انقر لتجربة الاختيار وتفعيل الفروع):' : 'نمط القائمة المنسدلة:'}
+                              </span>
+                              {canvasSimulatedValues[fid] && (
+                                <button
+                                  type="button"
+                                  onClick={() => setCanvasSimulatedValues(prev => ({ ...prev, [fid]: '' }))}
+                                  style={{ border: 'none', background: 'none', color: '#0284c7', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
+                                >
+                                  إلغاء التحديد الحركي ↺
+                                </button>
+                              )}
+                            </div>
+
                             {isChips ? (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-start' }}>
                                 {(fDef?.options || []).map(o => {
                                   const oIcon = wizard.formConfig.optionIcons?.[o.id] || wizard.formConfig.optionIcons?.[o.label] || o.icon || 'Sparkles';
                                   const linkedBindings = (fDef?.childBindings || []).filter(b => b.triggerValue === o.id || b.triggerValue === o.label);
                                   const isBindingOpen = openChildBindingPicker?.optionId === o.id && openChildBindingPicker?.parentFieldId === fDef.id;
+                                  const isSimulatedSelected = canvasSimulatedValues[fid] === o.label || canvasSimulatedValues[fid] === o.id;
 
                                   return (
-                                    <div key={o.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, background: '#fff', border: `1px solid ${linkedBindings.length > 0 ? '#86efac' : A.sep}`, borderRadius: 8, padding: '6px 8px' }}>
-                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700 }}>
-                                        <span style={{ color: wizard.color }}>{renderRouteIcon(oIcon, 14, wizard.color)}</span>
-                                        <span>{o.label}</span>
+                                    <div
+                                      key={o.id}
+                                      style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        background: isSimulatedSelected ? `${wizard.color}10` : '#fff',
+                                        border: `1.5px solid ${isSimulatedSelected ? wizard.color : (linkedBindings.length > 0 ? '#86efac' : A.sep)}`,
+                                        borderRadius: 12,
+                                        padding: '8px 10px',
+                                        minWidth: 90,
+                                        maxWidth: 130,
+                                        boxShadow: isSimulatedSelected ? `0 4px 12px ${wizard.color}25` : '0 1px 3px rgba(0,0,0,0.03)',
+                                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                                      }}
+                                    >
+                                      {/* Interactive Orbital Disc (المعاينة الدائرية كما تظهر للموظف تماماً) */}
+                                      <div
+                                        onClick={() => {
+                                          setCanvasSimulatedValues(prev => ({
+                                            ...prev,
+                                            [fid]: isSimulatedSelected ? '' : o.label
+                                          }));
+                                        }}
+                                        style={{
+                                          width: 44,
+                                          height: 44,
+                                          borderRadius: '50%',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          cursor: 'pointer',
+                                          background: isSimulatedSelected ? `${wizard.color}25` : '#f8fafc',
+                                          border: `2px solid ${isSimulatedSelected ? wizard.color : '#e2e8f0'}`,
+                                          color: isSimulatedSelected ? wizard.color : A.text,
+                                          transition: 'all 0.2s ease',
+                                          boxShadow: isSimulatedSelected ? `0 0 12px ${wizard.color}50` : 'none'
+                                        }}
+                                        title="انقر لتجربة الاختيار الحقيقي ومعاينة ظهور المستدلة الفرعية التابعة"
+                                      >
+                                        {renderRouteIcon(oIcon, 20, isSimulatedSelected ? wizard.color : '#475569')}
+                                      </div>
+
+                                      {/* Option Label (with quick edit support) */}
+                                      {editingOptionTitle?.optionId === o.id && editingOptionTitle?.fieldId === fDef.id ? (
+                                        <div style={{ display: 'flex', gap: 2, width: '100%' }}>
+                                          <input
+                                            className="tr-input"
+                                            value={editingOptionTitle.label}
+                                            onChange={e => setEditingOptionTitle({ fieldId: fDef.id, optionId: o.id, label: e.target.value })}
+                                            onKeyDown={e => {
+                                              if (e.key === 'Enter') handleUpdateOptionLabel(fDef.id, o.id, editingOptionTitle.label);
+                                              if (e.key === 'Escape') setEditingOptionTitle(null);
+                                            }}
+                                            autoFocus
+                                            style={{ padding: '2px 4px', fontSize: 10, width: '100%', textAlign: 'center' }}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => handleUpdateOptionLabel(fDef.id, o.id, editingOptionTitle.label)}
+                                            style={{ border: 'none', background: '#16a34a', color: '#fff', borderRadius: 4, padding: '2px 4px', fontSize: 9, cursor: 'pointer' }}
+                                          >
+                                            ✓
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <span
+                                          onClick={() => {
+                                            setCanvasSimulatedValues(prev => ({
+                                              ...prev,
+                                              [fid]: isSimulatedSelected ? '' : o.label
+                                            }));
+                                          }}
+                                          style={{
+                                            fontSize: 11,
+                                            fontWeight: isSimulatedSelected ? 900 : 700,
+                                            color: isSimulatedSelected ? wizard.color : A.text,
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            wordBreak: 'break-word',
+                                            lineHeight: 1.3
+                                          }}
+                                        >
+                                          {o.label}
+                                        </span>
+                                      )}
+
+                                      {/* Option Action Strip (تعديل الاسم، تغيير الأيقونة، ربط فرع، حذف) */}
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingOptionTitle({ fieldId: fDef.id, optionId: o.id, label: o.label })}
+                                          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 10.5, color: A.textSub, padding: 1 }}
+                                          title="تعديل اسم الخيار"
+                                        >
+                                          ✏️
+                                        </button>
                                         <button
                                           type="button"
                                           onClick={() => setOpenOptionIconPicker(openOptionIconPicker === o.id ? null : o.id)}
-                                          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 10, color: A.textSub }}
-                                          title="تغيير الأيقونة"
+                                          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 10.5, color: A.textSub, padding: 1 }}
+                                          title="تغيير أيقونة الخيار"
                                         >
                                           🎨
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setOpenChildBindingPicker(isBindingOpen ? null : { parentFieldId: fDef.id, optionId: o.id, optionLabel: o.label })}
-                                          style={{ border: 'none', background: isBindingOpen ? `${wizard.color}20` : '#f1f5f9', color: isBindingOpen ? wizard.color : '#0284c7', borderRadius: 4, padding: '2px 5px', fontSize: 9.5, fontWeight: 700, cursor: 'pointer' }}
-                                          title="ربط مستدلة فرعية تظهر عند اختيار هذا البند"
+                                          style={{
+                                            border: 'none',
+                                            background: isBindingOpen ? `${wizard.color}25` : '#f0fdf4',
+                                            color: isBindingOpen ? wizard.color : '#16a34a',
+                                            borderRadius: 4,
+                                            padding: '1px 5px',
+                                            fontSize: 9.5,
+                                            fontWeight: 800,
+                                            cursor: 'pointer'
+                                          }}
+                                          title="ربط مستدلة فرعية تتفرع وتظهر فوراً عند اختيار هذا البند"
                                         >
                                           ↳ ربط فرع
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteOption(fDef.id, o.id)}
+                                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 10, padding: 1 }}
+                                          title="حذف هذا الخيار"
+                                        >
+                                          ✕
                                         </button>
                                       </div>
 
                                       {/* Linked child sub-dropdown badges */}
                                       {linkedBindings.map(b => {
                                         const childF = dynamicFields.find(df => df.id === b.childFieldId);
+                                        const childMode = wizard.formConfig.dynamicFieldsDisplayMode?.[b.childFieldId] || childF?.displayMode || 'chips';
                                         return (
                                           <div
                                             key={b.childFieldId}
                                             style={{
-                                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                              padding: '2px 6px', borderRadius: 5, background: '#f0fdf4', border: '1px solid #86efac',
-                                              fontSize: 9.5, color: '#166534', gap: 4
+                                              display: 'flex', flexDirection: 'column', gap: 3, width: '100%',
+                                              padding: '4px 6px', borderRadius: 6, background: '#f0fdf4', border: '1px solid #86efac',
+                                              fontSize: 9.5, color: '#166534', marginTop: 2
                                             }}
                                           >
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                              <span>↳ متفرع:</span>
-                                              <strong>{childF?.name || b.childFieldId}</strong>
-                                              <span style={{ color: '#65a30d' }}>({childF?.options?.length || 0})</span>
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleUnlinkChildField(fDef.id, b.childFieldId, b.triggerValue)}
-                                              style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 10, fontWeight: 900 }}
-                                              title="إلغاء الربط"
-                                            >
-                                              ✕
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+                                              <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
+                                                <span>↳</span>
+                                                <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 65 }}>{childF?.name || b.childFieldId}</strong>
+                                                <span style={{ color: '#65a30d', fontSize: 8.5 }}>({childF?.options?.length || 0})</span>
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleUnlinkChildField(fDef.id, b.childFieldId, b.triggerValue)}
+                                                style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 10, fontWeight: 900 }}
+                                                title="إلغاء الربط"
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+
+                                            {/* Child management strip: Mode Switch + Direct Options Editor */}
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #bbf7d0', paddingTop: 3, gap: 2 }}>
+                                              {/* Toggle child display mode */}
+                                              <button
+                                                type="button"
+                                                onClick={() => handleToggleDynamicFieldMode(b.childFieldId)}
+                                                style={{
+                                                  border: 'none',
+                                                  borderRadius: 3,
+                                                  padding: '1px 4px',
+                                                  fontSize: 8.5,
+                                                  fontWeight: 800,
+                                                  background: childMode === 'chips' ? '#16a34a' : '#0284c7',
+                                                  color: '#fff',
+                                                  cursor: 'pointer'
+                                                }}
+                                                title="التبديل بين أيقونات دائرية وقائمة منسدلة لهذه المستدلة الفرعية"
+                                              >
+                                                {childMode === 'chips' ? '🔲 أيقونات' : '🔘 قائمة'}
+                                              </button>
+
+                                              {/* Direct child editor button */}
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingChildFieldId(b.childFieldId)}
+                                                style={{
+                                                  border: 'none',
+                                                  background: '#dcfce7',
+                                                  color: '#15803d',
+                                                  borderRadius: 3,
+                                                  padding: '1px 5px',
+                                                  fontSize: 8.5,
+                                                  fontWeight: 800,
+                                                  cursor: 'pointer'
+                                                }}
+                                                title="تعديل خيارات وأسماء المستدلة الفرعية بالكامل"
+                                              >
+                                                ⚙️ إدارة الفرع
+                                              </button>
+                                            </div>
                                           </div>
                                         );
                                       })}
@@ -1607,12 +1888,13 @@ export const TicketRoutingTab: React.FC = () => {
                                       {/* Sub-Dropdown Cascading Linker Popover */}
                                       {isBindingOpen && (
                                         <div style={{
-                                          width: '100%', padding: '8px 10px', borderRadius: 7, background: '#f0fdf4',
-                                          border: '1.5px dashed #22c55e', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4
+                                          width: 220, padding: '8px 10px', borderRadius: 8, background: '#f0fdf4',
+                                          border: '1.5px dashed #22c55e', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4,
+                                          boxShadow: '0 4px 16px rgba(0,0,0,0.1)', position: 'relative', zIndex: 10
                                         }}>
                                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <strong style={{ fontSize: 10.5, color: '#15803d' }}>
-                                              ربط مستدلة فرعية تظهر عند «{o.label}»:
+                                              ربط فرع عند «{o.label}»:
                                             </strong>
                                             <button type="button" onClick={() => setOpenChildBindingPicker(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 11, color: '#dc2626' }}>✕</button>
                                           </div>
@@ -1643,27 +1925,27 @@ export const TicketRoutingTab: React.FC = () => {
                                           {/* Quick create child field */}
                                           <div style={{ borderTop: '1px dashed #86efac', paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
                                             <div style={{ fontSize: 9.5, color: '#166534', fontWeight: 700 }}>أو أنشئ مستدلة فرعية جديدة فوراً:</div>
-                                            <div style={{ display: 'flex', gap: 4 }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                               <input
                                                 className="tr-input"
-                                                placeholder="اسم المستدلة..."
+                                                placeholder="اسم المستدلة الفرعية..."
                                                 value={newChildFieldInput.name}
                                                 onChange={e => setNewChildFieldInput(p => ({ ...p, name: e.target.value }))}
-                                                style={{ padding: '2px 6px', fontSize: 10, background: '#fff', flex: 1 }}
+                                                style={{ padding: '3px 6px', fontSize: 10, background: '#fff' }}
                                               />
                                               <input
                                                 className="tr-input"
-                                                placeholder="خيارات بفواصل (أ، ب، ج)..."
+                                                placeholder="خيارات بفواصل (خيار 1، خيار 2)..."
                                                 value={newChildFieldInput.options}
                                                 onChange={e => setNewChildFieldInput(p => ({ ...p, options: e.target.value }))}
-                                                style={{ padding: '2px 6px', fontSize: 10, background: '#fff', flex: 1.5 }}
+                                                style={{ padding: '3px 6px', fontSize: 10, background: '#fff' }}
                                               />
                                               <button
                                                 type="button"
                                                 onClick={() => handleCreateAndLinkChildField(fDef.id, o.id || o.label)}
-                                                style={{ padding: '2px 8px', borderRadius: 4, background: '#16a34a', color: '#fff', border: 'none', fontSize: 9.5, fontWeight: 800, cursor: 'pointer' }}
+                                                style={{ padding: '4px 8px', borderRadius: 4, background: '#16a34a', color: '#fff', border: 'none', fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
                                               >
-                                                + ربط
+                                                + إنشاء وربط الفرع
                                               </button>
                                             </div>
                                           </div>
@@ -1674,27 +1956,90 @@ export const TicketRoutingTab: React.FC = () => {
                                 })}
                               </div>
                             ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <div style={{ padding: '8px 12px', borderRadius: 7, background: '#fff', border: `1px solid ${A.sep}`, fontSize: 11.5, color: A.textSub, display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>اختر: {fDef?.name}...</span>
-                                  <span>▼</span>
+                              /* Dropdown Mode (قائمة منسدلة تفاعلية) */
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <select
+                                    value={canvasSimulatedValues[fid] || ''}
+                                    onChange={e => setCanvasSimulatedValues(prev => ({ ...prev, [fid]: e.target.value }))}
+                                    style={{
+                                      padding: '8px 12px',
+                                      borderRadius: 8,
+                                      background: '#fff',
+                                      border: `1.5px solid ${canvasSimulatedValues[fid] ? wizard.color : A.sep}`,
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      color: A.text,
+                                      flex: 1,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <option value="">-- اختر: {fDef?.name} --</option>
+                                    {(fDef?.options || []).map(o => (
+                                      <option key={o.id} value={o.label}>
+                                        {o.label} {(fDef?.childBindings || []).some(b => b.triggerValue === o.id || b.triggerValue === o.label) ? '↳ (مرتبط بفرع)' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
-                                <div style={{ fontSize: 10, color: A.textSub, fontWeight: 600 }}>
-                                  خيارات القائمة وفروعها التابعة ({fDef?.options?.length || 0}):
+
+                                <div style={{ fontSize: 10, color: A.textSub, fontWeight: 700 }}>
+                                  إدارة خيارات وفروع القائمة ({fDef?.options?.length || 0}):
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                   {(fDef?.options || []).map(o => {
                                     const linkedBindings = (fDef?.childBindings || []).filter(b => b.triggerValue === o.id || b.triggerValue === o.label);
+                                    const isSelected = canvasSimulatedValues[fid] === o.label;
+                                    const isBindingOpen = openChildBindingPicker?.optionId === o.id && openChildBindingPicker?.parentFieldId === fDef.id;
+
                                     return (
-                                      <div key={o.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 7px', borderRadius: 5, background: '#fff', border: `1px solid ${linkedBindings.length > 0 ? '#86efac' : A.sep}`, fontSize: 10.5 }}>
-                                        <span>{o.label}</span>
-                                        {linkedBindings.length > 0 && <span style={{ color: '#16a34a', fontWeight: 800 }}>({linkedBindings.length} فرع)</span>}
+                                      <div
+                                        key={o.id}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 6,
+                                          padding: '4px 8px',
+                                          borderRadius: 6,
+                                          background: isSelected ? `${wizard.color}15` : '#fff',
+                                          border: `1px solid ${isSelected ? wizard.color : (linkedBindings.length > 0 ? '#86efac' : A.sep)}`,
+                                          fontSize: 11
+                                        }}
+                                      >
+                                        <span
+                                          onClick={() => setCanvasSimulatedValues(prev => ({ ...prev, [fid]: isSelected ? '' : o.label }))}
+                                          style={{ cursor: 'pointer', fontWeight: isSelected ? 800 : 600, color: isSelected ? wizard.color : A.text }}
+                                        >
+                                          {o.label}
+                                        </span>
+                                        {linkedBindings.length > 0 && (
+                                          <span style={{ color: '#16a34a', fontWeight: 800, fontSize: 9.5 }}>
+                                            ({linkedBindings.length} فرع)
+                                          </span>
+                                        )}
                                         <button
                                           type="button"
-                                          onClick={() => setOpenChildBindingPicker({ parentFieldId: fDef.id, optionId: o.id, optionLabel: o.label })}
-                                          style={{ border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', fontSize: 9, fontWeight: 700 }}
+                                          onClick={() => setEditingOptionTitle({ fieldId: fDef.id, optionId: o.id, label: o.label })}
+                                          style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 10, color: A.textSub }}
+                                          title="تعديل اسم الخيار"
+                                        >
+                                          ✏️
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setOpenChildBindingPicker(isBindingOpen ? null : { parentFieldId: fDef.id, optionId: o.id, optionLabel: o.label })}
+                                          style={{ border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
+                                          title="ربط مستدلة فرعية"
                                         >
                                           ↳ ربط
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteOption(fDef.id, o.id)}
+                                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 10 }}
+                                          title="حذف الخيار"
+                                        >
+                                          ✕
                                         </button>
                                       </div>
                                     );
@@ -1702,6 +2047,160 @@ export const TicketRoutingTab: React.FC = () => {
                                 </div>
                               </div>
                             )}
+
+                            {/* ── LIVE SIMULATED CHILD SUB-DROPDOWNS ── */}
+                            {/* تظهر هنا فورياً المستدلات الفرعية المرتبطة بالخيار المختار تماماً كما يراها الموظف في الواجهة */}
+                            {(() => {
+                              const selectedVal = canvasSimulatedValues[fid];
+                              if (!selectedVal) return null;
+
+                              const selectedOpt = fDef?.options.find(o => o.label === selectedVal || o.id === selectedVal);
+                              const matchingBindings = (fDef?.childBindings || []).filter(b =>
+                                b.triggerValue === selectedVal ||
+                                (selectedOpt && (b.triggerValue === selectedOpt.id || b.triggerValue === selectedOpt.label))
+                              );
+
+                              if (matchingBindings.length === 0) return null;
+
+                              return (
+                                <div style={{
+                                  marginTop: 8,
+                                  padding: '12px 14px',
+                                  borderRadius: 10,
+                                  background: '#f0fdf4',
+                                  border: '1.5px dashed #22c55e',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 8,
+                                  animation: 'fadeIn 0.2s ease'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px dashed #86efac', paddingBottom: 6 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 800, color: '#15803d' }}>
+                                      <span>👁️ المحاكاة الحية للموظف:</span>
+                                      <span>مستدلات فرعية تتفرع من «{selectedVal}»</span>
+                                    </div>
+                                    <span style={{ fontSize: 9.5, color: '#166534', background: '#dcfce7', padding: '2px 6px', borderRadius: 4 }}>
+                                      {matchingBindings.length} فروع مفعلة
+                                    </span>
+                                  </div>
+
+                                  {matchingBindings.map(b => {
+                                    const childF = dynamicFields.find(df => df.id === b.childFieldId);
+                                    if (!childF) return null;
+                                    const childMode = wizard.formConfig.dynamicFieldsDisplayMode?.[childF.id] || childF.displayMode || 'chips';
+                                    const childSelectedVal = canvasSimulatedValues[childF.id];
+
+                                    return (
+                                      <div key={childF.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, background: '#fff', borderRadius: 8, padding: 10, border: '1px solid #bbf7d0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ fontSize: 12 }}>↳</span>
+                                            <strong style={{ fontSize: 11.5, color: '#166534' }}>{childF.name}</strong>
+                                            <span style={{ fontSize: 9.5, color: '#65a30d' }}>({childF.options?.length || 0} خيارات)</span>
+                                          </div>
+
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            {/* Mode toggle button right beside child field */}
+                                            <button
+                                              type="button"
+                                              onClick={() => handleToggleDynamicFieldMode(childF.id)}
+                                              style={{
+                                                fontSize: 9.5,
+                                                fontWeight: 800,
+                                                padding: '2px 7px',
+                                                borderRadius: 4,
+                                                border: '1px solid #86efac',
+                                                background: childMode === 'chips' ? '#16a34a' : '#0284c7',
+                                                color: '#fff',
+                                                cursor: 'pointer'
+                                              }}
+                                              title="تغيير طريقة عرض المستدلة الفرعية (أيقونات دائرية / قائمة)"
+                                            >
+                                              {childMode === 'chips' ? '🔲 أيقونات' : '🔘 قائمة'}
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingChildFieldId(childF.id)}
+                                              style={{
+                                                fontSize: 9.5,
+                                                fontWeight: 800,
+                                                padding: '2px 7px',
+                                                borderRadius: 4,
+                                                border: 'none',
+                                                background: '#dcfce7',
+                                                color: '#15803d',
+                                                cursor: 'pointer'
+                                              }}
+                                              title="تعديل تفاصيل وخيارات هذا الفرع"
+                                            >
+                                              ⚙️ تعديل الخيارات
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Child rendering based on its mode */}
+                                        {childMode === 'chips' ? (
+                                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                            {(childF.options || []).map(co => {
+                                              const coIcon = wizard.formConfig.optionIcons?.[co.id] || wizard.formConfig.optionIcons?.[co.label] || co.icon || 'Sparkles';
+                                              const isChildSelected = childSelectedVal === co.label || childSelectedVal === co.id;
+                                              return (
+                                                <button
+                                                  key={co.id}
+                                                  type="button"
+                                                  onClick={() => setCanvasSimulatedValues(prev => ({ ...prev, [childF.id]: isChildSelected ? '' : co.label }))}
+                                                  style={{
+                                                    background: isChildSelected ? '#dcfce7' : '#f8fafc',
+                                                    border: `1.5px solid ${isChildSelected ? '#16a34a' : '#e2e8f0'}`,
+                                                    borderRadius: 8,
+                                                    padding: '5px 9px',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 6,
+                                                    fontSize: 11,
+                                                    fontWeight: isChildSelected ? 800 : 600,
+                                                    color: isChildSelected ? '#15803d' : A.text,
+                                                    boxShadow: isChildSelected ? '0 2px 6px rgba(22, 163, 74, 0.2)' : 'none'
+                                                  }}
+                                                >
+                                                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    {renderRouteIcon(coIcon, 13, isChildSelected ? '#16a34a' : '#475569')}
+                                                  </span>
+                                                  <span>{co.label}</span>
+                                                  {isChildSelected && <span style={{ color: '#16a34a', fontWeight: 900 }}>✓</span>}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <select
+                                            value={childSelectedVal || ''}
+                                            onChange={e => setCanvasSimulatedValues(prev => ({ ...prev, [childF.id]: e.target.value }))}
+                                            style={{
+                                              padding: '6px 10px',
+                                              borderRadius: 6,
+                                              background: '#f8fafc',
+                                              border: '1px solid #86efac',
+                                              fontSize: 11.5,
+                                              fontWeight: 600,
+                                              color: A.text,
+                                              cursor: 'pointer'
+                                            }}
+                                          >
+                                            <option value="">-- اختر: {childF.name} --</option>
+                                            {(childF.options || []).map(co => (
+                                              <option key={co.id} value={co.label}>{co.label}</option>
+                                            ))}
+                                          </select>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Icon picker popup if open */}
@@ -1724,19 +2223,19 @@ export const TicketRoutingTab: React.FC = () => {
                           )}
 
                           {/* Quick Option Adder */}
-                          <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
                             <input
                               className="tr-input"
                               placeholder={`+ إضافة خيار جديد إلى «${fDef?.name}»...`}
                               value={quickOptionInput[fid] || ''}
                               onChange={e => setQuickOptionInput(p => ({ ...p, [fid]: e.target.value }))}
                               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddQuickOption(fid); } }}
-                              style={{ padding: '4px 8px', fontSize: 11, background: '#fff' }}
+                              style={{ padding: '5px 10px', fontSize: 11, background: '#fff' }}
                             />
                             <button
                               type="button"
                               onClick={() => handleAddQuickOption(fid)}
-                              style={{ padding: '4px 10px', borderRadius: 6, background: wizard.color, color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                              style={{ padding: '5px 12px', borderRadius: 6, background: wizard.color, color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
                             >
                               + إضافة
                             </button>
@@ -2192,6 +2691,187 @@ export const TicketRoutingTab: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ─── Child Sub-Dropdown Direct Management Modal ─── */}
+        {editingChildFieldId && (() => {
+          const targetChildField = dynamicFields.find(df => df.id === editingChildFieldId);
+          if (!targetChildField) return null;
+          const childMode = wizard.formConfig.dynamicFieldsDisplayMode?.[targetChildField.id] || targetChildField.displayMode || 'chips';
+
+          return (
+            <div style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)'
+            }}>
+              <div style={{
+                background: '#fff', borderRadius: 16, width: 480, maxWidth: '95vw', maxHeight: '85vh',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.2)', overflow: 'hidden', display: 'flex', flexDirection: 'column'
+              }}>
+                {/* Modal Header */}
+                <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>⚙️</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 900 }}>إدارة وتعديل المستدلة الفرعية</div>
+                      <div style={{ fontSize: 10.5, color: '#e2e8f0' }}>«{targetChildField.name}»</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingChildFieldId(null)}
+                    style={{ border: 'none', background: 'none', color: '#fff', fontSize: 16, cursor: 'pointer', fontWeight: 900 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div style={{ padding: 18, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Field Name & Mode */}
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 800, color: A.textSub, display: 'block', marginBottom: 4 }}>
+                      اسم المستدلة الفرعية:
+                    </label>
+                    <input
+                      className="tr-input"
+                      value={targetChildField.name}
+                      onChange={async e => {
+                        const newName = e.target.value;
+                        const upd = dynamicFields.map(df => df.id === targetChildField.id ? { ...df, name: newName } : df);
+                        setDynamicFields(upd);
+                        await saveDynamicFields(upd);
+                      }}
+                      style={{ padding: '6px 10px', fontSize: 12, fontWeight: 700 }}
+                    />
+                  </div>
+
+                  {/* Display Mode Switcher */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: '#f8fafc', border: `1px solid ${A.sep}` }}>
+                    <div>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: A.text }}>طريقة العرض للموظف:</div>
+                      <div style={{ fontSize: 9.5, color: A.textSub }}>اختر شكل الظهور للمستدلة التابعة</div>
+                    </div>
+                    <div style={{ display: 'inline-flex', background: '#e2e8f0', borderRadius: 6, padding: 2, gap: 2 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDynamicFieldMode(targetChildField.id)}
+                        style={{
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '3px 8px',
+                          fontSize: 10,
+                          fontWeight: childMode === 'chips' ? 800 : 500,
+                          background: childMode === 'chips' ? '#10b981' : 'transparent',
+                          color: childMode === 'chips' ? '#fff' : A.textSub,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔲 أيقونات
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDynamicFieldMode(targetChildField.id)}
+                        style={{
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '3px 8px',
+                          fontSize: 10,
+                          fontWeight: childMode === 'dropdown' ? 800 : 500,
+                          background: childMode === 'dropdown' ? '#10b981' : 'transparent',
+                          color: childMode === 'dropdown' ? '#fff' : A.textSub,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔘 قائمة
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Options List */}
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 800, color: A.textSub, display: 'block', marginBottom: 6 }}>
+                      خيارات المستدلة الفرعية ({targetChildField.options.length}):
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
+                      {targetChildField.options.map(co => (
+                        <div key={co.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 6, background: '#f8fafc', border: `1px solid ${A.sep}` }}>
+                          <button
+                            type="button"
+                            onClick={() => setOpenOptionIconPicker(openOptionIconPicker === co.id ? null : co.id)}
+                            style={{ border: 'none', background: '#fff', borderRadius: 4, padding: '2px 5px', cursor: 'pointer', fontSize: 11 }}
+                            title="تغيير الأيقونة"
+                          >
+                            {renderRouteIcon(co.icon || 'Sparkles', 13, '#10b981')} 🎨
+                          </button>
+                          <input
+                            className="tr-input"
+                            value={co.label}
+                            onChange={async e => {
+                              const val = e.target.value;
+                              const upd = dynamicFields.map(df => {
+                                if (df.id !== targetChildField.id) return df;
+                                return {
+                                  ...df,
+                                  options: df.options.map(opt => opt.id === co.id ? { ...opt, label: val } : opt)
+                                };
+                              });
+                              setDynamicFields(upd);
+                              await saveDynamicFields(upd);
+                            }}
+                            style={{ padding: '3px 8px', fontSize: 11, flex: 1 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOption(targetChildField.id, co.id)}
+                            style={{ border: 'none', background: 'none', color: A.red, cursor: 'pointer', fontSize: 12, padding: 2 }}
+                            title="حذف الخيار"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Add New Option to Child Field */}
+                  <div style={{ display: 'flex', gap: 6, borderTop: `1px dashed ${A.sep}`, paddingTop: 10 }}>
+                    <input
+                      className="tr-input"
+                      placeholder="خيار فرعي جديد..."
+                      value={quickOptionInput[targetChildField.id] || ''}
+                      onChange={e => setQuickOptionInput(p => ({ ...p, [targetChildField.id]: e.target.value }))}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddQuickOption(targetChildField.id);
+                        }
+                      }}
+                      style={{ padding: '5px 10px', fontSize: 11, flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddQuickOption(targetChildField.id)}
+                      style={{ padding: '5px 12px', borderRadius: 6, background: '#10b981', color: '#fff', border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      + إضافة
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div style={{ padding: '10px 18px', borderTop: `1px solid ${A.sep}`, background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingChildFieldId(null)}
+                    style={{ padding: '6px 14px', borderRadius: 6, background: '#10b981', color: '#fff', border: 'none', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    تم وتطبيق التعديلات ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
