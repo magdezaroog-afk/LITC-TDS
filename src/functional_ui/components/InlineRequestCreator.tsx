@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import {
@@ -3664,7 +3665,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             3. PHYSICAL DISPENSER SLOT & REALISTIC FLYING RECEIPT (FIXED CENTER SPOTLIGHT)
             ══════════════════════════════════════════════════════════════ */}
         <AnimatePresence>
-          {tearState !== 'idle' && selectedFlow && (
+          {tearState !== 'idle' && selectedFlow && typeof document !== 'undefined' && createPortal(
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -3672,7 +3673,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               style={{
                 position: 'fixed',
                 inset: 0,
-                zIndex: 999999,
+                width: '100vw',
+                height: '100vh',
+                zIndex: 99999999,
                 backgroundColor: 'rgba(3, 7, 18, 0.88)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
@@ -3995,7 +3998,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   }}
                 />
               </motion.div>
-            </motion.div>
+            </motion.div>,
+            document.body
           )}
         </AnimatePresence>
       </div>
