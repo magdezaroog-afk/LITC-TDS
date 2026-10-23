@@ -18,7 +18,8 @@ import {
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
   Search, Wrench, Monitor, Cpu, HardDrive, Wifi, Printer,
   HelpCircle, Settings, Laptop, Radio, AlertCircle,
-  Ticket, ChevronDown, Calendar, CalendarDays, Paperclip, Download, X
+  Ticket, ChevronDown, Calendar, CalendarDays, Paperclip, Download, X,
+  Users, Landmark, MapPin
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon } from '../../services/ticketRouting.helpers';
@@ -823,10 +824,1429 @@ function FieldInput({
   );
 }
 
+// ── In-Place Taxonomy Selector (المشاكل الرئيسية والفرعية في نفس المكان بدون نزول الشاشة) ──
+function InPlaceTaxonomySelector({
+  selectedFlow,
+  mainValue,
+  subValue,
+  onSelectMain,
+  onSelectSub,
+  darkMode = true,
+  flowColor = '#38bdf8',
+}: {
+  selectedFlow: any;
+  mainValue: string;
+  subValue: string;
+  onSelectMain: (val: string) => void;
+  onSelectSub: (val: string) => void;
+  darkMode?: boolean;
+  flowColor?: string;
+}) {
+  const taxonomyList = useMemo(() => {
+    return (selectedFlow?.formConfig?.taxonomy || []).filter((t: any) => t.isActive !== false);
+  }, [selectedFlow]);
+
+  const selectedMainObj = useMemo(() => {
+    if (!mainValue) return null;
+    return taxonomyList.find((t: any) => t.label === mainValue || t.id === mainValue);
+  }, [taxonomyList, mainValue]);
+
+  const activeSubIssues = useMemo(() => {
+    if (!selectedMainObj?.subIssues) return [];
+    return selectedMainObj.subIssues.filter((s: any) => s.isActive !== false);
+  }, [selectedMainObj]);
+
+  const [isEditing, setIsEditing] = useState<'main' | 'sub' | false>(false);
+
+  const viewMode = useMemo(() => {
+    if (!mainValue || isEditing === 'main') return 'main';
+    if (activeSubIssues.length > 0 && (!subValue || isEditing === 'sub')) return 'sub';
+    return 'summary';
+  }, [mainValue, subValue, activeSubIssues.length, isEditing]);
+
+  return (
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        width: '100%',
+        borderRadius: '12px',
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
+        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
+        minHeight: '140px',
+        boxSizing: 'border-box',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      {/* ── STEP 1: المشاكل الرئيسية ── */}
+      {viewMode === 'main' && (
+        <motion.div
+          key="tax_main"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '6px',
+                backgroundColor: `${flowColor}20`, color: flowColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Wrench size={13} />
+              </div>
+              <span style={{ fontSize: '12.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                حدد نوع المشكلة أو الطلب الفني:
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {taxonomyList.length} تصنيفات رئيسية
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {taxonomyList.map((item: any) => {
+              const label = item.label || item.id;
+              const icon = item.icon || getOptionIcon({ label });
+              const isSelected = mainValue === label;
+
+              return (
+                <button
+                  key={item.id || label}
+                  type="button"
+                  onClick={() => {
+                    onSelectMain(label);
+                    onSelectSub('');
+                    const subs = item?.subIssues?.filter((s: any) => s.isActive !== false) || [];
+                    if (subs.length > 0) {
+                      setIsEditing('sub');
+                    } else {
+                      setIsEditing(false);
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '88px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {resolveIcon(icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={11} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11.5px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '88px',
+                  }}>
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── STEP 2: المشاكل الفرعية في نفس المكان تماماً ── */}
+      {viewMode === 'sub' && (
+        <motion.div
+          key="tax_sub"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing('main');
+                }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  padding: '3px 8px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: darkMode ? '#38bdf8' : '#2563eb',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                <ArrowRight size={13} />
+                <span>المشاكل الرئيسية</span>
+              </button>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                ↳ حدد المشكلة الفرعية لـ ({mainValue}):
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {activeSubIssues.length} خيارات فرعية
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {activeSubIssues.map((sub: any) => {
+              const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
+              const subIcon = (typeof sub === 'object' && sub.icon) ? sub.icon : resolveSubIssueIcon(subLabel);
+              const isSelected = subValue === subLabel;
+
+              return (
+                <button
+                  key={subLabel}
+                  type="button"
+                  onClick={() => {
+                    onSelectSub(subLabel);
+                    setIsEditing(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: '84px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {typeof subIcon === 'string'
+                      ? resolveIcon(subIcon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))
+                      : subIcon}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={10} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '84px',
+                  }}>
+                    {subLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── STEP 3: الملخص المكتمل المدمج في نفس المكان ── */}
+      {viewMode === 'summary' && (
+        <motion.div
+          key="tax_summary"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            padding: '4px 0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.1)',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
+              color: darkMode ? '#38bdf8' : '#2563eb',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <CheckCircle2 size={19} />
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>
+                المشكلة المحددة:
+              </div>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                <span>{mainValue}</span>
+                {subValue && (
+                  <span style={{ color: darkMode ? '#38bdf8' : '#2563eb' }}> ← {subValue}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {activeSubIssues.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsEditing('sub')}
+                style={{
+                  padding: '5px 10px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                  color: darkMode ? '#cbd5e1' : '#334155',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                تغيير الفرعية
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsEditing('main')}
+              style={{
+                padding: '5px 10px', borderRadius: '6px',
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                color: darkMode ? '#38bdf8' : '#2563eb',
+                fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              تغيير الكل
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ── In-Place Org Hierarchy Selector (الإدارات والأقسام والوحدات كأيقونات في نفس المكان تماماً) ──
+function InPlaceOrgHierarchySelector({
+  orgTree,
+  department,
+  division,
+  team,
+  onSelectDepartment,
+  onSelectDivision,
+  onSelectTeam,
+  darkMode = true,
+  flowColor = '#38bdf8',
+}: {
+  orgTree: any;
+  department: string;
+  division: string;
+  team: string;
+  onSelectDepartment: (val: string) => void;
+  onSelectDivision: (val: string) => void;
+  onSelectTeam: (val: string) => void;
+  darkMode?: boolean;
+  flowColor?: string;
+}) {
+  const departments = useMemo(() => {
+    return getTopLevelDepartments(orgTree);
+  }, [orgTree]);
+
+  const divisions = useMemo(() => {
+    if (!department) return [];
+    return getDivisionsForDepartment(orgTree, department);
+  }, [orgTree, department]);
+
+  const teams = useMemo(() => {
+    if (!division) return [];
+    return getTeamsForDivision(orgTree, division);
+  }, [orgTree, division]);
+
+  const [activeLevel, setActiveLevel] = useState<'dept' | 'div' | 'team' | 'done'>('dept');
+
+  useEffect(() => {
+    if (!department) {
+      setActiveLevel('dept');
+    } else if (divisions.length > 0 && !division) {
+      setActiveLevel('div');
+    } else if (teams.length > 0 && !team) {
+      setActiveLevel('team');
+    } else {
+      setActiveLevel('done');
+    }
+  }, [department, division, team, divisions.length, teams.length]);
+
+  const resolveDeptIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('تقنية') || n.includes('معلومات') || n.includes('it')) return <Laptop size={18} />;
+    if (n.includes('بشرية') || n.includes('موارد') || n.includes('موظف')) return <Users size={18} />;
+    if (n.includes('مالي') || n.includes('حسابات') || n.includes('خزينة')) return <Landmark size={18} />;
+    if (n.includes('قانون') || n.includes('شؤون')) return <ShieldCheck size={18} />;
+    if (n.includes('خدمات') || n.includes('مشتريات') || n.includes('صيانة')) return <Wrench size={18} />;
+    return <Building2 size={18} />;
+  };
+
+  return (
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        width: '100%',
+        borderRadius: '12px',
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
+        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
+        minHeight: '140px',
+        boxSizing: 'border-box',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      {/* ── LEVEL 1: الإدارات والمكاتب ── */}
+      {activeLevel === 'dept' && (
+        <motion.div
+          key="org_dept"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '6px',
+                backgroundColor: `${flowColor}20`, color: flowColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Building2 size={13} />
+              </div>
+              <span style={{ fontSize: '12.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                اختر الإدارة أو المكتب التابع له:
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {departments.length} إدارات متاحة
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {departments.map((d: any) => {
+              const isSelected = department === d.name;
+              return (
+                <button
+                  key={d.id || d.name}
+                  type="button"
+                  onClick={() => {
+                    onSelectDepartment(d.name);
+                    onSelectDivision('');
+                    onSelectTeam('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '94px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {resolveDeptIcon(d.name)}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={11} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '94px',
+                  }}>
+                    {d.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── LEVEL 2: الأقسام في نفس المكان ── */}
+      {activeLevel === 'div' && (
+        <motion.div
+          key="org_div"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setActiveLevel('dept')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  padding: '3px 8px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: darkMode ? '#38bdf8' : '#2563eb',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                <ArrowRight size={13} />
+                <span>الإدارات</span>
+              </button>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                ↳ حدد القسم التابع لـ ({department}):
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {divisions.length} أقسام
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {divisions.map((divItem: any) => {
+              const isSelected = division === divItem.name;
+              return (
+                <button
+                  key={divItem.id || divItem.name}
+                  type="button"
+                  onClick={() => {
+                    onSelectDivision(divItem.name);
+                    onSelectTeam('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: '88px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    <Layers size={18} />
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={10} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '88px',
+                  }}>
+                    {divItem.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── LEVEL 3: الوحدات والفرق في نفس المكان ── */}
+      {activeLevel === 'team' && (
+        <motion.div
+          key="org_team"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setActiveLevel('div')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  padding: '3px 8px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: darkMode ? '#38bdf8' : '#2563eb',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                <ArrowRight size={13} />
+                <span>الأقسام</span>
+              </button>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                ↳ حدد الوحدة أو الفريق التابع لـ ({division}):
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {teams.length} وحدات
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {teams.map((teamItem: any) => {
+              const isSelected = team === teamItem.name;
+              return (
+                <button
+                  key={teamItem.id || teamItem.name}
+                  type="button"
+                  onClick={() => {
+                    onSelectTeam(teamItem.name);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: '84px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    <UserCheck size={17} />
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={10} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '84px',
+                  }}>
+                    {teamItem.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── LEVEL 4: الملخص المكتمل المدمج في نفس المكان ── */}
+      {activeLevel === 'done' && (
+        <motion.div
+          key="org_done"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            padding: '4px 0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.1)',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
+              color: darkMode ? '#38bdf8' : '#2563eb',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Building2 size={19} />
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>
+                الهيكل التنظيمي المعتمد:
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                <span>{department}</span>
+                {division && <span style={{ color: darkMode ? '#38bdf8' : '#2563eb' }}> ← {division}</span>}
+                {team && <span style={{ color: '#10b981' }}> ← {team}</span>}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {teams.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveLevel('team')}
+                style={{
+                  padding: '5px 10px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                  color: darkMode ? '#cbd5e1' : '#334155',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                تغيير الوحدة
+              </button>
+            )}
+            {divisions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveLevel('div')}
+                style={{
+                  padding: '5px 10px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                  color: darkMode ? '#cbd5e1' : '#334155',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                تغيير القسم
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveLevel('dept')}
+              style={{
+                padding: '5px 10px', borderRadius: '6px',
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                color: darkMode ? '#38bdf8' : '#2563eb',
+                fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              تغيير الإدارة
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ── In-Place Building Selector (المباني كأيقونات في نفس المكان بدون نزول الشاشة) ──
+function InPlaceBuildingSelector({
+  options,
+  value,
+  onChange,
+  darkMode = true,
+  flowColor = '#38bdf8',
+  required = false,
+}: {
+  options: (string | { id?: string; label?: string; name?: string })[];
+  value: string;
+  onChange: (v: string) => void;
+  darkMode?: boolean;
+  flowColor?: string;
+  required?: boolean;
+}) {
+  const normalizedOpts = useMemo(() => {
+    return options.map(opt => {
+      if (typeof opt === 'string') return { value: opt, label: opt };
+      const v = opt.id || opt.name || opt.label || '';
+      const l = opt.label || opt.name || opt.id || '';
+      return { value: v, label: l };
+    });
+  }, [options]);
+
+  return (
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        width: '100%',
+        borderRadius: '12px',
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
+        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: '24px', height: '24px', borderRadius: '6px',
+            backgroundColor: `${flowColor}20`, color: flowColor,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Building2 size={13} />
+          </div>
+          <span style={{ fontSize: '12.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+            حدد المبنى أو الموقع:
+          </span>
+        </div>
+        {required && (
+          <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
+            مطلوب
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+        {normalizedOpts.map(opt => {
+          const isSelected = value === opt.value || value === opt.label;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(isSelected ? '' : opt.label)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                width: '88px',
+                outline: 'none',
+                textAlign: 'center',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+            >
+              <div style={{
+                position: 'relative',
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isSelected
+                  ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                  : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                border: isSelected
+                  ? '2px solid #38bdf8'
+                  : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                boxShadow: isSelected
+                  ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                  : '0 2px 6px rgba(0,0,0,0.04)',
+                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                transition: 'all 0.2s ease',
+              }}>
+                <Building2 size={20} />
+                {isSelected && (
+                  <div style={{
+                    position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    backgroundColor: '#38bdf8', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  }}>
+                    <Check size={10} strokeWidth={3} />
+                  </div>
+                )}
+              </div>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: isSelected ? 800 : 600,
+                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                fontFamily: "'Cairo', sans-serif",
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+                maxWidth: '88px',
+              }}>
+                {opt.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── In-Place Dynamic Cascade Selector (المستدلات والتصنيفات الفرعية في نفس المكان تماماً بدون نزول للشاشة) ──
+function InPlaceDynamicCascadeSelector({
+  parentDef,
+  formData,
+  onFieldChange,
+  effectiveDynamicFields,
+  darkMode = true,
+  flowColor = '#38bdf8',
+}: {
+  parentDef: any;
+  formData: Record<string, string>;
+  onFieldChange: (name: string, val: string) => void;
+  effectiveDynamicFields: any[];
+  darkMode?: boolean;
+  flowColor?: string;
+}) {
+  const parentFieldName = `dyn_${parentDef.id}`;
+  const parentVal = formData[parentFieldName] || '';
+
+  const parentOpts = useMemo(() => {
+    return (parentDef.options || [])
+      .filter((o: any) => typeof o === 'string' || o.isActive !== false)
+      .map((o: any) => {
+        if (typeof o === 'string') {
+          return { id: o, label: o, icon: getOptionIcon({ id: o, label: o }) };
+        }
+        return {
+          id: o.id || o.label,
+          label: o.label || o.id,
+          icon: o.icon || getOptionIcon({ id: o.id, label: o.label }),
+        };
+      });
+  }, [parentDef.options]);
+
+  const matchingBindings = useMemo(() => {
+    if (!parentVal || !parentDef.childBindings) return [];
+    return parentDef.childBindings.filter((b: any) => {
+      const trig = b.triggerValue?.trim();
+      return trig === parentVal || parentOpts.some(po => (po.id === trig || po.label === trig) && (po.id === parentVal || po.label === parentVal));
+    });
+  }, [parentVal, parentDef.childBindings, parentOpts]);
+
+  const childDef = useMemo(() => {
+    if (matchingBindings.length === 0) return null;
+    return effectiveDynamicFields.find(df => df.id === matchingBindings[0].childFieldId) || null;
+  }, [matchingBindings, effectiveDynamicFields]);
+
+  const childFieldName = childDef ? `dyn_${childDef.id}` : '';
+  const childVal = childDef ? (formData[childFieldName] || '') : '';
+
+  const childOpts = useMemo(() => {
+    if (!childDef) return [];
+    return (childDef.options || [])
+      .filter((o: any) => typeof o === 'string' || o.isActive !== false)
+      .map((o: any) => {
+        if (typeof o === 'string') {
+          return { id: o, label: o, icon: getOptionIcon({ id: o, label: o }) };
+        }
+        return {
+          id: o.id || o.label,
+          label: o.label || o.id,
+          icon: o.icon || getOptionIcon({ id: o.id, label: o.label }),
+        };
+      });
+  }, [childDef]);
+
+  const [isEditing, setIsEditing] = useState<'parent' | 'child' | false>(false);
+
+  const viewMode = useMemo(() => {
+    if (isEditing === 'parent') return 'parent';
+    if (!parentVal) return 'parent';
+    if (childDef) {
+      if (isEditing === 'child') return 'child';
+      if (!childVal) return 'child';
+      return 'summary';
+    }
+    return 'summary';
+  }, [parentVal, childDef, childVal, isEditing]);
+
+  return (
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        width: '100%',
+        borderRadius: '12px',
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
+        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
+        minHeight: '140px',
+        boxSizing: 'border-box',
+        transition: 'all 0.25s ease',
+      }}
+    >
+      {/* ── LEVEL 1: الخيارات الرئيسية في نفس المكان ── */}
+      {viewMode === 'parent' && (
+        <motion.div
+          key="dyn_cascade_parent"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '6px',
+                backgroundColor: `${flowColor}20`, color: flowColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Sparkles size={13} />
+              </div>
+              <span style={{ fontSize: '12.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                {parentDef.name}:
+              </span>
+            </div>
+            {parentDef.isRequired && (
+              <span style={{ fontSize: '8.5px', fontWeight: 700, color: flowColor, backgroundColor: `${flowColor}15`, padding: '1px 5px', borderRadius: '3px' }}>
+                مطلوب
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {parentOpts.map((opt: any) => {
+              const isSelected = parentVal === opt.label || parentVal === opt.id;
+              return (
+                <button
+                  key={opt.id || opt.label}
+                  type="button"
+                  onClick={() => {
+                    onFieldChange(parentFieldName, opt.label);
+                    if (childFieldName) onFieldChange(childFieldName, '');
+                    setIsEditing(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '88px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {resolveIcon(opt.icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={11} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11.5px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '88px',
+                  }}>
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── LEVEL 2: المستدلة الفرعية في نفس المكان تماماً ── */}
+      {viewMode === 'child' && childDef && (
+        <motion.div
+          key="dyn_cascade_child"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.18 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setIsEditing('parent')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  padding: '3px 8px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: darkMode ? '#38bdf8' : '#2563eb',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                <ArrowRight size={13} />
+                <span>{parentDef.name}</span>
+              </button>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                ↳ حدد ({childDef.name}) التابعة لـ ({parentVal}):
+              </span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>
+              {childOpts.length} خيارات متاحة
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+            {childOpts.map((opt: any) => {
+              const isSelected = childVal === opt.label || childVal === opt.id;
+              return (
+                <button
+                  key={opt.id || opt.label}
+                  type="button"
+                  onClick={() => {
+                    onFieldChange(childFieldName, opt.label);
+                    setIsEditing(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: '84px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isSelected
+                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
+                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                    border: isSelected
+                      ? '2px solid #38bdf8'
+                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+                    boxShadow: isSelected
+                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
+                      : '0 2px 6px rgba(0,0,0,0.04)',
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {resolveIcon(opt.icon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        backgroundColor: '#38bdf8', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                      }}>
+                        <Check size={10} strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
+                    fontFamily: "'Cairo', sans-serif",
+                    lineHeight: 1.3,
+                    wordBreak: 'break-word',
+                    maxWidth: '84px',
+                  }}>
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── LEVEL 3: الملخص المكتمل المدمج في نفس المكان ── */}
+      {viewMode === 'summary' && (
+        <motion.div
+          key="dyn_cascade_summary"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            padding: '4px 0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.1)',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
+              color: darkMode ? '#38bdf8' : '#2563eb',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <CheckCircle2 size={19} />
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b' }}>
+                {parentDef.name}:
+              </div>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
+                <span>{parentVal}</span>
+                {childVal && (
+                  <span style={{ color: darkMode ? '#38bdf8' : '#2563eb' }}> ← {childVal}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {childDef && (
+              <button
+                type="button"
+                onClick={() => setIsEditing('child')}
+                style={{
+                  padding: '5px 10px', borderRadius: '6px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                  color: darkMode ? '#cbd5e1' : '#334155',
+                  fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif"
+                }}
+              >
+                تغيير الفرع
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsEditing('parent')}
+              style={{
+                padding: '5px 10px', borderRadius: '6px',
+                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                color: darkMode ? '#38bdf8' : '#2563eb',
+                fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              تغيير الكل
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════
 // INLINE REQUEST CREATOR (التصميم الموحد: هيكل تذكرة ثابت من البداية للنهاية)
 // ══════════════════════════════════════════════════════════════
 export interface InlineRequestCreatorProps {
+
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -931,95 +2351,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     });
   };
 
-  // ── Cascading Child Fields Renderer for Dynamic Fields ──
-  const renderCascadingChildFields = (parentId: string, parentVal: string, level = 1): React.ReactNode => {
-    if (!parentVal) return null;
-    const parentDef = effectiveDynamicFields.find(df => df.id === parentId || df.name === parentId);
-    if (!parentDef || !parentDef.childBindings || parentDef.childBindings.length === 0) return null;
-
-    let selectedOptId = '';
-    let selectedOptLabel = parentVal;
-    if (Array.isArray(parentDef.options)) {
-      const optObj = parentDef.options.find((o: any) =>
-        (typeof o === 'string' && o === parentVal) ||
-        (typeof o === 'object' && (o.id === parentVal || o.label === parentVal))
-      );
-      if (optObj) {
-        selectedOptId = typeof optObj === 'object' ? optObj.id : optObj;
-        selectedOptLabel = typeof optObj === 'object' ? optObj.label : optObj;
-      }
-    }
-
-    const matchingBindings = parentDef.childBindings.filter((b: any) => {
-      const trig = b.triggerValue?.trim();
-      return trig === parentVal || trig === selectedOptId || trig === selectedOptLabel;
-    });
-
-    if (matchingBindings.length === 0) return null;
-
-    return (
-      <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
-        {matchingBindings.map((b: any) => {
-          const childDef = effectiveDynamicFields.find(df => df.id === b.childFieldId);
-          if (!childDef) return null;
-          const childFieldName = `dyn_${childDef.id}`;
-          const childVal = formData[childFieldName] || '';
-          const childOpts = (childDef.options || [])
-            .filter((o: any) => typeof o === 'string' || o.isActive !== false)
-            .map((o: any) => {
-              if (typeof o === 'string') return o;
-              return {
-                id: o.id || o.label,
-                label: o.label || o.id,
-                icon: o.icon || getOptionIcon({ id: o.id, label: o.label })
-              };
-            });
-
-          return (
-            <div
-              key={childDef.id}
-              style={{
-                padding: '12px 14px',
-                borderRadius: '10px',
-                backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
-                border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                animation: 'fadeIn 0.2s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <label style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>↳</span>
-                  <span>{childDef.name}</span>
-                </label>
-                <span style={{ fontSize: '9.5px', fontWeight: 700, color: darkMode ? '#94a3b8' : '#64748b' }}>
-                  مستدلة فرعية تابعة لـ ({parentVal})
-                </span>
-              </div>
-              <FieldInput
-                field={{
-                  name: childFieldName,
-                  label: childDef.name,
-                  type: 'select',
-                  options: childOpts,
-                  required: false,
-                  displayMode: childDef.displayMode || 'chips',
-                }}
-                value={childVal}
-                onChange={v => handleFieldChange(childFieldName, v)}
-                darkMode={darkMode}
-                allFormData={formData}
-              />
-              {renderCascadingChildFields(childDef.id, childVal, level + 1)}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   const handleSelectFlow = (flow: typeof requests[0]) => {
     setSelectedFlow(flow);
     setIsDispenserOpen(true);
@@ -1067,10 +2398,25 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const stageFieldsToRender = useMemo(() => {
     if (!selectedFlow) return [];
     const isDelegateVis = isDelegateFieldVisible(formData, (selectedFlow as any)?.formConfig);
+    const hasDept = selectedFlow.fields.some(sf => sf.name === 'department');
+    const hasTaxMain = selectedFlow.fields.some(sf => sf.name === 'taxonomyMain');
+
     const all = selectedFlow.fields.filter(f => {
       if (f.name === 'delegateUser') return isDelegateVis;
       if (f.name === 'attachment' && currentOptionBehavior.attachmentRule === 'HIDDEN') return false;
       if (f.name === 'description' && currentOptionBehavior.descriptionRule === 'HIDDEN') return false;
+      // InPlaceOrgHierarchySelector handles division and team in place if department is present
+      if (hasDept && (f.name === 'division' || f.name === 'team')) return false;
+      // InPlaceTaxonomySelector handles taxonomySub in place if taxonomyMain is present
+      if (hasTaxMain && f.name === 'taxonomySub') return false;
+      // InPlaceDynamicCascadeSelector handles child dynamic fields in place within the parent field
+      if (f.name.startsWith('dyn_')) {
+        const dynId = f.name.replace('dyn_', '');
+        const isBoundAsChild = effectiveDynamicFields.some(df =>
+          df.childBindings?.some((b: any) => b.childFieldId === dynId)
+        );
+        if (isBoundAsChild) return false;
+      }
       if (f.name === 'division' && divisionOptions.length === 0) return false;
       if (f.name === 'team' && teamOptions.length === 0) return false;
       return true;
@@ -1107,10 +2453,17 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }
 
     // 3 Stages Default:
-    // Stage 1: Routing & Core Classification (department, division, team, taxonomyMain, title)
-    // Stage 2: Details & Operational Requirements (dyn_..., scheduleEngine, description, etc.)
-    const isCore = (name: string) =>
-      ['department', 'division', 'team', 'title', 'subject', 'category', 'taxonomyMain', 'priority'].includes(name);
+    // Stage 1: Routing & Core Classification (department, building, division, team, taxonomyMain, cascading dynamic fields, title)
+    // Stage 2: Details & Operational Requirements (remaining fields, scheduleEngine, description, etc.)
+    const isCore = (name: string) => {
+      if (['department', 'building', 'division', 'team', 'title', 'subject', 'category', 'taxonomyMain', 'priority'].includes(name)) return true;
+      if (name.startsWith('dyn_')) {
+        const dId = name.replace('dyn_', '');
+        const dDef = effectiveDynamicFields.find(df => df.id === dId);
+        if (dDef?.childBindings && dDef.childBindings.length > 0) return true;
+      }
+      return false;
+    };
 
     if (currentStep === 1) {
       let s1 = all.filter(f => isCore(f.name));
@@ -1123,7 +2476,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return s2;
     }
     return [];
-  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length]);
+  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
@@ -1153,6 +2506,24 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       if (activeSubs.length > 0 && !formData.taxonomySub) {
         setErrorMsg('يرجى اختيار المشكلة الفرعية المناسبة قبل المتابعة');
         return false;
+      }
+    }
+
+    // Dynamic Cascade Child validation:
+    for (const f of currentFields) {
+      if (f.name.startsWith('dyn_')) {
+        const dynId = f.name.replace('dyn_', '');
+        const pDef = effectiveDynamicFields.find(df => df.id === dynId);
+        if (pDef?.childBindings && formData[f.name]) {
+          const matching = pDef.childBindings.filter((b: any) => b.triggerValue === formData[f.name]);
+          for (const b of matching) {
+            const childDef = effectiveDynamicFields.find(df => df.id === b.childFieldId);
+            if (childDef && !formData[`dyn_${childDef.id}`]?.trim()) {
+              setErrorMsg(`يرجى تحديد (${childDef.name}) التابعة لـ (${formData[f.name]})`);
+              return false;
+            }
+          }
+        }
       }
     }
 
@@ -1243,11 +2614,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       }),
     }).then(r => r.json());
 
-    // Allow 800ms to visibly slide out of the slot mouth
-    await new Promise(r => setTimeout(r, 800));
+    setTearState('dispensing');
+    await new Promise(r => setTimeout(r, 750));
+
     setTearState('ripping');
-    // Allow 650ms for laser cutter tear
-    await new Promise(r => setTimeout(r, 650));
+    await new Promise(r => setTimeout(r, 350));
+
     setTearState('departing');
 
     const [data] = await Promise.all([
@@ -1263,10 +2635,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
       setTimeout(() => {
         setSelectedFlow(null);
+        setIsDispenserOpen(false);
         setTearState('idle');
         setStatus('idle');
         onSuccess();
-      }, 1000);
+      }, 300);
     } else {
       setTearState('idle');
       setErrorMsg(data?.error || data?.message || 'حدث خطأ غير متوقع');
@@ -1282,240 +2655,173 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
 
-      {/* ══════════════════════════════════════════════════════════════
-          1. THE SMART TICKET DISPENSER CONSOLE (ماكينة استخراج التذاكر الذكية)
-          ══════════════════════════════════════════════════════════════ */}
-      <div
-        style={{
-          width: '100%',
-          maxWidth: isDispenserOpen && selectedFlow ? '940px' : (isDispenserOpen ? '760px' : '680px'),
-          borderRadius: '16px',
-          background: darkMode
-            ? 'linear-gradient(180deg, #162032 0%, #0d1527 100%)'
-            : 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
-          border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1',
-          boxShadow: darkMode
-            ? '0 12px 36px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
-            : '0 8px 24px rgba(30, 58, 82, 0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
-          padding: '14px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          position: 'relative',
-          zIndex: 45,
-          transition: 'max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease',
-        }}
-      >
-        {/* Machine Header Status */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: tearState !== 'idle' ? '#f59e0b' : (isDispenserOpen ? '#38bdf8' : '#10b981'),
-              boxShadow: tearState !== 'idle' ? '0 0 12px #f59e0b' : (isDispenserOpen ? '0 0 10px #38bdf8' : '0 0 10px #10b981'),
-            }} />
-            <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#cbd5e1' : '#475569', letterSpacing: '0.04em' }}>
-              ماكينة التذاكر الذكية • NEXUS TICKET DISPENSER
-            </span>
-          </div>
-
-          <span style={{
-            fontSize: '9.5px',
-            color: tearState !== 'idle' ? '#f59e0b' : (isDispenserOpen ? '#38bdf8' : '#10b981'),
-            fontWeight: 800,
-            backgroundColor: tearState !== 'idle' ? 'rgba(245, 158, 11, 0.15)' : (isDispenserOpen ? 'rgba(56, 189, 248, 0.12)' : 'rgba(16, 185, 129, 0.1)'),
-            padding: '2px 8px',
-            borderRadius: '9999px',
-            border: tearState !== 'idle' ? '1px solid rgba(245, 158, 11, 0.35)' : (isDispenserOpen ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(16, 185, 129, 0.25)'),
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            {tearState === 'dispensing' ? '⚡ جاري استخراج التذكرة...' : (tearState === 'ripping' ? '✂️ قص التذكرة...' : (isDispenserOpen ? 'لوحة إعداد المسار نشطة' : 'جاهزة للاستخراج'))}
-          </span>
-        </div>
-
-        {/* Center Prominent Button: إنشاء طلب جديد */}
-        <button
-          type="button"
-          onClick={() => {
-            if (isDispenserOpen && !selectedFlow) {
-              setIsDispenserOpen(false);
-            } else if (isDispenserOpen && selectedFlow) {
-              setSelectedFlow(null);
-              setIsDispenserOpen(false);
-            } else {
-              setIsDispenserOpen(true);
-            }
-          }}
-          disabled={tearState !== 'idle'}
+      {/* ═══ 1. FREE-FLOATING ORBITAL SERVICE ROUTE ICONS (مباشرة تحت رسالة الترحيب بحركة عائمة مميزة وتفاعل هوفر فاخر) ═══ */}
+      {!selectedFlow && tearState === 'idle' && (
+        <div
           style={{
-            display: 'inline-flex',
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            padding: '10px 28px',
-            borderRadius: '12px',
-            background: isDispenserOpen
-              ? 'linear-gradient(135deg, #0284c7 0%, #1e3a52 100%)'
-              : 'linear-gradient(135deg, #135d79 0%, #1e3a52 50%, #f36c21 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
-            color: '#ffffff',
-            fontSize: '14.5px',
-            fontWeight: 800,
-            fontFamily: "'Tajawal', sans-serif",
-            cursor: tearState !== 'idle' ? 'not-allowed' : 'pointer',
-            boxShadow: '0 6px 20px rgba(243, 108, 33, 0.35), inset 0 1px 0 rgba(255,255,255,0.3)',
-            transform: isDispenserOpen ? 'scale(0.98)' : 'scale(1)',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            gap: '12px',
+            width: '100%',
+            padding: '4px 0 16px',
           }}
         >
-          <Ticket size={17} strokeWidth={2.4} />
-          <span>
-            {isDispenserOpen
-              ? (selectedFlow ? 'إلغاء وإعادة التعيين' : 'إغلاق الماكينة')
-              : 'إنشاء طلب جديد • سحب تذكرة'}
-          </span>
-          <ChevronDown
-            size={16}
-            style={{
-              transform: isDispenserOpen ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.25s ease',
-            }}
-          />
-        </button>
+          <style>{`
+            @keyframes orbitalFloat {
+              0%, 100% {
+                transform: translateY(0px);
+              }
+              50% {
+                transform: translateY(-8px);
+              }
+            }
+            .service-floating-disc {
+              animation: orbitalFloat 3.2s ease-in-out infinite;
+              transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .service-floating-disc:hover {
+              animation-play-state: paused !important;
+              transform: translateY(-12px) scale(1.08) !important;
+            }
+          `}</style>
 
-        {/* ── CONSOLE WORKSPACE BAY (مربع اختيار نوع الطلب ومسار الحقول المحددة من الإدارة) ── */}
-        <AnimatePresence>
-          {isDispenserOpen && tearState === 'idle' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, scale: 0.98 }}
-              animate={{ opacity: 1, height: 'auto', scale: 1 }}
-              exit={{ opacity: 0, height: 0, scale: 0.98 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                width: '100%',
-                overflow: 'visible',
-                backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-                borderRadius: '12px',
-                border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-                padding: '20px 16px',
-                boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.06)',
-              }}
-            >
-              {!selectedFlow ? (
-                /* ── Phase 1: اختيار مسار المعاملة عبر أيقونات دائرية حرة بدون مربعات ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #e2e8f0', paddingBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Sparkles size={16} color="#38bdf8" />
-                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                        اختر نوع الخدمة / المعاملة لبدء إعداد المسار:
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>
-                      {requests.length} مسارات متاحة
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '24px',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              width: '100%',
+              padding: '6px 4px',
+            }}
+          >
+            {requests.map((flow, idx) => {
+              const fColor = flow.color || '#38bdf8';
+              const block = canCreateRequest(flow.id);
+              const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+
+              return (
+                <button
+                  key={flow.id}
+                  type="button"
+                  disabled={!block.allowed}
+                  onClick={() => block.allowed && handleSelectFlow(flow)}
+                  className="service-floating-disc"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '6px',
+                    cursor: block.allowed ? 'pointer' : 'not-allowed',
+                    opacity: block.allowed ? 1 : 0.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '125px',
+                    outline: 'none',
+                    textAlign: 'center',
+                    animationDelay: `${idx * 0.22}s`,
+                  }}
+                  onMouseEnter={e => {
+                    if (block.allowed) {
+                      const disc = e.currentTarget.querySelector('.service-icon-disc') as HTMLElement;
+                      if (disc) {
+                        disc.style.boxShadow = `0 14px 34px ${fColor}55, 0 0 20px ${fColor}40`;
+                        disc.style.borderColor = fColor;
+                      }
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (block.allowed) {
+                      const disc = e.currentTarget.querySelector('.service-icon-disc') as HTMLElement;
+                      if (disc) {
+                        disc.style.boxShadow = `0 4px 18px ${fColor}25`;
+                        disc.style.borderColor = `${fColor}55`;
+                      }
+                    }
+                  }}
+                >
+                  {/* Free-Floating Orbital Circular Disc */}
+                  <div
+                    className="service-icon-disc"
+                    style={{
+                      position: 'relative',
+                      width: '66px',
+                      height: '66px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: darkMode ? `${fColor}18` : `${fColor}12`,
+                      border: `2px solid ${fColor}55`,
+                      color: fColor,
+                      boxShadow: `0 4px 18px ${fColor}25`,
+                      transition: 'all 0.25s ease',
+                    }}
+                  >
+                    {resolveIcon(flow.icon, 30, fColor)}
+                  </div>
+
+                  {/* Free-Floating Typography Labels */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 800,
+                        color: darkMode ? '#ffffff' : '#0f172a',
+                        fontFamily: "'Tajawal', sans-serif",
+                        lineHeight: 1.3,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {flow.title}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10.5px',
+                        fontWeight: 600,
+                        color: darkMode ? '#94a3b8' : '#64748b',
+                        lineHeight: 1.2,
+                        textAlign: 'center',
+                        maxWidth: '115px',
+                      }}
+                    >
+                      {targetDept}
                     </span>
                   </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-                  {/* Free-Floating Orbital Service Route Icons (دون حبس في مربعات) */}
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '24px',
-                    justifyContent: 'center',
-                    alignItems: 'flex-start',
-                    padding: '10px 4px',
-                  }}>
-                    {requests.map(flow => {
-                      const fColor = flow.color || '#38bdf8';
-                      const block = canCreateRequest(flow.id);
-                      const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
-
-                      return (
-                        <button
-                          key={flow.id}
-                          type="button"
-                          disabled={!block.allowed}
-                          onClick={() => block.allowed && handleSelectFlow(flow)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: '6px',
-                            cursor: block.allowed ? 'pointer' : 'not-allowed',
-                            opacity: block.allowed ? 1 : 0.5,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '10px',
-                            width: '125px',
-                            outline: 'none',
-                            textAlign: 'center',
-                            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }}
-                          onMouseEnter={e => {
-                            if (block.allowed) {
-                              e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            if (block.allowed) {
-                              e.currentTarget.style.transform = 'none';
-                            }
-                          }}
-                        >
-                          {/* Free-Floating Orbital Circular Disc */}
-                          <div style={{
-                            position: 'relative',
-                            width: '64px',
-                            height: '64px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: darkMode ? `${fColor}18` : `${fColor}12`,
-                            border: `2px solid ${fColor}55`,
-                            color: fColor,
-                            boxShadow: `0 4px 18px ${fColor}25`,
-                            transition: 'all 0.25s ease',
-                          }}>
-                            {resolveIcon(flow.icon, 28, fColor)}
-                          </div>
-
-                          {/* Free-Floating Typography Labels */}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                            <span style={{
-                              fontSize: '12.5px',
-                              fontWeight: 800,
-                              color: darkMode ? '#ffffff' : '#0f172a',
-                              fontFamily: "'Tajawal', sans-serif",
-                              lineHeight: 1.3,
-                              textAlign: 'center',
-                            }}>
-                              {flow.title}
-                            </span>
-                            <span style={{
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              color: darkMode ? '#94a3b8' : '#64748b',
-                              lineHeight: 1.2,
-                              textAlign: 'center',
-                              maxWidth: '115px',
-                            }}>
-                              {targetDept}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                /* ── Phase 2: خيارات المسار التي تم تحديدها من قبل الإدارة ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* ═══ 2. CONSOLE WORKSPACE BAY (لوحة إعداد المعاملة المنظمة) ═══ */}
+      <AnimatePresence>
+        {selectedFlow && tearState === 'idle' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, scale: 0.98 }}
+            animate={{ opacity: 1, height: 'auto', scale: 1 }}
+            exit={{ opacity: 0, height: 0, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              width: '100%',
+              maxWidth: '940px',
+              overflow: 'visible',
+              backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+              borderRadius: '16px',
+              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1',
+              padding: '20px 22px',
+              boxShadow: darkMode ? '0 16px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(19, 93, 121, 0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              zIndex: 45,
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* Step Header: 2-Tier Linear/Stripe Enterprise Segmented Stepper */}
                   <div style={{
                     display: 'flex',
@@ -1695,6 +3001,78 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           fieldToRender.options = teamOptions;
                         }
 
+                        // 1. IN-PLACE TAXONOMY SELECTOR
+                        if (field.name === 'taxonomyMain') {
+                          return (
+                            <React.Fragment key="taxonomyMain">
+                              <InPlaceTaxonomySelector
+                                selectedFlow={selectedFlow}
+                                mainValue={formData.taxonomyMain || ''}
+                                subValue={formData.taxonomySub || ''}
+                                onSelectMain={val => handleFieldChange('taxonomyMain', val)}
+                                onSelectSub={val => handleFieldChange('taxonomySub', val)}
+                                darkMode={darkMode}
+                                flowColor={flowColor}
+                              />
+                            </React.Fragment>
+                          );
+                        }
+
+                        // 2. IN-PLACE ORG HIERARCHY SELECTOR (Department -> Division -> Team)
+                        if (field.name === 'department') {
+                          return (
+                            <React.Fragment key="department">
+                              <InPlaceOrgHierarchySelector
+                                orgTree={orgTree}
+                                department={formData.department || ''}
+                                division={formData.division || ''}
+                                team={formData.team || ''}
+                                onSelectDepartment={val => handleFieldChange('department', val)}
+                                onSelectDivision={val => handleFieldChange('division', val)}
+                                onSelectTeam={val => handleFieldChange('team', val)}
+                                darkMode={darkMode}
+                                flowColor={flowColor}
+                              />
+                            </React.Fragment>
+                          );
+                        }
+
+                        // 3. IN-PLACE BUILDING SELECTOR
+                        if (field.name === 'building') {
+                          return (
+                            <React.Fragment key="building">
+                              <InPlaceBuildingSelector
+                                options={field.options || ['المبنى الرئيسي (طرابلس)', 'مبنى بنغازي', 'مبنى العمليات والتحكم', 'مبنى الإدارة العامة']}
+                                value={formData.building || ''}
+                                onChange={val => handleFieldChange('building', val)}
+                                darkMode={darkMode}
+                                flowColor={flowColor}
+                                required={field.required}
+                              />
+                            </React.Fragment>
+                          );
+                        }
+
+                        // 4. IN-PLACE DYNAMIC CASCADE SELECTOR (المستدلات والتصنيفات الفرعية في نفس المكان تماماً)
+                        if (field.name.startsWith('dyn_')) {
+                          const dynId = field.name.replace('dyn_', '');
+                          const dynDef = effectiveDynamicFields.find(df => df.id === dynId);
+                          if (dynDef && dynDef.childBindings && dynDef.childBindings.length > 0) {
+                            return (
+                              <React.Fragment key={field.name}>
+                                <InPlaceDynamicCascadeSelector
+                                  parentDef={dynDef}
+                                  formData={formData}
+                                  onFieldChange={handleFieldChange}
+                                  effectiveDynamicFields={effectiveDynamicFields}
+                                  darkMode={darkMode}
+                                  flowColor={flowColor}
+                                />
+                              </React.Fragment>
+                            );
+                          }
+                        }
+
                         const isFullWidthField =
                           (fieldToRender as any).displayMode === 'chips' ||
                           fieldToRender.type === 'scheduleEngine' ||
@@ -1729,145 +3107,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                 allFormData={formData}
                               />
                             </div>
-
-                            {/* ── CRITICAL FEATURE: TAXONOMY SUB-ISSUES RENDERED AS VISUAL CARDS GRID ── */}
-                            {field.name === 'taxonomyMain' && formData.taxonomyMain && (() => {
-                              const mainTax = (selectedFlow as any).formConfig?.taxonomy?.find(
-                                (t: any) => t.label === formData.taxonomyMain || t.id === formData.taxonomyMain
-                              );
-                              if (!mainTax?.subIssues?.length) return null;
-                              const activeSubs = mainTax.subIssues.filter((s: any) => s.isActive !== false);
-                              if (activeSubs.length === 0) return null;
-
-                              return (
-                                <div
-                                  style={{
-                                    gridColumn: '1 / -1',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '10px',
-                                    padding: '14px 16px',
-                                    borderRadius: '12px',
-                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.05)' : 'rgba(37, 99, 235, 0.04)',
-                                    border: darkMode ? '1.5px dashed rgba(56, 189, 248, 0.35)' : '1.5px dashed rgba(37, 99, 235, 0.3)',
-                                    animation: 'fadeIn 0.2s ease',
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span>↳</span>
-                                      <span>المشاكل والخيارات الفرعية التابعة لـ ({formData.taxonomyMain}):</span>
-                                    </span>
-                                    <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700 }}>
-                                      انقر لتحديد الخيار المطلوب
-                                    </span>
-                                  </div>
-
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      flexWrap: 'wrap',
-                                      gap: '14px',
-                                      alignItems: 'flex-start',
-                                      width: '100%',
-                                    }}
-                                  >
-                                    {activeSubs.map((sub: any) => {
-                                      const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
-                                      const subIcon = (typeof sub === 'object' && sub.icon) ? sub.icon : getOptionIcon({ label: subLabel });
-                                      const isSelected = formData.taxonomySub === subLabel;
-                                      return (
-                                        <button
-                                          key={subLabel}
-                                          type="button"
-                                          onClick={() => handleFieldChange('taxonomySub', isSelected ? '' : subLabel)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            padding: '4px',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            width: '80px',
-                                            outline: 'none',
-                                            textAlign: 'center',
-                                            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                          }}
-                                          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                                          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                                        >
-                                          {/* Orbital Sub-Issue Disc */}
-                                          <div style={{
-                                            position: 'relative',
-                                            width: '48px',
-                                            height: '48px',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: isSelected
-                                              ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                                              : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                                            border: isSelected
-                                              ? '2px solid #38bdf8'
-                                              : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                                            boxShadow: isSelected
-                                              ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                                              : '0 2px 6px rgba(0,0,0,0.04)',
-                                            color: isSelected
-                                              ? (darkMode ? '#38bdf8' : '#2563eb')
-                                              : (darkMode ? '#cbd5e1' : '#475569'),
-                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                          }}>
-                                            {resolveIcon(subIcon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
-
-                                            {isSelected && (
-                                              <div style={{
-                                                position: 'absolute',
-                                                top: '-2px',
-                                                insetInlineEnd: '-2px',
-                                                width: '16px',
-                                                height: '16px',
-                                                borderRadius: '50%',
-                                                backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
-                                                color: '#ffffff',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                                              }}>
-                                                <Check size={10} strokeWidth={3} />
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          <span style={{
-                                            fontSize: '11px',
-                                            fontWeight: isSelected ? 800 : 600,
-                                            color: isSelected
-                                              ? (darkMode ? '#38bdf8' : '#2563eb')
-                                              : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                                            fontFamily: "'Cairo', sans-serif",
-                                            lineHeight: 1.3,
-                                            wordBreak: 'break-word',
-                                            maxWidth: '80px',
-                                          }}>
-                                            {subLabel}
-                                          </span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })()}
-
-                            {/* ── Cascading Child Fields for Dynamic Fields (المستدلات الفرعية المتسلسلة) ── */}
-                            {field.name.startsWith('dyn_') && formData[field.name] && (
-                              renderCascadingChildFields(field.name.replace('dyn_', ''), formData[field.name])
-                            )}
 
                             {/* ── Conditional Option Custom Inputs (حقول مخصصة مشروطة بخيار المستدلة) ── */}
                             {formData[field.name] && (() => {
@@ -2365,10 +3604,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           type="button"
                           onClick={handleNextStep}
                           style={{
-                            minHeight: '44px',
+                            minHeight: '42px',
                             padding: '10px 22px',
-                            borderRadius: '9px',
-                            background: `linear-gradient(135deg, ${flowColor} 0%, #2563eb 100%)`,
+                            borderRadius: '8px',
+                            background: '#135d79',
                             border: '1px solid rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                             fontSize: '12.5px',
@@ -2377,7 +3616,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',
-                            boxShadow: `0 4px 14px ${flowColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                            boxShadow: '0 4px 14px rgba(19, 93, 121, 0.25), inset 0 1px 0 rgba(255,255,255,0.25)',
                             fontFamily: "'Cairo', sans-serif",
                             transition: 'all 0.15s ease',
                           }}
@@ -2393,309 +3632,373 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           onClick={handleTearAndSubmit}
                           disabled={loading || tearState !== 'idle'}
                           style={{
-                            minHeight: '46px',
-                            padding: '12px 28px',
-                            borderRadius: '10px',
-                            background: 'linear-gradient(135deg, #f59e0b 0%, #f36c21 50%, #135d79 100%)',
+                            minHeight: '42px',
+                            padding: '10px 26px',
+                            borderRadius: '8px',
+                            background: '#135d79',
                             border: '1px solid rgba(255, 255, 255, 0.25)',
                             color: '#ffffff',
-                            fontSize: '13.5px',
-                            fontWeight: 900,
+                            fontSize: '13px',
+                            fontWeight: 800,
                             cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',
-                            boxShadow: '0 6px 20px rgba(243, 108, 33, 0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
+                            boxShadow: '0 4px 16px rgba(19, 93, 121, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                             fontFamily: "'Cairo', sans-serif",
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <Scissors size={16} />
-                          <span>إرسال واعتماد الطلب • استخراج التذكرة 🚀</span>
+                          <Send size={15} />
+                          <span>تأكيد وإرسال الطلب</span>
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Physical Dispenser Slit Mouth (فتحة خروج التذاكر) */}
-        <div style={{
-          width: '92%',
-          height: '11px',
-          borderRadius: '5.5px',
-          backgroundColor: '#050914',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          boxShadow: tearState === 'dispensing'
-            ? 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 20px #f36c21, 0 0 30px #38bdf8'
-            : 'inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(56, 189, 248, 0.25)',
-          position: 'relative',
-          overflow: 'hidden',
-          marginTop: '2px',
-          transition: 'box-shadow 0.3s ease',
-        }}>
-          {/* Laser guide line inside slot */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '6%',
-            right: '6%',
-            height: '2px',
-            transform: 'translateY(-50%)',
-            background: tearState === 'dispensing'
-              ? 'linear-gradient(90deg, transparent, #f36c21, #f59e0b, #38bdf8, transparent)'
-              : (isDispenserOpen
-                ? 'linear-gradient(90deg, transparent, #38bdf8, transparent)'
-                : 'linear-gradient(90deg, transparent, #10b981, transparent)'),
-            boxShadow: tearState === 'dispensing'
-              ? '0 0 12px #f36c21, 0 0 18px #38bdf8'
-              : (isDispenserOpen ? '0 0 8px #38bdf8' : '0 0 6px #10b981'),
-          }} />
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════
-          2. THE EMITTED PRINTED TICKET (خروج التذكرة الفعلي من شق الماكينة)
-          ══════════════════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {tearState !== 'idle' && selectedFlow && (
-          <motion.div
-            initial={{ opacity: 0, y: -180, scaleY: 0.2 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scaleY: 1,
-              transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-            }}
-            exit={{
-              opacity: 0,
-              y: tearState === 'departing' ? -100 : -40,
-              scale: 0.85,
-              transition: { duration: 0.35, ease: 'easeInOut' }
-            }}
-            style={{
-              width: '100%',
-              maxWidth: '940px',
-              margin: '-4px auto 0',
-              position: 'relative',
-              zIndex: 35,
-              transformOrigin: 'top center',
-            }}
-          >
-            {/* Top cutter laser line during reverse cutting */}
-            {tearState === 'ripping' && (
-              <motion.div
-                initial={{ width: '0%', left: '0%' }}
-                animate={{ width: '100%' }}
-                transition={{ duration: 0.65, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  height: '4px',
-                  background: 'linear-gradient(90deg, #ef4444, #f59e0b, #38bdf8)',
-                  boxShadow: '0 0 16px #f59e0b, 0 0 25px #ef4444',
-                  zIndex: 60,
-                  borderRadius: '2px',
-                }}
-              />
-            )}
-
-            {/* Cinema Ticket Split: Stub on Right + Verified Payload on Left */}
-            <div
-              className="enterprise-ticket-split"
+        {/* ══════════════════════════════════════════════════════════════
+            3. PHYSICAL DISPENSER SLOT & REALISTIC FLYING RECEIPT (FIXED CENTER SPOTLIGHT)
+            ══════════════════════════════════════════════════════════════ */}
+        <AnimatePresence>
+          {tearState !== 'idle' && selectedFlow && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{
-                position: 'relative',
+                position: 'fixed',
+                inset: 0,
+                zIndex: 999999,
+                backgroundColor: 'rgba(3, 7, 18, 0.88)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 display: 'flex',
-                flexDirection: 'row',
-                borderRadius: '12px',
-                overflow: 'visible',
-                backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-                border: darkMode ? `1.5px solid ${flowColor}50` : `1.5px solid ${flowColor}70`,
-                boxShadow: darkMode
-                  ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px ${flowColor}25`
-                  : '0 12px 30px rgba(30, 58, 82, 0.12)',
-                minHeight: '260px',
-                width: '100%',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px',
+                boxSizing: 'border-box',
+                pointerEvents: 'all',
               }}
             >
-              {/* STUB ON RIGHT */}
-              <motion.div
-                className="ticket-stub-col"
-                animate={
-                  tearState === 'ripping'
-                    ? { rotate: 1.5, x: 4, transformOrigin: 'bottom right' }
-                    : tearState === 'departing'
-                    ? { y: 130, x: 50, rotate: 6, scale: 0.65, opacity: 0, filter: 'blur(2px)' }
-                    : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
-                }
-                transition={
-                  tearState === 'ripping'
-                    ? { duration: 0.65, ease: 'easeOut' }
-                    : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-                }
+              {/* Upper Status HUD in Spotlight */}
+              <div
                 style={{
-                  width: '215px',
-                  flexShrink: 0,
-                  padding: '16px 14px',
-                  backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.96)' : '#f8fafc',
-                  borderInlineEnd: tearState === 'departing' ? 'none' : (darkMode ? '2px dashed rgba(255, 255, 255, 0.18)' : '2px dashed #cbd5e1'),
                   display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   gap: '8px',
-                  position: 'relative',
-                  zIndex: 2,
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  fontFamily: "'Cairo', sans-serif",
+                  marginBottom: '16px',
                 }}
               >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em' }}>NEXUS TDS STUB</span>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                <Sparkles size={14} color="#38bdf8" />
+                <span>
+                  {tearState === 'dispensing' && 'جاري طباعة واستخراج التذكرة الرسمية...'}
+                  {tearState === 'ripping' && 'قطع واعتماد التذكرة بالليزر...'}
+                  {tearState === 'departing' && 'تحويل التذكرة إلى حوض المعاملات...'}
+                  {tearState === 'completed' && 'تم إدراج المعاملة بنجاح'}
+                </span>
+              </div>
+
+              {/* Metallic Dispenser Slit Mouth (فتحة خروج الفاتورة من الماكينة) */}
+              <div
+                style={{
+                  width: '360px',
+                  maxWidth: '92vw',
+                  height: '14px',
+                  borderRadius: '7px',
+                  backgroundColor: '#030712',
+                  border: '1.5px solid rgba(255, 255, 255, 0.22)',
+                  boxShadow: tearState === 'ripping'
+                    ? 'inset 0 4px 8px rgba(0, 0, 0, 0.95), 0 0 25px #ef4444, 0 0 35px #f59e0b'
+                    : 'inset 0 4px 8px rgba(0, 0, 0, 0.95), 0 0 20px #135d79, 0 0 25px #38bdf8',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  zIndex: 2,
+                  transition: 'box-shadow 0.25s ease',
+                }}
+              >
+                {/* Laser Guide / Indicator Beam inside mouth */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '5%',
+                    right: '5%',
+                    height: '2.5px',
+                    transform: 'translateY(-50%)',
+                    background: tearState === 'ripping'
+                      ? 'linear-gradient(90deg, #ef4444, #f59e0b, #ef4444)'
+                      : 'linear-gradient(90deg, transparent, #38bdf8, #10b981, transparent)',
+                    boxShadow: tearState === 'ripping' ? '0 0 14px #ef4444' : '0 0 10px #38bdf8',
+                  }}
+                />
+
+                {/* Guillotine Blade Laser Flash (قص التذكرة من الماكينة) */}
+                {tearState === 'ripping' && (
+                  <motion.div
+                    initial={{ width: '0%', left: '0%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      background: 'linear-gradient(90deg, #ffffff, #ef4444, #f59e0b)',
+                      boxShadow: '0 0 18px #ffffff, 0 0 25px #ef4444',
+                      zIndex: 10,
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* The Physical Receipt / Ticket (التذكرة/الفاتورة المعتمدة الخارجة والمقصوصة) */}
+              <motion.div
+                initial={{ y: -240, opacity: 0 }}
+                animate={
+                  tearState === 'dispensing'
+                    ? {
+                        y: [-200, 0],
+                        opacity: [0.6, 1],
+                        scale: 1,
+                        rotate: 0,
+                        transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
+                      }
+                    : tearState === 'ripping'
+                    ? {
+                        y: [0, 16],
+                        rotate: [0, -1.8],
+                        scale: 1,
+                        opacity: 1,
+                        transition: { duration: 0.35, ease: 'easeOut' },
+                      }
+                    : tearState === 'departing'
+                    ? {
+                        y: [16, 440],
+                        x: [0, 140],
+                        scale: [1, 0.36],
+                        rotate: [-1.8, 8],
+                        opacity: [1, 0.95, 0],
+                        filter: ['blur(0px)', 'blur(0px)', 'blur(2px)'],
+                        transition: { duration: 0.85, ease: [0.25, 0.8, 0.25, 1] },
+                      }
+                    : { y: 0, opacity: 1 }
+                }
+                style={{
+                  width: '340px',
+                  maxWidth: '90vw',
+                  marginTop: '-3px',
+                  position: 'relative',
+                  zIndex: 1,
+                  transformOrigin: 'top center',
+                  borderRadius: '0 0 14px 14px',
+                  backgroundColor: darkMode ? '#0f172a' : '#ffffff',
+                  color: darkMode ? '#f8fafc' : '#0f172a',
+                  border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid #cbd5e1',
+                  borderTop: 'none',
+                  boxShadow: darkMode
+                    ? '0 20px 50px rgba(0, 0, 0, 0.75), 0 0 25px rgba(19, 93, 121, 0.3)'
+                    : '0 18px 40px rgba(19, 93, 121, 0.16), 0 2px 8px rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                  fontFamily: "'Cairo', sans-serif",
+                }}
+              >
+                {/* Serrated Cut Edge Top (حافة القص المسننة كالفاتورة الحقيقية) */}
+                <div
+                  style={{
+                    height: '8px',
+                    width: '100%',
+                    background: darkMode ? 'rgba(56, 189, 248, 0.2)' : '#e2e8f0',
+                    clipPath:
+                      'polygon(0% 0%, 4% 8px, 8% 0%, 12% 8px, 16% 0%, 20% 8px, 24% 0%, 28% 8px, 32% 0%, 36% 8px, 40% 0%, 44% 8px, 48% 0%, 52% 8px, 56% 0%, 60% 8px, 64% 0%, 68% 8px, 72% 0%, 76% 8px, 80% 0%, 84% 8px, 88% 0%, 92% 8px, 96% 0%, 100% 8px, 100% 100%, 0% 100%)',
+                    marginBottom: '6px',
+                  }}
+                />
+
+                {/* Receipt Content Header */}
+                <div style={{ padding: '8px 18px 10px', textAlign: 'center', borderBottom: darkMode ? '1px dashed rgba(255, 255, 255, 0.15)' : '1px dashed #cbd5e1' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        backgroundColor: '#135d79',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Layers size={13} />
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#135d79', letterSpacing: '0.02em', fontFamily: "'Tajawal', sans-serif" }}>
+                      المؤسسة الليبية لتقنية الاتصالات
+                    </span>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', letterSpacing: '0.03em', fontVariantNumeric: 'tabular-nums', fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                    تذكرة معاملة إلكترونية معتمدة • NEXUS TDS
+                  </div>
+                </div>
+
+                {/* Barcode & Serial Box */}
+                <div style={{
+                  margin: '10px 16px',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                  textAlign: 'center',
+                }}>
+                  <div style={{
+                    fontSize: '16px',
+                    letterSpacing: '3px',
+                    fontWeight: 300,
+                    color: darkMode ? '#38bdf8' : '#135d79',
+                    fontFamily: 'monospace',
+                    marginBottom: '2px',
+                  }}>
+                    |||| | |||||| || | |||| |||
+                  </div>
+                  <div style={{
+                    fontSize: '12.5px',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    fontFamily: 'monospace',
+                    color: darkMode ? '#ffffff' : '#0f172a',
+                  }}>
                     {previewSerial || 'REQ-2026-TDS'}
                   </div>
                 </div>
 
-                <div style={{
-                  padding: '8px',
-                  borderRadius: '6px',
-                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9',
-                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: '15px', letterSpacing: '2px', color: darkMode ? '#cbd5e1' : '#334155' }}>
-                    ||||| | |||| ||| |||
-                  </div>
-                  <div style={{ fontSize: '7.5px', color: '#64748b', marginTop: '2px', letterSpacing: '0.05em' }}>
-                    NEXUS-VERIFIED-2026
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '9.5px', color: '#64748b', marginBottom: '2px' }}>
-                    مقدم الطلب: <span style={{ color: darkMode ? '#f8fafc' : '#0f172a', fontWeight: 700 }}>{user?.name || 'مساحة الإدارة'}</span>
-                  </div>
-                  <div style={{
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    color: '#38bdf8',
-                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                    padding: '3px 6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    justifyContent: 'center',
-                  }}>
-                    <span>📥 حوض المعاملات النشطة</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Perforation Seam */}
-              <div style={{
-                width: '1px',
-                borderInlineStart: darkMode ? '2px dashed rgba(255, 255, 255, 0.18)' : '2px dashed #cbd5e1',
-                position: 'relative',
-              }} />
-
-              {/* BODY PAYLOAD */}
-              <motion.div
-                animate={
-                  tearState === 'ripping'
-                    ? { rotate: -2, x: -6, transformOrigin: 'bottom left' }
-                    : tearState === 'departing'
-                    ? { y: -150, x: -60, rotate: -8, scale: 0.85, opacity: 0, filter: 'blur(3px)' }
-                    : { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }
-                }
-                transition={
-                  tearState === 'ripping'
-                    ? { duration: 0.65, ease: 'easeOut' }
-                    : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-                }
-                style={{
-                  flex: 1,
-                  padding: '16px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  position: 'relative',
-                  zIndex: 1,
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: `${flowColor}20`, border: `1.5px solid ${flowColor}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: flowColor }}>
-                        {resolveIcon(selectedFlow.icon, 17, flowColor)}
+                {/* Service & Details */}
+                <div style={{ padding: '6px 18px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '7px',
+                        backgroundColor: `${flowColor}20`,
+                        border: `1.5px solid ${flowColor}50`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: flowColor,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {resolveIcon(selectedFlow.icon, 16, flowColor)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                        {selectedFlow.title}
                       </div>
-                      <div>
-                        <div style={{ fontSize: '13.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-                          {selectedFlow.title}
-                        </div>
-                        <div style={{ fontSize: '10.5px', color: flowColor, fontWeight: 700 }}>
-                          🎯 جهة الاختصاص: {targetDeptName}
-                        </div>
+                      <div style={{ fontSize: '10px', color: flowColor, fontWeight: 700 }}>
+                        🎯 جهة الاختصاص: {targetDeptName}
                       </div>
                     </div>
-                    <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 800, backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '6px' }}>
-                      تذكرة صادرة وموثقة ✓
-                    </span>
                   </div>
 
-                  {/* Summary grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', padding: '10px', borderRadius: '8px', backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc' }}>
-                    {selectedFlow.fields.map(f => {
-                      const val = formData[f.name];
-                      if (!val) return null;
-                      return (
-                        <div key={f.name} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                          <span style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 600 }}>{f.label}</span>
-                          <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{val}</span>
-                        </div>
-                      );
-                    })}
-                    {formData.taxonomySub && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <span style={{ fontSize: '9.5px', color: '#38bdf8', fontWeight: 600 }}>المشكلة المحددة</span>
-                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8' }}>⚡ {formData.taxonomySub}</span>
+                  {/* Summary Rows */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f1f5f9',
+                    fontSize: '11px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b', fontWeight: 600 }}>مقدم الطلب:</span>
+                      <span style={{ fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a' }}>
+                        {user?.name || 'مساحة الموظف'}
+                      </span>
+                    </div>
+
+                    {formData.taxonomyMain && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748b', fontWeight: 600 }}>التصنيف:</span>
+                        <span style={{ fontWeight: 800, color: '#38bdf8' }}>
+                          {formData.taxonomyMain} {formData.taxonomySub ? `← ${formData.taxonomySub}` : ''}
+                        </span>
                       </div>
                     )}
+
+                    {formData.department && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748b', fontWeight: 600 }}>الجهة:</span>
+                        <span style={{ fontWeight: 700 }}>
+                          {formData.department}
+                        </span>
+                      </div>
+                    )}
+
+                    {formData.scheduleEngine && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748b', fontWeight: 600 }}>الجدولة:</span>
+                        <span style={{ fontWeight: 700 }}>
+                          {formData.scheduleEngine}
+                        </span>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px', paddingTop: '4px', borderTop: darkMode ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #cbd5e1' }}>
+                      <span style={{ color: '#64748b', fontWeight: 600 }}>تاريخ القيد:</span>
+                      <span style={{ fontWeight: 700, fontSize: '10px', color: '#94a3b8' }}>
+                        23-10-2026 • معتمد وموثق
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stamp of Certification */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      color: '#10b981',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    <Check size={13} strokeWidth={3} />
+                    <span>جاهزة للتحويل والإدراج في حوض المعاملات</span>
                   </div>
                 </div>
 
-                {/* Floating Departure Overlay */}
-                {tearState === 'departing' && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundColor: 'rgba(19, 93, 121, 0.95)',
-                    color: '#ffffff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    padding: '14px',
-                    zIndex: 20,
-                  }}>
-                    <span style={{ fontSize: '24px' }}>✈️</span>
-                    <span>تحليق وإحالة فورية إلى: {targetDeptName}</span>
-                  </div>
-                )}
+                {/* Bottom Serrated Jagged Edge */}
+                <div
+                  style={{
+                    height: '6px',
+                    width: '100%',
+                    background: darkMode ? 'rgba(56, 189, 248, 0.2)' : '#e2e8f0',
+                    clipPath:
+                      'polygon(0% 100%, 4% 0%, 8% 100%, 12% 0%, 16% 100%, 20% 0%, 24% 100%, 28% 0%, 32% 100%, 36% 0%, 40% 100%, 44% 0%, 48% 100%, 52% 0%, 56% 100%, 60% 0%, 64% 100%, 68% 0%, 72% 100%, 76% 0%, 80% 100%, 84% 0%, 88% 100%, 92% 0%, 96% 100%, 100% 0%, 100% 100%, 0% 100%)',
+                  }}
+                />
               </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
   );
 }
+

@@ -745,7 +745,7 @@ export const TicketRoutingTab: React.FC = () => {
     });
     setDynamicFields(updated);
     await saveDynamicFields(updated);
-    showToast('تم إلغاء ربط المستدلة الفرعية', 'info');
+    showToast('تم إلغاء ربط المستدلة الفرعية', 'success');
   };
 
   const handleCreateAndLinkChildField = async (parentId: string, triggerValue: string) => {

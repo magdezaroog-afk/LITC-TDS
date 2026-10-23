@@ -620,6 +620,12 @@ export class FunctionalController {
       const routingMetadata = JSON.stringify(mergedMeta);
       const reqPriority = (req.body.priority || 'MEDIUM').toUpperCase();
 
+      let validFlowDefId: string | null = null;
+      if (routeId) {
+        const existingFlowDef = await prisma.flowDefinition.findUnique({ where: { id: routeId } });
+        if (existingFlowDef) validFlowDefId = existingFlowDef.id;
+      }
+
       const ticket = await prisma.ticket.create({
         data: {
           title: title.trim(),
@@ -628,8 +634,8 @@ export class FunctionalController {
           categoryId: defaultCategory.id,
           creatorId: user.id,
           departmentId: deptId,
-          routeId: routeId,
-          flowDefinitionId: routeId,
+          routeId: routeId || null,
+          flowDefinitionId: validFlowDefId,
           priority: reqPriority,
           requesterPriority: reqPriority,
           routingMetadata,
@@ -701,8 +707,9 @@ export class FunctionalController {
           createdAt: ticket.createdAt,
         }
       });
-    } catch (err) {
-      next(err);
+    } catch (err: any) {
+      console.error('[FunctionalController createTicket error]:', err);
+      return res.status(500).json({ success: false, error: err?.message || 'Server error' });
     }
   }
 

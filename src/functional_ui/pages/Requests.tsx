@@ -2,7 +2,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useHub } from '../context/HubContext';
 import * as LucideIcons from 'lucide-react';
 import {
-  FileText, Search, Clock, ChevronLeft, ChevronRight, Building2,
+  FileText, Search, Clock, ChevronLeft, ChevronRight, ChevronDown, Building2,
   Activity, X, Sparkles, Ticket, Archive,
   CheckCircle2, XCircle, ArrowUpRight, FolderArchive
 } from 'lucide-react';
@@ -109,6 +109,7 @@ export default function RequestsPage() {
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'active' | 'needs_rating' | 'archived'>('active');
+  const [isExpandedView, setIsExpandedView] = useState(false);
   const creatorRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -195,76 +196,25 @@ export default function RequestsPage() {
         transition: 'all 0.2s ease',
       }}>
         <div>
-          {/* Breadcrumbs */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '11px',
-            color: '#64748b',
-            fontFamily: "'Cairo', sans-serif",
-            fontWeight: 600,
-            marginBottom: '2px',
-          }}>
-            <span>بوابة الموظف</span>
-            <span>/</span>
-            <span style={{ color: darkMode ? '#38bdf8' : '#135d79' }}>خدمات التذاكر والإجراءات</span>
-          </div>
-
           <h1 style={{
-            fontSize: '18px',
+            fontSize: '19px',
             fontWeight: 800,
             color: darkMode ? '#ffffff' : '#0f172a',
-            margin: '0 0 2px',
+            margin: '0 0 4px',
             letterSpacing: '-0.02em',
             fontFamily: "'Tajawal', sans-serif",
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
           }}>
-            <span>مركز تقديم ومتابعة المعاملات</span>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: '9999px',
-              backgroundColor: darkMode ? 'rgba(19, 93, 121, 0.25)' : 'rgba(19, 93, 121, 0.08)',
-              color: darkMode ? '#38bdf8' : '#135d79',
-              border: darkMode ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(19, 93, 121, 0.2)',
-              fontFamily: "'Cairo', sans-serif",
-            }}>
-              NEXUS TDS
-            </span>
+            مرحباً بك، من هنا تستطيع إنشاء وإدارة طلباتك
           </h1>
           <p style={{
-            fontSize: '11.5px',
+            fontSize: '12px',
             color: darkMode ? '#94a3b8' : '#64748b',
             margin: 0,
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 500,
           }}>
-            اختر نوع الخدمة لتوليد تذكرتك، وتابع مسار التذاكر النشطة أسفل الشاشة.
+            اختر نوع الخدمة لتقديم معاملة جديدة، وتابع مسار طلباتك الجارية والسابقة عبر الشريط أدناه.
           </p>
-        </div>
-
-        {/* Live Operational Status & Quick Count Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            color: '#10b981',
-            backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)',
-            border: darkMode ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(16, 185, 129, 0.2)',
-            padding: '5px 12px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: "'Cairo', sans-serif",
-          }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-            <span>المنظومة التشغيلية جاهزة</span>
-          </div>
         </div>
       </div>
 
@@ -276,67 +226,71 @@ export default function RequestsPage() {
         />
       </div>
 
-      {/* ═══ 3. HORIZONTAL BOTTOM TICKETS RIBBON (شريط التذاكر الأفقي أسفل الشاشة) ═══ */}
+      {/* ═══ 3. HORIZONTAL BOTTOM TICKETS RIBBON (حوض ومعاملات التذاكر) ═══ */}
       <div
+        id="litc-tickets-basin"
         style={{
           width: '100%',
-          backgroundColor: darkMode ? '#0e1726' : '#ffffff',
-          borderRadius: '14px',
-          border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-          boxShadow: darkMode ? '0 10px 30px rgba(0, 0, 0, 0.35)' : '0 4px 20px -2px rgba(19, 93, 121, 0.08)',
-          overflow: 'hidden',
-          transition: 'all 0.25s ease',
+          maxWidth: '1280px',
+          margin: '10px auto 30px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          position: 'relative',
+          zIndex: 20,
         }}
       >
-        {/* Ribbon Header: Segmented Tabs & Compact Search Bar */}
+        {/* Ribbon Header: Tabs & Carousel Controls */}
         <div style={{
-          padding: '12px 18px',
-          borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
-          backgroundColor: darkMode ? '#090f1d' : '#f8fafc',
+          padding: '0 4px',
         }}>
-          {/* Segmented Tab Switcher */}
+          {/* Freestanding Floating Tabs (بدون مستطيل محيط) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            padding: '3px',
-            borderRadius: '9px',
-            backgroundColor: darkMode ? '#141d2e' : '#e2e8f0',
-            border: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #cbd5e1',
+            gap: '8px',
+            flexWrap: 'wrap',
           }}>
-            {/* Tab 1: الطلبات المفتوحة (آخر 3) */}
+            {/* Tab 1: الطلبات المفتوحة */}
             <button
               type="button"
-              onClick={() => setFilterTab('active')}
+              onClick={() => {
+                setFilterTab('active');
+                setIsExpandedView(false);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: '7px',
-                border: 'none',
+                gap: '7px',
+                padding: '7px 14px',
+                borderRadius: '9px',
+                border: filterTab === 'active'
+                  ? '1px solid rgba(56, 189, 248, 0.4)'
+                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'active' ? '#135d79' : 'transparent',
+                backgroundColor: filterTab === 'active'
+                  ? '#135d79'
+                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
                 color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
-                fontSize: '11.5px',
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: "'Cairo', sans-serif",
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: filterTab === 'active' ? '0 2px 8px rgba(19, 93, 121, 0.35)' : 'none',
+                boxShadow: filterTab === 'active' ? '0 4px 14px rgba(19, 93, 121, 0.35)' : 'none',
               }}
             >
-              <Activity size={13} strokeWidth={2.5} />
+              <Activity size={14} strokeWidth={2.4} />
               <span>الطلبات المفتوحة</span>
               <span style={{
-                fontSize: '10px',
-                padding: '1px 5px',
+                fontSize: '10.5px',
+                padding: '1px 6px',
                 borderRadius: '9999px',
-                backgroundColor: filterTab === 'active' ? 'rgba(255, 255, 255, 0.25)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#cbd5e1'),
+                backgroundColor: filterTab === 'active' ? 'rgba(255, 255, 255, 0.22)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
                 color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#cbd5e1' : '#334155'),
                 fontWeight: 800,
                 fontVariantNumeric: 'tabular-nums',
@@ -348,30 +302,37 @@ export default function RequestsPage() {
             {/* Tab 2: تحتاج إلى تقييم */}
             <button
               type="button"
-              onClick={() => setFilterTab('needs_rating')}
+              onClick={() => {
+                setFilterTab('needs_rating');
+                setIsExpandedView(false);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: '7px',
-                border: 'none',
+                gap: '7px',
+                padding: '7px 14px',
+                borderRadius: '9px',
+                border: filterTab === 'needs_rating'
+                  ? '1px solid rgba(243, 108, 33, 0.4)'
+                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'needs_rating' ? '#f36c21' : 'transparent',
+                backgroundColor: filterTab === 'needs_rating'
+                  ? '#f36c21'
+                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
                 color: filterTab === 'needs_rating' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
-                fontSize: '11.5px',
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: "'Cairo', sans-serif",
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: filterTab === 'needs_rating' ? '0 2px 8px rgba(243, 108, 33, 0.35)' : 'none',
+                boxShadow: filterTab === 'needs_rating' ? '0 4px 14px rgba(243, 108, 33, 0.35)' : 'none',
               }}
             >
-              <Sparkles size={13} strokeWidth={2.5} />
+              <Sparkles size={14} strokeWidth={2.4} />
               <span>تحتاج إلى تقييم</span>
               {stats.needsRating > 0 && (
                 <span style={{
-                  fontSize: '10px',
-                  padding: '1px 5px',
+                  fontSize: '10.5px',
+                  padding: '1px 6px',
                   borderRadius: '9999px',
                   backgroundColor: filterTab === 'needs_rating' ? 'rgba(255, 255, 255, 0.25)' : '#f59e0b',
                   color: filterTab === 'needs_rating' ? '#ffffff' : '#000000',
@@ -386,30 +347,38 @@ export default function RequestsPage() {
             {/* Tab 3: أرشيف طلباتي السابقة */}
             <button
               type="button"
-              onClick={() => setFilterTab('archived')}
+              onClick={() => {
+                setFilterTab('archived');
+                setIsExpandedView(false);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: '7px',
-                border: 'none',
+                gap: '7px',
+                padding: '7px 14px',
+                borderRadius: '9px',
+                border: filterTab === 'archived'
+                  ? (darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #475569')
+                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'archived' ? (darkMode ? '#334155' : '#475569') : 'transparent',
+                backgroundColor: filterTab === 'archived'
+                  ? (darkMode ? '#1e293b' : '#334155')
+                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
                 color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
-                fontSize: '11.5px',
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: "'Cairo', sans-serif",
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: filterTab === 'archived' ? '0 4px 14px rgba(0, 0, 0, 0.25)' : 'none',
               }}
             >
-              <FolderArchive size={13} />
+              <FolderArchive size={14} />
               <span>أرشيف طلباتي السابقة</span>
               <span style={{
-                fontSize: '10px',
-                padding: '1px 5px',
+                fontSize: '10.5px',
+                padding: '1px 6px',
                 borderRadius: '9999px',
-                backgroundColor: filterTab === 'archived' ? 'rgba(255, 255, 255, 0.25)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#cbd5e1'),
+                backgroundColor: filterTab === 'archived' ? 'rgba(255, 255, 255, 0.22)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
                 color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#cbd5e1' : '#334155'),
                 fontWeight: 800,
                 fontVariantNumeric: 'tabular-nums',
@@ -566,7 +535,7 @@ export default function RequestsPage() {
               {searchQuery
                 ? 'لا توجد نتائج مطابقة لبحثك'
                 : filterTab === 'active'
-                ? 'يمكنك استخراج تذكرة معاملة جديدة من الماكينة أعلاه وستظهر هنا فوراً'
+                ? 'يمكنك إنشاء طلب معاملة جديدة من الزر أعلاه وستظهر هنا فوراً'
                 : 'كافة المعاملات في حالتها المثالية'}
             </div>
           </div>
@@ -574,18 +543,21 @@ export default function RequestsPage() {
           <div
             ref={carouselRef}
             style={{
-              display: 'flex',
-              alignItems: 'stretch',
+              display: isExpandedView ? 'grid' : 'flex',
+              gridTemplateColumns: isExpandedView ? 'repeat(auto-fill, minmax(290px, 1fr))' : undefined,
+              alignItems: isExpandedView ? undefined : 'stretch',
               gap: '14px',
               padding: '16px 18px',
-              overflowX: 'auto',
-              scrollSnapType: 'x mandatory',
+              overflowX: isExpandedView ? 'visible' : 'auto',
+              maxHeight: isExpandedView ? '560px' : undefined,
+              overflowY: isExpandedView ? 'auto' : 'visible',
+              scrollSnapType: isExpandedView ? undefined : 'x mandatory',
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'thin',
               scrollbarColor: darkMode ? '#1f293d transparent' : '#cbd5e1 transparent',
             }}
           >
-            {ribbonTickets.map(req => {
+            {(isExpandedView ? filteredList : ribbonTickets).map(req => {
               const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
               const routeColor = matchedFlow?.color || '#135d79';
               const IconComp = resolveCategoryIcon(matchedFlow?.icon || (req as any).icon);
@@ -599,8 +571,8 @@ export default function RequestsPage() {
                     setIsTrackingOpen(true);
                   }}
                   style={{
-                    flex: '0 0 310px',
-                    scrollSnapAlign: 'start',
+                    flex: isExpandedView ? '1 1 auto' : '0 0 310px',
+                    scrollSnapAlign: isExpandedView ? undefined : 'start',
                     cursor: 'pointer',
                     userSelect: 'none',
                     transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -736,6 +708,45 @@ export default function RequestsPage() {
           </div>
         )}
 
+        {/* ═══ زر عرض المزيد من المعاملات / طي القائمة ═══ */}
+        {filteredList.length > 0 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '10px 18px',
+            borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
+          }}>
+            <button
+              type="button"
+              onClick={() => setIsExpandedView(!isExpandedView)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '7px 22px',
+                borderRadius: '8px',
+                backgroundColor: isExpandedView
+                  ? (darkMode ? 'rgba(239, 68, 68, 0.12)' : '#fee2e2')
+                  : (darkMode ? 'rgba(19, 93, 121, 0.18)' : 'rgba(19, 93, 121, 0.08)'),
+                border: isExpandedView
+                  ? '1px solid rgba(239, 68, 68, 0.3)'
+                  : (darkMode ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(19, 93, 121, 0.25)'),
+                color: isExpandedView ? '#ef4444' : (darkMode ? '#38bdf8' : '#135d79'),
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                fontFamily: "'Cairo', sans-serif",
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: isExpandedView ? 'none' : '0 2px 10px rgba(19, 93, 121, 0.15)',
+              }}
+            >
+              <span>{isExpandedView ? 'طي القائمة (عرض الشريط المختصر)' : `عرض المزيد من المعاملات (${filteredList.length})`}</span>
+              <ChevronDown size={14} style={{ transform: isExpandedView ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s ease' }} />
+            </button>
+          </div>
+        )}
+
         {/* Ribbon Footer: Concise Info Note */}
         <div style={{
           padding: '8px 18px',
@@ -750,7 +761,7 @@ export default function RequestsPage() {
         }}>
           <div>
             {filterTab === 'active' && (
-              <span>يتم عرض آخر 3 تذاكر مفتوحة. انقر فوق أي تذكرة لتكبيرها ومتابعة مسارها الحالي.</span>
+              <span>{isExpandedView ? 'يتم عرض كافة الطلبات المفتوحة في شبكة متكاملة.' : 'يتم عرض آخر 3 تذاكر مفتوحة. يمكنك الضغط على "عرض المزيد" لفتح كامل الطلبات.'}</span>
             )}
             {filterTab === 'needs_rating' && (
               <span>المعاملات المكتملة التي تنتظر تقييمك لمستوى الخدمة المقدمة.</span>
@@ -760,7 +771,7 @@ export default function RequestsPage() {
             )}
           </div>
           <div style={{ fontWeight: 700, color: darkMode ? '#cbd5e1' : '#334155', fontVariantNumeric: 'tabular-nums' }}>
-            {ribbonTickets.length} تذاكر معروضة
+            {isExpandedView ? `${filteredList.length} معروضة` : `${ribbonTickets.length} في الشريط`}
           </div>
         </div>
       </div>
