@@ -329,7 +329,7 @@ model Ticket {
   flowDefinitionId String?
   flowDefinition   FlowDefinition? @relation(fields: [flowDefinitionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   routeId          String?
-  routingMetadata  String?
+  routingMetadata  String?         @db.NVarChar(Max)
 
   stateId      Int
   state        TicketState   @relation(fields: [stateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
