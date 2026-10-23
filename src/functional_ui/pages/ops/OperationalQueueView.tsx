@@ -836,8 +836,8 @@ export const OperationalQueueView: React.FC = () => {
         };
       default:
         return {
-          title: 'غرفة العمليات',
-          subtitle: 'مركز المعالجة التشغيلية',
+          title: 'إدارة واستقبال الطلبات',
+          subtitle: 'مركز المعالجة والتشغيل',
           badgeText: 'نشط',
           badgeColor: '#135d79',
           badgeBg: 'rgba(19, 93, 121, 0.12)',
@@ -908,7 +908,7 @@ export const OperationalQueueView: React.FC = () => {
               fontFamily: "'Tajawal', 'Cairo', sans-serif",
               letterSpacing: '-0.02em'
             }}>
-              غرفة العمليات واستقبال الطلبات
+              إدارة واستقبال الطلبات
             </h1>
             <span style={{
               fontSize: '11px',

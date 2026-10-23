@@ -23,7 +23,7 @@ import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut } from 'lucide-react';
+import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut, Layers } from 'lucide-react';
 import { NexusTdsBrand } from './components/brand/NexusTdsBrand';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
@@ -599,7 +599,7 @@ const Navigation: React.FC = () => {
                   }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>🚀</span> مود العمل (غرفة العمليات)
+                    <Layers size={16} /> إدارة العمليات
                   </span>
                   <ChevronLeft size={16} />
                 </Link>
@@ -752,8 +752,8 @@ const Navigation: React.FC = () => {
                 position: 'relative'
               }}
             >
-              <span style={{ fontSize: '18px' }}>🚀</span>
-              <span>غرفة العمليات</span>
+              <Layers size={18} />
+              <span>العمليات</span>
               {isOpsActive && (
                 <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#f36c21' }} />
               )}

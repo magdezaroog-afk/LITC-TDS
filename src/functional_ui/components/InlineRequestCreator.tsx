@@ -2061,8 +2061,8 @@ function InPlaceDynamicCascadeSelector({
           transition={{ duration: 0.18 }}
           style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => setIsEditing('parent')}
@@ -2080,7 +2080,7 @@ function InPlaceDynamicCascadeSelector({
                 <span>{parentDef.name}</span>
               </button>
               <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                ↳ حدد ({childDef.name}) التابعة لـ ({parentVal}):
+                {childDef.name} ({parentVal}):
               </span>
             </div>
             <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>

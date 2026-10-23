@@ -265,7 +265,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
           </div>
 
           {/* 5 Stars Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '4px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '12px' : '8px', padding: '6px 0' }}>
             {[1, 2, 3, 4, 5].map((s) => {
               const isLit = s <= (hoveredRating || rating);
               return (
@@ -279,7 +279,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    padding: '2px',
+                    padding: isMobile ? '6px' : '2px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -288,7 +288,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                   }}
                 >
                   <Star
-                    size={22}
+                    size={isMobile ? 28 : 22}
                     style={{
                       fill: isLit ? '#fbbf24' : 'transparent',
                       color: isLit ? '#fbbf24' : '#475569',
@@ -301,6 +301,19 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
             })}
           </div>
 
+          {/* Rating label preview */}
+          {(hoveredRating || rating) > 0 && (
+            <div style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#f59e0b',
+              textAlign: 'center',
+              margin: '2px 0 4px',
+            }}>
+              {RATING_LABELS[hoveredRating || rating]?.split('—')[1] || RATING_LABELS[hoveredRating || rating]}
+            </div>
+          )}
+
           {/* Feedback Text Input */}
           <input
             type="text"
@@ -312,8 +325,8 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
               backgroundColor: darkMode ? '#0d1424' : '#ffffff',
               borderRadius: '6px',
               border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-              padding: '6px 10px',
-              fontSize: '11px',
+              padding: isMobile ? '8px 12px' : '6px 10px',
+              fontSize: isMobile ? '12px' : '11px',
               fontFamily: "'Cairo', sans-serif",
               color: darkMode ? '#ffffff' : '#0f172a',
               outline: 'none',
@@ -328,23 +341,23 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
             disabled={rating === 0 || isSubmittingFeedback}
             style={{
               width: '100%',
-              padding: '7px 12px',
-              borderRadius: '6px',
+              padding: isMobile ? '10px 14px' : '7px 12px',
+              borderRadius: '8px',
               background:
                 rating === 0
                   ? (darkMode ? 'rgba(255, 255, 255, 0.06)' : '#e2e8f0')
-                  : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  : '#135d79',
               border: 'none',
               color: rating === 0 ? '#64748b' : '#ffffff',
-              fontSize: '11.5px',
-              fontWeight: 700,
+              fontSize: isMobile ? '12.5px' : '11.5px',
+              fontWeight: 800,
               fontFamily: "'Cairo', sans-serif",
               cursor: rating === 0 || isSubmittingFeedback ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              boxShadow: rating === 0 ? 'none' : '0 4px 14px rgba(37, 99, 235, 0.35)',
+              boxShadow: rating === 0 ? 'none' : '0 4px 14px rgba(19, 93, 121, 0.35)',
               transition: 'all 0.18s ease',
             }}
           >
@@ -352,12 +365,12 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
               <span>جارٍ الحفظ...</span>
             ) : isSuccessDismissing ? (
               <>
-                <Check size={13} color="#34d399" />
+                <Check size={14} color="#34d399" />
                 <span>تم اعتماد التقييم ونقل الطلب للأرشيف!</span>
               </>
             ) : (
               <>
-                <Send size={13} />
+                <Send size={14} />
                 <span>اعتماد التقييم وأرشفة الطلب</span>
               </>
             )}
@@ -377,9 +390,9 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
             inset: 0,
             zIndex: 300,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',
-            padding: isMobile ? '8px' : '16px',
+            padding: isMobile ? '0' : '16px',
             overflow: 'hidden',
           }}
         >
@@ -398,45 +411,291 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
             }}
           />
 
-          {/* ══════════════════════════════════════════════════════════════════
-              ADAPTIVE CINEMA TICKET MODAL (تذكرة سينمائية متجاوبة للمكتب والهاتف)
-             ══════════════════════════════════════════════════════════════════ */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-            style={{
-              position: 'relative',
-              width: isMobile ? '100%' : '1040px',
-              maxWidth: isMobile ? 'calc(100vw - 16px)' : '96vw',
-              height: isMobile ? '92vh' : '570px',
-              maxHeight: isMobile ? '94vh' : '90vh',
-              zIndex: 305,
-              fontFamily: "'Cairo', sans-serif",
-            }}
-          >
-            <CinemaTicketFrame
-              accentColor={stamp.color}
-              alwaysGlow={true}
-              cornerCutout={isMobile ? 10 : 14}
-              notchRadius={isMobile ? 4 : 5.5}
-              numNotches={3}
-              dashIndent={isMobile ? 14 : 20}
-              customFill={darkMode ? "#0b1222" : "#ffffff"}
-              contentPadding="0px"
+          {isMobile ? (
+            /* ══════════════════════════════════════════════════════════════════
+               MOBILE BOTTOM SHEET (لوحة الهاتف المحمول الذكية المريحة للإبهام)
+               ══════════════════════════════════════════════════════════════════ */
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               style={{
+                position: 'relative',
                 width: '100%',
-                height: '100%',
-              }}
-              contentStyle={{
-                width: '100%',
-                height: '100%',
+                maxHeight: '88vh',
+                backgroundColor: darkMode ? '#0e172a' : '#ffffff',
+                borderRadius: '24px 24px 0 0',
+                borderTop: darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.5)',
                 display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
+                flexDirection: 'column',
+                zIndex: 305,
                 overflow: 'hidden',
+                fontFamily: "'Cairo', sans-serif",
               }}
             >
+              {/* Drag Handle */}
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '10px 0 6px', flexShrink: 0 }}>
+                <div style={{ width: '42px', height: '4.5px', borderRadius: '3px', backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.22)' : '#cbd5e1' }} />
+              </div>
+
+              {/* Mobile Header Bar */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '6px 18px 12px',
+                borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                flexShrink: 0,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 900,
+                    fontFamily: 'monospace',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(19, 93, 121, 0.1)',
+                    color: darkMode ? '#38bdf8' : '#135d79',
+                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid rgba(19, 93, 121, 0.2)',
+                  }}>
+                    #{request.code}
+                  </span>
+                  <div style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    backgroundColor: stamp.bg,
+                    border: `1px solid ${stamp.border}`,
+                    color: stamp.color,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: stamp.color, boxShadow: `0 0 6px ${stamp.color}` }} />
+                    <span>{stamp.text}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                    border: 'none',
+                    color: darkMode ? '#cbd5e1' : '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Mobile Scrollable Content */}
+              <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                padding: '14px 16px 28px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}>
+                {/* 1. Request Title & Overview */}
+                <div style={{
+                  padding: '14px',
+                  borderRadius: '12px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '14.5px',
+                    fontWeight: 800,
+                    color: darkMode ? '#ffffff' : '#0f172a',
+                    fontFamily: "'Tajawal', sans-serif",
+                    lineHeight: 1.4,
+                  }}>
+                    {isRtl ? request.title : request.titleEn || request.title}
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                      <Building2 size={13} color="#38bdf8" />
+                      <span style={{ fontWeight: 700, color: darkMode ? '#e2e8f0' : '#334155' }}>
+                        {request.department || 'إدارة تقنية المعلومات'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                      <Calendar size={13} color="#f59e0b" />
+                      <span style={{ fontWeight: 600, color: darkMode ? '#e2e8f0' : '#334155' }}>
+                        {request.date || '2026/10/23'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {((request as any).description || (request as any).notes) && (
+                    <div style={{
+                      marginTop: '4px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.25)' : '#ffffff',
+                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #e2e8f0',
+                      fontSize: '11.5px',
+                      color: darkMode ? '#cbd5e1' : '#475569',
+                      lineHeight: 1.5,
+                    }}>
+                      {(request as any).description || (request as any).notes}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Rating Box (Immediate Thumb-Access on Mobile) */}
+                {renderRatingBox()}
+
+                {/* 3. Concise Vertical Progress Stepper (بديل الخريطة والتعقيد على الموبايل) */}
+                <div style={{
+                  padding: '14px',
+                  borderRadius: '12px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
+                  }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#f1f5f9' : '#0f172a' }}>
+                      مسار وتطور الإجراءات ({journeySteps.length})
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700 }}>
+                      متابعة فورية ✓
+                    </span>
+                  </div>
+
+                  {/* Stepper list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', position: 'relative' }}>
+                    {journeySteps.map((step: any, idx: number) => {
+                      const isDone = step.status === 'completed';
+                      const isLast = idx === journeySteps.length - 1;
+
+                      return (
+                        <div key={step.id || idx} style={{ display: 'flex', gap: '10px', position: 'relative', minHeight: '44px' }}>
+                          {!isLast && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '20px',
+                              right: '11px',
+                              width: '2px',
+                              bottom: '-4px',
+                              backgroundColor: isDone ? '#10b981' : (darkMode ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1'),
+                            }} />
+                          )}
+
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: isDone
+                              ? '#10b981'
+                              : (darkMode ? 'rgba(56, 189, 248, 0.2)' : 'rgba(19, 93, 121, 0.15)'),
+                            border: isDone ? '2px solid #10b981' : '2px solid #38bdf8',
+                            color: isDone ? '#ffffff' : '#38bdf8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2,
+                            flexShrink: 0,
+                          }}>
+                            {isDone ? <Check size={13} strokeWidth={3} /> : <Clock size={12} />}
+                          </div>
+
+                          <div style={{ flex: 1, paddingBottom: isLast ? '0' : '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: 800,
+                                color: isDone ? (darkMode ? '#f8fafc' : '#0f172a') : '#38bdf8',
+                              }}>
+                                {step.label}
+                              </span>
+                              {step.timestamp && (
+                                <span style={{ fontSize: '10px', color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>
+                                  {step.timestamp}
+                                </span>
+                              )}
+                            </div>
+                            {step.actor && (
+                              <div style={{ fontSize: '10.5px', color: darkMode ? '#94a3b8' : '#64748b', marginTop: '1px' }}>
+                                الجهة / الموظف: <strong style={{ color: darkMode ? '#cbd5e1' : '#334155' }}>{step.actor}</strong>
+                              </div>
+                            )}
+                            {step.notes && (
+                              <div style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', marginTop: '2px', fontStyle: 'italic' }}>
+                                {step.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            /* ══════════════════════════════════════════════════════════════════
+               DESKTOP CINEMA TICKET MODAL (تذكرة سينمائية متقدمة للمكتب)
+               ══════════════════════════════════════════════════════════════════ */
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 16 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+              style={{
+                position: 'relative',
+                width: '1040px',
+                maxWidth: '96vw',
+                height: '570px',
+                maxHeight: '90vh',
+                zIndex: 305,
+                fontFamily: "'Cairo', sans-serif",
+              }}
+            >
+              <CinemaTicketFrame
+                accentColor={stamp.color}
+                alwaysGlow={true}
+                cornerCutout={14}
+                notchRadius={5.5}
+                numNotches={3}
+                dashIndent={20}
+                customFill={darkMode ? "#0b1222" : "#ffffff"}
+                contentPadding="0px"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+                contentStyle={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  overflow: 'hidden',
+                }}
+              >
               {/* ──────────────────────────────────────────────────────────
                   1. RIGHT COLUMN (OR TOP ON MOBILE): TICKET STUB (قسيمة التذكرة)
                  ────────────────────────────────────────────────────────── */}
@@ -1160,6 +1419,7 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
               </div>
             </CinemaTicketFrame>
           </motion.div>
+          )}
         </div>
       )}
     </AnimatePresence>
