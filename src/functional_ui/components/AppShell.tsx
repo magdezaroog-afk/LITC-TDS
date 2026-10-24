@@ -8,11 +8,11 @@ export function AppShell() {
   const { language, darkMode } = useHub();
   const isRtl = language === 'ar';
   const [isMobileScreen, setIsMobileScreen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+    typeof window !== 'undefined' ? window.innerWidth < 840 : false
   );
 
   useEffect(() => {
-    const handleResize = () => setIsMobileScreen(window.innerWidth < 768);
+    const handleResize = () => setIsMobileScreen(window.innerWidth < 840);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -39,7 +39,7 @@ export function AppShell() {
           width: '100%',
           maxWidth: '1480px',
           margin: '0 auto',
-          padding: isMobileScreen ? '6px 12px 20px' : '8px 20px 8px',
+          padding: isMobileScreen ? '0 8px 12px' : '8px 20px 8px',
         }}
       >
         <Outlet />

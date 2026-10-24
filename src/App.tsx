@@ -758,57 +758,58 @@ const Navigation: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          3. PURE FLOATING EXECUTIVE MENU PILL (زر القائمة المميز بثلاث شرطات أسفل يمين الشاشة)
+          3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط اللمس السفلي الكامل)
           ══════════════════════════════════════════════════════════ */}
       {isMobileScreen && (
-        <button
-          type="button"
-          onClick={() => setIsDrawerOpen(true)}
-          title="القائمة وبيئات العمل"
+        <nav
           style={{
             position: 'fixed',
-            bottom: '20px',
-            right: '16px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '56px',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(24px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.15)',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.25)',
             zIndex: 94000,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '8px 14px 8px 12px',
-            borderRadius: '9999px',
-            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.92)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(24px) saturate(190%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(190%)',
-            border: isDark ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid rgba(19, 93, 121, 0.25)',
-            boxShadow: isDark
-              ? '0 10px 30px -4px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.18)'
-              : '0 8px 24px -4px rgba(19, 93, 121, 0.18), 0 2px 6px rgba(0, 0, 0, 0.05)',
-            color: isDark ? '#ffffff' : '#0f172a',
-            cursor: 'pointer',
-            fontFamily: "'Cairo', sans-serif",
-            fontSize: '12.5px',
-            fontWeight: 800,
-            outline: 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-            WebkitTapHighlightColor: 'transparent',
+            justifyContent: 'center',
+            direction: dir,
+            padding: '0 16px',
+            boxSizing: 'border-box'
           }}
         >
-          {/* Animated 3 Stripes (المميز بثلاث شرطات) */}
-          <div
+          {/* Menu Option (خيار القائمة - مهيأ لاستقبال الأزرار الإضافية لاحقاً) */}
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
+            title="القائمة وبيئات العمل"
             style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '8px',
-              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.16)' : 'rgba(19, 93, 121, 0.1)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: '8px',
+              padding: '8px 24px',
+              borderRadius: '9999px',
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(19, 93, 121, 0.08)',
+              border: isDark ? '1.5px solid rgba(56, 189, 248, 0.3)' : '1.5px solid rgba(19, 93, 121, 0.2)',
               color: isDark ? '#38bdf8' : '#135d79',
+              cursor: 'pointer',
+              fontFamily: "'Cairo', sans-serif",
+              fontSize: '13px',
+              fontWeight: 800,
+              outline: 'none',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             <Menu size={18} strokeWidth={2.4} />
-          </div>
-          <span>المزيد</span>
-        </button>
+            <span>القائمة</span>
+          </button>
+        </nav>
       )}
 
       {/* ══════════════════════════════════════════════════════════
@@ -1050,8 +1051,8 @@ const AppContent: React.FC = () => {
         style={{ 
           flex: 1, 
           padding: 0, 
-          minHeight: isMobileScreen ? 'calc(100vh - 58px)' : 'calc(100vh - 74px)', 
-          paddingTop: isMobileScreen ? '58px' : '74px' 
+          minHeight: isMobileScreen ? 'calc(100vh - 54px)' : 'calc(100vh - 74px)', 
+          paddingTop: isMobileScreen ? '54px' : '74px' 
         }}>
         <Routes>
           <Route path="/hub/*" element={<FunctionalWorkspace />} />

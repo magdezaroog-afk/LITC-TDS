@@ -272,10 +272,11 @@ export default function RequestsPage() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        minHeight: isMobile ? 'calc(100vh - 74px)' : 'calc(100vh - 86px)',
-        gap: '8px',
+        minHeight: isMobile ? 'calc(100vh - 56px)' : 'calc(100vh - 86px)',
+        gap: isMobile ? '2px' : '8px',
         position: 'relative',
-        paddingBottom: isMobile ? '76px' : '4px',
+        paddingTop: '0px',
+        paddingBottom: isMobile ? '68px' : '4px',
       }}
     >
       {/* ═══ 1. CLEAN REFINED HEADER ═══ */}
@@ -283,35 +284,37 @@ export default function RequestsPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '10px 16px',
-        borderRadius: '12px',
+        padding: isMobile ? '5px 12px' : '10px 16px',
+        marginTop: 0,
+        borderRadius: isMobile ? '8px' : '12px',
         backgroundColor: darkMode ? '#0e1726' : '#ffffff',
         border: darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0',
         boxShadow: darkMode ? '0 4px 20px rgba(0, 0, 0, 0.25)' : '0 2px 10px rgba(19, 93, 121, 0.04)',
-        flexWrap: 'wrap',
-        gap: '10px',
+        gap: isMobile ? '4px' : '10px',
         transition: 'all 0.2s ease',
       }}>
         <div>
           <h1 style={{
-            fontSize: '17px',
+            fontSize: isMobile ? '12.5px' : '17px',
             fontWeight: 800,
             color: darkMode ? '#ffffff' : '#0f172a',
-            margin: '0 0 3px',
+            margin: '0',
             letterSpacing: '-0.02em',
             fontFamily: "'Tajawal', sans-serif",
           }}>
             مرحباً بك، من هنا تستطيع إنشاء وإدارة طلباتك
           </h1>
-          <p style={{
-            fontSize: '11.5px',
-            color: darkMode ? '#94a3b8' : '#64748b',
-            margin: 0,
-            fontFamily: "'Cairo', sans-serif",
-            fontWeight: 500,
-          }}>
-            اختر نوع الخدمة لتقديم معاملة جديدة، وتابع مسار طلباتك الجارية والسابقة عبر الشريط أدناه.
-          </p>
+          {!isMobile && (
+            <p style={{
+              fontSize: '11.5px',
+              color: darkMode ? '#94a3b8' : '#64748b',
+              margin: '3px 0 0',
+              fontFamily: "'Cairo', sans-serif",
+              fontWeight: 500,
+            }}>
+              اختر نوع الخدمة لتقديم معاملة جديدة، وتابع مسار طلباتك الجارية والسابقة عبر الشريط أدناه.
+            </p>
+          )}
         </div>
       </div>
 

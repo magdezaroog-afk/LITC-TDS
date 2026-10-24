@@ -318,10 +318,82 @@ function ModernSelect({
   );
 }
 
+// ── 2026 Mobile Single-Row Horizontal Scrollable Options Track (MacBook / Native Feel) ──
+function MobileScrollableOptionsTrack({
+  children,
+  totalCount,
+  itemName = 'خيارات',
+  darkMode = true,
+  accentColor = '#38bdf8',
+}: {
+  children: React.ReactNode;
+  totalCount: number;
+  itemName?: string;
+  darkMode?: boolean;
+  accentColor?: string;
+}) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 840 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 840);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (!isMobile) {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px', width: '100%' }}>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          gap: '8px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          scrollSnapType: 'x mandatory',
+          scrollBehavior: 'smooth',
+          scrollbarWidth: 'none',
+          padding: '4px 2px 6px',
+          WebkitOverflowScrolling: 'touch',
+          boxSizing: 'border-box'
+        }}
+      >
+        {children}
+      </div>
+
+      {totalCount > 3 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px',
+          fontSize: '9.5px',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          fontFamily: "'Cairo', sans-serif",
+          marginTop: '1px'
+        }}>
+          <span>↔ اسحب للتنقل بين الـ {itemName} ({totalCount})</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FieldInput({
   field,
   value,
   onChange,
+  onAutoAdvance,
   darkMode = true,
   allFormData,
 }: {
@@ -336,6 +408,7 @@ function FieldInput({
   };
   value: string;
   onChange: (v: string) => void;
+  onAutoAdvance?: () => void;
   darkMode?: boolean;
   allFormData?: Record<string, string>;
 }) {
@@ -373,21 +446,22 @@ function FieldInput({
 
     if (isChips) {
       return (
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '14px',
-          alignItems: 'flex-start',
-          width: '100%',
-          marginTop: '6px'
-        }}>
+        <MobileScrollableOptionsTrack
+          totalCount={opts.length}
+          itemName={field.label || 'الخيارات'}
+          darkMode={darkMode}
+        >
           {opts.map(opt => {
             const isSelected = value === opt.value || value === opt.label;
             return (
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange(isSelected ? '' : opt.label)}
+                onClick={() => {
+                  const nextVal = isSelected ? '' : opt.label;
+                  onChange(nextVal);
+                  if (nextVal) onAutoAdvance?.();
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -398,6 +472,8 @@ function FieldInput({
                   alignItems: 'center',
                   gap: '8px',
                   width: '84px',
+                  flexShrink: 0,
+                  scrollSnapAlign: 'start',
                   outline: 'none',
                   textAlign: 'center',
                   transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -468,7 +544,7 @@ function FieldInput({
               </button>
             );
           })}
-        </div>
+        </MobileScrollableOptionsTrack>
       );
     }
 
@@ -914,7 +990,12 @@ function InPlaceTaxonomySelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={taxonomyList.length}
+            itemName="المشاكل الرئيسية"
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {taxonomyList.map((item: any) => {
               const label = item.label || item.id;
               const icon = item.icon || getOptionIcon({ label });
@@ -945,6 +1026,8 @@ function InPlaceTaxonomySelector({
                     alignItems: 'center',
                     gap: '8px',
                     width: '88px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -999,7 +1082,7 @@ function InPlaceTaxonomySelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -1042,7 +1125,12 @@ function InPlaceTaxonomySelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={activeSubIssues.length}
+            itemName="الخيارات الفرعية"
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {activeSubIssues.map((sub: any) => {
               const subLabel = typeof sub === 'string' ? sub : sub.label || sub.name;
               const subIcon = (typeof sub === 'object' && sub.icon) ? sub.icon : resolveSubIssueIcon(subLabel);
@@ -1067,6 +1155,8 @@ function InPlaceTaxonomySelector({
                     alignItems: 'center',
                     gap: '6px',
                     width: '84px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1123,7 +1213,7 @@ function InPlaceTaxonomySelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -1311,7 +1401,12 @@ function InPlaceOrgHierarchySelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={departments.length}
+            itemName="الإدارات"
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {departments.map((d: any) => {
               const isSelected = department === d.name;
               return (
@@ -1337,6 +1432,8 @@ function InPlaceOrgHierarchySelector({
                     alignItems: 'center',
                     gap: '8px',
                     width: '94px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1391,7 +1488,7 @@ function InPlaceOrgHierarchySelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -1432,7 +1529,12 @@ function InPlaceOrgHierarchySelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={divisions.length}
+            itemName="الأقسام"
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {divisions.map((divItem: any) => {
               const isSelected = division === divItem.name;
               return (
@@ -1457,6 +1559,8 @@ function InPlaceOrgHierarchySelector({
                     alignItems: 'center',
                     gap: '6px',
                     width: '88px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1500,7 +1604,7 @@ function InPlaceOrgHierarchySelector({
                   <span style={{
                     fontSize: '11px',
                     fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
                     fontFamily: "'Cairo', sans-serif",
                     lineHeight: 1.3,
                     wordBreak: 'break-word',
@@ -1511,7 +1615,7 @@ function InPlaceOrgHierarchySelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -1552,7 +1656,12 @@ function InPlaceOrgHierarchySelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={teams.length}
+            itemName="الوحدات"
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {teams.map((teamItem: any) => {
               const isSelected = team === teamItem.name;
               return (
@@ -1561,6 +1670,7 @@ function InPlaceOrgHierarchySelector({
                   type="button"
                   onClick={() => {
                     onSelectTeam(teamItem.name);
+                    setActiveLevel('done');
                     onAutoAdvance?.();
                   }}
                   style={{
@@ -1573,6 +1683,8 @@ function InPlaceOrgHierarchySelector({
                     alignItems: 'center',
                     gap: '6px',
                     width: '84px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1616,7 +1728,7 @@ function InPlaceOrgHierarchySelector({
                   <span style={{
                     fontSize: '11px',
                     fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
+                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
                     fontFamily: "'Cairo', sans-serif",
                     lineHeight: 1.3,
                     wordBreak: 'break-word',
@@ -1627,7 +1739,7 @@ function InPlaceOrgHierarchySelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -1785,7 +1897,12 @@ function InPlaceBuildingSelector({
         )}
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px' }}>
+      <MobileScrollableOptionsTrack
+        totalCount={normalizedOpts.length}
+        itemName="المباني والمواقع"
+        darkMode={darkMode}
+        accentColor={flowColor}
+      >
         {normalizedOpts.map(opt => {
           const isSelected = value === opt.value || value === opt.label;
           return (
@@ -1809,6 +1926,8 @@ function InPlaceBuildingSelector({
                 alignItems: 'center',
                 gap: '6px',
                 width: '88px',
+                flexShrink: 0,
+                scrollSnapAlign: 'start',
                 outline: 'none',
                 textAlign: 'center',
                 transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1863,7 +1982,7 @@ function InPlaceBuildingSelector({
             </button>
           );
         })}
-      </div>
+      </MobileScrollableOptionsTrack>
     </div>
   );
 }
@@ -1874,6 +1993,7 @@ function InPlaceDynamicCascadeSelector({
   formData,
   onFieldChange,
   effectiveDynamicFields,
+  onAutoAdvance,
   darkMode = true,
   flowColor = '#38bdf8',
 }: {
@@ -1881,6 +2001,7 @@ function InPlaceDynamicCascadeSelector({
   formData: Record<string, string>;
   onFieldChange: (name: string, val: string) => void;
   effectiveDynamicFields: any[];
+  onAutoAdvance?: () => void;
   darkMode?: boolean;
   flowColor?: string;
 }) {
@@ -1995,7 +2116,12 @@ function InPlaceDynamicCascadeSelector({
             )}
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={parentOpts.length}
+            itemName={parentDef.name}
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {parentOpts.map((opt: any) => {
               const isSelected = parentVal === opt.label || parentVal === opt.id;
               return (
@@ -2005,7 +2131,12 @@ function InPlaceDynamicCascadeSelector({
                   onClick={() => {
                     onFieldChange(parentFieldName, opt.label);
                     if (childFieldName) onFieldChange(childFieldName, '');
-                    setIsEditing(false);
+                    if (childDef) {
+                      setIsEditing('child');
+                    } else {
+                      setIsEditing(false);
+                      onAutoAdvance?.();
+                    }
                   }}
                   style={{
                     background: 'none',
@@ -2017,6 +2148,8 @@ function InPlaceDynamicCascadeSelector({
                     alignItems: 'center',
                     gap: '8px',
                     width: '88px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -2071,7 +2204,7 @@ function InPlaceDynamicCascadeSelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -2112,7 +2245,12 @@ function InPlaceDynamicCascadeSelector({
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start', paddingTop: '4px' }}>
+          <MobileScrollableOptionsTrack
+            totalCount={childOpts.length}
+            itemName={childDef.name}
+            darkMode={darkMode}
+            accentColor={flowColor}
+          >
             {childOpts.map((opt: any) => {
               const isSelected = childVal === opt.label || childVal === opt.id;
               return (
@@ -2122,6 +2260,7 @@ function InPlaceDynamicCascadeSelector({
                   onClick={() => {
                     onFieldChange(childFieldName, opt.label);
                     setIsEditing(false);
+                    onAutoAdvance?.();
                   }}
                   style={{
                     background: 'none',
@@ -2133,6 +2272,8 @@ function InPlaceDynamicCascadeSelector({
                     alignItems: 'center',
                     gap: '6px',
                     width: '84px',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
                     outline: 'none',
                     textAlign: 'center',
                     transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -2187,7 +2328,7 @@ function InPlaceDynamicCascadeSelector({
                 </button>
               );
             })}
-          </div>
+          </MobileScrollableOptionsTrack>
         </motion.div>
       )}
 
@@ -2295,6 +2436,7 @@ function InPlaceThermalPrinterShow({
 }: InPlaceThermalPrinterShowProps) {
   return (
     <div
+      id="litc-dispenser-machine"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -2338,7 +2480,7 @@ function InPlaceThermalPrinterShow({
         <span>
           {tearState === 'dispensing' && 'جاري طباعة واستخراج التذكرة الرسمية من الماكينة...'}
           {tearState === 'ripping' && 'قطع واعتماد التذكرة بخط الليزر الحراري...'}
-          {tearState === 'departing' && 'تحويل وانزلاق التذكرة إلى حوض المعاملات المفتوحة...'}
+          {tearState === 'departing' && 'تحويل وانزلاق التذكرة بتمرجح خفيف إلى حوض المعاملات...'}
           {tearState === 'completed' && 'تم إدراج التذكرة في حوض الطلبات المفتوحة بنجاح'}
         </span>
       </div>
@@ -2448,13 +2590,13 @@ function InPlaceThermalPrinterShow({
                 }
               : tearState === 'departing'
               ? {
-                  y: [16, 340],
-                  x: [0, 120],
-                  scale: [1, 0.42],
-                  rotate: [-2, 8],
-                  opacity: [1, 0.9, 0],
-                  filter: ['blur(0px)', 'blur(0px)', 'blur(2px)'],
-                  transition: { duration: 0.85, ease: [0.25, 0.8, 0.25, 1] },
+                  y: [16, 80, 180, 310, 460],
+                  x: [0, -22, 26, -18, 10, 0],
+                  rotate: [-2, 8, -7, 5, -2, 0],
+                  scale: [1, 0.88, 0.68, 0.46, 0.26],
+                  opacity: [1, 1, 0.95, 0.65, 0],
+                  filter: ['blur(0px)', 'blur(0px)', 'blur(0.5px)', 'blur(1.5px)', 'blur(3px)'],
+                  transition: { duration: 1.1, ease: [0.25, 0.8, 0.25, 1] },
                 }
               : { y: 0, opacity: 1 }
           }
@@ -2699,6 +2841,13 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [orgTree, setOrgTree] = useState<any>(null);
   const [allDynamicFields, setAllDynamicFields] = useState<any[]>([]);
   const formTopRef = useRef<HTMLDivElement>(null);
+  const [isMobileScreen, setIsMobileScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 840 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileScreen(window.innerWidth < 840);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     loadCachedOrRemoteOrgTree().then(tree => {
@@ -3007,6 +3156,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }
 
     // Step 1: Start physical extrusion from machine slot
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     setTearState('dispensing');
     setLoading(true);
     setErrorMsg('');
@@ -3057,16 +3210,31 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }).then(r => r.json());
 
     setTearState('dispensing');
+    // Mobile camera auto-focus smoothly centering on dispenser machine
+    try {
+      const machine = document.getElementById('litc-dispenser-machine');
+      if (machine) {
+        machine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch {}
+
     await new Promise(r => setTimeout(r, 900));
 
     setTearState('ripping');
     await new Promise(r => setTimeout(r, 450));
 
     setTearState('departing');
+    // Screen glides down alongside the fluttering ticket towards the open requests basin
+    try {
+      const basin = document.getElementById('litc-tickets-basin');
+      if (basin) {
+        basin.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch {}
 
     const [data] = await Promise.all([
       reqPromise,
-      new Promise(r => setTimeout(r, 850))
+      new Promise(r => setTimeout(r, 1100))
     ]);
 
     if (data && data.success) {
@@ -3082,13 +3250,18 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         }
       }));
 
+      // Camera smoothly glides back up to the top balanced position
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 1400);
+
       setTimeout(() => {
         setSelectedFlow(null);
         setIsDispenserOpen(false);
         setTearState('idle');
         setStatus('idle');
         onSuccess();
-      }, 2200);
+      }, 2300);
     } else {
       setTearState('idle');
       setErrorMsg(data?.error || data?.message || 'حدث خطأ غير متوقع');
@@ -3104,145 +3277,195 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
 
-      {/* ═══ 1. FREE-FLOATING ORBITAL SERVICE ROUTE ICONS (مباشرة تحت رسالة الترحيب بحركة عائمة مميزة وتفاعل هوفر فاخر) ═══ */}
+      {/* ═══ 1. MACOS DOCK / TASKBAR SINGLE HORIZONTAL ROW (أيقونات الطلبات في صف أفقي تمرير سلس بنمط ماك بوك ديسك) ═══ */}
       {!selectedFlow && tearState === 'idle' && (
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '12px',
+            gap: '8px',
             width: '100%',
-            padding: '4px 0 16px',
+            padding: '2px 0 10px',
           }}
         >
           <style>{`
-            @keyframes orbitalFloat {
-              0%, 100% {
-                transform: translateY(0px);
-              }
-              50% {
-                transform: translateY(-8px);
-              }
+            .mac-dock-item {
+              transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease !important;
             }
-            .service-floating-disc {
-              animation: orbitalFloat 3.2s ease-in-out infinite;
-              transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            .mac-dock-item:hover, .mac-dock-item:active {
+              transform: translateY(-5px) scale(1.1) !important;
             }
-            .service-floating-disc:hover {
-              animation-play-state: paused !important;
-              transform: translateY(-12px) scale(1.08) !important;
+            .mac-dock-squircle {
+              transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .mac-dock-item:hover .mac-dock-squircle, .mac-dock-item:active .mac-dock-squircle {
+              transform: scale(1.05);
             }
           `}</style>
 
+          {/* macOS Glass Dock Tray */}
           <div
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '24px',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
               width: '100%',
-              padding: '6px 4px',
+              maxWidth: isMobileScreen ? '100%' : '880px',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid rgba(19, 93, 121, 0.16)',
+              borderRadius: isMobileScreen ? '18px' : '22px',
+              padding: isMobileScreen ? '8px 10px 10px' : '10px 18px 12px',
+              boxShadow: darkMode
+                ? '0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+                : '0 8px 26px rgba(19, 93, 121, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
             }}
           >
-            {requests.map((flow, idx) => {
-              const fColor = flow.color || '#38bdf8';
-              const block = canCreateRequest(flow.id);
-              const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+            {/* Single Row Horizontal Scrollable Dock Track */}
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'nowrap',
+                alignItems: 'center',
+                justifyContent: isMobileScreen ? 'flex-start' : (requests.length <= 6 ? 'center' : 'flex-start'),
+                gap: isMobileScreen ? '12px' : '18px',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollSnapType: 'x mandatory',
+                scrollBehavior: 'smooth',
+                scrollbarWidth: 'none',
+                WebkitOverflowScrolling: 'touch',
+                padding: '4px 2px',
+              }}
+            >
+              {requests.map((flow, idx) => {
+                const fColor = flow.color || '#38bdf8';
+                const block = canCreateRequest(flow.id);
+                const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
 
-              return (
-                <button
-                  key={flow.id}
-                  type="button"
-                  disabled={!block.allowed}
-                  onClick={() => block.allowed && handleSelectFlow(flow)}
-                  className="service-floating-disc"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '6px',
-                    cursor: block.allowed ? 'pointer' : 'not-allowed',
-                    opacity: block.allowed ? 1 : 0.5,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '10px',
-                    width: '125px',
-                    outline: 'none',
-                    textAlign: 'center',
-                    animationDelay: `${idx * 0.22}s`,
-                  }}
-                  onMouseEnter={e => {
-                    if (block.allowed) {
-                      const disc = e.currentTarget.querySelector('.service-icon-disc') as HTMLElement;
-                      if (disc) {
-                        disc.style.boxShadow = `0 14px 34px ${fColor}55, 0 0 20px ${fColor}40`;
-                        disc.style.borderColor = fColor;
-                      }
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (block.allowed) {
-                      const disc = e.currentTarget.querySelector('.service-icon-disc') as HTMLElement;
-                      if (disc) {
-                        disc.style.boxShadow = `0 4px 18px ${fColor}25`;
-                        disc.style.borderColor = `${fColor}55`;
-                      }
-                    }
-                  }}
-                >
-                  {/* Free-Floating Orbital Circular Disc */}
-                  <div
-                    className="service-icon-disc"
+                return (
+                  <button
+                    key={flow.id}
+                    type="button"
+                    disabled={!block.allowed}
+                    onClick={() => block.allowed && handleSelectFlow(flow)}
+                    className="mac-dock-item"
+                    title={flow.title}
                     style={{
-                      position: 'relative',
-                      width: '66px',
-                      height: '66px',
-                      borderRadius: '50%',
+                      background: 'none',
+                      border: 'none',
+                      padding: '2px',
+                      cursor: block.allowed ? 'pointer' : 'not-allowed',
+                      opacity: block.allowed ? 1 : 0.45,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: darkMode ? `${fColor}18` : `${fColor}12`,
-                      border: `2px solid ${fColor}55`,
-                      color: fColor,
-                      boxShadow: `0 4px 18px ${fColor}25`,
-                      transition: 'all 0.25s ease',
+                      gap: '5px',
+                      width: isMobileScreen ? '66px' : '82px',
+                      outline: 'none',
+                      flexShrink: 0,
+                      scrollSnapAlign: 'start',
+                      textAlign: 'center',
+                      userSelect: 'none',
                     }}
                   >
-                    {resolveIcon(flow.icon, 30, fColor)}
-                  </div>
+                    {/* macOS Squircle Icon Container */}
+                    <div
+                      className="mac-dock-squircle"
+                      style={{
+                        position: 'relative',
+                        width: isMobileScreen ? '48px' : '56px',
+                        height: isMobileScreen ? '48px' : '56px',
+                        borderRadius: isMobileScreen ? '13px' : '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: darkMode
+                          ? `linear-gradient(145deg, ${fColor}25 0%, rgba(15, 23, 42, 0.8) 100%)`
+                          : `linear-gradient(145deg, #ffffff 0%, ${fColor}15 100%)`,
+                        border: `1.5px solid ${fColor}60`,
+                        color: fColor,
+                        boxShadow: `0 4px 14px ${fColor}30, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+                      }}
+                    >
+                      {resolveIcon(flow.icon, isMobileScreen ? 22 : 26, fColor)}
+                    </div>
 
-                  {/* Free-Floating Typography Labels */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                    <span
+                    {/* Active Running Indicator Dot */}
+                    <div
                       style={{
-                        fontSize: '13px',
-                        fontWeight: 800,
-                        color: darkMode ? '#ffffff' : '#0f172a',
-                        fontFamily: "'Tajawal', sans-serif",
-                        lineHeight: 1.3,
-                        textAlign: 'center',
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        backgroundColor: fColor,
+                        boxShadow: `0 0 6px ${fColor}`,
+                        opacity: 0.9,
                       }}
-                    >
-                      {flow.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '10.5px',
-                        fontWeight: 600,
-                        color: darkMode ? '#94a3b8' : '#64748b',
-                        lineHeight: 1.2,
-                        textAlign: 'center',
-                        maxWidth: '115px',
-                      }}
-                    >
-                      {targetDept}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                    />
+
+                    {/* Single Row Typography Label */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                      <span
+                        style={{
+                          fontSize: isMobileScreen ? '11px' : '12px',
+                          fontWeight: 800,
+                          color: darkMode ? '#ffffff' : '#0f172a',
+                          fontFamily: "'Tajawal', sans-serif",
+                          lineHeight: 1.2,
+                          textAlign: 'center',
+                          width: '100%',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {flow.title}
+                      </span>
+                      {!isMobileScreen && (
+                        <span
+                          style={{
+                            fontSize: '9.5px',
+                            fontWeight: 600,
+                            color: darkMode ? '#94a3b8' : '#64748b',
+                            lineHeight: 1.1,
+                            textAlign: 'center',
+                            width: '100%',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {targetDept}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Mobile Swipe Hint */}
+            {isMobileScreen && requests.length > 4 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  fontSize: '9.5px',
+                  fontWeight: 600,
+                  color: darkMode ? '#94a3b8' : '#64748b',
+                  fontFamily: "'Cairo', sans-serif",
+                  marginTop: '1px',
+                }}
+              >
+                <span>↔ اسحب لاختيار نوع الطلب ({requests.length})</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3486,6 +3709,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         gap: '12px',
                         alignItems: 'start',
                         overflow: 'visible',
+                        minHeight: isMobileScreen ? '175px' : 'auto',
                       }}
                     >
                       {stageFieldsToRender.map((field) => {
@@ -3565,6 +3789,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                   formData={formData}
                                   onFieldChange={handleFieldChange}
                                   effectiveDynamicFields={effectiveDynamicFields}
+                                  onAutoAdvance={handleAutoAdvance}
                                   darkMode={darkMode}
                                   flowColor={flowColor}
                                 />
@@ -3603,6 +3828,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                                 field={fieldToRender}
                                 value={formData[field.name] || ''}
                                 onChange={v => handleFieldChange(field.name, v)}
+                                onAutoAdvance={handleAutoAdvance}
                                 darkMode={darkMode}
                                 allFormData={formData}
                               />
@@ -3694,35 +3920,35 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                   {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار - تصميم تذكرة طيران مؤسسية فاخرة */}
                   {currentStep === totalStages && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobileScreen ? '8px' : '12px' }}>
                       {/* Executive Status Banner */}
                       <div style={{
-                        padding: '12px 16px',
+                        padding: isMobileScreen ? '8px 12px' : '12px 16px',
                         borderRadius: '10px',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         border: '1.5px solid rgba(16, 185, 129, 0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        gap: '12px',
+                        gap: '8px',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 800, color: '#34d399' }}>
-                          <ShieldCheck size={18} />
-                          <span>اكتملت بيانات المعاملة الرسمية: جاهزة للمصادقة وتوليد القيد الرقمي</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: isMobileScreen ? '11px' : '12px', fontWeight: 800, color: '#34d399' }}>
+                          <ShieldCheck size={isMobileScreen ? 15 : 18} />
+                          <span>{isMobileScreen ? 'جاهزة للمصادقة وتوليد القيد' : 'اكتملت بيانات المعاملة الرسمية: جاهزة للمصادقة وتوليد القيد الرقمي'}</span>
                         </div>
                         <div style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
-                          padding: '3px 10px',
+                          gap: '4px',
+                          padding: '2px 8px',
                           borderRadius: '6px',
                           backgroundColor: darkMode ? 'rgba(0,0,0,0.3)' : '#ffffff',
                           border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
-                          fontSize: '11px',
+                          fontSize: isMobileScreen ? '10px' : '11px',
                           color: darkMode ? '#38bdf8' : '#0284c7',
                           fontWeight: 800,
                         }}>
-                          <Hash size={13} />
+                          <Hash size={12} />
                           <span>{previewSerial}</span>
                         </div>
                       </div>
@@ -3735,6 +3961,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1',
                         boxShadow: darkMode ? '0 10px 30px rgba(0,0,0,0.5)' : '0 8px 24px rgba(30,58,82,0.08)',
                         overflow: 'hidden',
+                        maxHeight: isMobileScreen ? '220px' : 'none',
+                        overflowY: isMobileScreen ? 'auto' : 'visible',
                       }}>
                         {/* Top Header Strip with Flow Color */}
                         <div style={{
@@ -3745,7 +3973,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                         {/* Ticket Header */}
                         <div style={{
-                          padding: '14px 18px',
+                          padding: isMobileScreen ? '10px 12px' : '14px 18px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -3791,10 +4019,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                         {/* Highlights Bento Row (Taxonomy, Schedule, Delegate, Attachment) */}
                         <div style={{
-                          padding: '14px 18px',
+                          padding: isMobileScreen ? '10px 12px' : '14px 18px',
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                          gap: '10px',
+                          gridTemplateColumns: isMobileScreen ? '1fr' : 'repeat(auto-fit, minmax(210px, 1fr))',
+                          gap: '8px',
                         }}>
                           {/* 1. Taxonomy Main & Sub */}
                           {formData.taxonomyMain && (
@@ -3975,10 +4203,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
 
                         {/* Detailed Form Fields Grid */}
                         <div style={{
-                          padding: '16px 18px',
+                          padding: isMobileScreen ? '10px 12px' : '16px 18px',
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                          gap: '10px',
+                          gridTemplateColumns: isMobileScreen ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: isMobileScreen ? '6px' : '10px',
                         }}>
                           {selectedFlow.fields.map(f => {
                             if (['taxonomyMain', 'taxonomySub', 'scheduleEngine', 'delegateUser', 'attachment'].includes(f.name)) return null;
@@ -4098,7 +4326,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                      width: isMobileScreen ? '100%' : 'auto',
+                      justifyContent: isMobileScreen ? 'stretch' : 'flex-end',
+                    }}>
                       {currentStep < totalStages && (
                         <button
                           type="button"
@@ -4115,10 +4350,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             gap: '8px',
                             boxShadow: '0 4px 14px rgba(19, 93, 121, 0.25), inset 0 1px 0 rgba(255,255,255,0.25)',
                             fontFamily: "'Cairo', sans-serif",
                             transition: 'all 0.15s ease',
+                            width: isMobileScreen ? '100%' : 'auto',
                           }}
                         >
                           <span>متابعة للمرحلة التالية ({currentStep + 1}/{totalStages})</span>
@@ -4132,7 +4369,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           onClick={handleTearAndSubmit}
                           disabled={loading || tearState !== 'idle'}
                           style={{
-                            minHeight: '42px',
+                            minHeight: '44px',
                             padding: '10px 26px',
                             borderRadius: '8px',
                             background: '#135d79',
@@ -4143,10 +4380,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             gap: '8px',
                             boxShadow: '0 4px 16px rgba(19, 93, 121, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                             fontFamily: "'Cairo', sans-serif",
                             transition: 'all 0.15s ease',
+                            width: isMobileScreen ? '100%' : 'auto',
                           }}
                         >
                           <Send size={15} />

@@ -461,7 +461,7 @@ html, body {
     padding: 0 8px !important;
   }
   .app-shell-main {
-    padding: 72px 10px 85px !important;
+    padding: 0 8px 12px !important;
   }
   .hide-on-mobile {
     display: none !important;
