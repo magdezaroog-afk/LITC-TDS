@@ -23,7 +23,7 @@ import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut, Layers } from 'lucide-react';
+import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut, Layers, Smartphone } from 'lucide-react';
 import { NexusTdsBrand } from './components/brand/NexusTdsBrand';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
@@ -123,6 +123,7 @@ const Navigation: React.FC = () => {
   const [hasOpsInterface, setHasOpsInterface] = React.useState<boolean>(false);
   const [isSearchFocused, setIsSearchFocused] = React.useState<boolean>(false);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [isS25ModalOpen, setIsS25ModalOpen] = React.useState<boolean>(false);
   const [isDark, setIsDark] = React.useState<boolean>(() => {
     if (typeof document !== 'undefined') {
       return (
@@ -472,6 +473,30 @@ const Navigation: React.FC = () => {
                   <span>🌐</span>
                   <span>{language === 'ar' ? 'English' : 'عربي'}</span>
                 </button>
+                <button
+                  onClick={() => setIsS25ModalOpen(true)}
+                  title="محاكي سامسونج جالاكسي S25 ألترا (412 × 915 px)"
+                  style={{
+                    background: isDark
+                      ? 'linear-gradient(135deg, rgba(243, 108, 33, 0.16) 0%, rgba(19, 93, 121, 0.2) 100%)'
+                      : 'linear-gradient(135deg, rgba(243, 108, 33, 0.08) 0%, rgba(19, 93, 121, 0.08) 100%)',
+                    border: isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.35)',
+                    color: isDark ? '#fb923c' : '#ea580c',
+                    padding: '6px 11px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontWeight: 800,
+                    fontSize: '11px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.18s ease',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}
+                >
+                  <Smartphone size={13} strokeWidth={2.4} />
+                  <span>معاينة S25 Ultra</span>
+                </button>
                 <div style={{ width: '1px', height: '22px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(19, 93, 121, 0.12)', margin: '0 2px' }} />
                 <UnifiedProfileDropdown currentUserRole={user?.role || 'EMPLOYEE'} />
               </>
@@ -784,6 +809,136 @@ const Navigation: React.FC = () => {
           </div>
           <span>المزيد</span>
         </button>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          4. SAMSUNG GALAXY S25 ULTRA INTERACTIVE SIMULATOR (412 × 915 px)
+          ══════════════════════════════════════════════════════════ */}
+      {isS25ModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100000,
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsS25ModalOpen(false);
+          }}
+        >
+          {/* Simulator Bar Controls */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '436px',
+              maxWidth: '95vw',
+              marginBottom: '10px',
+              color: '#ffffff',
+              fontFamily: "'Cairo', sans-serif",
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 800 }}>📱 سامسونج جالاكسي S25 ألترا</span>
+              <span style={{
+                fontSize: '10px',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(243, 108, 33, 0.25)',
+                border: '1px solid #f36c21',
+                color: '#fb923c',
+                fontWeight: 800,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                412 × 915 px
+              </span>
+            </div>
+            <button
+              onClick={() => setIsS25ModalOpen(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                color: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              title="إغلاق المحاكي"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* S25 Ultra Titanium Frame Chassis */}
+          <div
+            style={{
+              width: '436px',
+              height: '935px',
+              maxHeight: 'calc(100vh - 65px)',
+              borderRadius: '44px',
+              backgroundColor: '#1e293b',
+              padding: '10px 12px',
+              boxShadow: '0 25px 80px rgba(0, 0, 0, 0.95), 0 0 0 2.5px rgba(148, 163, 184, 0.4)',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Top Punch-hole Camera */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '15px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '11px',
+                height: '11px',
+                borderRadius: '50%',
+                backgroundColor: '#020617',
+                border: '1.5px solid #334155',
+                zIndex: 60,
+                boxShadow: 'inset 0 0 2px rgba(255, 255, 255, 0.3)',
+              }}
+            />
+
+            {/* Screen Viewport with live iframe (412 × 915) */}
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '34px',
+                overflow: 'hidden',
+                backgroundColor: isDark ? '#0b141f' : '#f8fafc',
+                position: 'relative',
+              }}
+            >
+              <iframe
+                src="/requests"
+                title="Samsung Galaxy S25 Ultra Screen"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
