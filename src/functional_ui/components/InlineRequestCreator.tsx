@@ -435,7 +435,7 @@ function StageCircularOptionButton({
   );
 }
 
-// ── 2026 Mobile Single-Row Horizontal Scrollable Options Track (Fluid Swipe & Momentum) ──
+// ── 2026 Single-Row Fluid Options Track with Glassmorphic Left/Right Nav Arrows ──
 function MobileScrollableOptionsTrack({
   children,
   totalCount,
@@ -449,72 +449,106 @@ function MobileScrollableOptionsTrack({
   darkMode?: boolean;
   accentColor?: string;
 }) {
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 840 : false);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 840);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleScroll = (dir: 'left' | 'right') => {
     if (!trackRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - trackRef.current.offsetLeft);
-    setScrollLeft(trackRef.current.scrollLeft);
+    const delta = dir === 'left' ? -220 : 220;
+    trackRef.current.scrollBy({ left: delta, behavior: 'smooth' });
   };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !trackRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - trackRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    trackRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleMouseUpOrLeave = () => {
-    setIsDragging(false);
-  };
-
-  if (!isMobile) {
-    return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', paddingTop: '4px', width: '100%' }}>
-        {children}
-      </div>
-    );
-  }
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <div
-        ref={trackRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
-        style={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'nowrap',
-          alignItems: 'flex-start',
-          gap: '12px',
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          scrollbarWidth: 'none',
-          padding: '6px 4px 10px',
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x',
-          boxSizing: 'border-box',
-          cursor: isDragging ? 'grabbing' : 'grab',
-          userSelect: isDragging ? 'none' : 'auto',
-        }}
-      >
-        {children}
+    <div style={{ width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+        {/* Right Arrow (Scroll towards Right) */}
+        {totalCount > 3 && (
+          <button
+            type="button"
+            onClick={() => handleScroll('right')}
+            title="تحريك لليمين"
+            style={{
+              position: 'absolute',
+              right: '-6px',
+              top: '40%',
+              transform: 'translateY(-50%)',
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
+              color: darkMode ? '#ffffff' : '#0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
+
+        {/* The Scrollable Track (Strictly Single Row on All Screen Sizes) */}
+        <div
+          ref={trackRef}
+          style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'nowrap',
+            alignItems: 'flex-start',
+            justifyContent: totalCount <= 4 ? 'center' : 'flex-start',
+            gap: '12px',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            scrollbarWidth: 'none',
+            padding: '8px 6px 12px',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x',
+            boxSizing: 'border-box',
+            scrollBehavior: 'smooth',
+          }}
+        >
+          {children}
+        </div>
+
+        {/* Left Arrow (Scroll towards Left) */}
+        {totalCount > 3 && (
+          <button
+            type="button"
+            onClick={() => handleScroll('left')}
+            title="تحريك لليسار"
+            style={{
+              position: 'absolute',
+              left: '-6px',
+              top: '40%',
+              transform: 'translateY(-50%)',
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
+              color: darkMode ? '#ffffff' : '#0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
       </div>
 
       {totalCount > 3 && (
@@ -528,7 +562,7 @@ function MobileScrollableOptionsTrack({
           fontFamily: "'Cairo', sans-serif",
           marginTop: '1px'
         }}>
-          <span>↔ اسحب للتنقل بين الـ {itemName} ({totalCount})</span>
+          <span>↔ اسحب أو اضغط الأسهم للتنقل ({totalCount} {itemName})</span>
         </div>
       )}
     </div>
@@ -2759,26 +2793,52 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   // ── Smart Dynamic Stages Architecture (Supports Admin Custom Configuration or Logical Standards) ──
   const adminStages = (selectedFlow as any)?.formConfig?.stages as RouteFormStage[] | undefined;
 
+  // Filter out any admin stages whose fields are ALL bound as child in-place fields
+  const effectiveAdminStages = useMemo(() => {
+    if (!selectedFlow || !adminStages || adminStages.length === 0) return undefined;
+    const hasDept = selectedFlow.fields.some(sf => sf.name === 'department');
+    const hasTaxMain = selectedFlow.fields.some(sf => sf.name === 'taxonomyMain');
+
+    const valid = adminStages.filter(stg => {
+      if (!stg.fieldNames || stg.fieldNames.length === 0) return false;
+      return stg.fieldNames.some((fName: string) => {
+        if (hasDept && (fName === 'division' || fName === 'team')) return false;
+        if (hasTaxMain && fName === 'taxonomySub') return false;
+        if (fName.startsWith('dyn_')) {
+          const dynId = fName.replace('dyn_', '');
+          const isBoundAsChild = effectiveDynamicFields.some(df =>
+            df.childBindings?.some((b: any) => b.childFieldId === dynId) ||
+            df.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId === dynId || o.childFieldId === dynId))
+          );
+          if (isBoundAsChild) return false;
+        }
+        return selectedFlow.fields.some(f => f.name === fName);
+      });
+    });
+
+    return valid.length > 0 ? valid : undefined;
+  }, [selectedFlow, adminStages, effectiveDynamicFields]);
+
   const totalStages = useMemo(() => {
     if (!selectedFlow) return 2;
     // If Admin defined custom stages in route builder:
-    if (adminStages && adminStages.length > 0) {
-      return adminStages.length + 1; // Stages + Final Ticket Review
+    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
+      return effectiveAdminStages.length + 1; // Stages + Final Ticket Review
     }
     // Default standard criteria:
     return selectedFlow.fields.length > 3 ? 3 : 2;
-  }, [selectedFlow, adminStages]);
+  }, [selectedFlow, effectiveAdminStages]);
 
   const currentStageDefinition = useMemo(() => {
     if (!selectedFlow) return null;
-    if (adminStages && adminStages.length > 0) {
-      if (currentStep <= adminStages.length) {
-        return adminStages[currentStep - 1];
+    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
+      if (currentStep <= effectiveAdminStages.length) {
+        return effectiveAdminStages[currentStep - 1];
       }
       return { id: 'final', title: 'مراجعة التذكرة والاعتماد', fieldNames: [] };
     }
     return null;
-  }, [selectedFlow, adminStages, currentStep]);
+  }, [selectedFlow, effectiveAdminStages, currentStep]);
 
   const currentOptionBehavior = useMemo(() => {
     return getOptionBehavior(formData, (selectedFlow as any)?.formConfig);
@@ -2832,9 +2892,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     });
 
     // 1. If Admin configured custom stages:
-    if (adminStages && adminStages.length > 0) {
-      if (currentStep > adminStages.length) return []; // Final review
-      const cfg = adminStages[currentStep - 1];
+    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
+      if (currentStep > effectiveAdminStages.length) return []; // Final review
+      const cfg = effectiveAdminStages[currentStep - 1];
       return all.filter(f => cfg.fieldNames.includes(f.name));
     }
 
@@ -3179,200 +3239,195 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
 
-      {/* ═══ 1. FLOATING CIRCULAR SERVICE DISCS OVER A SLEEK LUMINOUS RAIL (أيقونات دائرية تطفو فوق لاين سافا بدون مستطيل) ═══ */}
-      {!selectedFlow && tearState === 'idle' && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-            padding: isMobileScreen ? '4px 0 12px' : '6px 0 16px',
-            position: 'relative',
-          }}
-        >
-          <style>{`
-            @keyframes etherealLevitate {
-              0%, 100% {
-                transform: translateY(0px);
-              }
-              50% {
-                transform: translateY(-7px);
-              }
-            }
-            .service-floating-circle-btn {
-              animation: etherealLevitate 3.6s ease-in-out infinite;
-              transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease !important;
-            }
-            .service-floating-circle-btn:hover, .service-floating-circle-btn:active {
-              animation-play-state: paused !important;
-              transform: translateY(-11px) scale(1.15) !important;
-            }
-            .service-circular-disc {
-              transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            }
-            .service-floating-circle-btn:hover .service-circular-disc,
-            .service-floating-circle-btn:active .service-circular-disc {
-              box-shadow: 0 14px 32px var(--flow-glow) !important;
-              border-color: var(--flow-color) !important;
-            }
-          `}</style>
+      {/* ═══ 1. PERMANENT UPPER LUMINOUS OPTICAL RAIL LINE (خط ضوئي علوي ثابت دائماً يعلو المحتوى) ═══ */}
+      <div
+        style={{
+          width: isMobileScreen ? '96%' : '90%',
+          maxWidth: '920px',
+          height: sinkingFlowId ? '3px' : '2px',
+          background: selectedFlow
+            ? `linear-gradient(90deg, transparent, ${flowColor}80 20%, ${flowColor} 50%, ${flowColor}80 80%, transparent)`
+            : (sinkingFlowId
+                ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
+                : (darkMode
+                    ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                    : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)')),
+          boxShadow: selectedFlow
+            ? `0 0 16px ${flowColor}80, 0 0 28px ${flowColor}40`
+            : (sinkingFlowId
+                ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
+                : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)')),
+          position: 'relative',
+          zIndex: 4,
+          pointerEvents: 'none',
+          transition: 'all 0.3s ease',
+        }}
+      />
 
-          {/* Single Row Horizontal Scrollable Track (Strictly Single Row on Mobile) */}
-          <div
-            style={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative',
-              alignItems: 'center',
-            }}
-          >
-            {/* The Sleek Luminous Optical Rail Line (أعلى مسارات الطلبات وليس أسفلها) */}
-            <div
-              style={{
-                width: isMobileScreen ? '96%' : '90%',
-                maxWidth: '920px',
-                height: sinkingFlowId ? '3px' : '2px',
-                background: sinkingFlowId
-                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
-                  : (darkMode
-                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
-                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
-                boxShadow: sinkingFlowId
-                  ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
-                  : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
-                position: 'relative',
-                marginBottom: isMobileScreen ? '-10px' : '-14px',
-                zIndex: 4,
-                pointerEvents: 'none',
-                transition: 'all 0.25s ease',
-              }}
-            />
+      <style>{`
+        @keyframes etherealLevitate {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-7px);
+          }
+        }
+        .service-floating-circle-btn {
+          animation: etherealLevitate 3.6s ease-in-out infinite;
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease !important;
+        }
+        .service-floating-circle-btn:hover, .service-floating-circle-btn:active {
+          animation-play-state: paused !important;
+          transform: translateY(-11px) scale(1.15) !important;
+        }
+        .service-circular-disc {
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .service-floating-circle-btn:hover .service-circular-disc,
+        .service-floating-circle-btn:active .service-circular-disc {
+          box-shadow: 0 14px 32px var(--flow-glow) !important;
+          border-color: var(--flow-color) !important;
+        }
+      `}</style>
 
-            {/* The Horizontal Rail Container (Single Row with Free Smooth Touch Swiping) */}
-            <div
+      {/* ═══ 2. IN-PLACE WORKSPACE BAY (المراحل تظهر مكان الأيقونات تماماً بين الخطين وبدون بطاقة منفصلة) ═══ */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '940px',
+          position: 'relative',
+          zIndex: 2,
+          minHeight: '110px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <AnimatePresence mode="wait">
+          {!selectedFlow && tearState === 'idle' ? (
+            /* ── VIEW A: FLOATING CIRCULAR SERVICE DISCS (أيقونات المسارات تطفو بين الخطين) ── */
+            <motion.div
+              key="service_discs_view"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              transition={{ duration: 0.24 }}
               style={{
                 width: '100%',
                 display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'nowrap',
-                alignItems: 'flex-start',
-                justifyContent: isMobileScreen ? 'flex-start' : (requests.length <= 6 ? 'center' : 'flex-start'),
-                gap: isMobileScreen ? '14px' : '22px',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                scrollBehavior: 'smooth',
-                scrollbarWidth: 'none',
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-x',
-                padding: isMobileScreen ? '10px 12px 14px' : '14px 18px 18px',
-                position: 'relative',
-                zIndex: 2,
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: isMobileScreen ? '4px 0 8px' : '6px 0 12px',
               }}
             >
-              {requests.map((flow, idx) => {
-                const fColor = flow.color || '#38bdf8';
-                const block = canCreateRequest(flow.id);
-                const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
-                const isThisSinking = sinkingFlowId === flow.id;
-                const isAnySinking = Boolean(sinkingFlowId);
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flexWrap: 'nowrap',
+                  alignItems: 'flex-start',
+                  justifyContent: isMobileScreen ? 'flex-start' : (requests.length <= 6 ? 'center' : 'flex-start'),
+                  gap: isMobileScreen ? '14px' : '22px',
+                  overflowX: 'auto',
+                  overflowY: 'visible',
+                  scrollBehavior: 'smooth',
+                  scrollbarWidth: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-x',
+                  padding: isMobileScreen ? '10px 12px 14px' : '14px 18px 18px',
+                  position: 'relative',
+                  zIndex: 2,
+                }}
+              >
+                {requests.map((flow, idx) => {
+                  const fColor = flow.color || '#38bdf8';
+                  const block = canCreateRequest(flow.id);
+                  const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+                  const isThisSinking = sinkingFlowId === flow.id;
+                  const isAnySinking = Boolean(sinkingFlowId);
 
-                return (
-                  <button
-                    key={flow.id}
-                    type="button"
-                    disabled={!block.allowed || isAnySinking}
-                    onClick={() => block.allowed && !isAnySinking && handleSelectFlow(flow)}
-                    className="service-floating-circle-btn"
-                    title={flow.title}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
-                      opacity: isThisSinking ? 0 : (isAnySinking ? 0.2 : (block.allowed ? 1 : 0.45)),
-                      transform: isThisSinking
-                        ? 'translateY(24px) scale(0.55)'
-                        : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
-                      transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1)',
-                      pointerEvents: isAnySinking ? 'none' : 'auto',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: isMobileScreen ? '72px' : '92px',
-                      outline: 'none',
-                      flexShrink: 0,
-                      textAlign: 'center',
-                      animationDelay: `${idx * 0.22}s`,
-                      userSelect: 'none',
-                      position: 'relative',
-                      ...({ '--flow-color': fColor, '--flow-glow': `${fColor}60` } as any),
-                    }}
-                  >
-                    {/* Luminous Connector Node onto the Top Rail */}
-                    <div
+                  return (
+                    <button
+                      key={flow.id}
+                      type="button"
+                      disabled={!block.allowed || isAnySinking}
+                      onClick={() => block.allowed && !isAnySinking && handleSelectFlow(flow)}
+                      className="service-floating-circle-btn"
+                      title={flow.title}
                       style={{
-                        width: '5px',
-                        height: '5px',
-                        borderRadius: '50%',
-                        backgroundColor: fColor,
-                        boxShadow: `0 0 8px ${fColor}`,
-                        opacity: 0.9,
-                        marginBottom: '-4px',
-                        zIndex: 4,
-                      }}
-                    />
-
-                    {/* Floating Circular Glass Disc */}
-                    <div
-                      className="service-circular-disc"
-                      style={{
-                        position: 'relative',
-                        width: isMobileScreen ? '52px' : '62px',
-                        height: isMobileScreen ? '52px' : '62px',
-                        borderRadius: '50%',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
+                        opacity: isThisSinking ? 0 : (isAnySinking ? 0.2 : (block.allowed ? 1 : 0.45)),
+                        transform: isThisSinking
+                          ? 'translateY(24px) scale(0.55)'
+                          : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
+                        transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1)',
+                        pointerEvents: isAnySinking ? 'none' : 'auto',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        background: darkMode
-                          ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.16) 0%, ${fColor}25 50%, rgba(15, 23, 42, 0.85) 100%)`
-                          : `radial-gradient(circle at 35% 35%, #ffffff 0%, ${fColor}18 60%, rgba(241, 245, 249, 0.95) 100%)`,
-                        border: `2px solid ${fColor}55`,
-                        color: fColor,
-                        boxShadow: `0 8px 24px ${fColor}35, inset 0 1.5px 2px rgba(255, 255, 255, 0.35)`,
-                        zIndex: 3,
+                        gap: '8px',
+                        width: isMobileScreen ? '72px' : '92px',
+                        outline: 'none',
+                        flexShrink: 0,
+                        textAlign: 'center',
+                        animationDelay: `${idx * 0.22}s`,
+                        userSelect: 'none',
+                        position: 'relative',
+                        ...({ '--flow-color': fColor, '--flow-glow': `${fColor}60` } as any),
                       }}
                     >
-                      {resolveIcon(flow.icon, isMobileScreen ? 24 : 28, fColor)}
-                    </div>
-
-                    {/* Free-Floating Typography Label */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '2px' }}>
-                      <span
+                      {/* Luminous Connector Node onto the Top Rail */}
+                      <div
                         style={{
-                          fontSize: isMobileScreen ? '11px' : '12.5px',
-                          fontWeight: 800,
-                          color: darkMode ? '#ffffff' : '#0f172a',
-                          fontFamily: "'Tajawal', sans-serif",
-                          lineHeight: 1.25,
-                          textAlign: 'center',
-                          width: '100%',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          width: '5px',
+                          height: '5px',
+                          borderRadius: '50%',
+                          backgroundColor: fColor,
+                          boxShadow: `0 0 8px ${fColor}`,
+                          opacity: 0.9,
+                          marginBottom: '-4px',
+                          zIndex: 4,
+                        }}
+                      />
+
+                      {/* Floating Circular Glass Disc */}
+                      <div
+                        className="service-circular-disc"
+                        style={{
+                          position: 'relative',
+                          width: isMobileScreen ? '52px' : '62px',
+                          height: isMobileScreen ? '52px' : '62px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: darkMode
+                            ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.16) 0%, ${fColor}25 50%, rgba(15, 23, 42, 0.85) 100%)`
+                            : `radial-gradient(circle at 35% 35%, #ffffff 0%, ${fColor}18 60%, rgba(241, 245, 249, 0.95) 100%)`,
+                          border: `2px solid ${fColor}55`,
+                          color: fColor,
+                          boxShadow: `0 8px 24px ${fColor}35, inset 0 1.5px 2px rgba(255, 255, 255, 0.35)`,
+                          zIndex: 3,
                         }}
                       >
-                        {flow.title}
-                      </span>
-                      {!isMobileScreen && (
+                        {resolveIcon(flow.icon, isMobileScreen ? 24 : 28, fColor)}
+                      </div>
+
+                      {/* Free-Floating Typography Label */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '2px' }}>
                         <span
                           style={{
-                            fontSize: '9.5px',
-                            fontWeight: 600,
-                            color: darkMode ? '#94a3b8' : '#64748b',
-                            lineHeight: 1.1,
+                            fontSize: isMobileScreen ? '11px' : '12.5px',
+                            fontWeight: 800,
+                            color: darkMode ? '#ffffff' : '#0f172a',
+                            fontFamily: "'Tajawal', sans-serif",
+                            lineHeight: 1.25,
                             textAlign: 'center',
                             width: '100%',
                             whiteSpace: 'nowrap',
@@ -3380,97 +3435,76 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {targetDept}
+                          {flow.title}
                         </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* The Matching Lower Luminous Optical Rail Line (خط ضوئي أسفل مسارات الطلبات ينزل قليلاً بنعومة عند الاختيار) */}
-            <div
-              style={{
-                width: isMobileScreen ? '96%' : '90%',
-                maxWidth: '920px',
-                height: sinkingFlowId ? '3px' : '2px',
-                background: sinkingFlowId
-                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
-                  : (darkMode
-                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
-                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
-                boxShadow: sinkingFlowId
-                  ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
-                  : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
-                position: 'relative',
-                marginTop: isMobileScreen ? '-6px' : '-8px',
-                transform: sinkingFlowId ? 'translateY(24px)' : 'none',
-                opacity: sinkingFlowId ? 0.7 : 1,
-                zIndex: 4,
-                pointerEvents: 'none',
-                transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s ease, background 0.25s ease, box-shadow 0.25s ease',
-              }}
-            />
-
-            {/* Mobile Swipe Hint */}
-            {isMobileScreen && requests.length > 4 && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  fontSize: '9.5px',
-                  fontWeight: 600,
-                  color: darkMode ? '#94a3b8' : '#64748b',
-                  fontFamily: "'Cairo', sans-serif",
-                  marginTop: '6px',
-                  marginBottom: '10px',
-                }}
-              >
-                <span>↔ اسحب لاختيار نوع الطلب ({requests.length})</span>
+                        {!isMobileScreen && (
+                          <span
+                            style={{
+                              fontSize: '9.5px',
+                              fontWeight: 600,
+                              color: darkMode ? '#94a3b8' : '#64748b',
+                              lineHeight: 1.1,
+                              textAlign: 'center',
+                              width: '100%',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {targetDept}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ═══ 2. CONSOLE WORKSPACE BAY (خلفية شبه لا توجد بلمسات زجاجية خفيفة وانتقال ناعم من أسفل لأعلى) ═══ */}
-      <AnimatePresence>
-        {selectedFlow && (
-          <motion.div
-            initial={{ opacity: 0, y: 35, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 25, scale: 0.98 }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              width: '100%',
-              maxWidth: '940px',
-              overflow: 'visible',
-              background: isMobileScreen
-                ? (darkMode
-                    ? `radial-gradient(ellipse at 50% -10%, ${flowColor}15 0%, rgba(11, 20, 31, 0.3) 70%, transparent 100%)`
-                    : `radial-gradient(ellipse at 50% -10%, ${flowColor}10 0%, rgba(255, 255, 255, 0.45) 70%, transparent 100%)`)
-                : (darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff'),
-              borderRadius: isMobileScreen ? '20px' : '24px',
-              border: isMobileScreen
-                ? 'none'
-                : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1'),
-              padding: isMobileScreen ? '14px 8px' : '20px 22px',
-              boxShadow: isMobileScreen
-                ? (darkMode
-                    ? `0 12px 36px -10px rgba(0, 0, 0, 0.5), 0 0 25px -4px ${flowColor}30, inset 0 0 0 1px ${flowColor}20`
-                    : `0 12px 30px -10px rgba(19, 93, 121, 0.08), 0 0 22px -4px ${flowColor}25, inset 0 0 0 1px ${flowColor}22`)
-                : (darkMode ? '0 16px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(19, 93, 121, 0.08)'),
-              backdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
-              WebkitBackdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              zIndex: 45,
-            }}
-          >
+              {/* Mobile Swipe Hint */}
+              {isMobileScreen && requests.length > 4 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    fontSize: '9.5px',
+                    fontWeight: 600,
+                    color: darkMode ? '#94a3b8' : '#64748b',
+                    fontFamily: "'Cairo', sans-serif",
+                    marginTop: '2px',
+                    marginBottom: '4px',
+                  }}
+                >
+                  <span>↔ اسحب لاختيار نوع الطلب ({requests.length})</span>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            /* ── VIEW B: ACTIVE ROUTE STAGES IN-PLACE (تظهر مراحل المسار بانسيابية مكان الأيقونات بين الخطين) ── */
+            <motion.div
+              key={`active_flow_${selectedFlow?.id || 'dispenser'}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                width: '100%',
+                maxWidth: '940px',
+                overflow: 'visible',
+                background: 'transparent',
+                borderRadius: '0px',
+                border: 'none',
+                padding: isMobileScreen ? '8px 4px 12px' : '12px 8px 16px',
+                boxShadow: 'none',
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+                zIndex: 45,
+              }}
+            >
             {tearState === 'idle' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* Step Header: 2-Tier Linear/Stripe Enterprise Segmented Stepper */}
@@ -3570,8 +3604,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           const stepNum = idx + 1;
                           const isPassed = currentStep > stepNum;
                           const isActive = currentStep === stepNum;
-                          const stageTitle = adminStages && adminStages[stepNum - 1]
-                            ? adminStages[stepNum - 1].title
+                          const stageTitle = effectiveAdminStages && effectiveAdminStages[stepNum - 1]
+                            ? effectiveAdminStages[stepNum - 1].title
                             : (stepNum === 1 ? 'البيانات والتوجيه' : (stepNum === totalStages ? 'المراجعة والاعتماد' : 'المتطلبات والجدولة'));
 
                           return (
@@ -3633,8 +3667,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                           }}>
-                            {adminStages && adminStages[currentStep - 1]
-                              ? adminStages[currentStep - 1].title
+                            {effectiveAdminStages && effectiveAdminStages[currentStep - 1]
+                              ? effectiveAdminStages[currentStep - 1].title
                               : (currentStep === 1 ? 'البيانات الأساسية والتوجيه' : (currentStep === totalStages ? 'مراجعة التذكرة والاعتماد النهائي' : 'المتطلبات والجدولة'))}
                           </span>
                         </div>
@@ -4221,6 +4255,32 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
           )}
         </AnimatePresence>
       </div>
+
+      {/* ═══ 3. PERMANENT LOWER LUMINOUS OPTICAL RAIL LINE (خط ضوئي سفلي ثابت دائماً أسفل المحتوى) ═══ */}
+      <div
+        style={{
+          width: isMobileScreen ? '96%' : '90%',
+          maxWidth: '920px',
+          height: sinkingFlowId ? '3px' : '2px',
+          background: selectedFlow
+            ? `linear-gradient(90deg, transparent, ${flowColor}80 20%, ${flowColor} 50%, ${flowColor}80 80%, transparent)`
+            : (sinkingFlowId
+                ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
+                : (darkMode
+                    ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                    : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)')),
+          boxShadow: selectedFlow
+            ? `0 0 16px ${flowColor}80, 0 0 28px ${flowColor}40`
+            : (sinkingFlowId
+                ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
+                : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)')),
+          position: 'relative',
+          zIndex: 4,
+          pointerEvents: 'none',
+          transition: 'all 0.3s ease',
+        }}
+      />
+    </div>
   );
 }
 
