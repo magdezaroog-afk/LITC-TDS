@@ -957,24 +957,35 @@ export class FunctionalController {
         return res.status(400).json({ success: false, message: 'التقييم يجب أن يكون بين 1 و 5 نجوم' });
       }
 
-      // Verify the ticket exists and belongs to the user or admin
-      const ticket = await prisma.ticket.findFirst({
-        where: { id: ticketId, isDeleted: false }
+      // 1. التحقق من اكتمال المعاملة وإغلاقها أولاً من قبل الجهة المستقبلة قبل السماح للموظف بالتقييم
+      const ticketWithState = await prisma.ticket.findFirst({
+        where: { id: ticketId, isDeleted: false },
+        include: { state: true }
       });
-      if (!ticket) {
+      if (!ticketWithState) {
         return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
       }
 
-      const isOwner = ticket.creatorId === user.id;
+      const stateName = (ticketWithState.state?.name || '').toUpperCase();
+      const isResolvedOrClosed = ['RESOLVED', 'CLOSED', 'COMPLETED'].includes(stateName);
+      const isOwner = ticketWithState.creatorId === user.id;
       const isAdmin = user.roleId === 1 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+
       if (!isOwner && !isAdmin) {
         return res.status(403).json({ success: false, message: 'الطلب غير تابع لك' });
+      }
+
+      if (!isResolvedOrClosed && !isAdmin) {
+        return res.status(400).json({
+          success: false,
+          message: 'لا يمكن تقييم الطلب إلا بعد إنجازه واعتماده وإغلاقه أولاً من قبل الجهة المستقبلة المختصة.'
+        });
       }
 
       // التحقق من عدم وجود تذاكر فرعية مفتوحة قبل الإغلاق
       const openSubTickets = await prisma.ticket.count({
         where: {
-          parentId: ticket.id,
+          parentId: ticketWithState.id,
           isDeleted: false,
           state: { name: { notIn: ['CLOSED', 'RESOLVED'] } }
         }
@@ -996,21 +1007,21 @@ export class FunctionalController {
 
       // Upsert rating
       const savedRating = await prisma.ticketRating.upsert({
-        where: { ticketId: ticket.id },
+        where: { ticketId: ticketWithState.id },
         update: { rating: numRating, feedback: feedback || null },
-        create: { ticketId: ticket.id, rating: numRating, feedback: feedback || null }
+        create: { ticketId: ticketWithState.id, rating: numRating, feedback: feedback || null }
       });
 
       // Update ticket to CLOSED state
       await prisma.ticket.update({
-        where: { id: ticket.id },
+        where: { id: ticketWithState.id },
         data: { stateId: closedState.id }
       });
 
       // Add a journey log
       await prisma.ticketLog.create({
         data: {
-          ticketId: ticket.id,
+          ticketId: ticketWithState.id,
           action: `USER_RATED_AND_CLOSED: قام الموظف بتقييم الخدمة (${numRating} نجوم) وإغلاق التذكرة نهائياً.`
         }
       }).catch(() => {});
@@ -1019,13 +1030,259 @@ export class FunctionalController {
         success: true,
         message: 'تم تسجيل التقييم وإغلاق الطلب بنجاح',
         data: {
-          ticketId: ticket.id,
+          ticketId: ticketWithState.id,
           rating: savedRating.rating,
           feedback: savedRating.feedback,
           status: 'completed',
           statusName: 'CLOSED',
           statusLabel: closedState.label
         }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** POST /api/v1/functional/requests/:id/cancel — إلغاء الطلب المباشر قبل فتحه أو استلامه */
+  async cancelRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const cleanId = String(req.params.id || '').replace(/\D/g, '');
+      const ticketId = cleanId ? parseInt(cleanId) : NaN;
+      if (isNaN(ticketId)) return res.status(400).json({ success: false, message: 'Invalid ticket ID' });
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, isDeleted: false },
+        include: { state: true, assignments: { where: { isCurrentActive: true } } }
+      });
+      if (!ticket) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+
+      const isOwner = Number(ticket.creatorId) === Number(user.id);
+      const isAdmin = user.roleId === 1 || user.roleId === 22 || user.roleId === 2 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'غير مصرح لك بإلغاء هذا الطلب' });
+      }
+
+      // لا يعمل إلا عند طلب لم يتم استقباله أو فتحه إلى الآن
+      const stateName = (ticket.state?.name || '').toUpperCase();
+      const hasActiveTech = (ticket.assignments || []).length > 0;
+      const isUnopened = (stateName === 'PENDING' || stateName === 'NEW' || stateName === 'OPEN' || !stateName) && !hasActiveTech;
+
+      if (!isUnopened && !isAdmin) {
+        return res.status(400).json({
+          success: false,
+          message: 'لا يمكن الإلغاء المباشر؛ لقد تم فتح الطلب أو بدأت الإدارة في معالجته. يمكنك استخدام (طلب إلغاء المعاملة) بدلاً من ذلك.'
+        });
+      }
+
+      let cancelledState = await prisma.ticketState.findFirst({ where: { name: 'CANCELLED' } });
+      if (!cancelledState) {
+        cancelledState = await prisma.ticketState.create({
+          data: { name: 'CANCELLED', label: 'ملغي من قبل الموظف' }
+        });
+      }
+
+      await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { stateId: cancelledState.id }
+      });
+
+      await prisma.ticketLog.create({
+        data: {
+          ticketId: ticket.id,
+          action: `CANCELLED_DIRECTLY: قام الموظف بإلغاء الطلب مباشرة قبل استلامه أو فتحه من قبل الجهة المستقبلة.`
+        }
+      }).catch(() => {});
+
+      res.json({
+        success: true,
+        message: 'تم إلغاء الطلب بنجاح',
+        data: {
+          ticketId: ticket.id,
+          status: 'cancelled',
+          statusName: 'CANCELLED',
+          statusLabel: cancelledState.label
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** POST /api/v1/functional/requests/:id/request-cancel — طلب إلغاء المعاملة مع بيان السبب */
+  async requestCancellation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const cleanId = String(req.params.id || '').replace(/\D/g, '');
+      const ticketId = cleanId ? parseInt(cleanId) : NaN;
+      if (isNaN(ticketId)) return res.status(400).json({ success: false, message: 'Invalid ticket ID' });
+
+      const { reason, note } = req.body;
+      if (!reason || !String(reason).trim()) {
+        return res.status(400).json({ success: false, message: 'سبب طلب الإلغاء مطلوب' });
+      }
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, isDeleted: false }
+      });
+      if (!ticket) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+
+      const isOwner = Number(ticket.creatorId) === Number(user.id);
+      const isAdmin = user.roleId === 1 || user.roleId === 22 || user.roleId === 2 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'غير مصرح لك بإدارة هذا الطلب' });
+      }
+
+      let meta: any = {};
+      if (ticket.routingMetadata) {
+        try { meta = typeof ticket.routingMetadata === 'string' ? JSON.parse(ticket.routingMetadata) : ticket.routingMetadata; } catch {}
+      }
+
+      meta.cancellationRequest = {
+        requestedByUserId: user.id,
+        reason: String(reason).trim(),
+        note: note ? String(note).trim() : '',
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING_APPROVAL'
+      };
+
+      await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { routingMetadata: JSON.stringify(meta) }
+      });
+
+      await prisma.ticketLog.create({
+        data: {
+          ticketId: ticket.id,
+          action: `CANCELLATION_REQUESTED: طلب الموظف إلغاء التذكرة (السبب: ${reason}${note ? ` • تفاصيل: ${note}` : ''}) • بانتظار قرار مستلم الطلب أو المخولين بالإغلاق.`
+        }
+      }).catch(() => {});
+
+      res.json({
+        success: true,
+        message: 'تم إرسال طلب إلغاء المعاملة بنجاح إلى الجهة المستقبلة للاعتماد',
+        data: { cancellationRequest: meta.cancellationRequest }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** POST /api/v1/functional/requests/:id/request-postpone — طلب تأجيل موعد حل المشكلة */
+  async requestPostponement(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const cleanId = String(req.params.id || '').replace(/\D/g, '');
+      const ticketId = cleanId ? parseInt(cleanId) : NaN;
+      if (isNaN(ticketId)) return res.status(400).json({ success: false, message: 'Invalid ticket ID' });
+
+      const { reason, note, expectedCompletionDate, isManualResume } = req.body;
+      if (!reason || !String(reason).trim()) {
+        return res.status(400).json({ success: false, message: 'سبب طلب التأجيل مطلوب' });
+      }
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, isDeleted: false }
+      });
+      if (!ticket) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+
+      const isOwner = Number(ticket.creatorId) === Number(user.id);
+      const isAdmin = user.roleId === 1 || user.roleId === 22 || user.roleId === 2 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'غير مصرح لك بإدارة هذا الطلب' });
+      }
+
+      let meta: any = {};
+      if (ticket.routingMetadata) {
+        try { meta = typeof ticket.routingMetadata === 'string' ? JSON.parse(ticket.routingMetadata) : ticket.routingMetadata; } catch {}
+      }
+
+      meta.postponement = {
+        requestedByUserId: user.id,
+        reason: String(reason).trim(),
+        note: note ? String(note).trim() : '',
+        expectedCompletionDate: expectedCompletionDate || null,
+        isManualResume: !!isManualResume,
+        requestedAt: new Date().toISOString(),
+        isPostponed: true
+      };
+
+      await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { routingMetadata: JSON.stringify(meta) }
+      });
+
+      const resumeDesc = isManualResume ? 'استئناف يدوي لاحقاً' : `الموعد المتوقع: ${expectedCompletionDate}`;
+      await prisma.ticketLog.create({
+        data: {
+          ticketId: ticket.id,
+          action: `POSTPONEMENT_REQUESTED: طلب الموظف تأجيل متابعة التذكرة (السبب: ${reason} • ${resumeDesc}).`
+        }
+      }).catch(() => {});
+
+      res.json({
+        success: true,
+        message: 'تم تسجيل طلب تأجيل المعاملة بنجاح',
+        data: { postponement: meta.postponement }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** POST /api/v1/functional/requests/:id/resume — استئناف متابعة الطلب المؤجل */
+  async resumeRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const cleanId = String(req.params.id || '').replace(/\D/g, '');
+      const ticketId = cleanId ? parseInt(cleanId) : NaN;
+      if (isNaN(ticketId)) return res.status(400).json({ success: false, message: 'Invalid ticket ID' });
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, isDeleted: false }
+      });
+      if (!ticket) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+
+      const isOwner = Number(ticket.creatorId) === Number(user.id);
+      const isAdmin = user.roleId === 1 || user.roleId === 22 || user.roleId === 2 || user.email === 'admin@litc.ly' || (user as any).role === 'super_admin';
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'غير مصرح لك بإدارة هذا الطلب' });
+      }
+
+      let meta: any = {};
+      if (ticket.routingMetadata) {
+        try { meta = typeof ticket.routingMetadata === 'string' ? JSON.parse(ticket.routingMetadata) : ticket.routingMetadata; } catch {}
+      }
+
+      if (meta.postponement) {
+        meta.postponement.isPostponed = false;
+        meta.postponement.resumedAt = new Date().toISOString();
+      }
+
+      await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { routingMetadata: JSON.stringify(meta) }
+      });
+
+      await prisma.ticketLog.create({
+        data: {
+          ticketId: ticket.id,
+          action: `REQUEST_RESUMED: قام الموظف بالضغط على استئناف الطلب وعادت المعاملة للمتابعة النشطة.`
+        }
+      }).catch(() => {});
+
+      res.json({
+        success: true,
+        message: 'تم استئناف متابعة المعاملة بنجاح',
+        data: { isPostponed: false }
       });
     } catch (err) {
       next(err);

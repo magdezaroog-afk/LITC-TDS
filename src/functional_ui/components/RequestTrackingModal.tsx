@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -24,7 +24,13 @@ import {
   ArrowLeftRight,
   AlertCircle,
   MapPin,
-  ListFilter
+  ListFilter,
+  Lock,
+  Ban,
+  PauseCircle,
+  PlayCircle,
+  RotateCcw,
+  FileText
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
 import { UserRecentRequest } from '../types';
@@ -38,7 +44,7 @@ interface RequestTrackingModalProps {
 }
 
 export function RequestTrackingModal({ isOpen, onClose, request }: RequestTrackingModalProps) {
-  const { language, rateRequest, darkMode } = useHub();
+  const { language, rateRequest, darkMode, requests } = useHub();
   const isRtl = language === 'ar';
 
   const [rating, setRating] = useState<number>(0);
@@ -49,6 +55,63 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
   const [isSuccessDismissing, setIsSuccessDismissing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'map' | 'audit'>('map');
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  const getAuthToken = () => {
+    return (
+      sessionStorage.getItem('litc_token') ||
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('litc_token') ||
+      localStorage.getItem('token') ||
+      ''
+    );
+  };
+
+  // Dynamic route governance policies
+  const routeConfig = useMemo(() => {
+    if (!request) return null;
+    const targetId = (request as any).routeId || (request as any).categoryId;
+    let found = (requests || []).find((r: any) => r.id === targetId);
+    if (!found && targetId) {
+      try {
+        const raw = localStorage.getItem('litc_ticket_routes');
+        if (raw) {
+          const routes = JSON.parse(raw);
+          found = routes.find((r: any) => r.id === targetId);
+        }
+      } catch {}
+    }
+    return found?.formConfig || (found as any) || null;
+  }, [request, requests]);
+
+  const allowDirectCancel = routeConfig?.allowDirectCancelBeforeOpen !== false;
+  const allowCancelReq = routeConfig?.allowCancellationRequest !== false;
+  const allowPostponeReq = routeConfig?.allowPostponementRequest !== false;
+
+  const cancelReasonsList: string[] = useMemo(() => {
+    if (Array.isArray(routeConfig?.cancellationReasons) && routeConfig.cancellationReasons.length > 0) {
+      return routeConfig.cancellationReasons;
+    }
+    return [
+      'حُلّت المشكلة ولم أعد بحاجة للطلب',
+      'تم تقديم الطلب بالخطأ أو تكرار الطلب',
+      'خروج لمهمة خارجية أو اجتماع طارئ',
+      'تأخر إنجاز الطلب من قبل المهندس المكلف',
+      'أخرى (توضيح السبب يدوياً)'
+    ];
+  }, [routeConfig]);
+
+  const postponeReasonsList: string[] = useMemo(() => {
+    if (Array.isArray(routeConfig?.postponementReasons) && routeConfig.postponementReasons.length > 0) {
+      return routeConfig.postponementReasons;
+    }
+    return [
+      'عدم التواجد في المكتب حالياً (إجازة / مهمة عمل)',
+      'تأجيل الموعد لوجود اجتماع طارئ',
+      'انشغال الجهاز أو الموقع بأعمال تشغيلية حالياً',
+      'تأجيل التنسيق لوقت لاحق',
+      'أخرى (تحديد يدوي)'
+    ];
+  }, [routeConfig]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -67,10 +130,254 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
     }
   }, [request]);
 
+  // Cancellation & Postponement Actions State
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState<string>('حُلّت المشكلة ولم أعد بحاجة للطلب');
+  const [cancelReasonNote, setCancelReasonNote] = useState<string>('');
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState<boolean>(false);
+
+  const [showPostponeModal, setShowPostponeModal] = useState<boolean>(false);
+  const [selectedPostponeReason, setSelectedPostponeReason] = useState<string>('عدم التواجد في المكتب حالياً (إجازة / مهمة عمل)');
+  const [postponeNote, setPostponeNote] = useState<string>('');
+  const [expectedPostponeDate, setExpectedPostponeDate] = useState<string>('');
+  const [isManualResume, setIsManualResume] = useState<boolean>(true);
+  const [isSubmittingPostpone, setIsSubmittingPostpone] = useState<boolean>(false);
+  const [isResuming, setIsResuming] = useState<boolean>(false);
+  const [actionNotice, setActionNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (cancelReasonsList.length > 0 && !cancelReasonsList.includes(selectedCancelReason)) {
+      setSelectedCancelReason(cancelReasonsList[0]);
+    }
+  }, [cancelReasonsList]);
+
+  useEffect(() => {
+    if (postponeReasonsList.length > 0 && !postponeReasonsList.includes(selectedPostponeReason)) {
+      setSelectedPostponeReason(postponeReasonsList[0]);
+    }
+  }, [postponeReasonsList]);
+
+  // Parse employee form details and metadata
+  const parsedFormDetails = useMemo(() => {
+    if (!request) return [];
+    const details: { label: string; value: string }[] = [];
+
+    if (request.department) {
+      details.push({ label: 'الإدارة المستلمة', value: request.department });
+    }
+    if ((request as any).building || (request as any).location) {
+      details.push({ label: 'المبنى / المقر', value: (request as any).building || (request as any).location });
+    }
+    if ((request as any).subIssue || (request as any).issueType) {
+      details.push({ label: 'تصنيف ونوع المشكلة', value: (request as any).subIssue || (request as any).issueType });
+    }
+    if (request.priority) {
+      const pLabel = request.priority === 'urgent' ? 'عاجلة جداً' : request.priority === 'high' ? 'أولوية عالية' : request.priority === 'normal' ? 'عادية' : 'منخفضة';
+      details.push({ label: 'درجة الأولوية', value: pLabel });
+    }
+
+    let dict: Record<string, string> = {
+      dyn_df_network_type: 'نوع الشبكة',
+      dyn_df_device_type: 'نوع الجهاز',
+      dyn_df_floor: 'الدور / الطابق',
+      dyn_df_room: 'رقم الغرفة / المكتب',
+      dyn_df_ip_address: 'عنوان IP',
+      dyn_df_asset_tag: 'رقم الأصل / الجهاز',
+      dyn_df_printer_model: 'موديل الطابعة',
+      dyn_df_app_name: 'اسم المنظومة',
+    };
+    try {
+      const rawDict = localStorage.getItem('litc_dynamic_fields');
+      if (rawDict) {
+        const parsed = JSON.parse(rawDict);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((f: any) => { if (f.id && f.label) dict[f.id] = f.label; });
+        }
+      }
+    } catch {}
+
+    const metaFields = (request as any).routingMeta?.fields || (request as any).fields;
+    if (metaFields && typeof metaFields === 'object') {
+      Object.entries(metaFields).forEach(([k, v]) => {
+        if (v === undefined || v === null || v === '') return;
+        const cleanLabel = dict[k] || k.replace(/^dyn_df_/, '').replace(/^df_/, '').replace(/_/g, ' ');
+        const cleanVal = typeof v === 'boolean' ? (v ? 'نعم' : 'لا') : String(v);
+        details.push({ label: cleanLabel, value: cleanVal });
+      });
+    }
+
+    const rawDesc = (request as any).description || '';
+    if (rawDesc && (!metaFields || Object.keys(metaFields).length === 0)) {
+      const lines = rawDesc.split('\n');
+      lines.forEach((line: string) => {
+        if (line.includes(':')) {
+          const [k, ...v] = line.split(':');
+          const cleanK = dict[k.trim()] || k.trim().replace(/^dyn_df_/, '').replace(/^df_/, '').replace(/_/g, ' ');
+          const cleanV = v.join(':').trim();
+          if (cleanV) details.push({ label: cleanK, value: cleanV });
+        }
+      });
+    }
+
+    return details;
+  }, [request]);
+
+  const isPostponed = Boolean(
+    (request as any)?.routingMeta?.postponement?.isPostponed ||
+    (request as any)?.isPostponed ||
+    (request as any)?.status === 'postponed'
+  );
+
+  const isDirectCancelAllowed = Boolean(
+    allowDirectCancel &&
+    (
+      request?.status === 'pending' ||
+      (request as any)?.statusName === 'PENDING' ||
+      (request as any)?.statusName === 'NEW' ||
+      (request as any)?.statusName === 'OPEN' ||
+      (request as any)?.status === 'new'
+    ) &&
+    !(request as any)?.assignedToUser
+  );
+
+  const handleDirectCancel = async () => {
+    if (!window.confirm('هل أنت متأكد من رغبتك في إلغاء هذا الطلب نهائياً قبل استلامه؟')) return;
+    setIsCancelling(true);
+    setActionNotice(null);
+    try {
+      const token = getAuthToken();
+      const cleanId = String(request.id).replace(/\D/g, '');
+      const res = await fetch(`/api/v1/functional/requests/${cleanId || request.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionNotice({ type: 'success', text: 'تم إلغاء الطلب بنجاح ونقله لسجل المعاملات الملغاة' });
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1200);
+      } else {
+        setActionNotice({ type: 'error', text: data.message || 'تعذر إلغاء الطلب' });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', text: err?.message || 'حدث خطأ في الشبكة أثناء إلغاء الطلب' });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleRequestCancellation = async () => {
+    if (!selectedCancelReason) return;
+    setIsSubmittingCancel(true);
+    setActionNotice(null);
+    try {
+      const token = getAuthToken();
+      const cleanId = String(request.id).replace(/\D/g, '');
+      const res = await fetch(`/api/v1/functional/requests/${cleanId || request.id}/request-cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason: selectedCancelReason, note: cancelReasonNote })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionNotice({ type: 'success', text: 'تم إرسال طلب إلغاء المعاملة بنجاح إلى الجهة المستلمة' });
+        setShowCancelModal(false);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        setActionNotice({ type: 'error', text: data.message || 'تعذر إرسال طلب الإلغاء' });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', text: err?.message || 'حدث خطأ أثناء إرسال طلب الإلغاء' });
+    } finally {
+      setIsSubmittingCancel(false);
+    }
+  };
+
+  const handlePostpone = async () => {
+    if (!selectedPostponeReason) return;
+    setIsSubmittingPostpone(true);
+    setActionNotice(null);
+    try {
+      const token = getAuthToken();
+      const cleanId = String(request.id).replace(/\D/g, '');
+      const res = await fetch(`/api/v1/functional/requests/${cleanId || request.id}/request-postpone`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          reason: selectedPostponeReason,
+          note: postponeNote,
+          expectedCompletionDate: expectedPostponeDate,
+          isManualResume
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionNotice({ type: 'success', text: 'تم تسجيل طلب تأجيل المعاملة بنجاح' });
+        setShowPostponeModal(false);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        setActionNotice({ type: 'error', text: data.message || 'تعذر تسجيل التأجيل' });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', text: err?.message || 'حدث خطأ أثناء تسجيل طلب التأجيل' });
+    } finally {
+      setIsSubmittingPostpone(false);
+    }
+  };
+
+  const handleResume = async () => {
+    setIsResuming(true);
+    setActionNotice(null);
+    try {
+      const token = getAuthToken();
+      const cleanId = String(request.id).replace(/\D/g, '');
+      const res = await fetch(`/api/v1/functional/requests/${cleanId || request.id}/resume`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionNotice({ type: 'success', text: 'تم استئناف متابعة المعاملة بنجاح' });
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        setActionNotice({ type: 'error', text: data.message || 'تعذر استئناف الطلب' });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', text: err?.message || 'حدث خطأ أثناء استئناف الطلب' });
+    } finally {
+      setIsResuming(false);
+    }
+  };
+
   // Fetch real journey steps from backend
   useEffect(() => {
     if (isOpen && request?.id) {
-      const token = localStorage.getItem('litc_token') || localStorage.getItem('token');
+      const token = getAuthToken();
       const cleanId = String(request.id).replace(/\D/g, '');
       const ticketId = cleanId ? Number(cleanId) : request.id;
 
@@ -251,6 +558,31 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
           <p style={{ margin: 0, fontSize: '10.5px', color: darkMode ? '#cbd5e1' : '#64748b', lineHeight: 1.5 }}>
             توجد مهام فرعية محالة لم يتم إقفالها بعد من الأطراف المستلمة. سيتوفر خيار التقييم والإغلاق فور إنجاز المهام وعودتها لمستلم الطلب الرئيسي.
           </p>
+        </div>
+      ) : !isCompletedOrApproved ? (
+        <div
+          style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+            border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '11.5px', fontWeight: 800 }}>
+            <Lock size={13} color="#94a3b8" />
+            <span>تقييم الخدمة مقفل حالياً</span>
+          </div>
+          <p style={{ margin: 0, fontSize: '10.5px', color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.5 }}>
+            لا يمكن للموظف التقييم إلا بعد أن يتم إغلاق المعاملة وحلها رسمياً من قبل الجهة المستقبلة.
+          </p>
+          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', padding: '4px 0', opacity: 0.35 }}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star key={s} size={15} color="#64748b" />
+            ))}
+          </div>
         </div>
       ) : (
         <>
@@ -562,6 +894,140 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                   )}
                 </div>
 
+                {/* Parsed Form Details Micro-Cards on Mobile */}
+                {parsedFormDetails.length > 0 && (
+                  <div style={{
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                    border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#135d79' }}>
+                      تفاصيل ومدخلات الطلب:
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                      {parsedFormDetails.map((detail, idx) => (
+                        <div key={idx} style={{
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.25)' : '#ffffff',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #cbd5e1',
+                          fontSize: '10.5px'
+                        }}>
+                          <div style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '9.5px' }}>{detail.label}</div>
+                          <div style={{ color: darkMode ? '#ffffff' : '#0f172a', fontWeight: 700 }}>{detail.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Action Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={handleDirectCancel}
+                      disabled={!isDirectCancelAllowed || isCancelling}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: isDirectCancelAllowed ? '1px solid rgba(239, 68, 68, 0.4)' : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                        backgroundColor: isDirectCancelAllowed ? 'rgba(239, 68, 68, 0.12)' : (darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f1f5f9'),
+                        color: isDirectCancelAllowed ? '#ef4444' : '#94a3b8',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: isDirectCancelAllowed && !isCancelling ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}
+                    >
+                      <Ban size={12} />
+                      <span>{isCancelling ? 'جارٍ الإلغاء...' : 'إلغاء الطلب'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelModal(true)}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: darkMode ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #f59e0b',
+                        backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+                        color: '#f59e0b',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}
+                    >
+                      <AlertCircle size={12} />
+                      <span>طلب إلغاء الطلب</span>
+                    </button>
+                  </div>
+
+                  {isPostponed ? (
+                    <button
+                      type="button"
+                      onClick={handleResume}
+                      disabled={isResuming}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        color: '#10b981',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: isResuming ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}
+                    >
+                      <PlayCircle size={14} />
+                      <span>{isResuming ? 'جارٍ الاستئناف...' : 'استئناف الطلب الآن'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowPostponeModal(true)}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '8px',
+                        border: darkMode ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid #38bdf8',
+                        backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : '#f0f9ff',
+                        color: darkMode ? '#38bdf8' : '#0284c7',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}
+                    >
+                      <PauseCircle size={14} />
+                      <span>طلب تأجيل الموعد</span>
+                    </button>
+                  )}
+                </div>
+
                 {/* 2. Rating Box (Immediate Thumb-Access on Mobile) */}
                 {renderRatingBox()}
 
@@ -824,59 +1290,176 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                     {isRtl ? request.title : request.titleEn || request.title}
                   </h3>
 
-                  {/* Meta Pills */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'row' : 'column',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    marginBottom: isMobile ? '0' : '14px',
-                  }}>
+                  {/* Meta Pills & Parsed Details (المربع الأحمر: تفاصيل الطلب تامة) */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '5px',
+                      maxHeight: '135px',
+                      overflowY: 'auto',
+                      padding: '2px 1px',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {parsedFormDetails.map((detail, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                          fontSize: '10.5px',
+                          boxShadow: darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <span style={{ color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                          {detail.label}:
+                        </span>
+                        <span style={{ color: darkMode ? '#f1f5f9' : '#0f172a', fontWeight: 700, textAlign: 'left', wordBreak: 'break-word', maxWidth: '65%' }}>
+                          {detail.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Notice message if any */}
+                  {actionNotice && (
                     <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '6px',
-                        padding: '4px 8px',
+                        padding: '6px 8px',
                         borderRadius: '6px',
-                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
-                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                        marginBottom: '6px',
                         fontSize: '10.5px',
-                        boxShadow: darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                        fontWeight: 700,
+                        backgroundColor: actionNotice.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        border: `1px solid ${actionNotice.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                        color: actionNotice.type === 'success' ? '#10b981' : '#ef4444',
+                        textAlign: 'center'
                       }}
                     >
-                      <span style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Building2 size={11} color="#60a5fa" />
-                        <span>الإدارة المختصة:</span>
-                      </span>
-                      <span style={{ color: darkMode ? '#f1f5f9' : '#0f172a', fontWeight: 600 }}>
-                        {request.department || 'إدارة تقنية المعلومات'}
-                      </span>
+                      {actionNotice.text}
+                    </div>
+                  )}
+
+                  {/* Action Buttons: إلغاء الطلب المباشر | طلب إلغاء | تأجيل الموعد أو الاستئناف */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                      {/* 1. Direct Cancel Button (Active only if status === pending) */}
+                      <button
+                        type="button"
+                        onClick={handleDirectCancel}
+                        disabled={!isDirectCancelAllowed || isCancelling}
+                        title={isDirectCancelAllowed ? 'إلغاء الطلب نهائياً قبل استلامه' : 'لا يمكن الإلغاء المباشر بعد بدء المعالجة - يمكنك تقديم طلب إلغاء'}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '6px',
+                          border: isDirectCancelAllowed
+                            ? '1px solid rgba(239, 68, 68, 0.4)'
+                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                          backgroundColor: isDirectCancelAllowed
+                            ? 'rgba(239, 68, 68, 0.12)'
+                            : (darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f1f5f9'),
+                          color: isDirectCancelAllowed ? '#ef4444' : '#94a3b8',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          cursor: isDirectCancelAllowed && !isCancelling ? 'pointer' : 'not-allowed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <Ban size={11} />
+                        <span>{isCancelling ? 'جارٍ الإلغاء...' : 'إلغاء الطلب'}</span>
+                      </button>
+
+                      {/* 2. Request Cancel Button (Always Available) */}
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelModal(true)}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '6px',
+                          border: darkMode ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #f59e0b',
+                          backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+                          color: '#f59e0b',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <AlertCircle size={11} />
+                        <span>طلب إلغاء الطلب</span>
+                      </button>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '6px',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
-                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-                        fontSize: '10.5px',
-                        boxShadow: darkMode ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
-                      }}
-                    >
-                      <span style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Calendar size={11} color="#fbbf24" />
-                        <span>تاريخ التقديم:</span>
-                      </span>
-                      <span style={{ color: darkMode ? '#f1f5f9' : '#0f172a', fontWeight: 600 }}>
-                        {request.date || '2026/10/12'}
-                      </span>
-                    </div>
+                    {/* 3. Postpone or Resume Button */}
+                    {isPostponed ? (
+                      <button
+                        type="button"
+                        onClick={handleResume}
+                        disabled={isResuming}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          cursor: isResuming ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                          transition: 'all 0.15s ease',
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <PlayCircle size={12} />
+                        <span>{isResuming ? 'جارٍ الاستئناف...' : 'استئناف الطلب الآن'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowPostponeModal(true)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: darkMode ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid #38bdf8',
+                          backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : '#f0f9ff',
+                          color: darkMode ? '#38bdf8' : '#0284c7',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                          transition: 'all 0.15s ease',
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <PauseCircle size={12} />
+                        <span>طلب تأجيل الموعد</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -986,25 +1569,65 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
                     gap: '12px',
                   }}
                 >
-                  {/* Transaction Details Box */}
+                  {/* Badge: تفاصيل ومكان الطلب الحالي + شعار النظام */}
                   <div
                     style={{
                       padding: '8px 12px',
                       borderRadius: '8px',
-                      backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.55)' : '#f8fafc',
-                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0',
+                      backgroundColor: darkMode ? 'rgba(19, 93, 121, 0.12)' : 'rgba(19, 93, 121, 0.07)',
+                      border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.28)' : '1.5px solid rgba(19, 93, 121, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: '8px',
+                      gap: '10px',
                     }}
                   >
-                    <div>
-                      <span style={{ fontSize: '10.5px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 700, marginInlineEnd: '6px' }}>
-                        موضوع ومحتوى الطلب:
-                      </span>
-                      <span style={{ fontSize: '12px', color: darkMode ? '#e2e8f0' : '#1e293b' }}>
-                        {(request as any).description || (request as any).notes || 'طلب إجرائي معتمد وفق الضوابط التشغيلية للشركة.'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '7px',
+                          background: 'linear-gradient(135deg, #135d79 0%, #f36c21 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          fontWeight: 900,
+                          fontSize: '11px',
+                          boxShadow: '0 2px 8px rgba(19, 93, 121, 0.35)',
+                          flexShrink: 0
+                        }}
+                      >
+                        N
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#38bdf8' : '#135d79', fontFamily: "'Tajawal', sans-serif" }}>
+                          تفاصيل ومكان الطلب الحالي
+                        </span>
+                        <span style={{ fontSize: '9.5px', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                          NEXUS TDS • المتابعة الجغرافية والإجرائية الموحدة
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                          color: darkMode ? '#e2e8f0' : '#1e293b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <MapPin size={11} color="#38bdf8" />
+                        <span>الموقع: {journeySteps[journeySteps.length - 1]?.actor || request.department || 'الجهة المستلمة'}</span>
                       </span>
                     </div>
                   </div>
@@ -1420,6 +2043,409 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
             </CinemaTicketFrame>
           </motion.div>
           )}
+
+          {/* ══════════════════════════════════════════════════════════
+              SUB-MODAL 1: طلب إلغاء المعاملة مع بيان السبب
+              ══════════════════════════════════════════════════════════ */}
+          <AnimatePresence>
+            {showCancelModal && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowCancelModal(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.72)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '440px',
+                    borderRadius: '16px',
+                    backgroundColor: darkMode ? '#0e1726' : '#ffffff',
+                    border: darkMode ? '1.5px solid rgba(245, 158, 11, 0.4)' : '1.5px solid #f59e0b',
+                    padding: '20px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+                    zIndex: 405,
+                    fontFamily: "'Cairo', sans-serif",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        color: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <AlertCircle size={18} />
+                      </div>
+                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                        تقديم طلب إلغاء المعاملة
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelModal(false)}
+                      style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '11px', color: darkMode ? '#cbd5e1' : '#64748b', lineHeight: 1.5 }}>
+                    سيتم إرسال طلب الإلغاء للجهة المستلمة للموافقة عليه وأرشفة المعاملة رسمياً. يرجى اختيار سبب الإلغاء:
+                  </p>
+
+                  {/* Reasons list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {cancelReasonsList.map((reason) => (
+                      <label
+                        key={reason}
+                        onClick={() => setSelectedCancelReason(reason)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '7px 10px',
+                          borderRadius: '8px',
+                          border: selectedCancelReason === reason
+                            ? '1.5px solid #f59e0b'
+                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                          backgroundColor: selectedCancelReason === reason
+                            ? 'rgba(245, 158, 11, 0.12)'
+                            : 'transparent',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          color: selectedCancelReason === reason ? '#f59e0b' : (darkMode ? '#e2e8f0' : '#334155'),
+                          fontWeight: selectedCancelReason === reason ? 700 : 500,
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="cancelReason"
+                          checked={selectedCancelReason === reason}
+                          onChange={() => setSelectedCancelReason(reason)}
+                          style={{ accentColor: '#f59e0b' }}
+                        />
+                        <span>{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Additional notes */}
+                  <textarea
+                    value={cancelReasonNote}
+                    onChange={(e) => setCancelReasonNote(e.target.value)}
+                    placeholder="ملاحظات توضيحية إضافية (اختياري)..."
+                    rows={2}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                      backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
+                      color: darkMode ? '#ffffff' : '#0f172a',
+                      fontSize: '11px',
+                      fontFamily: "'Cairo', sans-serif",
+                      outline: 'none',
+                      resize: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+
+                  {/* Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={handleRequestCancellation}
+                      disabled={isSubmittingCancel}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: '#f59e0b',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: isSubmittingCancel ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontFamily: "'Cairo', sans-serif",
+                      }}
+                    >
+                      <Send size={13} />
+                      <span>{isSubmittingCancel ? 'جارٍ الإرسال...' : 'إرسال طلب الإلغاء'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelModal(false)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        backgroundColor: 'transparent',
+                        color: darkMode ? '#cbd5e1' : '#64748b',
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        fontFamily: "'Cairo', sans-serif",
+                      }}
+                    >
+                      تراجع
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* ══════════════════════════════════════════════════════════
+              SUB-MODAL 2: طلب تأجيل موعد حل المشكلة
+              ══════════════════════════════════════════════════════════ */}
+          <AnimatePresence>
+            {showPostponeModal && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowPostponeModal(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.72)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '440px',
+                    borderRadius: '16px',
+                    backgroundColor: darkMode ? '#0e1726' : '#ffffff',
+                    border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.4)' : '1.5px solid #0284c7',
+                    padding: '20px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+                    zIndex: 405,
+                    fontFamily: "'Cairo', sans-serif",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                        color: '#38bdf8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <PauseCircle size={18} />
+                      </div>
+                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
+                        طلب تأجيل موعد المعاملة
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPostponeModal(false)}
+                      style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '11px', color: darkMode ? '#cbd5e1' : '#64748b', lineHeight: 1.5 }}>
+                    يمكنك تأجيل متابعة هذا الطلب مؤقتاً في حال عدم توفرك بمقر العمل أو انشغال الجهاز، مع إمكانية استئنافه لاحقاً.
+                  </p>
+
+                  {/* Postpone reasons list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {postponeReasonsList.map((reason) => (
+                      <label
+                        key={reason}
+                        onClick={() => setSelectedPostponeReason(reason)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '7px 10px',
+                          borderRadius: '8px',
+                          border: selectedPostponeReason === reason
+                            ? '1.5px solid #38bdf8'
+                            : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                          backgroundColor: selectedPostponeReason === reason
+                            ? 'rgba(56, 189, 248, 0.12)'
+                            : 'transparent',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          color: selectedPostponeReason === reason ? '#38bdf8' : (darkMode ? '#e2e8f0' : '#334155'),
+                          fontWeight: selectedPostponeReason === reason ? 700 : 500,
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="postponeReason"
+                          checked={selectedPostponeReason === reason}
+                          onChange={() => setSelectedPostponeReason(reason)}
+                          style={{ accentColor: '#38bdf8' }}
+                        />
+                        <span>{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Mode of resumption */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderRadius: '8px', backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', cursor: 'pointer', color: darkMode ? '#e2e8f0' : '#1e293b' }}>
+                      <input
+                        type="checkbox"
+                        checked={isManualResume}
+                        onChange={(e) => setIsManualResume(e.target.checked)}
+                        style={{ accentColor: '#38bdf8' }}
+                      />
+                      <span>استئناف يدوي بضغطة زر عند الجاهزية</span>
+                    </label>
+                  </div>
+
+                  {!isManualResume && (
+                    <div>
+                      <div style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '3px' }}>الموعد المتوقع للعودة / الاستئناف:</div>
+                      <input
+                        type="date"
+                        value={expectedPostponeDate}
+                        onChange={(e) => setExpectedPostponeDate(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                          backgroundColor: darkMode ? '#1e293b' : '#ffffff',
+                          color: darkMode ? '#ffffff' : '#0f172a',
+                          fontSize: '11px',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Additional notes */}
+                  <textarea
+                    value={postponeNote}
+                    onChange={(e) => setPostponeNote(e.target.value)}
+                    placeholder="ملاحظات إضافية للفريق الفني (اختياري)..."
+                    rows={2}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                      backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
+                      color: darkMode ? '#ffffff' : '#0f172a',
+                      fontSize: '11px',
+                      fontFamily: "'Cairo', sans-serif",
+                      outline: 'none',
+                      resize: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+
+                  {/* Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={handlePostpone}
+                      disabled={isSubmittingPostpone}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: '#135d79',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: isSubmittingPostpone ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontFamily: "'Cairo', sans-serif",
+                      }}
+                    >
+                      <PauseCircle size={13} />
+                      <span>{isSubmittingPostpone ? 'جارٍ الحفظ...' : 'تأكيد طلب التأجيل'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPostponeModal(false)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        backgroundColor: 'transparent',
+                        color: darkMode ? '#cbd5e1' : '#64748b',
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        fontFamily: "'Cairo', sans-serif",
+                      }}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </AnimatePresence>
