@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useHub } from '../context/HubContext';
 import * as LucideIcons from 'lucide-react';
 import {
@@ -112,6 +113,10 @@ export default function RequestsPage() {
   const [filterTab, setFilterTab] = useState<'active' | 'needs_rating' | 'archived'>('active');
   const creatorRef = useRef<HTMLDivElement>(null);
   const cardsBasinRef = useRef<HTMLDivElement>(null);
+  const trackScrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Highlight recently printed ticket ──
+  const [highlightedTicketId, setHighlightedTicketId] = useState<string | null>(null);
 
   // ── Responsive Dimensions State ──
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1200));
@@ -122,12 +127,10 @@ export default function RequestsPage() {
   }, []);
 
   const isMobile = windowWidth < 840;
-  // في الكمبيوتر: 6 بطاقات في الصف، وفي الهاتف: 3 بطاقات في الصف الواحد
-  const colsPerRow = isMobile ? 3 : 6;
 
   // ── Dynamic Rows State (1 to 7 rows, default 1 row) ──
   const [visibleRows, setVisibleRows] = useState<number>(1);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [scrollProgress, setScrollProgress] = useState<{ current: number; total: number }>({ current: 1, total: 1 });
 
   // تمييز ما إذا كانت المعاملة مكتملة ومؤرشفة
   const isDone = useCallback((r: UserRecentRequest) =>
@@ -169,20 +172,66 @@ export default function RequestsPage() {
     });
   }, [userRequests, searchQuery, filterTab, isRtl, isDone, isNeedsRating]);
 
-  // تصفير الصفحة عند تغيير التبويب أو البحث
+  // ── Scroll Indicator Calculation ──
+  const updateScrollIndicator = useCallback(() => {
+    const el = trackScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 8) {
+      setScrollProgress({ current: 1, total: 1 });
+      return;
+    }
+    const currentOffset = Math.abs(el.scrollLeft);
+    const totalPages = Math.max(1, Math.ceil(el.scrollWidth / (el.clientWidth || 1)));
+    const currentPage = Math.min(
+      totalPages,
+      Math.max(1, Math.round((currentOffset / maxScroll) * (totalPages - 1)) + 1)
+    );
+    setScrollProgress({ current: currentPage, total: totalPages });
+  }, []);
+
   useEffect(() => {
-    setCurrentPage(1);
-  }, [filterTab, searchQuery]);
+    // When tab changes, reset track to start smoothly
+    if (trackScrollRef.current) {
+      trackScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+    const timer = setTimeout(updateScrollIndicator, 80);
+    return () => clearTimeout(timer);
+  }, [filterTab, searchQuery, visibleRows, filteredList.length, updateScrollIndicator]);
 
-  // الحسابات الرياضية الدقيقة للتقسيم على صفحات
-  const pageSize = visibleRows * colsPerRow;
-  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
-  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  // Listen for new ticket landing event from the in-place thermal printer
+  useEffect(() => {
+    const handleTicketLanded = (e: any) => {
+      setFilterTab('active');
+      if (trackScrollRef.current) {
+        trackScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+      const ticketId = e.detail?.id || e.detail?.ticketId;
+      if (ticketId) {
+        setHighlightedTicketId(ticketId);
+        setTimeout(() => setHighlightedTicketId(null), 4500);
+      }
+      setTimeout(updateScrollIndicator, 120);
+    };
+    window.addEventListener('litc_new_ticket_created', handleTicketLanded);
+    return () => window.removeEventListener('litc_new_ticket_created', handleTicketLanded);
+  }, [updateScrollIndicator]);
 
-  const pagedTickets = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return filteredList.slice(start, start + pageSize);
-  }, [filteredList, safePage, pageSize]);
+  // ── Continuous Horizontal Smooth Scroll Navigation ──
+  const scrollTrack = (direction: 'prev' | 'next') => {
+    if (!trackScrollRef.current) return;
+    const containerWidth = trackScrollRef.current.clientWidth;
+    // In Arabic RTL, scrolling left (negative values) advances forward to newer items
+    const offset = direction === 'next' ? -containerWidth * 0.8 : containerWidth * 0.8;
+    trackScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
+  const handleTrackWheel = (e: React.WheelEvent) => {
+    if (!trackScrollRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && trackScrollRef.current.scrollWidth > trackScrollRef.current.clientWidth) {
+      trackScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
 
   // ── Drag Handle Logic for Vertical Row Resizing (1 to 7 rows) ──
   const dragStartYRef = useRef<number | null>(null);
@@ -216,27 +265,6 @@ export default function RequestsPage() {
     setIsDraggingHandle(false);
   };
 
-  // ── Touch Swipe Handlers for Mobile Pagination ──
-  const touchStartXRef = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
-    touchStartXRef.current = null;
-    if (Math.abs(deltaX) > 40) {
-      // السحب لليسار يتقدم للصفحة التالية، والسحب لليمين يعود للصفحة السابقة
-      if (deltaX < 0 && safePage < totalPages) {
-        setCurrentPage(p => Math.min(totalPages, p + 1));
-      } else if (deltaX > 0 && safePage > 1) {
-        setCurrentPage(p => Math.max(1, p - 1));
-      }
-    }
-  };
-
   return (
     <div
       dir="rtl"
@@ -244,10 +272,10 @@ export default function RequestsPage() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        minHeight: isMobile ? 'calc(100vh - 76px)' : 'calc(100vh - 90px)',
-        gap: '10px',
+        minHeight: isMobile ? 'calc(100vh - 74px)' : 'calc(100vh - 86px)',
+        gap: '8px',
         position: 'relative',
-        paddingBottom: isMobile ? '80px' : '20px',
+        paddingBottom: isMobile ? '76px' : '4px',
       }}
     >
       {/* ═══ 1. CLEAN REFINED HEADER ═══ */}
@@ -295,22 +323,25 @@ export default function RequestsPage() {
         />
       </div>
 
-      {/* ═══ 3. DOCKED BOTTOM TICKETS BASIN (حوض التذاكر شبحة على حافة الصفحة) ═══ */}
+      {/* Flex spacer to dock the tickets basin cleanly to the bottom edge */}
+      <div style={{ flex: 1, minHeight: '6px' }} />
+
+      {/* ═══ 3. DOCKED BOTTOM TICKETS BASIN (حوض التذاكر شبحة على حافة الصفحة السفلية) ═══ */}
       <div
         id="litc-tickets-basin"
         ref={cardsBasinRef}
         style={{
           width: '100%',
-          maxWidth: '1360px',
-          margin: 'auto auto 8px', // إنزال خيارات الطلبات والبطاقات لأسفل الصفحة قرب الحافة السفلية
+          maxWidth: '1480px',
+          margin: '0 auto 0px', // ملاصق لحافة الصفحة السفلية تماماً بدون فراغ ميت
           display: 'flex',
           flexDirection: 'column',
-          gap: isMobile ? '8px' : '10px',
+          gap: isMobile ? '6px' : '8px',
           position: 'relative',
           zIndex: 20,
         }}
       >
-        {/* Ribbon Header: Tabs (مفتوحة، تحتاج لتقييم، أرشيف) + أزرار التمرير وترقيم الصفحات + البحث */}
+        {/* Ribbon Header: Tabs (مفتوحة، تحتاج لتقييم، أرشيف) + أزرار التمرير المستمر وترقيم الصفحات + البحث */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -319,7 +350,7 @@ export default function RequestsPage() {
           gap: '8px',
           padding: '0 2px',
         }}>
-          {/* خيارات الطلبات: تبويبات حرة عائمة */}
+          {/* خيارات الطلبات: تبويبات حرة عائمة بأبعاد مستقرة */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -456,7 +487,7 @@ export default function RequestsPage() {
             gap: isMobile ? '6px' : '10px',
             flexWrap: 'wrap',
           }}>
-            {/* أزرار التمرير الجانبي (يمين ويسار) ويتوسطهم عدد الصفحات */}
+            {/* أزرار التمرير الأفقي المستمر (يمين ويسار) ويتوسطهم عدد الصفحات */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -470,21 +501,21 @@ export default function RequestsPage() {
               {/* زر التمرير لليمين (السابق في RTL) */}
               <button
                 type="button"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={safePage <= 1}
-                title="الصفحة السابقة (التمرير لليمين)"
+                onClick={() => scrollTrack('prev')}
+                disabled={scrollProgress.current <= 1}
+                title="التمرير لليمين (البطاقات السابقة)"
                 style={{
                   width: isMobile ? '24px' : '26px',
                   height: isMobile ? '24px' : '26px',
                   borderRadius: '6px',
                   border: 'none',
-                  backgroundColor: safePage <= 1
+                  backgroundColor: scrollProgress.current <= 1
                     ? 'transparent'
                     : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9'),
-                  color: safePage <= 1
+                  color: scrollProgress.current <= 1
                     ? (darkMode ? '#475569' : '#cbd5e1')
                     : (darkMode ? '#f8fafc' : '#0f172a'),
-                  cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
+                  cursor: scrollProgress.current <= 1 ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -506,7 +537,7 @@ export default function RequestsPage() {
                 fontVariantNumeric: 'tabular-nums',
                 whiteSpace: 'nowrap',
               }}>
-                صفحة <span style={{ color: '#135d79', fontWeight: 800 }}>{safePage}</span> من {totalPages}
+                صفحة <span style={{ color: '#135d79', fontWeight: 800 }}>{scrollProgress.current}</span> من {scrollProgress.total}
                 {filteredList.length > 0 && (
                   <span style={{ fontSize: '9.5px', color: '#64748b', marginInlineStart: '4px' }}>
                     ({filteredList.length} تذكرة)
@@ -517,21 +548,21 @@ export default function RequestsPage() {
               {/* زر التمرير لليسار (التالي في RTL) */}
               <button
                 type="button"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage >= totalPages}
-                title="الصفحة التالية (التمرير لليسار)"
+                onClick={() => scrollTrack('next')}
+                disabled={scrollProgress.current >= scrollProgress.total}
+                title="التمرير لليسار (البطاقات التالية)"
                 style={{
                   width: isMobile ? '24px' : '26px',
                   height: isMobile ? '24px' : '26px',
                   borderRadius: '6px',
                   border: 'none',
-                  backgroundColor: safePage >= totalPages
+                  backgroundColor: scrollProgress.current >= scrollProgress.total
                     ? 'transparent'
                     : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9'),
-                  color: safePage >= totalPages
+                  color: scrollProgress.current >= scrollProgress.total
                     ? (darkMode ? '#475569' : '#cbd5e1')
                     : (darkMode ? '#f8fafc' : '#0f172a'),
-                  cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+                  cursor: scrollProgress.current >= scrollProgress.total ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -603,10 +634,8 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        {/* ═══ مستطيل البطاقات: شبكة 6 بطاقات بالكمبيوتر أو 3 بالهاتف، وصفوف من 1 إلى 7 ═══ */}
+        {/* ═══ مستطيل البطاقات: تمرير أفقي سلس ومستمر لليمين واليسار مع توسعة من 1 إلى 7 صفوف ═══ */}
         <div
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
           style={{
             position: 'relative',
             borderRadius: '12px',
@@ -615,207 +644,265 @@ export default function RequestsPage() {
             boxShadow: darkMode
               ? '0 6px 24px rgba(0, 0, 0, 0.4)'
               : '0 2px 14px rgba(19, 93, 121, 0.06)',
-            padding: isMobile ? '8px 6px 24px' : '12px 12px 28px',
+            padding: isMobile ? '8px 6px 26px' : '10px 10px 28px',
             overflow: 'hidden',
-            transition: 'border-color 0.2s ease',
+            minHeight: isMobile
+              ? `${visibleRows * 120 + 38}px`
+              : `${visibleRows * 144 + 44}px`,
+            transition: 'min-height 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
           }}
         >
-          {filteredList.length === 0 ? (
-            <div style={{
-              padding: '28px 16px',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)',
-                border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 8px',
-              }}>
-                <Ticket size={18} color="#64748b" />
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b', fontFamily: "'Cairo', sans-serif" }}>
-                {filterTab === 'archived'
-                  ? 'لا توجد طلبات سابقة في الأرشيف'
-                  : filterTab === 'needs_rating'
-                  ? 'لا توجد طلبات بانتظار التقييم حالياً ⭐'
-                  : 'لا توجد تذاكر مفتوحة حالياً'}
-              </div>
-              <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '3px', fontFamily: "'Cairo', sans-serif" }}>
-                {searchQuery
-                  ? 'لا توجد نتائج مطابقة للتصفية الحالية'
-                  : filterTab === 'active'
-                  ? 'اختر الخدمة من الماكينة أعلاه لإنشاء تذكرة وستظهر هنا فوراً'
-                  : 'كافة المعاملات في حالتها المثالية'}
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(3, minmax(0, 1fr))' : 'repeat(6, minmax(0, 1fr))',
-                gap: isMobile ? '6px' : '10px',
-                width: '100%',
-              }}
-            >
-              {pagedTickets.map(req => {
-                const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
-                const routeColor = matchedFlow?.color || '#135d79';
-                const IconComp = resolveCategoryIcon(matchedFlow?.icon || (req as any).icon);
-                const isRatePending = isNeedsRating(req);
+          <AnimatePresence mode="wait">
+            {filteredList.length === 0 ? (
+              <motion.div
+                key={`empty_${filterTab}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{
+                  padding: '24px 16px',
+                  textAlign: 'center',
+                  width: '100%',
+                  minHeight: isMobile
+                    ? `${visibleRows * 120}px`
+                    : `${visibleRows * 144}px`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(19, 93, 121, 0.05)',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 8px',
+                }}>
+                  <Ticket size={18} color="#64748b" />
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e293b', fontFamily: "'Cairo', sans-serif" }}>
+                  {filterTab === 'archived'
+                    ? 'لا توجد طلبات سابقة في الأرشيف'
+                    : filterTab === 'needs_rating'
+                    ? 'لا توجد طلبات بانتظار التقييم حالياً ⭐'
+                    : 'لا توجد تذاكر مفتوحة حالياً'}
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '3px', fontFamily: "'Cairo', sans-serif" }}>
+                  {searchQuery
+                    ? 'لا توجد نتائج مطابقة للتصفية الحالية'
+                    : filterTab === 'active'
+                    ? 'اختر الخدمة من الماكينة أعلاه لإنشاء تذكرة وستخرج وتستقر هنا فوراً'
+                    : 'كافة المعاملات في حالتها المثالية'}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`grid_${filterTab}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{ width: '100%' }}
+              >
+                {/* Continuous Smooth Horizontal Track (شبكة أعمدة مستمرة تتسع لليمين واليسار) */}
+                <div
+                  ref={trackScrollRef}
+                  onScroll={updateScrollIndicator}
+                  onWheel={handleTrackWheel}
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: `repeat(${visibleRows}, minmax(${isMobile ? '120px' : '142px'}, 1fr))`,
+                    gridAutoFlow: 'column',
+                    // البطاقات أعرض بنسبة قليلة كما طلب مدير المشروع مع دعم حتى 7 صفوف
+                    gridAutoColumns: isMobile
+                      ? 'calc((100% - 10px) / 2.35)'
+                      : 'calc((100% - 44px) / 5)',
+                    columnGap: isMobile ? '6px' : '10px',
+                    rowGap: isMobile ? '6px' : '10px',
+                    width: '100%',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    scrollBehavior: 'smooth',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    padding: '2px 1px',
+                  }}
+                >
+                  {filteredList.map((req, idx) => {
+                    const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
+                    const routeColor = matchedFlow?.color || '#135d79';
+                    const IconComp = resolveCategoryIcon(matchedFlow?.icon || (req as any).icon);
+                    const isRatePending = isNeedsRating(req);
+                    const isJustLanded = highlightedTicketId === req.id || (highlightedTicketId && idx === 0);
 
-                return (
-                  <div
-                    key={req.id}
-                    onClick={() => {
-                      setSelectedRequest(req);
-                      setIsTrackingOpen(true);
-                    }}
-                    style={{
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                      minWidth: 0,
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'none';
-                    }}
-                    title="انقر على التذكرة لعرض وتكبير كامل التفاصيل والمسار الحالي"
-                  >
-                    <CinemaTicketFrame
-                      accentColor={routeColor}
-                      cornerCutout={isMobile ? 5 : 7}
-                      notchRadius={isMobile ? 2.5 : 3.5}
-                      numNotches={isMobile ? 1 : 2}
-                      dashIndent={isMobile ? 6 : 8}
-                      contentPadding={isMobile ? '6px 7px' : '8px 10px'}
-                      role="button"
-                      tabIndex={0}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        minHeight: isMobile ? '112px' : '130px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        border: `1px solid ${routeColor}35`,
-                        borderRadius: '8px',
-                      }}
-                    >
-                      {/* Top Row: Route Icon + Ticket Code Badge + Status Dot */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '4px',
-                        marginBottom: isMobile ? '4px' : '6px',
-                        minWidth: 0,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, overflow: 'hidden' }}>
+                    return (
+                      <div
+                        key={req.id}
+                        onClick={() => {
+                          setSelectedRequest(req);
+                          setIsTrackingOpen(true);
+                        }}
+                        style={{
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease',
+                          minWidth: 0,
+                          scrollSnapAlign: 'start',
+                          position: 'relative',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'none';
+                        }}
+                        title="انقر على التذكرة لعرض وتكبير كامل التفاصيل والمسار الحالي"
+                      >
+                        <CinemaTicketFrame
+                          accentColor={routeColor}
+                          cornerCutout={isMobile ? 5 : 7}
+                          notchRadius={isMobile ? 2.5 : 3.5}
+                          numNotches={isMobile ? 1 : 2}
+                          dashIndent={isMobile ? 6 : 8}
+                          contentPadding={isMobile ? '6px 7px' : '8px 11px'}
+                          role="button"
+                          tabIndex={0}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            minHeight: isMobile ? '114px' : '134px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            border: isJustLanded
+                              ? `2px solid #10b981`
+                              : `1px solid ${routeColor}35`,
+                            borderRadius: '8px',
+                            boxShadow: isJustLanded
+                              ? '0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 10px rgba(16, 185, 129, 0.3)'
+                              : 'none',
+                            animation: isJustLanded ? 'pulse 1.5s infinite' : 'none',
+                          }}
+                        >
+                          {/* Top Row: Route Icon + Ticket Code Badge + Status Dot */}
                           <div style={{
-                            width: isMobile ? '20px' : '22px',
-                            height: isMobile ? '20px' : '22px',
-                            borderRadius: '5px',
-                            backgroundColor: `${routeColor}20`,
-                            border: `1px solid ${routeColor}50`,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            color: routeColor,
-                            flexShrink: 0,
+                            justifyContent: 'space-between',
+                            gap: '4px',
+                            marginBottom: isMobile ? '3px' : '5px',
+                            minWidth: 0,
                           }}>
-                            <IconComp size={isMobile ? 11 : 12} strokeWidth={2.4} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, overflow: 'hidden' }}>
+                              <div style={{
+                                width: isMobile ? '20px' : '22px',
+                                height: isMobile ? '20px' : '22px',
+                                borderRadius: '5px',
+                                backgroundColor: `${routeColor}20`,
+                                border: `1px solid ${routeColor}50`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: routeColor,
+                                flexShrink: 0,
+                              }}>
+                                <IconComp size={isMobile ? 11 : 12} strokeWidth={2.4} />
+                              </div>
+                              <TicketCodeBadge
+                                code={req.code || `#${req.id.slice(-4).toUpperCase()}`}
+                                color={routeColor}
+                                compact
+                              />
+                            </div>
+                            <StatusBadge status={req.status} compact />
                           </div>
-                          <TicketCodeBadge
-                            code={req.code || `#${req.id.slice(-4).toUpperCase()}`}
-                            color={routeColor}
-                            compact
-                          />
-                        </div>
-                        <StatusBadge status={req.status} compact />
-                      </div>
 
-                      {/* Middle: Title & Current Stage */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                        <h3 style={{
-                          fontSize: isMobile ? '10.5px' : '11.5px',
-                          fontWeight: 800,
-                          color: darkMode ? '#ffffff' : '#0f172a',
-                          fontFamily: "'Tajawal', sans-serif",
-                          lineHeight: 1.3,
-                          margin: 0,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          wordBreak: 'break-word',
-                        }}>
-                          {isRtl ? req.title : req.titleEn || req.title}
-                        </h3>
+                          {/* Middle: Title & Current Stage */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                            <h3 style={{
+                              fontSize: isMobile ? '10.5px' : '11.8px',
+                              fontWeight: 800,
+                              color: darkMode ? '#ffffff' : '#0f172a',
+                              fontFamily: "'Tajawal', sans-serif",
+                              lineHeight: 1.3,
+                              margin: 0,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              wordBreak: 'break-word',
+                            }}>
+                              {isRtl ? req.title : req.titleEn || req.title}
+                            </h3>
 
-                        {req.stage && (
+                            {req.stage && (
+                              <div style={{
+                                fontSize: isMobile ? '8.5px' : '9.5px',
+                                color: '#64748b',
+                                fontFamily: "'Cairo', sans-serif",
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                marginTop: '1px',
+                              }}>
+                                <span style={{ color: darkMode ? '#94a3b8' : '#334155', fontWeight: 600 }}>{req.stage}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Bottom Metadata: Dept + Submission Date */}
                           <div style={{
-                            fontSize: isMobile ? '8.5px' : '9.5px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingTop: '5px',
+                            borderTop: darkMode ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
+                            fontSize: isMobile ? '8px' : '9px',
                             color: '#64748b',
                             fontFamily: "'Cairo', sans-serif",
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginTop: '1px',
+                            marginTop: '4px',
+                            minWidth: 0,
                           }}>
-                            <span style={{ color: darkMode ? '#94a3b8' : '#334155', fontWeight: 600 }}>{req.stage}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                              <Building2 size={isMobile ? 9 : 10} color="#64748b" style={{ flexShrink: 0 }} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {req.department || 'إدارة الخدمات'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                              <Clock size={isMobile ? 8 : 9} color="#64748b" />
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{req.date || 'اليوم'}</span>
+                              {isRatePending ? (
+                                <span style={{
+                                  color: '#f59e0b',
+                                  fontWeight: 800,
+                                  marginInlineStart: '2px',
+                                }}>
+                                  ★
+                                </span>
+                              ) : (
+                                <ArrowUpRight size={isMobile ? 9 : 10} color={routeColor} style={{ marginInlineStart: '1px' }} />
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </CinemaTicketFrame>
                       </div>
-
-                      {/* Bottom Metadata: Dept + Submission Date */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        paddingTop: '5px',
-                        borderTop: darkMode ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
-                        fontSize: isMobile ? '8px' : '9px',
-                        color: '#64748b',
-                        fontFamily: "'Cairo', sans-serif",
-                        marginTop: '4px',
-                        minWidth: 0,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                          <Building2 size={isMobile ? 9 : 10} color="#64748b" style={{ flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {req.department || 'إدارة الخدمات'}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-                          <Clock size={isMobile ? 8 : 9} color="#64748b" />
-                          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{req.date || 'اليوم'}</span>
-                          {isRatePending ? (
-                            <span style={{
-                              color: '#f59e0b',
-                              fontWeight: 800,
-                              marginInlineStart: '2px',
-                            }}>
-                              ★
-                            </span>
-                          ) : (
-                            <ArrowUpRight size={isMobile ? 9 : 10} color={routeColor} style={{ marginInlineStart: '1px' }} />
-                          )}
-                        </div>
-                      </div>
-                    </CinemaTicketFrame>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ═══ 4. مقبض السحب الرأسي في منتصف الحافة السفلية لمستطيل البطاقات (من 1 إلى 7 صفوف) ═══ */}
           <div

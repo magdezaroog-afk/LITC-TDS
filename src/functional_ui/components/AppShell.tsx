@@ -37,9 +37,9 @@ export function AppShell() {
         style={{
           flex: 1,
           width: '100%',
-          maxWidth: '1360px',
+          maxWidth: '1480px',
           margin: '0 auto',
-          padding: isMobileScreen ? '6px 12px 24px' : '10px 20px 40px',
+          padding: isMobileScreen ? '6px 12px 20px' : '8px 20px 8px',
         }}
       >
         <Outlet />
