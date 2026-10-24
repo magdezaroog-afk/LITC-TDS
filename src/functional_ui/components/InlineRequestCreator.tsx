@@ -8,12 +8,12 @@
  * - Realistic Progressive Top-to-Bottom Tear Animation
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import {
-  Sparkles, Plus, ChevronLeft, ChevronRight, ArrowRight,
+  Sparkles, Plus, ChevronLeft, ChevronRight, ArrowRight, ArrowLeft,
   Send, AlertTriangle, CheckCircle2, Loader2,
   Building2, UserCheck, ArrowRightLeft, FileText, Check,
   Clock, Hash, QrCode, Scissors, Eye, Layers, ShieldCheck,
@@ -994,7 +994,7 @@ function InPlaceTaxonomySelector({
   subValue: string;
   onSelectMain: (val: string) => void;
   onSelectSub: (val: string) => void;
-  onAutoAdvance?: () => void;
+  onAutoAdvance?: (name?: string, val?: string) => void;
   darkMode?: boolean;
   flowColor?: string;
 }) {
@@ -1095,7 +1095,7 @@ function InPlaceTaxonomySelector({
                       setIsEditing('sub');
                     } else {
                       setIsEditing(false);
-                      setTimeout(() => onAutoAdvance?.(), 160);
+                      setTimeout(() => onAutoAdvance?.('taxonomyMain', label), 160);
                     }
                   }}
                 />
@@ -1170,7 +1170,7 @@ function InPlaceTaxonomySelector({
                   onClick={() => {
                     onSelectSub(subLabel);
                     setIsEditing(false);
-                    setTimeout(() => onAutoAdvance?.(), 160);
+                    setTimeout(() => onAutoAdvance?.('taxonomySub', subLabel), 160);
                   }}
                 />
               );
@@ -1275,7 +1275,7 @@ function InPlaceOrgHierarchySelector({
   onSelectDepartment: (val: string) => void;
   onSelectDivision: (val: string) => void;
   onSelectTeam: (val: string) => void;
-  onAutoAdvance?: () => void;
+  onAutoAdvance?: (name?: string, val?: string) => void;
   darkMode?: boolean;
   flowColor?: string;
 }) {
@@ -1387,7 +1387,7 @@ function InPlaceOrgHierarchySelector({
                     onSelectTeam('');
                     const subDivs = getDivisionsForDepartment(orgTree, d.name);
                     if (subDivs.length === 0) {
-                      setTimeout(() => onAutoAdvance?.(), 160);
+                      setTimeout(() => onAutoAdvance?.('department', d.name), 160);
                     }
                   }}
                 />
@@ -1457,7 +1457,7 @@ function InPlaceOrgHierarchySelector({
                     onSelectTeam('');
                     const subTeams = getTeamsForDivision(orgTree, divItem.name);
                     if (subTeams.length === 0) {
-                      setTimeout(() => onAutoAdvance?.(), 160);
+                      setTimeout(() => onAutoAdvance?.('division', divItem.name), 160);
                     }
                   }}
                 />
@@ -1525,7 +1525,7 @@ function InPlaceOrgHierarchySelector({
                   onClick={() => {
                     onSelectTeam(teamItem.name);
                     setActiveLevel('done');
-                    setTimeout(() => onAutoAdvance?.(), 160);
+                    setTimeout(() => onAutoAdvance?.('team', teamItem.name), 160);
                   }}
                 />
               );
@@ -1638,7 +1638,7 @@ function InPlaceBuildingSelector({
   options: (string | { id?: string; label?: string; name?: string })[];
   value: string;
   onChange: (v: string) => void;
-  onAutoAdvance?: () => void;
+  onAutoAdvance?: (name?: string, val?: string) => void;
   darkMode?: boolean;
   flowColor?: string;
   required?: boolean;
@@ -1710,7 +1710,7 @@ function InPlaceBuildingSelector({
                 const nextVal = isSelected ? '' : opt.label;
                 onChange(nextVal);
                 if (nextVal) {
-                  setTimeout(() => onAutoAdvance?.(), 160);
+                  setTimeout(() => onAutoAdvance?.('building', nextVal), 160);
                 }
               }}
             />
@@ -1735,7 +1735,7 @@ function InPlaceDynamicCascadeSelector({
   formData: Record<string, string>;
   onFieldChange: (name: string, val: string) => void;
   effectiveDynamicFields: any[];
-  onAutoAdvance?: () => void;
+  onAutoAdvance?: (name?: string, val?: string) => void;
   darkMode?: boolean;
   flowColor?: string;
 }) {
@@ -1747,28 +1747,37 @@ function InPlaceDynamicCascadeSelector({
       .filter((o: any) => typeof o === 'string' || o.isActive !== false)
       .map((o: any) => {
         if (typeof o === 'string') {
-          return { id: o, label: o, icon: getOptionIcon({ id: o, label: o }) };
+          return { id: o, label: o, icon: getOptionIcon({ id: o, label: o }), triggerFieldId: undefined };
         }
         return {
           id: o.id || o.label,
           label: o.label || o.id,
           icon: o.icon || getOptionIcon({ id: o.id, label: o.label }),
+          triggerFieldId: o.triggerFieldId || o.childFieldId || o.triggerField,
         };
       });
   }, [parentDef.options]);
 
-  const matchingBindings = useMemo(() => {
-    if (!parentVal || !parentDef.childBindings) return [];
-    return parentDef.childBindings.filter((b: any) => {
-      const trig = b.triggerValue?.trim();
-      return trig === parentVal || parentOpts.some(po => (po.id === trig || po.label === trig) && (po.id === parentVal || po.label === parentVal));
-    });
+  const matchingChildFieldId = useMemo(() => {
+    if (!parentVal) return null;
+    // 1. Check parentDef.childBindings
+    if (parentDef.childBindings && parentDef.childBindings.length > 0) {
+      const match = parentDef.childBindings.find((b: any) => {
+        const trig = b.triggerValue?.trim();
+        return trig === parentVal || parentOpts.some(po => (po.id === trig || po.label === trig) && (po.id === parentVal || po.label === parentVal));
+      });
+      if (match?.childFieldId) return match.childFieldId;
+    }
+    // 2. Check parentDef.options
+    const selectedOpt = parentOpts.find((po: any) => po.label === parentVal || po.id === parentVal);
+    if (selectedOpt?.triggerFieldId) return selectedOpt.triggerFieldId;
+    return null;
   }, [parentVal, parentDef.childBindings, parentOpts]);
 
   const childDef = useMemo(() => {
-    if (matchingBindings.length === 0) return null;
-    return effectiveDynamicFields.find(df => df.id === matchingBindings[0].childFieldId) || null;
-  }, [matchingBindings, effectiveDynamicFields]);
+    if (!matchingChildFieldId) return null;
+    return effectiveDynamicFields.find(df => df.id === matchingChildFieldId) || null;
+  }, [matchingChildFieldId, effectiveDynamicFields]);
 
   const childFieldName = childDef ? `dyn_${childDef.id}` : '';
   const childVal = childDef ? (formData[childFieldName] || '') : '';
@@ -1871,11 +1880,17 @@ function InPlaceDynamicCascadeSelector({
                   onClick={() => {
                     onFieldChange(parentFieldName, opt.label);
                     if (childFieldName) onFieldChange(childFieldName, '');
-                    if (childDef) {
+
+                    // Check if this specific option triggers a child dynamic field
+                    const optTrigger = opt.triggerFieldId;
+                    const bindingMatch = parentDef.childBindings?.find((b: any) => b.triggerValue === opt.label || b.triggerValue === opt.id);
+                    const willHaveChild = Boolean(optTrigger || bindingMatch);
+
+                    if (willHaveChild) {
                       setIsEditing('child');
                     } else {
                       setIsEditing(false);
-                      setTimeout(() => onAutoAdvance?.(), 160);
+                      setTimeout(() => onAutoAdvance?.(parentFieldName, opt.label), 160);
                     }
                   }}
                 />
@@ -1943,7 +1958,7 @@ function InPlaceDynamicCascadeSelector({
                   onClick={() => {
                     onFieldChange(childFieldName, opt.label);
                     setIsEditing(false);
-                    setTimeout(() => onAutoAdvance?.(), 160);
+                    setTimeout(() => onAutoAdvance?.(childFieldName, opt.label), 160);
                   }}
                 />
               );
@@ -2626,6 +2641,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [orgTree, setOrgTree] = useState<any>(null);
   const [allDynamicFields, setAllDynamicFields] = useState<any[]>([]);
   const formTopRef = useRef<HTMLDivElement>(null);
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
   const [isMobileScreen, setIsMobileScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 840 : false);
 
   useEffect(() => {
@@ -2703,9 +2720,17 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       } else if (name.startsWith('dyn_')) {
         const parentId = name.replace('dyn_', '');
         const parentDef = effectiveDynamicFields.find(df => df.id === parentId);
-        if (parentDef?.childBindings) {
-          parentDef.childBindings.forEach((b: any) => {
-            delete next[`dyn_${b.childFieldId}`];
+        if (parentDef) {
+          if (parentDef.childBindings) {
+            parentDef.childBindings.forEach((b: any) => {
+              delete next[`dyn_${b.childFieldId}`];
+            });
+          }
+          (parentDef.options || []).forEach((o: any) => {
+            if (typeof o === 'object') {
+              if (o.triggerFieldId) delete next[`dyn_${o.triggerFieldId}`];
+              if (o.childFieldId) delete next[`dyn_${o.childFieldId}`];
+            }
           });
         }
       }
@@ -2778,7 +2803,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       if (f.name.startsWith('dyn_')) {
         const dynId = f.name.replace('dyn_', '');
         const isBoundAsChild = effectiveDynamicFields.some(df =>
-          df.childBindings?.some((b: any) => b.childFieldId === dynId)
+          df.childBindings?.some((b: any) => b.childFieldId === dynId) ||
+          df.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId === dynId || o.childFieldId === dynId))
         );
         if (isBoundAsChild) return false;
       }
@@ -2825,7 +2851,13 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       if (name.startsWith('dyn_')) {
         const dId = name.replace('dyn_', '');
         const dDef = effectiveDynamicFields.find(df => df.id === dId);
-        if (dDef?.childBindings && dDef.childBindings.length > 0) return true;
+        const isCascadeParent = Boolean(
+          dDef && (
+            (dDef.childBindings && dDef.childBindings.length > 0) ||
+            dDef.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId || o.childFieldId))
+          )
+        );
+        if (isCascadeParent) return true;
       }
       return false;
     };
@@ -2842,6 +2874,58 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }
     return [];
   }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
+
+  const isFieldComplete = useCallback((field: RequestFormField, data: Record<string, any>) => {
+    if (field.name === 'department') {
+      return Boolean(data.department?.trim());
+    }
+    if (field.name === 'taxonomyMain') {
+      const mainVal = data.taxonomyMain?.trim();
+      if (!mainVal) return false;
+      const cfg = (selectedFlow as any)?.formConfig;
+      const mainTax = cfg?.taxonomy?.find((t: any) => t.label === mainVal || t.id === mainVal);
+      const activeSubs = mainTax?.subIssues?.filter((s: any) => s.isActive !== false) || [];
+      if (activeSubs.length > 0) {
+        return Boolean(data.taxonomySub?.trim());
+      }
+      return true;
+    }
+    if (field.name.startsWith('dyn_')) {
+      const dynId = field.name.replace('dyn_', '');
+      const parentVal = data[field.name]?.trim();
+      if (!parentVal) return false;
+      const dynDef = effectiveDynamicFields.find(df => df.id === dynId);
+      if (dynDef) {
+        let childId: string | null = null;
+        if (dynDef.childBindings) {
+          const match = dynDef.childBindings.find((b: any) => b.triggerValue === parentVal);
+          if (match) childId = match.childFieldId;
+        }
+        if (!childId && dynDef.options) {
+          const opt = dynDef.options.find((o: any) => typeof o === 'object' && (o.label === parentVal || o.id === parentVal));
+          if (opt?.triggerFieldId) childId = opt.triggerFieldId;
+          else if (opt?.childFieldId) childId = opt.childFieldId;
+        }
+        if (childId) {
+          return Boolean(data[`dyn_${childId}`]?.trim());
+        }
+      }
+      return true;
+    }
+    return Boolean(data[field.name]?.trim());
+  }, [selectedFlow, effectiveDynamicFields]);
+
+  const allRequiredInStageFilled = useMemo(() => {
+    const reqs = stageFieldsToRender.filter(f => f.required);
+    if (reqs.length === 0) return true;
+    return reqs.every(f => isFieldComplete(f, formData));
+  }, [stageFieldsToRender, formData, isFieldComplete]);
+
+  const hasUnfilledOptionalInStage = useMemo(() => {
+    const opts = stageFieldsToRender.filter(f => !f.required);
+    if (opts.length === 0) return false;
+    return opts.some(f => !isFieldComplete(f, formData));
+  }, [stageFieldsToRender, formData, isFieldComplete]);
 
   const validateCurrentStep = () => {
     if (!selectedFlow) return true;
@@ -2879,12 +2963,21 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       if (f.name.startsWith('dyn_')) {
         const dynId = f.name.replace('dyn_', '');
         const pDef = effectiveDynamicFields.find(df => df.id === dynId);
-        if (pDef?.childBindings && formData[f.name]) {
-          const matching = pDef.childBindings.filter((b: any) => b.triggerValue === formData[f.name]);
-          for (const b of matching) {
-            const childDef = effectiveDynamicFields.find(df => df.id === b.childFieldId);
+        const pVal = formData[f.name];
+        if (pDef && pVal) {
+          let childIds: string[] = [];
+          if (pDef.childBindings) {
+            const matching = pDef.childBindings.filter((b: any) => b.triggerValue === pVal);
+            matching.forEach((b: any) => childIds.push(b.childFieldId));
+          }
+          const matchedOpt = (pDef.options || []).find((o: any) => typeof o === 'object' && (o.label === pVal || o.id === pVal));
+          if (matchedOpt?.triggerFieldId) childIds.push(matchedOpt.triggerFieldId);
+          if (matchedOpt?.childFieldId) childIds.push(matchedOpt.childFieldId);
+
+          for (const cId of childIds) {
+            const childDef = effectiveDynamicFields.find(df => df.id === cId);
             if (childDef && !formData[`dyn_${childDef.id}`]?.trim()) {
-              setErrorMsg(`يرجى تحديد (${childDef.name}) التابعة لـ (${formData[f.name]})`);
+              setErrorMsg(`يرجى تحديد (${childDef.name}) التابعة لـ (${pVal})`);
               return false;
             }
           }
@@ -2903,16 +2996,25 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     }
   };
 
-  const handleAutoAdvance = () => {
+  const handleAutoAdvance = useCallback((fieldName?: string, nextValue?: string) => {
     setTimeout(() => {
-      setCurrentStep(prev => {
-        if (prev < totalStages) {
-          return prev + 1;
-        }
-        return prev;
-      });
+      const currentFields = stageFieldsToRender;
+      if (currentFields.length <= 1) {
+        setCurrentStep(prev => (prev < totalStages ? prev + 1 : prev));
+        return;
+      }
+
+      const mergedData = {
+        ...formDataRef.current,
+        ...(fieldName && nextValue !== undefined ? { [fieldName]: nextValue } : {})
+      };
+
+      const allFilled = currentFields.every(f => isFieldComplete(f, mergedData));
+      if (allFilled) {
+        setCurrentStep(prev => (prev < totalStages ? prev + 1 : prev));
+      }
     }, 280);
-  };
+  }, [stageFieldsToRender, totalStages, isFieldComplete]);
 
   const handlePrevStep = () => {
     setErrorMsg('');
@@ -3189,10 +3291,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       border: 'none',
                       padding: 0,
                       cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
-                      opacity: isThisSinking ? 0 : (isAnySinking ? 0.25 : (block.allowed ? 1 : 0.45)),
+                      opacity: isThisSinking ? 0 : (isAnySinking ? 0.2 : (block.allowed ? 1 : 0.45)),
                       transform: isThisSinking
-                        ? 'translateY(-34px) scale(0.45)'
-                        : (isAnySinking ? 'translateY(-14px) scale(0.85)' : undefined),
+                        ? 'translateY(24px) scale(0.55)'
+                        : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
                       transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1)',
                       pointerEvents: isAnySinking ? 'none' : 'auto',
                       display: 'flex',
@@ -3287,6 +3389,30 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               })}
             </div>
 
+            {/* The Matching Lower Luminous Optical Rail Line (خط ضوئي أسفل مسارات الطلبات ينزل قليلاً بنعومة عند الاختيار) */}
+            <div
+              style={{
+                width: isMobileScreen ? '96%' : '90%',
+                maxWidth: '920px',
+                height: sinkingFlowId ? '3px' : '2px',
+                background: sinkingFlowId
+                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
+                  : (darkMode
+                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
+                boxShadow: sinkingFlowId
+                  ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
+                  : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
+                position: 'relative',
+                marginTop: isMobileScreen ? '-6px' : '-8px',
+                transform: sinkingFlowId ? 'translateY(24px)' : 'none',
+                opacity: sinkingFlowId ? 0.7 : 1,
+                zIndex: 4,
+                pointerEvents: 'none',
+                transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s ease, background 0.25s ease, box-shadow 0.25s ease',
+              }}
+            />
+
             {/* Mobile Swipe Hint */}
             {isMobileScreen && requests.length > 4 && (
               <div
@@ -3299,7 +3425,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   fontWeight: 600,
                   color: darkMode ? '#94a3b8' : '#64748b',
                   fontFamily: "'Cairo', sans-serif",
-                  marginTop: '-4px',
+                  marginTop: '6px',
                   marginBottom: '10px',
                 }}
               >
@@ -3633,7 +3759,13 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         if (field.name.startsWith('dyn_')) {
                           const dynId = field.name.replace('dyn_', '');
                           const dynDef = effectiveDynamicFields.find(df => df.id === dynId);
-                          if (dynDef && dynDef.childBindings && dynDef.childBindings.length > 0) {
+                          const hasCascade = Boolean(
+                            dynDef && (
+                              (dynDef.childBindings && dynDef.childBindings.length > 0) ||
+                              dynDef.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId || o.childFieldId))
+                            )
+                          );
+                          if (dynDef && hasCascade) {
                             return (
                               <React.Fragment key={field.name}>
                                 <InPlaceDynamicCascadeSelector
@@ -3975,45 +4107,94 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </div>
                   )}
 
-                  {/* Navigation Back Action (Only if user is past step 1, to allow easy return) */}
-                  {currentStep > 1 && currentStep < totalStages && (
+                  {/* Smart Stage Progression & Navigation Bar (للخطوات السابقة والمتابعة الذكية عند استيفاء الحقول) */}
+                  {currentStep < totalStages && (
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'flex-start',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '10px',
                       borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                       paddingTop: '12px',
+                      marginTop: '6px',
+                      width: '100%',
                     }}>
-                      <button
-                        type="button"
-                        onClick={handlePrevStep}
-                        style={{
-                          minHeight: '38px',
-                          padding: '6px 16px',
-                          borderRadius: '9999px',
-                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                          color: darkMode ? '#cbd5e1' : '#475569',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontFamily: "'Cairo', sans-serif",
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        }}
-                        onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
-                        }}
-                        onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.transform = 'none';
-                        }}
-                      >
-                        <ChevronRight size={14} />
-                        <span>الرجوع للخطوة السابقة</span>
-                      </button>
+                      {/* Back button (Only if user is past step 1) */}
+                      {currentStep > 1 ? (
+                        <button
+                          type="button"
+                          onClick={handlePrevStep}
+                          style={{
+                            minHeight: '38px',
+                            padding: '6px 16px',
+                            borderRadius: '9999px',
+                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                            color: darkMode ? '#cbd5e1' : '#475569',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontFamily: "'Cairo', sans-serif",
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'none';
+                          }}
+                        >
+                          <ChevronRight size={14} />
+                          <span>الرجوع للخطوة السابقة</span>
+                        </button>
+                      ) : <div />}
+
+                      {/* Smart Advance / Skip Optional Action Button when required fields are satisfied */}
+                      {allRequiredInStageFilled && (
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.94 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.94 }}
+                          type="button"
+                          onClick={handleNextStep}
+                          style={{
+                            minHeight: '38px',
+                            padding: '6px 18px',
+                            borderRadius: '9999px',
+                            background: `linear-gradient(135deg, ${flowColor} 0%, #0891b2 100%)`,
+                            border: '1.5px solid rgba(255, 255, 255, 0.35)',
+                            color: '#ffffff',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontFamily: "'Cairo', sans-serif",
+                            boxShadow: `0 4px 16px ${flowColor}45`,
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.03)';
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'none';
+                          }}
+                        >
+                          <span>متابعة للمرحلة التالية</span>
+                          {hasUnfilledOptionalInStage && (
+                            <span style={{ fontSize: '9.5px', opacity: 0.9, fontWeight: 700 }}>
+                              (تخطي الحقول الاختيارية ⚡)
+                            </span>
+                          )}
+                          <ArrowLeft size={14} />
+                        </motion.button>
+                      )}
                     </div>
                   )}
               </div>

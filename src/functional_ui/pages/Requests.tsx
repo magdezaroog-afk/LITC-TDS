@@ -388,129 +388,140 @@ export default function RequestsPage() {
           gap: '8px',
           padding: '0 2px',
         }}>
-          {/* خيارات الطلبات: تبويبات حرة عائمة بأبعاد مستقرة */}
+          {/* خيارات الطلبات: 3 تبويبات بنفس الحجم بألوان متباينة ملكية متناسقة */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '5px' : '8px',
-            flexWrap: 'wrap',
+            gap: isMobile ? '6px' : '10px',
+            width: isMobile ? '100%' : 'auto',
+            flex: isMobile ? '1 1 100%' : undefined,
           }}>
-            {/* Tab 1: الطلبات المفتوحة */}
+            {/* Tab 1: الطلبات المفتوحة (Teal Identity) */}
             <button
               type="button"
               onClick={() => setFilterTab('active')}
               style={{
+                flex: isMobile ? 1 : undefined,
+                minWidth: isMobile ? '0' : '145px',
+                height: isMobile ? '38px' : '42px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: isMobile ? '4px' : '6px',
-                padding: isMobile ? '5px 10px' : '7px 14px',
-                borderRadius: '8px',
+                justifyContent: 'center',
+                gap: isMobile ? '5px' : '7px',
+                padding: isMobile ? '4px 8px' : '6px 14px',
+                borderRadius: '10px',
                 border: filterTab === 'active'
-                  ? '1px solid rgba(56, 189, 248, 0.4)'
-                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
+                  ? '1.5px solid rgba(56, 189, 248, 0.6)'
+                  : (darkMode ? '1px solid rgba(19, 93, 121, 0.35)' : '1px solid rgba(19, 93, 121, 0.2)'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'active'
-                  ? '#135d79'
-                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
-                color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
+                background: filterTab === 'active'
+                  ? 'linear-gradient(135deg, #135d79 0%, #0891b2 100%)'
+                  : (darkMode ? 'rgba(19, 93, 121, 0.12)' : 'rgba(19, 93, 121, 0.06)'),
+                color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#7dd3fc' : '#0369a1'),
                 fontSize: isMobile ? '11px' : '12px',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontFamily: "'Cairo', sans-serif",
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: filterTab === 'active' ? '0 4px 14px rgba(19, 93, 121, 0.35)' : 'none',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: filterTab === 'active' ? '0 4px 16px rgba(19, 93, 121, 0.45)' : 'none',
               }}
             >
-              <Activity size={isMobile ? 12 : 14} strokeWidth={2.4} />
-              <span>الطلبات المفتوحة</span>
+              <Activity size={isMobile ? 13 : 15} strokeWidth={2.4} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>الطلبات المفتوحة</span>
               <span style={{
                 fontSize: '10px',
-                padding: '1px 5px',
+                padding: '1px 6px',
                 borderRadius: '9999px',
-                backgroundColor: filterTab === 'active' ? 'rgba(255, 255, 255, 0.22)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
-                color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#cbd5e1' : '#334155'),
-                fontWeight: 800,
+                backgroundColor: filterTab === 'active' ? 'rgba(255, 255, 255, 0.25)' : (darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(19, 93, 121, 0.15)'),
+                color: filterTab === 'active' ? '#ffffff' : (darkMode ? '#38bdf8' : '#0369a1'),
+                fontWeight: 900,
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {stats.active}
               </span>
             </button>
 
-            {/* Tab 2: تحتاج إلى تقييم */}
+            {/* Tab 2: تحتاج إلى تقييم (Orange Identity) */}
             <button
               type="button"
               onClick={() => setFilterTab('needs_rating')}
               style={{
+                flex: isMobile ? 1 : undefined,
+                minWidth: isMobile ? '0' : '145px',
+                height: isMobile ? '38px' : '42px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: isMobile ? '4px' : '6px',
-                padding: isMobile ? '5px 10px' : '7px 14px',
-                borderRadius: '8px',
+                justifyContent: 'center',
+                gap: isMobile ? '5px' : '7px',
+                padding: isMobile ? '4px 8px' : '6px 14px',
+                borderRadius: '10px',
                 border: filterTab === 'needs_rating'
-                  ? '1px solid rgba(243, 108, 33, 0.4)'
-                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
+                  ? '1.5px solid rgba(251, 146, 60, 0.6)'
+                  : (darkMode ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.2)'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'needs_rating'
-                  ? '#f36c21'
-                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
-                color: filterTab === 'needs_rating' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
+                background: filterTab === 'needs_rating'
+                  ? 'linear-gradient(135deg, #f36c21 0%, #d97706 100%)'
+                  : (darkMode ? 'rgba(243, 108, 33, 0.12)' : 'rgba(243, 108, 33, 0.06)'),
+                color: filterTab === 'needs_rating' ? '#ffffff' : (darkMode ? '#fdba74' : '#c2410c'),
                 fontSize: isMobile ? '11px' : '12px',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontFamily: "'Cairo', sans-serif",
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: filterTab === 'needs_rating' ? '0 4px 14px rgba(243, 108, 33, 0.35)' : 'none',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: filterTab === 'needs_rating' ? '0 4px 16px rgba(243, 108, 33, 0.45)' : 'none',
               }}
             >
-              <Sparkles size={isMobile ? 12 : 14} strokeWidth={2.4} />
-              <span>تحتاج إلى تقييم</span>
-              {stats.needsRating > 0 && (
-                <span style={{
-                  fontSize: '10px',
-                  padding: '1px 5px',
-                  borderRadius: '9999px',
-                  backgroundColor: filterTab === 'needs_rating' ? 'rgba(255, 255, 255, 0.25)' : '#f59e0b',
-                  color: filterTab === 'needs_rating' ? '#ffffff' : '#000000',
-                  fontWeight: 900,
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {stats.needsRating}
-                </span>
-              )}
+              <Sparkles size={isMobile ? 13 : 15} strokeWidth={2.4} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>تحتاج إلى تقييم</span>
+              <span style={{
+                fontSize: '10px',
+                padding: '1px 6px',
+                borderRadius: '9999px',
+                backgroundColor: filterTab === 'needs_rating' ? 'rgba(255, 255, 255, 0.25)' : (darkMode ? 'rgba(243, 108, 33, 0.18)' : 'rgba(243, 108, 33, 0.15)'),
+                color: filterTab === 'needs_rating' ? '#ffffff' : (darkMode ? '#fb923c' : '#c2410c'),
+                fontWeight: 900,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {stats.needsRating}
+              </span>
             </button>
 
-            {/* Tab 3: أرشيف طلباتي السابقة */}
+            {/* Tab 3: أرشيف طلباتي (Indigo / Royal Slate Identity) */}
             <button
               type="button"
               onClick={() => setFilterTab('archived')}
               style={{
+                flex: isMobile ? 1 : undefined,
+                minWidth: isMobile ? '0' : '145px',
+                height: isMobile ? '38px' : '42px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: isMobile ? '4px' : '6px',
-                padding: isMobile ? '5px 10px' : '7px 14px',
-                borderRadius: '8px',
+                justifyContent: 'center',
+                gap: isMobile ? '5px' : '7px',
+                padding: isMobile ? '4px 8px' : '6px 14px',
+                borderRadius: '10px',
                 border: filterTab === 'archived'
-                  ? (darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #475569')
-                  : (darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1'),
+                  ? '1.5px solid rgba(129, 140, 248, 0.6)'
+                  : (darkMode ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(99, 102, 241, 0.2)'),
                 cursor: 'pointer',
-                backgroundColor: filterTab === 'archived'
-                  ? (darkMode ? '#1e293b' : '#334155')
-                  : (darkMode ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
-                color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#94a3b8' : '#475569'),
+                background: filterTab === 'archived'
+                  ? 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)'
+                  : (darkMode ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.06)'),
+                color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#a5b4fc' : '#4338ca'),
                 fontSize: isMobile ? '11px' : '12px',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontFamily: "'Cairo', sans-serif",
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: filterTab === 'archived' ? '0 4px 14px rgba(0, 0, 0, 0.25)' : 'none',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: filterTab === 'archived' ? '0 4px 16px rgba(99, 102, 241, 0.45)' : 'none',
               }}
             >
-              <FolderArchive size={isMobile ? 12 : 14} />
-              <span>الأرشيف</span>
+              <FolderArchive size={isMobile ? 13 : 15} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>أرشيف طلباتي</span>
               <span style={{
                 fontSize: '10px',
-                padding: '1px 5px',
+                padding: '1px 6px',
                 borderRadius: '9999px',
-                backgroundColor: filterTab === 'archived' ? 'rgba(255, 255, 255, 0.22)' : (darkMode ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0'),
-                color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#cbd5e1' : '#334155'),
-                fontWeight: 800,
+                backgroundColor: filterTab === 'archived' ? 'rgba(255, 255, 255, 0.25)' : (darkMode ? 'rgba(99, 102, 241, 0.18)' : 'rgba(99, 102, 241, 0.15)'),
+                color: filterTab === 'archived' ? '#ffffff' : (darkMode ? '#818cf8' : '#4f46e5'),
+                fontWeight: 900,
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {stats.archived}
