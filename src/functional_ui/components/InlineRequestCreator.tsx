@@ -33,6 +33,7 @@ import {
 import { renderRouteIcon } from '../../services/ticketIconLibrary';
 import { EmployeeDelegatePicker } from './EmployeeDelegatePicker';
 import { CinemaTicketFrame, TicketCodeBadge } from './CinemaTicketFrame';
+import nexusIconTransparent from '../assets/nexus_official_icon_transparent.png';
 
 // ── Dynamic Icon Resolver ──────────────────────────────────
 const resolveIcon = (name?: string, size = 20, color = 'currentColor') => {
@@ -318,7 +319,123 @@ function ModernSelect({
   );
 }
 
-// ── 2026 Mobile Single-Row Horizontal Scrollable Options Track (MacBook / Native Feel) ──
+// ── Shared Luxury Floating Circular Disc for Stage Options (تطابق تام مع فخامة أيقونات المسار) ──
+function StageCircularOptionButton({
+  isSelected,
+  icon,
+  label,
+  onClick,
+  darkMode = true,
+  flowColor = '#38bdf8',
+  width = '78px',
+  discSize = '50px',
+  subLabel,
+}: {
+  isSelected: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  darkMode?: boolean;
+  flowColor?: string;
+  width?: string;
+  discSize?: string;
+  subLabel?: string;
+}) {
+  const fColor = flowColor || '#38bdf8';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: '4px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '6px',
+        width,
+        flexShrink: 0,
+        outline: 'none',
+        textAlign: 'center',
+        userSelect: 'none',
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: discSize,
+          height: discSize,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: isSelected
+            ? (darkMode
+                ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.24) 0%, ${fColor}35 50%, rgba(15, 23, 42, 0.9) 100%)`
+                : `radial-gradient(circle at 35% 35%, #ffffff 0%, ${fColor}25 50%, rgba(241, 245, 249, 0.95) 100%)`)
+            : (darkMode
+                ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.1) 0%, rgba(30, 41, 59, 0.5) 60%, rgba(15, 23, 42, 0.75) 100%)`
+                : `radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 60%, rgba(226, 232, 240, 0.9) 100%)`),
+          border: isSelected
+            ? `2px solid ${fColor}`
+            : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
+          color: isSelected ? fColor : (darkMode ? '#94a3b8' : '#64748b'),
+          boxShadow: isSelected
+            ? `0 8px 24px ${fColor}45, inset 0 1.5px 2px rgba(255, 255, 255, 0.4)`
+            : (darkMode ? '0 4px 14px rgba(0,0,0,0.3), inset 0 1px 1.5px rgba(255,255,255,0.1)' : '0 2px 8px rgba(0,0,0,0.06)'),
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        {icon}
+        {isSelected && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-2px',
+              insetInlineEnd: '-2px',
+              width: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              backgroundColor: fColor,
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 2px 8px ${fColor}80`,
+              zIndex: 4,
+            }}
+          >
+            <Check size={11} strokeWidth={3.5} />
+          </div>
+        )}
+      </div>
+
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: isSelected ? 800 : 600,
+          color: isSelected ? (darkMode ? '#ffffff' : '#0f172a') : (darkMode ? '#cbd5e1' : '#475569'),
+          fontFamily: "'Cairo', sans-serif",
+          lineHeight: 1.25,
+          wordBreak: 'break-word',
+          maxWidth: width,
+        }}
+      >
+        {label}
+      </span>
+      {subLabel && (
+        <span style={{ fontSize: '9px', color: '#64748b', lineHeight: 1 }}>{subLabel}</span>
+      )}
+    </button>
+  );
+}
+
+// ── 2026 Mobile Single-Row Horizontal Scrollable Options Track (Fluid Swipe & Momentum) ──
 function MobileScrollableOptionsTrack({
   children,
   totalCount,
@@ -333,12 +450,35 @@ function MobileScrollableOptionsTrack({
   accentColor?: string;
 }) {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 840 : false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 840);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!trackRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - trackRef.current.offsetLeft);
+    setScrollLeft(trackRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !trackRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - trackRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    trackRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
 
   if (!isMobile) {
     return (
@@ -351,21 +491,27 @@ function MobileScrollableOptionsTrack({
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <div
+        ref={trackRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
         style={{
           width: '100%',
           display: 'flex',
           flexDirection: 'row',
           flexWrap: 'nowrap',
-          alignItems: 'center',
-          gap: '8px',
+          alignItems: 'flex-start',
+          gap: '12px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          scrollSnapType: 'x mandatory',
-          scrollBehavior: 'smooth',
           scrollbarWidth: 'none',
-          padding: '4px 2px 6px',
+          padding: '6px 4px 10px',
           WebkitOverflowScrolling: 'touch',
-          boxSizing: 'border-box'
+          touchAction: 'pan-x',
+          boxSizing: 'border-box',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: isDragging ? 'none' : 'auto',
         }}
       >
         {children}
@@ -455,94 +601,23 @@ function FieldInput({
           {opts.map(opt => {
             const isSelected = value === opt.value || value === opt.label;
             return (
-              <button
+              <StageCircularOptionButton
                 key={opt.value}
-                type="button"
+                isSelected={isSelected}
+                icon={resolveIcon(opt.icon, 20, isSelected ? focusBorder : (darkMode ? '#94a3b8' : '#64748b'))}
+                label={opt.label}
+                flowColor={focusBorder}
+                darkMode={darkMode}
+                width={isMobile ? '74px' : '84px'}
+                discSize={isMobile ? '46px' : '52px'}
                 onClick={() => {
                   const nextVal = isSelected ? '' : opt.label;
                   onChange(nextVal);
-                  if (nextVal) onAutoAdvance?.();
+                  if (nextVal) {
+                    setTimeout(() => onAutoAdvance?.(), 160);
+                  }
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '6px',
-                  width: isMobile ? '72px' : '84px',
-                  flexShrink: 0,
-                  scrollSnapAlign: 'start',
-                  outline: 'none',
-                  textAlign: 'center',
-                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-              >
-                {/* Orbital Circular Disc - NO OUTER SQUARE BOX! */}
-                <div style={{
-                  position: 'relative',
-                  width: isMobile ? '44px' : '52px',
-                  height: isMobile ? '44px' : '52px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: isSelected
-                    ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                    : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                  border: isSelected
-                    ? '2px solid #38bdf8'
-                    : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                  boxShadow: isSelected
-                    ? (darkMode ? '0 0 20px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
-                    : '0 2px 6px rgba(0,0,0,0.04)',
-                  color: isSelected
-                    ? (darkMode ? '#38bdf8' : '#2563eb')
-                    : (darkMode ? '#cbd5e1' : '#475569'),
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}>
-                  {resolveIcon(opt.icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
-
-                  {/* Floating Selected Check Badge */}
-                  {isSelected && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-2px',
-                      insetInlineEnd: '-2px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      backgroundColor: darkMode ? '#38bdf8' : '#2563eb',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                    }}>
-                      <Check size={11} strokeWidth={3} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Floating Label - completely unboxed */}
-                <span style={{
-                  fontSize: '11.5px',
-                  fontWeight: isSelected ? 800 : 600,
-                  color: isSelected
-                    ? (darkMode ? '#38bdf8' : '#2563eb')
-                    : (darkMode ? '#e2e8f0' : '#1e293b'),
-                  fontFamily: "'Cairo', sans-serif",
-                  lineHeight: 1.35,
-                  wordBreak: 'break-word',
-                  maxWidth: '84px',
-                }}>
-                  {opt.label}
-                </span>
-              </button>
+              />
             );
           })}
         </MobileScrollableOptionsTrack>
@@ -1003,9 +1078,15 @@ function InPlaceTaxonomySelector({
               const isSelected = mainValue === label;
 
               return (
-                <button
+                <StageCircularOptionButton
                   key={item.id || label}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={resolveIcon(icon, 20, isSelected ? flowColor : (darkMode ? '#94a3b8' : '#64748b'))}
+                  label={label}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="78px"
+                  discSize="50px"
                   onClick={() => {
                     onSelectMain(label);
                     onSelectSub('');
@@ -1014,73 +1095,10 @@ function InPlaceTaxonomySelector({
                       setIsEditing('sub');
                     } else {
                       setIsEditing(false);
-                      onAutoAdvance?.();
+                      setTimeout(() => onAutoAdvance?.(), 160);
                     }
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '74px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {resolveIcon(icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '18px', height: '18px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={11} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11.5px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '88px',
-                  }}>
-                    {label}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -1138,80 +1156,23 @@ function InPlaceTaxonomySelector({
               const isSelected = subValue === subLabel;
 
               return (
-                <button
+                <StageCircularOptionButton
                   key={subLabel}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={typeof subIcon === 'string'
+                    ? resolveIcon(subIcon, 20, isSelected ? flowColor : (darkMode ? '#94a3b8' : '#64748b'))
+                    : subIcon}
+                  label={subLabel}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="78px"
+                  discSize="50px"
                   onClick={() => {
                     onSelectSub(subLabel);
                     setIsEditing(false);
-                    onAutoAdvance?.();
+                    setTimeout(() => onAutoAdvance?.(), 160);
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '84px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {typeof subIcon === 'string'
-                      ? resolveIcon(subIcon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))
-                      : subIcon}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '84px',
-                  }}>
-                    {subLabel}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -1411,82 +1372,25 @@ function InPlaceOrgHierarchySelector({
             {departments.map((d: any) => {
               const isSelected = department === d.name;
               return (
-                <button
+                <StageCircularOptionButton
                   key={d.id || d.name}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={resolveDeptIcon(d.name)}
+                  label={d.name}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="84px"
+                  discSize="50px"
                   onClick={() => {
                     onSelectDepartment(d.name);
                     onSelectDivision('');
                     onSelectTeam('');
                     const subDivs = getDivisionsForDepartment(orgTree, d.name);
                     if (subDivs.length === 0) {
-                      onAutoAdvance?.();
+                      setTimeout(() => onAutoAdvance?.(), 160);
                     }
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '74px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {resolveDeptIcon(d.name)}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '18px', height: '18px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={11} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '94px',
-                  }}>
-                    {d.name}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -1539,81 +1443,24 @@ function InPlaceOrgHierarchySelector({
             {divisions.map((divItem: any) => {
               const isSelected = division === divItem.name;
               return (
-                <button
+                <StageCircularOptionButton
                   key={divItem.id || divItem.name}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={<Layers size={20} />}
+                  label={divItem.name}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="84px"
+                  discSize="50px"
                   onClick={() => {
                     onSelectDivision(divItem.name);
                     onSelectTeam('');
                     const subTeams = getTeamsForDivision(orgTree, divItem.name);
                     if (subTeams.length === 0) {
-                      onAutoAdvance?.();
+                      setTimeout(() => onAutoAdvance?.(), 160);
                     }
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '88px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <Layers size={18} />
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '88px',
-                  }}>
-                    {divItem.name}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -1666,78 +1513,21 @@ function InPlaceOrgHierarchySelector({
             {teams.map((teamItem: any) => {
               const isSelected = team === teamItem.name;
               return (
-                <button
+                <StageCircularOptionButton
                   key={teamItem.id || teamItem.name}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={<UserCheck size={20} />}
+                  label={teamItem.name}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="84px"
+                  discSize="50px"
                   onClick={() => {
                     onSelectTeam(teamItem.name);
                     setActiveLevel('done');
-                    onAutoAdvance?.();
+                    setTimeout(() => onAutoAdvance?.(), 160);
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '84px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <UserCheck size={17} />
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '84px',
-                  }}>
-                    {teamItem.name}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -1907,80 +1697,23 @@ function InPlaceBuildingSelector({
         {normalizedOpts.map(opt => {
           const isSelected = value === opt.value || value === opt.label;
           return (
-            <button
+            <StageCircularOptionButton
               key={opt.value}
-              type="button"
+              isSelected={isSelected}
+              icon={<Building2 size={20} />}
+              label={opt.label}
+              flowColor={flowColor}
+              darkMode={darkMode}
+              width="84px"
+              discSize="50px"
               onClick={() => {
                 const nextVal = isSelected ? '' : opt.label;
                 onChange(nextVal);
                 if (nextVal) {
-                  onAutoAdvance?.();
+                  setTimeout(() => onAutoAdvance?.(), 160);
                 }
               }}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '6px',
-                width: '88px',
-                flexShrink: 0,
-                scrollSnapAlign: 'start',
-                outline: 'none',
-                textAlign: 'center',
-                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-            >
-              <div style={{
-                position: 'relative',
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: isSelected
-                  ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                  : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                border: isSelected
-                  ? '2px solid #38bdf8'
-                  : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                boxShadow: isSelected
-                  ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                  : '0 2px 6px rgba(0,0,0,0.04)',
-                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                transition: 'all 0.2s ease',
-              }}>
-                <Building2 size={20} />
-                {isSelected && (
-                  <div style={{
-                    position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    backgroundColor: '#38bdf8', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  }}>
-                    <Check size={10} strokeWidth={3} />
-                  </div>
-                )}
-              </div>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: isSelected ? 800 : 600,
-                color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e293b'),
-                fontFamily: "'Cairo', sans-serif",
-                lineHeight: 1.3,
-                wordBreak: 'break-word',
-                maxWidth: '88px',
-              }}>
-                {opt.label}
-              </span>
-            </button>
+            />
           );
         })}
       </MobileScrollableOptionsTrack>
@@ -2126,9 +1859,15 @@ function InPlaceDynamicCascadeSelector({
             {parentOpts.map((opt: any) => {
               const isSelected = parentVal === opt.label || parentVal === opt.id;
               return (
-                <button
+                <StageCircularOptionButton
                   key={opt.id || opt.label}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={resolveIcon(opt.icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+                  label={opt.label}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="88px"
+                  discSize="50px"
                   onClick={() => {
                     onFieldChange(parentFieldName, opt.label);
                     if (childFieldName) onFieldChange(childFieldName, '');
@@ -2136,73 +1875,10 @@ function InPlaceDynamicCascadeSelector({
                       setIsEditing('child');
                     } else {
                       setIsEditing(false);
-                      onAutoAdvance?.();
+                      setTimeout(() => onAutoAdvance?.(), 160);
                     }
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '88px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 18px rgba(56, 189, 248, 0.45)' : '0 4px 14px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {resolveIcon(opt.icon, 22, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '18px', height: '18px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={11} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11.5px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '88px',
-                  }}>
-                    {opt.label}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -2255,78 +1931,21 @@ function InPlaceDynamicCascadeSelector({
             {childOpts.map((opt: any) => {
               const isSelected = childVal === opt.label || childVal === opt.id;
               return (
-                <button
+                <StageCircularOptionButton
                   key={opt.id || opt.label}
-                  type="button"
+                  isSelected={isSelected}
+                  icon={resolveIcon(opt.icon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
+                  label={opt.label}
+                  flowColor={flowColor}
+                  darkMode={darkMode}
+                  width="84px"
+                  discSize="50px"
                   onClick={() => {
                     onFieldChange(childFieldName, opt.label);
                     setIsEditing(false);
-                    onAutoAdvance?.();
+                    setTimeout(() => onAutoAdvance?.(), 160);
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '6px',
-                    width: '84px',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    outline: 'none',
-                    textAlign: 'center',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  <div style={{
-                    position: 'relative',
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isSelected
-                      ? (darkMode ? 'rgba(56, 189, 248, 0.22)' : 'rgba(37, 99, 235, 0.12)')
-                      : (darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                    border: isSelected
-                      ? '2px solid #38bdf8'
-                      : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #cbd5e1'),
-                    boxShadow: isSelected
-                      ? (darkMode ? '0 0 16px rgba(56, 189, 248, 0.45)' : '0 4px 12px rgba(37, 99, 235, 0.2)')
-                      : '0 2px 6px rgba(0,0,0,0.04)',
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'),
-                    transition: 'all 0.2s ease',
-                  }}>
-                    {resolveIcon(opt.icon, 20, isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#cbd5e1' : '#475569'))}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: '-2px', insetInlineEnd: '-2px',
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        backgroundColor: '#38bdf8', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                      }}>
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? (darkMode ? '#38bdf8' : '#2563eb') : (darkMode ? '#e2e8f0' : '#1e3a52'),
-                    fontFamily: "'Cairo', sans-serif",
-                    lineHeight: 1.3,
-                    wordBreak: 'break-word',
-                    maxWidth: '84px',
-                  }}>
-                    {opt.label}
-                  </span>
-                </button>
+                />
               );
             })}
           </MobileScrollableOptionsTrack>
@@ -2521,187 +2140,398 @@ function InPlaceThermalPrinterShow({
         )}
       </div>
 
-      {/* The Thermal Cinema Ticket (التذكرة المطابقة لبطاقات الحوض في التصميم والأبعاد) */}
+      {/* The 3D Flipping Thermal Cinema Ticket (خروج الكرت من الخط وينقلب بختم وشعار النظام) */}
       {tearState !== 'completed' ? (
-        <motion.div
-          initial={{ y: -160, opacity: 0 }}
-          animate={
-            tearState === 'dispensing'
-              ? {
-                  y: [-160, 0],
-                  opacity: [0.6, 1],
-                  scale: 1,
-                  rotate: 0,
-                  transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
-                }
-              : tearState === 'ripping'
-              ? {
-                  y: [0, 16],
-                  rotate: [0, -2],
-                  scale: 1,
-                  opacity: 1,
-                  transition: { duration: 0.35, ease: 'easeOut' },
-                }
-              : tearState === 'departing'
-              ? {
-                  y: [16, 80, 180, 310, 460],
-                  x: [0, -22, 26, -18, 10, 0],
-                  rotate: [-2, 8, -7, 5, -2, 0],
-                  scale: [1, 0.88, 0.68, 0.46, 0.26],
-                  opacity: [1, 1, 0.95, 0.65, 0],
-                  filter: ['blur(0px)', 'blur(0px)', 'blur(0.5px)', 'blur(1.5px)', 'blur(3px)'],
-                  transition: { duration: 1.1, ease: [0.25, 0.8, 0.25, 1] },
-                }
-              : { y: 0, opacity: 1 }
-          }
+        <div
           style={{
+            perspective: '1400px',
             width: '360px',
             maxWidth: '92vw',
             position: 'relative',
             zIndex: 2,
             marginTop: '-4px',
-            transformOrigin: 'top center',
-            userSelect: 'none',
           }}
         >
-          <CinemaTicketFrame
-            accentColor={flowColor}
-            cornerCutout={7}
-            notchRadius={3.5}
-            numNotches={2}
-            dashIndent={8}
-            contentPadding="12px 16px"
+          <motion.div
+            initial={{ y: -160, opacity: 0, rotateY: 180 }}
+            animate={
+              tearState === 'dispensing'
+                ? {
+                    y: [-160, 0],
+                    rotateY: 180,
+                    opacity: [0.6, 1],
+                    scale: 1,
+                    transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
+                  }
+                : tearState === 'ripping'
+                ? {
+                    y: [0, 16],
+                    rotateY: [180, 0],
+                    scale: [1, 1.03, 1],
+                    opacity: 1,
+                    transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] },
+                  }
+                : tearState === 'departing'
+                ? {
+                    y: [16, 85, 190, 320, 480],
+                    x: [0, -22, 26, -18, 10, 0],
+                    rotateZ: [-2, 8, -7, 5, -2, 0],
+                    rotateY: 0,
+                    scale: [1, 0.88, 0.68, 0.46, 0.26],
+                    opacity: [1, 1, 0.95, 0.65, 0],
+                    filter: ['blur(0px)', 'blur(0px)', 'blur(0.5px)', 'blur(1.5px)', 'blur(3px)'],
+                    transition: { duration: 1.1, ease: [0.25, 0.8, 0.25, 1] },
+                  }
+                : { y: 0, opacity: 1, rotateY: 0 }
+            }
             style={{
               width: '100%',
-              backgroundColor: darkMode ? '#0e1726' : '#ffffff',
-              border: `1.5px solid ${flowColor}50`,
-              borderRadius: '10px',
-              boxShadow: darkMode
-                ? '0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(19, 93, 121, 0.25)'
-                : '0 12px 30px rgba(19, 93, 121, 0.14)',
-              overflow: 'hidden',
+              position: 'relative',
+              transformStyle: 'preserve-3d',
+              WebkitTransformStyle: 'preserve-3d',
+              transformOrigin: 'top center',
+              userSelect: 'none',
             }}
           >
-            {/* Perforated Laser Tear Line near top */}
-            <div style={{
-              position: 'relative',
-              paddingBottom: '8px',
-              borderBottom: '1.5px dashed rgba(245, 158, 11, 0.6)',
-              marginBottom: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontSize: '9px', fontWeight: 800 }}>
-                <Scissors size={11} />
-                <span>خط القص والاعتماد الحراري • OFFICIAL DISPENSE</span>
+            {/* ── CARD BACK FACE: الظهر الفاخر مطبوع عليه شعار النظام ونوع الطلب والختم الرسمي ── */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                borderRadius: '10px',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                background: darkMode
+                  ? `radial-gradient(ellipse at 50% 20%, #1e293b 0%, #0b1320 70%, #030712 100%)`
+                  : `radial-gradient(ellipse at 50% 20%, #ffffff 0%, #f1f5f9 70%, #e2e8f0 100%)`,
+                border: `2px solid ${flowColor}70`,
+                boxShadow: darkMode
+                  ? `0 16px 40px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 24px ${flowColor}30`
+                  : `0 14px 34px rgba(19, 93, 121, 0.18), inset 0 0 0 1px #ffffff, 0 0 20px ${flowColor}25`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '16px 18px',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                zIndex: 3,
+              }}
+            >
+              {/* Subtle background luxury pattern / watermark */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: darkMode ? 0.05 : 0.07,
+                  backgroundImage: `radial-gradient(${flowColor} 1.5px, transparent 1.5px)`,
+                  backgroundSize: '14px 14px',
+                  pointerEvents: 'none',
+                }}
+              />
+
+              {/* Back Face Top: System Logo & Brand Name */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img
+                    src={nexusIconTransparent}
+                    alt="NEXUS TDS"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))',
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 900,
+                      color: darkMode ? '#ffffff' : '#0f172a',
+                      fontFamily: "'Tajawal', sans-serif",
+                      letterSpacing: '0.5px',
+                      lineHeight: 1.1,
+                    }}>
+                      NEXUS TDS
+                    </span>
+                    <span style={{
+                      fontSize: '8.5px',
+                      color: flowColor,
+                      fontWeight: 700,
+                      fontFamily: "'Cairo', sans-serif",
+                    }}>
+                      منظومة التذاكر الرسمية
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  fontFamily: 'monospace',
+                  color: darkMode ? '#94a3b8' : '#64748b',
+                  backgroundColor: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
+                }}>
+                  {previewSerial}
+                </div>
               </div>
-              <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#64748b' }}>
-                {new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+
+              {/* Back Face Center: Request Type Name & Official Stamp */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                position: 'relative',
+                zIndex: 2,
+                padding: '6px 0',
+              }}>
+                <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+                  <span style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 700 }}>نوع الطلب والمسار:</span>
+                  <div style={{
+                    fontSize: '15px',
+                    fontWeight: 900,
+                    color: darkMode ? '#ffffff' : '#0f172a',
+                    fontFamily: "'Tajawal', sans-serif",
+                    lineHeight: 1.3,
+                    marginTop: '2px',
+                  }}>
+                    {selectedFlow?.title}
+                  </div>
+                  <div style={{ fontSize: '10px', color: flowColor, fontWeight: 700, marginTop: '3px' }}>
+                    جهة الاختصاص: {targetDeptName}
+                  </div>
+                </div>
+
+                {/* THE OFFICIAL CIRCULAR STAMP (ختم رسمي فاخر بأيقونة المسار) */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    border: `2px dashed ${flowColor}`,
+                    boxShadow: `0 0 16px ${flowColor}40, inset 0 0 14px ${flowColor}20`,
+                    backgroundColor: darkMode ? `${flowColor}15` : `${flowColor}10`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: 'rotate(-12deg)',
+                    flexShrink: 0,
+                    userSelect: 'none',
+                    padding: '3px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{
+                    fontSize: '6.5px',
+                    fontWeight: 900,
+                    color: flowColor,
+                    letterSpacing: '0.3px',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    ★ معتمد رسمياً ★
+                  </div>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: `${flowColor}25`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: flowColor,
+                    margin: '2px 0',
+                    boxShadow: `0 0 8px ${flowColor}50`,
+                  }}>
+                    {resolveIcon(selectedFlow?.icon, 16, flowColor)}
+                  </div>
+                  <div style={{
+                    fontSize: '6.5px',
+                    fontWeight: 800,
+                    color: darkMode ? '#cbd5e1' : '#475569',
+                    fontFamily: 'monospace',
+                  }}>
+                    {new Date().toISOString().split('T')[0]}
+                  </div>
+                </div>
+              </div>
+
+              {/* Back Face Bottom: Laser Authenticity Strip */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderTop: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #cbd5e1',
+                paddingTop: '6px',
+                position: 'relative',
+                zIndex: 2,
+              }}>
+                <span style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 600 }}>
+                  تذكرة رسمية معتمدة رقمياً
+                </span>
+                <span style={{ fontSize: '10px', letterSpacing: '2px', color: flowColor, fontFamily: 'monospace' }}>
+                  |||•||•||||•|||
+                </span>
+              </div>
             </div>
 
-            {/* Top Row: Service Icon + Ticket Code Badge + Status Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* ── CARD FRONT FACE: واجهة التذكرة الحرارية التفصيلية (CinemaTicketFrame) ── */}
+            <div
+              style={{
+                width: '100%',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(0deg)',
+              }}
+            >
+              <CinemaTicketFrame
+                accentColor={flowColor}
+                cornerCutout={7}
+                notchRadius={3.5}
+                numNotches={2}
+                dashIndent={8}
+                contentPadding="12px 16px"
+                style={{
+                  width: '100%',
+                  backgroundColor: darkMode ? '#0e1726' : '#ffffff',
+                  border: `1.5px solid ${flowColor}50`,
+                  borderRadius: '10px',
+                  boxShadow: darkMode
+                    ? '0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(19, 93, 121, 0.25)'
+                    : '0 12px 30px rgba(19, 93, 121, 0.14)',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Perforated Laser Tear Line near top */}
                 <div style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '6px',
-                  backgroundColor: `${flowColor}20`,
-                  border: `1px solid ${flowColor}50`,
+                  position: 'relative',
+                  paddingBottom: '8px',
+                  borderBottom: '1.5px dashed rgba(245, 158, 11, 0.6)',
+                  marginBottom: '8px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: flowColor,
+                  justifyContent: 'space-between',
                 }}>
-                  {resolveIcon(selectedFlow?.icon, 14, flowColor)}
-                </div>
-                <TicketCodeBadge code={previewSerial || '#REQ-2026'} color={flowColor} />
-              </div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                color: '#10b981',
-                fontSize: '10px',
-                fontWeight: 800,
-              }}>
-                <Check size={11} strokeWidth={3} />
-                <span>معتمد للإدراج</span>
-              </div>
-            </div>
-
-            {/* Ticket Title */}
-            <h3 style={{
-              fontSize: '13px',
-              fontWeight: 800,
-              color: darkMode ? '#ffffff' : '#0f172a',
-              fontFamily: "'Tajawal', sans-serif",
-              lineHeight: 1.35,
-              margin: '0 0 6px',
-            }}>
-              {selectedFlow?.title}
-            </h3>
-
-            {/* Detail Rows */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-              padding: '8px 10px',
-              borderRadius: '7px',
-              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-              border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
-              fontSize: '11px',
-              marginBottom: '8px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>مقدم الطلب:</span>
-                <span style={{ fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a' }}>{user?.name || 'مساحة الموظف'}</span>
-              </div>
-              {formData.taxonomyMain && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>التصنيف الفني:</span>
-                  <span style={{ fontWeight: 700, color: flowColor }}>
-                    {formData.taxonomyMain} {formData.taxonomySub ? `← ${formData.taxonomySub}` : ''}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontSize: '9px', fontWeight: 800 }}>
+                    <Scissors size={11} />
+                    <span>خط القص والاعتماد الحراري • OFFICIAL DISPENSE</span>
+                  </div>
+                  <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#64748b' }}>
+                    {new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>جهة الاختصاص:</span>
-                <span style={{ fontWeight: 700 }}>{targetDeptName}</span>
-              </div>
-              {formData.building && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>الموقع / المبنى:</span>
-                  <span style={{ fontWeight: 700 }}>{formData.building}</span>
-                </div>
-              )}
-            </div>
 
-            {/* Barcode & Monospace Footer */}
-            <div style={{
-              paddingTop: '6px',
-              borderTop: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              color: '#64748b',
-            }}>
-              <div style={{ fontSize: '13px', letterSpacing: '2px', color: flowColor }}>
-                |||| | |||||| || | |||| |||
-              </div>
-              <span>NEXUS-TDS • 2026</span>
+                {/* Top Row: Service Icon + Ticket Code Badge + Status Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      backgroundColor: `${flowColor}20`,
+                      border: `1px solid ${flowColor}50`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: flowColor,
+                    }}>
+                      {resolveIcon(selectedFlow?.icon, 14, flowColor)}
+                    </div>
+                    <TicketCodeBadge code={previewSerial || '#REQ-2026'} color={flowColor} />
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    color: '#10b981',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                  }}>
+                    <Check size={11} strokeWidth={3} />
+                    <span>معتمد للإدراج</span>
+                  </div>
+                </div>
+
+                {/* Ticket Title */}
+                <h3 style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: darkMode ? '#ffffff' : '#0f172a',
+                  fontFamily: "'Tajawal', sans-serif",
+                  lineHeight: 1.35,
+                  margin: '0 0 6px',
+                }}>
+                  {selectedFlow?.title}
+                </h3>
+
+                {/* Detail Rows */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  padding: '8px 10px',
+                  borderRadius: '7px',
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                  fontSize: '11px',
+                  marginBottom: '8px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>مقدم الطلب:</span>
+                    <span style={{ fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a' }}>{user?.name || 'مساحة الموظف'}</span>
+                  </div>
+                  {formData.taxonomyMain && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>التصنيف الفني:</span>
+                      <span style={{ fontWeight: 700, color: flowColor }}>
+                        {formData.taxonomyMain} {formData.taxonomySub ? `← ${formData.taxonomySub}` : ''}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>جهة الاختصاص:</span>
+                    <span style={{ fontWeight: 700 }}>{targetDeptName}</span>
+                  </div>
+                  {formData.building && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>الموقع / المبنى:</span>
+                      <span style={{ fontWeight: 700 }}>{formData.building}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Barcode & Monospace Footer */}
+                <div style={{
+                  paddingTop: '6px',
+                  borderTop: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontFamily: 'monospace',
+                  fontSize: '10px',
+                  color: '#64748b',
+                }}>
+                  <div style={{ fontSize: '13px', letterSpacing: '2px', color: flowColor }}>
+                    |||| | |||||| || | |||| |||
+                  </div>
+                  <span>NEXUS-TDS • 2026</span>
+                </div>
+              </CinemaTicketFrame>
             </div>
-          </CinemaTicketFrame>
-        </motion.div>
+          </motion.div>
+        </div>
       ) : (
         /* Success celebration state inside the bay */
         <motion.div
@@ -3296,7 +3126,29 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               alignItems: 'center',
             }}
           >
-            {/* The Horizontal Rail Container */}
+            {/* The Sleek Luminous Optical Rail Line (أعلى مسارات الطلبات وليس أسفلها) */}
+            <div
+              style={{
+                width: isMobileScreen ? '96%' : '90%',
+                maxWidth: '920px',
+                height: sinkingFlowId ? '3px' : '2px',
+                background: sinkingFlowId
+                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
+                  : (darkMode
+                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
+                boxShadow: sinkingFlowId
+                  ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
+                  : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
+                position: 'relative',
+                marginBottom: isMobileScreen ? '-10px' : '-14px',
+                zIndex: 4,
+                pointerEvents: 'none',
+                transition: 'all 0.25s ease',
+              }}
+            />
+
+            {/* The Horizontal Rail Container (Single Row with Free Smooth Touch Swiping) */}
             <div
               style={{
                 width: '100%',
@@ -3308,10 +3160,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 gap: isMobileScreen ? '14px' : '22px',
                 overflowX: 'auto',
                 overflowY: 'visible',
-                scrollSnapType: 'x mandatory',
                 scrollBehavior: 'smooth',
                 scrollbarWidth: 'none',
                 WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x',
                 padding: isMobileScreen ? '10px 12px 14px' : '14px 18px 18px',
                 position: 'relative',
                 zIndex: 2,
@@ -3339,9 +3191,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
                       opacity: isThisSinking ? 0 : (isAnySinking ? 0.25 : (block.allowed ? 1 : 0.45)),
                       transform: isThisSinking
-                        ? 'translateY(28px) scale(0.45)'
-                        : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
-                      transition: 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1)',
+                        ? 'translateY(-34px) scale(0.45)'
+                        : (isAnySinking ? 'translateY(-14px) scale(0.85)' : undefined),
+                      transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1)',
                       pointerEvents: isAnySinking ? 'none' : 'auto',
                       display: 'flex',
                       flexDirection: 'column',
@@ -3350,7 +3202,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       width: isMobileScreen ? '72px' : '92px',
                       outline: 'none',
                       flexShrink: 0,
-                      scrollSnapAlign: 'start',
                       textAlign: 'center',
                       animationDelay: `${idx * 0.22}s`,
                       userSelect: 'none',
@@ -3358,6 +3209,20 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       ...({ '--flow-color': fColor, '--flow-glow': `${fColor}60` } as any),
                     }}
                   >
+                    {/* Luminous Connector Node onto the Top Rail */}
+                    <div
+                      style={{
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        backgroundColor: fColor,
+                        boxShadow: `0 0 8px ${fColor}`,
+                        opacity: 0.9,
+                        marginBottom: '-4px',
+                        zIndex: 4,
+                      }}
+                    />
+
                     {/* Floating Circular Glass Disc */}
                     <div
                       className="service-circular-disc"
@@ -3380,19 +3245,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     >
                       {resolveIcon(flow.icon, isMobileScreen ? 24 : 28, fColor)}
                     </div>
-
-                    {/* Luminous Connector Node onto the Rail */}
-                    <div
-                      style={{
-                        width: '5px',
-                        height: '5px',
-                        borderRadius: '50%',
-                        backgroundColor: fColor,
-                        boxShadow: `0 0 8px ${fColor}`,
-                        opacity: 0.9,
-                        marginTop: '-4px',
-                      }}
-                    />
 
                     {/* Free-Floating Typography Label */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '2px' }}>
@@ -3435,29 +3287,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               })}
             </div>
 
-            {/* The Sleek Luminous Optical Rail Line (لاين سافا مشع وأنيق تحت الأيقونات) */}
-            <div
-              style={{
-                width: isMobileScreen ? '94%' : '88%',
-                maxWidth: '920px',
-                height: sinkingFlowId ? '3px' : '2px',
-                background: sinkingFlowId
-                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
-                  : (darkMode
-                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(56, 189, 248, 0.35) 85%, transparent)'
-                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.3) 15%, rgba(243, 108, 33, 0.45) 50%, rgba(19, 93, 121, 0.3) 85%, transparent)'),
-                boxShadow: sinkingFlowId
-                  ? `0 0 16px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 30px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}80`
-                  : (darkMode ? '0 0 10px rgba(56, 189, 248, 0.35)' : '0 0 8px rgba(19, 93, 121, 0.2)'),
-                position: 'relative',
-                marginTop: isMobileScreen ? '-30px' : '-35px',
-                zIndex: 1,
-                marginBottom: isMobileScreen ? '24px' : '26px',
-                pointerEvents: 'none',
-                transition: 'all 0.25s ease',
-              }}
-            />
-
             {/* Mobile Swipe Hint */}
             {isMobileScreen && requests.length > 4 && (
               <div
@@ -3470,8 +3299,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   fontWeight: 600,
                   color: darkMode ? '#94a3b8' : '#64748b',
                   fontFamily: "'Cairo', sans-serif",
-                  marginTop: '-16px',
-                  marginBottom: '6px',
+                  marginTop: '-4px',
+                  marginBottom: '10px',
                 }}
               >
                 <span>↔ اسحب لاختيار نوع الطلب ({requests.length})</span>
@@ -3481,14 +3310,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         </div>
       )}
 
-      {/* ═══ 2. CONSOLE WORKSPACE BAY (خلفية شبه لا توجد بلمسات زجاجية خفيفة وانتقال ناعم) ═══ */}
+      {/* ═══ 2. CONSOLE WORKSPACE BAY (خلفية شبه لا توجد بلمسات زجاجية خفيفة وانتقال ناعم من أسفل لأعلى) ═══ */}
       <AnimatePresence>
         {selectedFlow && (
           <motion.div
-            initial={{ opacity: 0, height: 0, scale: 0.98 }}
-            animate={{ opacity: 1, height: 'auto', scale: 1 }}
-            exit={{ opacity: 0, height: 0, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 35, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 25, scale: 0.98 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             style={{
               width: '100%',
               maxWidth: '940px',
@@ -4146,99 +3975,47 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </div>
                   )}
 
-                  {/* Navigation Buttons Footer (Only for steps < totalStages) */}
-                  {currentStep < totalStages && (
+                  {/* Navigation Back Action (Only if user is past step 1, to allow easy return) */}
+                  {currentStep > 1 && currentStep < totalStages && (
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
+                      justifyContent: 'flex-start',
                       borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                      paddingTop: '16px',
-                      gap: '12px',
-                      flexWrap: 'wrap',
+                      paddingTop: '12px',
                     }}>
-                    <div>
-                      {currentStep > 1 && (
-                        <button
-                          type="button"
-                          onClick={handlePrevStep}
-                          style={{
-                            minHeight: '44px',
-                            padding: '8px 20px',
-                            borderRadius: '9999px',
-                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
-                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                            color: darkMode ? '#cbd5e1' : '#475569',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontFamily: "'Cairo', sans-serif",
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.transform = 'none';
-                          }}
-                        >
-                          <ChevronRight size={15} />
-                          <span>السابق</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handlePrevStep}
+                        style={{
+                          minHeight: '38px',
+                          padding: '6px 16px',
+                          borderRadius: '9999px',
+                          backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
+                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                          color: darkMode ? '#cbd5e1' : '#475569',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontFamily: "'Cairo', sans-serif",
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.transform = 'none';
+                        }}
+                      >
+                        <ChevronRight size={14} />
+                        <span>الرجوع للخطوة السابقة</span>
+                      </button>
                     </div>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      flexWrap: 'wrap',
-                      width: isMobileScreen ? '100%' : 'auto',
-                      justifyContent: isMobileScreen ? 'stretch' : 'flex-end',
-                    }}>
-                      {currentStep < totalStages && (
-                        <button
-                          type="button"
-                          onClick={handleNextStep}
-                          style={{
-                            minHeight: '46px',
-                            padding: '10px 24px',
-                            borderRadius: '9999px',
-                            background: `linear-gradient(135deg, ${flowColor} 0%, #0d4a63 100%)`,
-                            border: '1.5px solid rgba(255, 255, 255, 0.3)',
-                            color: '#ffffff',
-                            fontSize: '13px',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: `0 8px 24px ${flowColor}45, inset 0 1px 0 rgba(255,255,255,0.4)`,
-                            fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                            width: isMobileScreen ? '100%' : 'auto',
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
-                            (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 28px ${flowColor}60, inset 0 1px 0 rgba(255,255,255,0.5)`;
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.transform = 'none';
-                            (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 24px ${flowColor}45, inset 0 1px 0 rgba(255,255,255,0.4)`;
-                          }}
-                        >
-                          <span>متابعة للمرحلة التالية ({currentStep + 1}/{totalStages})</span>
-                          <ChevronLeft size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
               </div>
               ) : (
                 <InPlaceThermalPrinterShow
