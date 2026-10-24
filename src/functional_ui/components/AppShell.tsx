@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useHub } from '../context/HubContext';
 import { RequestSheet } from './RequestSheet';
@@ -6,6 +7,15 @@ import { UserProfileModal } from './UserProfileModal';
 export function AppShell() {
   const { language, darkMode } = useHub();
   const isRtl = language === 'ar';
+  const [isMobileScreen, setIsMobileScreen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileScreen(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div
@@ -29,7 +39,7 @@ export function AppShell() {
           width: '100%',
           maxWidth: '1360px',
           margin: '0 auto',
-          padding: '24px 20px 90px',
+          padding: isMobileScreen ? '6px 12px 24px' : '10px 20px 40px',
         }}
       >
         <Outlet />

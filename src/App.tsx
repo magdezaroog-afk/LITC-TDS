@@ -551,11 +551,11 @@ const Navigation: React.FC = () => {
 
             {/* Mode Switcher Cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 بيئات ومودات العمل
               </div>
 
-              {/* 1. Employee Portal */}
+              {/* 1. Employee Portal (الواجهة الوظيفية) */}
               <Link
                 to="/hub"
                 onClick={() => setIsDrawerOpen(false)}
@@ -565,21 +565,33 @@ const Navigation: React.FC = () => {
                   justifyContent: 'space-between',
                   padding: '12px 14px',
                   borderRadius: '12px',
-                  background: isEmployeeActive ? 'rgba(19, 93, 121, 0.3)' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1.5px solid ${isEmployeeActive ? '#135d79' : 'rgba(255, 255, 255, 0.06)'}`,
-                  color: isEmployeeActive ? '#38bdf8' : '#e2e8f0',
+                  background: isEmployeeActive
+                    ? (isDark ? 'linear-gradient(135deg, rgba(19, 93, 121, 0.4) 0%, rgba(56, 189, 248, 0.15) 100%)' : 'rgba(19, 93, 121, 0.08)')
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: `1.5px solid ${isEmployeeActive ? '#135d79' : 'rgba(255, 255, 255, 0.08)'}`,
+                  color: isEmployeeActive ? (isDark ? '#38bdf8' : '#135d79') : '#e2e8f0',
                   textDecoration: 'none',
                   fontWeight: 700,
                   fontSize: '13px',
                 }}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🏢</span> بوابة الموظف والطلبات
-                </span>
-                <ChevronLeft size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '18px' }}>🏢</span>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>بوابة الموظف (الواجهة الوظيفية)</div>
+                    <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 500 }}>تقديم ومتابعة كافة الطلبات والخدمات</div>
+                  </div>
+                </div>
+                {isEmployeeActive ? (
+                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#135d79', color: '#ffffff', fontWeight: 700 }}>
+                    الحالية
+                  </span>
+                ) : (
+                  <ChevronLeft size={16} />
+                )}
               </Link>
 
-              {/* 2. Ops Mode */}
+              {/* 2. Ops Mode (إدارة العمليات) */}
               {canAccessOps && (
                 <Link
                   to="/ops"
@@ -590,22 +602,45 @@ const Navigation: React.FC = () => {
                     justifyContent: 'space-between',
                     padding: '12px 14px',
                     borderRadius: '12px',
-                    background: isOpsActive ? 'rgba(243, 108, 33, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    border: `1.5px solid ${isOpsActive ? '#f36c21' : 'rgba(255, 255, 255, 0.06)'}`,
+                    background: isOpsActive
+                      ? (isDark ? 'linear-gradient(135deg, rgba(243, 108, 33, 0.35) 0%, rgba(234, 88, 12, 0.15) 100%)' : 'rgba(243, 108, 33, 0.08)')
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: `1.5px solid ${isOpsActive ? '#f36c21' : 'rgba(255, 255, 255, 0.08)'}`,
                     color: isOpsActive ? '#fb923c' : '#e2e8f0',
                     textDecoration: 'none',
                     fontWeight: 700,
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Layers size={16} /> إدارة العمليات
-                  </span>
-                  <ChevronLeft size={16} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(243, 108, 33, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#f36c21'
+                    }}>
+                      <Layers size={16} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800 }}>طابور وإدارة العمليات</div>
+                      <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 500 }}>معالجة التذاكر وتعيين المهام التشغيلية</div>
+                    </div>
+                  </div>
+                  {isOpsActive ? (
+                    <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#f36c21', color: '#ffffff', fontWeight: 700 }}>
+                      الحالية
+                    </span>
+                  ) : (
+                    <ChevronLeft size={16} />
+                  )}
                 </Link>
               )}
 
-              {/* 3. Admin Mode */}
+              {/* 3. Admin Mode (لوحة الإدارة) */}
               {canAccessAdmin && (
                 <Link
                   to="/admin"
@@ -616,18 +651,30 @@ const Navigation: React.FC = () => {
                     justifyContent: 'space-between',
                     padding: '12px 14px',
                     borderRadius: '12px',
-                    background: isAdminActive ? 'rgba(2, 132, 199, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    border: `1.5px solid ${isAdminActive ? '#0284c7' : 'rgba(255, 255, 255, 0.06)'}`,
+                    background: isAdminActive
+                      ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(3, 105, 161, 0.15) 100%)' : 'rgba(2, 132, 199, 0.08)')
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: `1.5px solid ${isAdminActive ? '#0284c7' : 'rgba(255, 255, 255, 0.08)'}`,
                     color: isAdminActive ? '#38bdf8' : '#e2e8f0',
                     textDecoration: 'none',
                     fontWeight: 700,
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>🛡️</span> لوحة إدارة النظام
-                  </span>
-                  <ChevronLeft size={16} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>🛡️</span>
+                    <div>
+                      <div style={{ fontWeight: 800 }}>لوحة إدارة النظام والحوكمة</div>
+                      <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 500 }}>إعدادات المسارات، الهياكل، والمستدلات</div>
+                    </div>
+                  </div>
+                  {isAdminActive ? (
+                    <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 700 }}>
+                      الحالية
+                    </span>
+                  ) : (
+                    <ChevronLeft size={16} />
+                  )}
                 </Link>
               )}
             </div>
@@ -686,129 +733,57 @@ const Navigation: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          3. BOTTOM NAVIGATION BAR FOR MOBILE (شريط اللمس السفلي)
+          3. PURE FLOATING EXECUTIVE MENU PILL (زر القائمة المميز بثلاث شرطات أسفل يمين الشاشة)
           ══════════════════════════════════════════════════════════ */}
       {isMobileScreen && (
-        <nav
+        <button
+          type="button"
+          onClick={() => setIsDrawerOpen(true)}
+          title="القائمة وبيئات العمل"
           style={{
             position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '58px',
-            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.94)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.14)',
-            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.25)',
+            bottom: '20px',
+            right: '16px',
             zIndex: 94000,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-around',
-            direction: dir,
-            padding: '0 8px',
-            boxSizing: 'border-box'
+            gap: '8px',
+            padding: '8px 14px 8px 12px',
+            borderRadius: '9999px',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(24px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+            border: isDark ? '1.5px solid rgba(56, 189, 248, 0.35)' : '1.5px solid rgba(19, 93, 121, 0.25)',
+            boxShadow: isDark
+              ? '0 10px 30px -4px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.18)'
+              : '0 8px 24px -4px rgba(19, 93, 121, 0.18), 0 2px 6px rgba(0, 0, 0, 0.05)',
+            color: isDark ? '#ffffff' : '#0f172a',
+            cursor: 'pointer',
+            fontFamily: "'Cairo', sans-serif",
+            fontSize: '12.5px',
+            fontWeight: 800,
+            outline: 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
-          {/* 1. Hub Button */}
-          <Link
-            to="/hub"
+          {/* Animated 3 Stripes (المميز بثلاث شرطات) */}
+          <div
             style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '8px',
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.16)' : 'rgba(19, 93, 121, 0.1)',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              gap: '2px',
-              textDecoration: 'none',
-              color: isEmployeeActive ? (isDark ? '#38bdf8' : '#135d79') : '#64748b',
-              fontWeight: isEmployeeActive ? 800 : 600,
-              fontSize: '10.5px',
-              flex: 1,
-              padding: '6px 0',
-              position: 'relative'
+              justifyContent: 'center',
+              color: isDark ? '#38bdf8' : '#135d79',
             }}
           >
-            <span style={{ fontSize: '18px' }}>🏢</span>
-            <span>بوابة الموظف</span>
-            {isEmployeeActive && (
-              <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#38bdf8' }} />
-            )}
-          </Link>
-
-          {/* 2. Ops Mode Button */}
-          {canAccessOps && (
-            <Link
-              to="/ops"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2px',
-                textDecoration: 'none',
-                color: isOpsActive ? '#f36c21' : '#64748b',
-                fontWeight: isOpsActive ? 800 : 600,
-                fontSize: '10.5px',
-                flex: 1,
-                padding: '6px 0',
-                position: 'relative'
-              }}
-            >
-              <Layers size={18} />
-              <span>العمليات</span>
-              {isOpsActive && (
-                <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#f36c21' }} />
-              )}
-            </Link>
-          )}
-
-          {/* 3. Admin Button */}
-          {canAccessAdmin && (
-            <Link
-              to="/admin"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2px',
-                textDecoration: 'none',
-                color: isAdminActive ? '#0284c7' : '#64748b',
-                fontWeight: isAdminActive ? 800 : 600,
-                fontSize: '10.5px',
-                flex: 1,
-                padding: '6px 0',
-                position: 'relative'
-              }}
-            >
-              <span style={{ fontSize: '18px' }}>🛡️</span>
-              <span>لوحة الإدارة</span>
-              {isAdminActive && (
-                <span style={{ position: 'absolute', bottom: '2px', width: '16px', height: '2.5px', borderRadius: '2px', backgroundColor: '#0284c7' }} />
-              )}
-            </Link>
-          )}
-
-          {/* 4. Menu Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setIsDrawerOpen(true)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              background: 'transparent',
-              border: 'none',
-              color: isDrawerOpen ? '#f36c21' : '#64748b',
-              fontWeight: 600,
-              fontSize: '10.5px',
-              flex: 1,
-              padding: '6px 0',
-              cursor: 'pointer'
-            }}
-          >
-            <Menu size={18} />
-            <span>المزيد</span>
-          </button>
-        </nav>
+            <Menu size={18} strokeWidth={2.4} />
+          </div>
+          <span>المزيد</span>
+        </button>
       )}
     </>
   );
@@ -875,6 +850,17 @@ const AppContent: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  const [isMobileScreen, setIsMobileScreen] = React.useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 840 : false
+  );
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setIsMobileScreen(window.innerWidth < 840);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const isLoginPage = location.pathname === '/login';
 
   // If we are on the login page or not logged in, render ONLY login page
@@ -909,8 +895,8 @@ const AppContent: React.FC = () => {
         style={{ 
           flex: 1, 
           padding: 0, 
-          minHeight: 'calc(100vh - 94px)', 
-          paddingTop: '94px' 
+          minHeight: isMobileScreen ? 'calc(100vh - 58px)' : 'calc(100vh - 74px)', 
+          paddingTop: isMobileScreen ? '58px' : '74px' 
         }}>
         <Routes>
           <Route path="/hub/*" element={<FunctionalWorkspace />} />

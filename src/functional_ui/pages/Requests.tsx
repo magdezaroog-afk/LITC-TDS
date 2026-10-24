@@ -175,7 +175,7 @@ export default function RequestsPage() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: '12px',
         position: 'relative',
         minHeight: '100%',
         paddingBottom: '24px',
@@ -186,28 +186,28 @@ export default function RequestsPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 18px',
+        padding: '10px 16px',
         borderRadius: '12px',
         backgroundColor: darkMode ? '#0e1726' : '#ffffff',
         border: darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0',
         boxShadow: darkMode ? '0 4px 20px rgba(0, 0, 0, 0.25)' : '0 2px 10px rgba(19, 93, 121, 0.04)',
         flexWrap: 'wrap',
-        gap: '12px',
+        gap: '10px',
         transition: 'all 0.2s ease',
       }}>
         <div>
           <h1 style={{
-            fontSize: '19px',
+            fontSize: '17px',
             fontWeight: 800,
             color: darkMode ? '#ffffff' : '#0f172a',
-            margin: '0 0 4px',
+            margin: '0 0 3px',
             letterSpacing: '-0.02em',
             fontFamily: "'Tajawal', sans-serif",
           }}>
             مرحباً بك، من هنا تستطيع إنشاء وإدارة طلباتك
           </h1>
           <p style={{
-            fontSize: '12px',
+            fontSize: '11.5px',
             color: darkMode ? '#94a3b8' : '#64748b',
             margin: 0,
             fontFamily: "'Cairo', sans-serif",
