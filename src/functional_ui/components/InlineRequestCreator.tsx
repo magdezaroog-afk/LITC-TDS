@@ -3224,6 +3224,18 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     await new Promise(r => setTimeout(r, 450));
 
     setTearState('departing');
+    // Dispatch signal to tickets basin to slide existing cards to the left and reserve incoming spot
+    try {
+      window.dispatchEvent(new CustomEvent('litc_ticket_incoming', {
+        detail: {
+          code: previewSerial,
+          title: selectedFlow.title,
+          color: flowColor,
+          icon: selectedFlow.icon,
+        }
+      }));
+    } catch {}
+
     // Screen glides down alongside the fluttering ticket towards the open requests basin
     try {
       const basin = document.getElementById('litc-tickets-basin');
@@ -3277,69 +3289,74 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
 
-      {/* ═══ 1. MACOS DOCK / TASKBAR SINGLE HORIZONTAL ROW (أيقونات الطلبات في صف أفقي تمرير سلس بنمط ماك بوك ديسك) ═══ */}
+      {/* ═══ 1. FLOATING CIRCULAR SERVICE DISCS OVER A SLEEK LUMINOUS RAIL (أيقونات دائرية تطفو فوق لاين سافا بدون مستطيل) ═══ */}
       {!selectedFlow && tearState === 'idle' && (
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px',
             width: '100%',
-            padding: '2px 0 10px',
+            padding: isMobileScreen ? '4px 0 12px' : '6px 0 16px',
+            position: 'relative',
           }}
         >
           <style>{`
-            .mac-dock-item {
-              transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease !important;
+            @keyframes etherealLevitate {
+              0%, 100% {
+                transform: translateY(0px);
+              }
+              50% {
+                transform: translateY(-7px);
+              }
             }
-            .mac-dock-item:hover, .mac-dock-item:active {
-              transform: translateY(-5px) scale(1.1) !important;
+            .service-floating-circle-btn {
+              animation: etherealLevitate 3.6s ease-in-out infinite;
+              transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease !important;
             }
-            .mac-dock-squircle {
-              transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            .service-floating-circle-btn:hover, .service-floating-circle-btn:active {
+              animation-play-state: paused !important;
+              transform: translateY(-11px) scale(1.15) !important;
             }
-            .mac-dock-item:hover .mac-dock-squircle, .mac-dock-item:active .mac-dock-squircle {
-              transform: scale(1.05);
+            .service-circular-disc {
+              transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .service-floating-circle-btn:hover .service-circular-disc,
+            .service-floating-circle-btn:active .service-circular-disc {
+              box-shadow: 0 14px 32px var(--flow-glow) !important;
+              border-color: var(--flow-color) !important;
             }
           `}</style>
 
-          {/* macOS Glass Dock Tray */}
+          {/* Single Row Horizontal Scrollable Track (Strictly Single Row on Mobile) */}
           <div
             style={{
               width: '100%',
-              maxWidth: isMobileScreen ? '100%' : '880px',
-              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.85)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.12)' : '1.5px solid rgba(19, 93, 121, 0.16)',
-              borderRadius: isMobileScreen ? '18px' : '22px',
-              padding: isMobileScreen ? '8px 10px 10px' : '10px 18px 12px',
-              boxShadow: darkMode
-                ? '0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
-                : '0 8px 26px rgba(19, 93, 121, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
+              position: 'relative',
+              alignItems: 'center',
             }}
           >
-            {/* Single Row Horizontal Scrollable Dock Track */}
+            {/* The Horizontal Rail Container */}
             <div
               style={{
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'row',
                 flexWrap: 'nowrap',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: isMobileScreen ? 'flex-start' : (requests.length <= 6 ? 'center' : 'flex-start'),
-                gap: isMobileScreen ? '12px' : '18px',
+                gap: isMobileScreen ? '14px' : '22px',
                 overflowX: 'auto',
-                overflowY: 'hidden',
+                overflowY: 'visible',
                 scrollSnapType: 'x mandatory',
                 scrollBehavior: 'smooth',
                 scrollbarWidth: 'none',
                 WebkitOverflowScrolling: 'touch',
-                padding: '4px 2px',
+                padding: isMobileScreen ? '10px 12px 14px' : '14px 18px 18px',
+                position: 'relative',
+                zIndex: 2,
               }}
             >
               {requests.map((flow, idx) => {
@@ -3353,69 +3370,74 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     type="button"
                     disabled={!block.allowed}
                     onClick={() => block.allowed && handleSelectFlow(flow)}
-                    className="mac-dock-item"
+                    className="service-floating-circle-btn"
                     title={flow.title}
                     style={{
                       background: 'none',
                       border: 'none',
-                      padding: '2px',
+                      padding: 0,
                       cursor: block.allowed ? 'pointer' : 'not-allowed',
                       opacity: block.allowed ? 1 : 0.45,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '5px',
-                      width: isMobileScreen ? '66px' : '82px',
+                      gap: '8px',
+                      width: isMobileScreen ? '72px' : '92px',
                       outline: 'none',
                       flexShrink: 0,
                       scrollSnapAlign: 'start',
                       textAlign: 'center',
+                      animationDelay: `${idx * 0.22}s`,
                       userSelect: 'none',
+                      position: 'relative',
+                      ...({ '--flow-color': fColor, '--flow-glow': `${fColor}60` } as any),
                     }}
                   >
-                    {/* macOS Squircle Icon Container */}
+                    {/* Floating Circular Glass Disc */}
                     <div
-                      className="mac-dock-squircle"
+                      className="service-circular-disc"
                       style={{
                         position: 'relative',
-                        width: isMobileScreen ? '48px' : '56px',
-                        height: isMobileScreen ? '48px' : '56px',
-                        borderRadius: isMobileScreen ? '13px' : '16px',
+                        width: isMobileScreen ? '52px' : '62px',
+                        height: isMobileScreen ? '52px' : '62px',
+                        borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         background: darkMode
-                          ? `linear-gradient(145deg, ${fColor}25 0%, rgba(15, 23, 42, 0.8) 100%)`
-                          : `linear-gradient(145deg, #ffffff 0%, ${fColor}15 100%)`,
-                        border: `1.5px solid ${fColor}60`,
+                          ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.16) 0%, ${fColor}25 50%, rgba(15, 23, 42, 0.85) 100%)`
+                          : `radial-gradient(circle at 35% 35%, #ffffff 0%, ${fColor}18 60%, rgba(241, 245, 249, 0.95) 100%)`,
+                        border: `2px solid ${fColor}55`,
                         color: fColor,
-                        boxShadow: `0 4px 14px ${fColor}30, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+                        boxShadow: `0 8px 24px ${fColor}35, inset 0 1.5px 2px rgba(255, 255, 255, 0.35)`,
+                        zIndex: 3,
                       }}
                     >
-                      {resolveIcon(flow.icon, isMobileScreen ? 22 : 26, fColor)}
+                      {resolveIcon(flow.icon, isMobileScreen ? 24 : 28, fColor)}
                     </div>
 
-                    {/* Active Running Indicator Dot */}
+                    {/* Luminous Connector Node onto the Rail */}
                     <div
                       style={{
-                        width: '4px',
-                        height: '4px',
+                        width: '5px',
+                        height: '5px',
                         borderRadius: '50%',
                         backgroundColor: fColor,
-                        boxShadow: `0 0 6px ${fColor}`,
+                        boxShadow: `0 0 8px ${fColor}`,
                         opacity: 0.9,
+                        marginTop: '-4px',
                       }}
                     />
 
-                    {/* Single Row Typography Label */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                    {/* Free-Floating Typography Label */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '2px' }}>
                       <span
                         style={{
-                          fontSize: isMobileScreen ? '11px' : '12px',
+                          fontSize: isMobileScreen ? '11px' : '12.5px',
                           fontWeight: 800,
                           color: darkMode ? '#ffffff' : '#0f172a',
                           fontFamily: "'Tajawal', sans-serif",
-                          lineHeight: 1.2,
+                          lineHeight: 1.25,
                           textAlign: 'center',
                           width: '100%',
                           whiteSpace: 'nowrap',
@@ -3448,6 +3470,24 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               })}
             </div>
 
+            {/* The Sleek Luminous Optical Rail Line (لاين سافا مشع وأنيق تحت الأيقونات) */}
+            <div
+              style={{
+                width: isMobileScreen ? '94%' : '88%',
+                maxWidth: '920px',
+                height: '2px',
+                background: darkMode
+                  ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(56, 189, 248, 0.35) 85%, transparent)'
+                  : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.3) 15%, rgba(243, 108, 33, 0.45) 50%, rgba(19, 93, 121, 0.3) 85%, transparent)',
+                boxShadow: darkMode ? '0 0 10px rgba(56, 189, 248, 0.35)' : '0 0 8px rgba(19, 93, 121, 0.2)',
+                position: 'relative',
+                marginTop: isMobileScreen ? '-30px' : '-35px',
+                zIndex: 1,
+                marginBottom: isMobileScreen ? '24px' : '26px',
+                pointerEvents: 'none',
+              }}
+            />
+
             {/* Mobile Swipe Hint */}
             {isMobileScreen && requests.length > 4 && (
               <div
@@ -3460,7 +3500,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   fontWeight: 600,
                   color: darkMode ? '#94a3b8' : '#64748b',
                   fontFamily: "'Cairo', sans-serif",
-                  marginTop: '1px',
+                  marginTop: '-16px',
+                  marginBottom: '6px',
                 }}
               >
                 <span>↔ اسحب لاختيار نوع الطلب ({requests.length})</span>
@@ -3470,7 +3511,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         </div>
       )}
 
-      {/* ═══ 2. CONSOLE WORKSPACE BAY (لوحة إعداد المعاملة المنظمة) ═══ */}
+      {/* ═══ 2. CONSOLE WORKSPACE BAY (خلفية شبه لا توجد بلمسات زجاجية خفيفة وانتقال ناعم) ═══ */}
       <AnimatePresence>
         {selectedFlow && (
           <motion.div
@@ -3482,11 +3523,23 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               width: '100%',
               maxWidth: '940px',
               overflow: 'visible',
-              backgroundColor: darkMode ? '#0e172a' : '#ffffff',
-              borderRadius: '16px',
-              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1',
-              padding: '20px 22px',
-              boxShadow: darkMode ? '0 16px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(19, 93, 121, 0.08)',
+              background: isMobileScreen
+                ? (darkMode
+                    ? `radial-gradient(ellipse at 50% -10%, ${flowColor}12 0%, rgba(11, 20, 31, 0.25) 70%, transparent 100%)`
+                    : `radial-gradient(ellipse at 50% -10%, ${flowColor}08 0%, rgba(255, 255, 255, 0.4) 70%, transparent 100%)`)
+                : (darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff'),
+              borderRadius: isMobileScreen ? '20px' : '24px',
+              border: isMobileScreen
+                ? (darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid rgba(19, 93, 121, 0.12)')
+                : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1'),
+              padding: isMobileScreen ? '14px 8px' : '20px 22px',
+              boxShadow: isMobileScreen
+                ? (darkMode
+                    ? `0 12px 36px -10px rgba(0, 0, 0, 0.5), 0 0 25px -5px ${flowColor}20`
+                    : '0 12px 30px -10px rgba(19, 93, 121, 0.08)')
+                : (darkMode ? '0 16px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(19, 93, 121, 0.08)'),
+              backdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
+              WebkitBackdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
@@ -3699,10 +3752,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   {status !== 'success' && currentStep < totalStages && (
                     <motion.div
                       key={`step_${currentStep}`}
-                      initial={{ opacity: 0, x: -15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 15 }}
-                      transition={{ duration: 0.18 }}
+                      initial={{ opacity: 0, x: -28, filter: 'blur(6px)', scale: 0.98 }}
+                      animate={{ opacity: 1, x: 0, filter: 'blur(0px)', scale: 1 }}
+                      exit={{ opacity: 0, x: 28, filter: 'blur(6px)', scale: 0.98 }}
+                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       style={{
                         display: 'grid',
                         gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' : '1fr',
@@ -4294,8 +4347,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    paddingTop: '14px',
-                    gap: '10px',
+                    paddingTop: '16px',
+                    gap: '12px',
                     flexWrap: 'wrap',
                   }}>
                     <div>
@@ -4304,11 +4357,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           type="button"
                           onClick={handlePrevStep}
                           style={{
-                            minHeight: '42px',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
-                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #cbd5e1',
+                            minHeight: '44px',
+                            padding: '8px 20px',
+                            borderRadius: '9999px',
+                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
                             color: darkMode ? '#cbd5e1' : '#475569',
                             fontSize: '12px',
                             fontWeight: 700,
@@ -4317,7 +4370,14 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             alignItems: 'center',
                             gap: '6px',
                             fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.15s ease',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'none';
                           }}
                         >
                           <ChevronRight size={15} />
@@ -4339,23 +4399,31 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           type="button"
                           onClick={handleNextStep}
                           style={{
-                            minHeight: '42px',
-                            padding: '10px 22px',
-                            borderRadius: '8px',
-                            background: '#135d79',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            minHeight: '46px',
+                            padding: '10px 24px',
+                            borderRadius: '9999px',
+                            background: `linear-gradient(135deg, ${flowColor} 0%, #0d4a63 100%)`,
+                            border: '1.5px solid rgba(255, 255, 255, 0.3)',
                             color: '#ffffff',
-                            fontSize: '12.5px',
+                            fontSize: '13px',
                             fontWeight: 800,
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            boxShadow: '0 4px 14px rgba(19, 93, 121, 0.25), inset 0 1px 0 rgba(255,255,255,0.25)',
+                            boxShadow: `0 8px 24px ${flowColor}45, inset 0 1px 0 rgba(255,255,255,0.4)`,
                             fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.15s ease',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                             width: isMobileScreen ? '100%' : 'auto',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.02)';
+                            (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 28px ${flowColor}60, inset 0 1px 0 rgba(255,255,255,0.5)`;
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'none';
+                            (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 24px ${flowColor}45, inset 0 1px 0 rgba(255,255,255,0.4)`;
                           }}
                         >
                           <span>متابعة للمرحلة التالية ({currentStep + 1}/{totalStages})</span>
@@ -4369,26 +4437,34 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           onClick={handleTearAndSubmit}
                           disabled={loading || tearState !== 'idle'}
                           style={{
-                            minHeight: '44px',
-                            padding: '10px 26px',
-                            borderRadius: '8px',
-                            background: '#135d79',
-                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            minHeight: '48px',
+                            padding: '12px 28px',
+                            borderRadius: '9999px',
+                            background: `linear-gradient(135deg, ${flowColor} 0%, #10b981 100%)`,
+                            border: '1.5px solid rgba(255, 255, 255, 0.35)',
                             color: '#ffffff',
-                            fontSize: '13px',
-                            fontWeight: 800,
+                            fontSize: '13.5px',
+                            fontWeight: 900,
                             cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            boxShadow: '0 4px 16px rgba(19, 93, 121, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+                            boxShadow: `0 10px 28px ${flowColor}50, inset 0 1px 0 rgba(255,255,255,0.4)`,
                             fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.15s ease',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                             width: isMobileScreen ? '100%' : 'auto',
                           }}
+                          onMouseEnter={e => {
+                            if (!loading && tearState === 'idle') {
+                              (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.03)';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.transform = 'none';
+                          }}
                         >
-                          <Send size={15} />
+                          <Send size={16} />
                           <span>تأكيد وإرسال الطلب</span>
                         </button>
                       )}

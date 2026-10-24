@@ -107,6 +107,12 @@ export interface RouteFormConfig {
   maxConcurrentOpenTickets?: number;
   maxUnratedTicketsAllowed?: number;
   requireRatingBeforeNewTicket?: boolean;
+  // ─── Cancellation & Postponement Governance (صلاحيات وقواعد الإلغاء والتأجيل للموظف) ───
+  allowDirectCancelBeforeOpen?: boolean; // إتاحة الإلغاء الفوري للموظف ما لم يُفتح الطلب بعد
+  allowCancellationRequest?: boolean; // إتاحة طلب الإلغاء في أي وقت بأسباب محددة
+  cancellationReasons?: string[]; // خيارات أسباب طلب الإلغاء التي يحددها قائد المسار
+  allowPostponementRequest?: boolean; // إتاحة طلب تأجيل الموعد أو استئناف الطلب
+  postponementReasons?: string[]; // خيارات أسباب التأجيل
   // ─── Customizable Stages Architecture ───
   stages?: RouteFormStage[];
   // ─── Visual Field Widths Control (عرض الحقل: 100%، 50%، 33.3%) ───
@@ -196,6 +202,21 @@ export const defaultFormConfig = (): RouteFormConfig => ({
   maxConcurrentOpenTickets: 0,
   maxUnratedTicketsAllowed: 0,
   requireRatingBeforeNewTicket: false,
+  allowDirectCancelBeforeOpen: true,
+  allowCancellationRequest: true,
+  cancellationReasons: [
+    'حُلّت المشكلة ولم أعد بحاجة للطلب',
+    'خروج لمهمة خارجية أو اجتماع طارئ',
+    'تأخر إنجاز الطلب من قبل المهندس المكلف',
+    'أخرى (توضيح السبب يدوياً)'
+  ],
+  allowPostponementRequest: true,
+  postponementReasons: [
+    'عدم التواجد في المكتب حالياً',
+    'انشغال باجتماع عمل طارئ',
+    'تأجيل التنسيق لوقت لاحق',
+    'أخرى (تحديد يدوي)'
+  ]
 });
 
 /**

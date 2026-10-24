@@ -191,6 +191,10 @@ router.get('/v1/functional/requests', authMiddleware, (req, res, next) => functi
 router.get('/v1/functional/my-requests', authMiddleware, (req, res, next) => functionalController.getMyRequests(req, res, next));
 router.post('/v1/functional/requests', authMiddleware, (req, res, next) => functionalController.createTicket(req, res, next));
 router.post('/v1/functional/requests/:id/rate-close', authMiddleware, (req, res, next) => functionalController.rateAndCloseRequest(req, res, next));
+router.post('/v1/functional/requests/:id/cancel', authMiddleware, (req, res, next) => functionalController.cancelRequest(req, res, next));
+router.post('/v1/functional/requests/:id/request-cancel', authMiddleware, (req, res, next) => functionalController.requestCancellation(req, res, next));
+router.post('/v1/functional/requests/:id/request-postpone', authMiddleware, (req, res, next) => functionalController.requestPostponement(req, res, next));
+router.post('/v1/functional/requests/:id/resume', authMiddleware, (req, res, next) => functionalController.resumeRequest(req, res, next));
 
 // Main ticket submission endpoint (used by InteractiveTicketCreatorForm)
 router.post('/tickets', authMiddleware, (req, res, next) => functionalController.createTicket(req, res, next));

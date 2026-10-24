@@ -173,6 +173,25 @@ export const FlowReceptionGovernanceView: React.FC = () => {
   const [maxConcurrentOpenTickets, setMaxConcurrentOpenTickets] = useState(0);
   const [requireRatingBeforeNewTicket, setRequireRatingBeforeNewTicket] = useState(false);
   const [maxUnratedTicketsAllowed, setMaxUnratedTicketsAllowed] = useState(0);
+
+  // Pillar 6: Cancellation & Postponement Governance
+  const [allowDirectCancelBeforeOpen, setAllowDirectCancelBeforeOpen] = useState(true);
+  const [allowCancellationRequest, setAllowCancellationRequest] = useState(true);
+  const [cancellationReasons, setCancellationReasons] = useState<string[]>([
+    'تم حل المشكلة ذاتياً ولا داعي للمتابعة',
+    'تم تقديم الطلب بالخطأ أو تكرار الطلب',
+    'تغيرت متطلبات العمل أو تم إلغاء المهمة',
+    'سبب آخر (موضح بالملاحظات)'
+  ]);
+  const [newCancelReason, setNewCancelReason] = useState('');
+  const [allowPostponementRequest, setAllowPostponementRequest] = useState(true);
+  const [postponementReasons, setPostponementReasons] = useState<string[]>([
+    'عدم التواجد بمقر العمل حالياً (إجازة / مهمة عمل)',
+    'تأجيل الموعد لوجود اجتماع طارئ',
+    'انشغال الجهاز أو الموقع بأعمال تشغيلية حالياً',
+    'سبب آخر (موضح بالملاحظات)'
+  ]);
+  const [newPostponeReason, setNewPostponeReason] = useState('');
   const [isSavingGovernance, setIsSavingGovernance] = useState(false);
 
   // Auth Header Helper
@@ -243,6 +262,16 @@ export const FlowReceptionGovernanceView: React.FC = () => {
         setMaxConcurrentOpenTickets(fConfig.maxConcurrentOpenTickets || 0);
         setRequireRatingBeforeNewTicket(!!fConfig.requireRatingBeforeNewTicket);
         setMaxUnratedTicketsAllowed(fConfig.maxUnratedTicketsAllowed || 0);
+
+        setAllowDirectCancelBeforeOpen(fConfig.allowDirectCancelBeforeOpen !== false);
+        setAllowCancellationRequest(fConfig.allowCancellationRequest !== false);
+        if (Array.isArray(fConfig.cancellationReasons) && fConfig.cancellationReasons.length > 0) {
+          setCancellationReasons(fConfig.cancellationReasons);
+        }
+        setAllowPostponementRequest(fConfig.allowPostponementRequest !== false);
+        if (Array.isArray(fConfig.postponementReasons) && fConfig.postponementReasons.length > 0) {
+          setPostponementReasons(fConfig.postponementReasons);
+        }
       } else {
         showToast(json.message || 'فشل تحميل تفاصيل المسار', 'error');
       }
@@ -699,7 +728,12 @@ export const FlowReceptionGovernanceView: React.FC = () => {
           allowMultipleOpenTickets,
           maxConcurrentOpenTickets,
           requireRatingBeforeNewTicket,
-          maxUnratedTicketsAllowed
+          maxUnratedTicketsAllowed,
+          allowDirectCancelBeforeOpen,
+          allowCancellationRequest,
+          cancellationReasons,
+          allowPostponementRequest,
+          postponementReasons
         })
       });
       const json = await res.json();
@@ -2027,9 +2061,176 @@ export const FlowReceptionGovernanceView: React.FC = () => {
           {/* ═══════════════════════════════════════════════════════════════════
               سجل التغييرات والتدقيق السفلي (Audit Log)
              ═══════════════════════════════════════════════════════════════════ */}
+          {/* ═══════════════════════════════════════════════════════════════════
+              الركيزة 6: حوكمة إلغاء وتأجيل المعاملات وسقف الطلبات للموظف
+             ═══════════════════════════════════════════════════════════════════ */}
+          <div style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(24px)', borderRadius: '24px', padding: '28px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 24px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <ShieldCheck size={20} className="text-amber-600" />
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    الركيزة السادسة: حوكمة إلغاء وتأجيل المعاملات وسقف الطلبات للموظف
+                  </h2>
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                  التحكم في سياسات الإلغاء المباشر قبل الفتح، طلبات الإلغاء أثناء المعالجة، وطلبات تأجيل المواعيد وسقف التذاكر المسموح بها للموظف.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveSubmissionGovernance}
+                disabled={isSavingGovernance}
+                style={{
+                  padding: '10px 20px', borderRadius: '12px', border: 'none',
+                  background: '#135d79', color: '#ffffff', fontSize: '13px', fontWeight: 800,
+                  cursor: isSavingGovernance ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  boxShadow: '0 4px 14px rgba(19, 93, 121, 0.25)'
+                }}
+              >
+                <Check size={16} />
+                <span>{isSavingGovernance ? 'جارٍ الحفظ...' : 'حفظ سياسات الحوكمة'}</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+              {/* Card 1: Direct Cancellation Before Open */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>الإلغاء المباشر قبل الفتح</span>
+                  <button
+                    type="button"
+                    onClick={() => setAllowDirectCancelBeforeOpen(!allowDirectCancelBeforeOpen)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    {allowDirectCancelBeforeOpen ? <ToggleRight size={30} className="text-teal-600" /> : <ToggleLeft size={30} className="text-slate-400" />}
+                  </button>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                  يسمح للموظف بإلغاء طلبه فوراً وبشكل تلقائي طالما أن المعاملة لا تزال قيد الانتظار ولم يفتحها الفريق الفني.
+                </p>
+              </div>
+
+              {/* Card 2: Cancellation Request During Progress */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>طلب الإلغاء أثناء المعالجة</span>
+                  <button
+                    type="button"
+                    onClick={() => setAllowCancellationRequest(!allowCancellationRequest)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    {allowCancellationRequest ? <ToggleRight size={30} className="text-amber-600" /> : <ToggleLeft size={30} className="text-slate-400" />}
+                  </button>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                  يتيح للموظف إرسال طلب إلغاء رسمي مع بيان السبب للجهة المستلمة للموافقة عليه واعتماده.
+                </p>
+                {allowCancellationRequest && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>أسباب الإلغاء المعتمدة:</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '100px', overflowY: 'auto' }}>
+                      {cancellationReasons.map((r, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderRadius: '6px', background: '#f8fafc', fontSize: '11px' }}>
+                          <span>• {r}</span>
+                          <button
+                            type="button"
+                            onClick={() => setCancellationReasons(cancellationReasons.filter((_, idx) => idx !== i))}
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                      <input
+                        type="text"
+                        value={newCancelReason}
+                        onChange={e => setNewCancelReason(e.target.value)}
+                        placeholder="إضافة سبب إلغاء مخصص..."
+                        style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newCancelReason.trim()) {
+                            setCancellationReasons([...cancellationReasons, newCancelReason.trim()]);
+                            setNewCancelReason('');
+                          }
+                        }}
+                        style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: '#f59e0b', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        إضافة
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Card 3: Postponement Request */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '18px', border: '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>طلب تأجيل الموعد</span>
+                  <button
+                    type="button"
+                    onClick={() => setAllowPostponementRequest(!allowPostponementRequest)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    {allowPostponementRequest ? <ToggleRight size={30} className="text-sky-600" /> : <ToggleLeft size={30} className="text-slate-400" />}
+                  </button>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                  يمكن الموظف من طلب تأجيل متابعة التذكرة مؤقتاً لظروف طارئة مع تحديد موعد الاستئناف أو استئناف يدوي.
+                </p>
+                {allowPostponementRequest && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>أسباب التأجيل المعتمدة:</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '100px', overflowY: 'auto' }}>
+                      {postponementReasons.map((r, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderRadius: '6px', background: '#f8fafc', fontSize: '11px' }}>
+                          <span>• {r}</span>
+                          <button
+                            type="button"
+                            onClick={() => setPostponementReasons(postponementReasons.filter((_, idx) => idx !== i))}
+                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                      <input
+                        type="text"
+                        value={newPostponeReason}
+                        onChange={e => setNewPostponeReason(e.target.value)}
+                        placeholder="إضافة سبب تأجيل مخصص..."
+                        style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '11px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newPostponeReason.trim()) {
+                            setPostponementReasons([...postponementReasons, newPostponeReason.trim()]);
+                            setNewPostponeReason('');
+                          }
+                        }}
+                        style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: '#0284c7', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        إضافة
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(16px)', borderRadius: '20px', padding: '20px 24px', border: '1px solid rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <History size={18} className="text-slate-500" />
+            <History size={18} className="text-slate-500" />
               <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#334155', margin: 0 }}>
                 سجل عمليات تدقيق خصائص المسار (Audit Log)
               </h3>

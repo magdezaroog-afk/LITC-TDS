@@ -117,6 +117,14 @@ export default function RequestsPage() {
 
   // ── Highlight recently printed ticket ──
   const [highlightedTicketId, setHighlightedTicketId] = useState<string | null>(null);
+  // ── Reserved slot for incoming ticket from dispenser ──
+  const [incomingTicketSlot, setIncomingTicketSlot] = useState<{
+    id?: string;
+    code?: string;
+    title?: string;
+    color?: string;
+    icon?: string;
+  } | null>(null);
 
   // ── Responsive Dimensions State ──
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1200));
@@ -199,9 +207,20 @@ export default function RequestsPage() {
     return () => clearTimeout(timer);
   }, [filterTab, searchQuery, visibleRows, filteredList.length, updateScrollIndicator]);
 
-  // Listen for new ticket landing event from the in-place thermal printer
+  // Listen for new ticket landing and incoming events from the in-place thermal printer
   useEffect(() => {
+    // 1. When ticket cuts and departs: reserve slot and slide existing cards to the left
+    const handleTicketIncoming = (e: any) => {
+      setFilterTab('active');
+      setIncomingTicketSlot(e.detail || { color: '#135d79', code: '...' });
+      if (trackScrollRef.current) {
+        trackScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+    };
+
+    // 2. When ticket lands: clear incoming slot, set highlighted ticket with flow-color gleam
     const handleTicketLanded = (e: any) => {
+      setIncomingTicketSlot(null);
       setFilterTab('active');
       if (trackScrollRef.current) {
         trackScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
@@ -209,12 +228,18 @@ export default function RequestsPage() {
       const ticketId = e.detail?.id || e.detail?.ticketId;
       if (ticketId) {
         setHighlightedTicketId(ticketId);
-        setTimeout(() => setHighlightedTicketId(null), 4500);
+        // Calms down smoothly after 3.2 seconds
+        setTimeout(() => setHighlightedTicketId(null), 3200);
       }
       setTimeout(updateScrollIndicator, 120);
     };
+
+    window.addEventListener('litc_ticket_incoming', handleTicketIncoming);
     window.addEventListener('litc_new_ticket_created', handleTicketLanded);
-    return () => window.removeEventListener('litc_new_ticket_created', handleTicketLanded);
+    return () => {
+      window.removeEventListener('litc_ticket_incoming', handleTicketIncoming);
+      window.removeEventListener('litc_new_ticket_created', handleTicketLanded);
+    };
   }, [updateScrollIndicator]);
 
   // ── Continuous Horizontal Smooth Scroll Navigation ──
@@ -716,6 +741,19 @@ export default function RequestsPage() {
                 transition={{ duration: 0.18 }}
                 style={{ width: '100%' }}
               >
+                <style>{`
+                  @keyframes ticketArrivalGleam {
+                    0%, 100% {
+                      box-shadow: 0 0 12px var(--gleam-color), inset 0 0 6px var(--gleam-color);
+                      border-color: var(--gleam-color);
+                    }
+                    50% {
+                      box-shadow: 0 0 28px var(--gleam-color), inset 0 0 14px var(--gleam-color);
+                      border-color: #ffffff;
+                    }
+                  }
+                `}</style>
+
                 {/* Continuous Smooth Horizontal Track (شبكة أعمدة مستمرة تتسع لليمين واليسار) */}
                 <div
                   ref={trackScrollRef}
@@ -741,6 +779,63 @@ export default function RequestsPage() {
                     padding: '2px 1px',
                   }}
                 >
+                  {/* ── 1. RESERVED SLOT FOR INCOMING TICKET (انزياح الكروت لليسار وتفريغ مكان التذكرة القادمة) ── */}
+                  <AnimatePresence>
+                    {incomingTicketSlot && (
+                      <motion.div
+                        layout="position"
+                        initial={{ opacity: 0, scale: 0.7, width: 0 }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                          width: isMobile ? 'calc((100% - 10px) / 2.35)' : 'calc((100% - 44px) / 5)',
+                        }}
+                        exit={{ opacity: 0, scale: 0.7, width: 0 }}
+                        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+                        style={{
+                          scrollSnapAlign: 'start',
+                          minHeight: isMobile ? '114px' : '134px',
+                          borderRadius: '10px',
+                          border: `2px dashed ${incomingTicketSlot.color || '#135d79'}`,
+                          backgroundColor: `${incomingTicketSlot.color || '#135d79'}12`,
+                          boxShadow: `0 0 24px ${incomingTicketSlot.color || '#135d79'}40`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <motion.div
+                          animate={{ scale: [1, 1.18, 1], opacity: [0.6, 1, 0.6] }}
+                          transition={{ duration: 0.85, repeat: Infinity, ease: 'easeInOut' }}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            backgroundColor: `${incomingTicketSlot.color || '#135d79'}25`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: incomingTicketSlot.color || '#135d79',
+                          }}
+                        >
+                          <Ticket size={16} />
+                        </motion.div>
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          color: incomingTicketSlot.color || '#135d79',
+                          fontFamily: "'Cairo', sans-serif"
+                        }}>
+                          موقع التذكرة القادمة...
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ── 2. EXISTING CARDS WITH SMOOTH SPRING SHIFT ── */}
                   {filteredList.map((req, idx) => {
                     const matchedFlow = requests.find(f => f.id === req.categoryId || f.id === (req as any).flowDefinitionId || f.title === req.title);
                     const routeColor = matchedFlow?.color || '#135d79';
@@ -749,8 +844,15 @@ export default function RequestsPage() {
                     const isJustLanded = highlightedTicketId === req.id || (highlightedTicketId && idx === 0);
 
                     return (
-                      <div
+                      <motion.div
                         key={req.id}
+                        layout="position"
+                        initial={isJustLanded ? { opacity: 0, scale: 0.8, y: -25 } : false}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{
+                          layout: { type: 'spring', stiffness: 340, damping: 28 },
+                          opacity: { duration: 0.25 },
+                        }}
                         onClick={() => {
                           setSelectedRequest(req);
                           setIsTrackingOpen(true);
@@ -758,7 +860,6 @@ export default function RequestsPage() {
                         style={{
                           cursor: 'pointer',
                           userSelect: 'none',
-                          transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease',
                           minWidth: 0,
                           scrollSnapAlign: 'start',
                           position: 'relative',
@@ -788,13 +889,14 @@ export default function RequestsPage() {
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             border: isJustLanded
-                              ? `2px solid #10b981`
+                              ? `2px solid ${routeColor}`
                               : `1px solid ${routeColor}35`,
                             borderRadius: '8px',
                             boxShadow: isJustLanded
-                              ? '0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 10px rgba(16, 185, 129, 0.3)'
+                              ? `0 0 24px ${routeColor}66, inset 0 0 10px ${routeColor}30`
                               : 'none',
-                            animation: isJustLanded ? 'pulse 1.5s infinite' : 'none',
+                            animation: isJustLanded ? 'ticketArrivalGleam 1.1s ease-in-out infinite' : 'none',
+                            ...({ '--gleam-color': routeColor } as any),
                           }}
                         >
                           {/* Top Row: Route Icon + Ticket Code Badge + Status Dot */}
@@ -899,7 +1001,7 @@ export default function RequestsPage() {
                             </div>
                           </div>
                         </CinemaTicketFrame>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>

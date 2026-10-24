@@ -924,7 +924,12 @@ export class FlowGovernanceController {
         allowMultipleOpenTickets, 
         maxConcurrentOpenTickets, 
         requireRatingBeforeNewTicket, 
-        maxUnratedTicketsAllowed 
+        maxUnratedTicketsAllowed,
+        allowDirectCancelBeforeOpen,
+        allowCancellationRequest,
+        cancellationReasons,
+        allowPostponementRequest,
+        postponementReasons
       } = req.body;
 
       const hasAccess = await verifyFlowGovernanceAccess(flowId, user);
@@ -943,7 +948,26 @@ export class FlowGovernanceController {
         allowMultipleOpenTickets: allowMultipleOpenTickets !== false,
         maxConcurrentOpenTickets: Math.max(0, parseInt(maxConcurrentOpenTickets) || 0),
         requireRatingBeforeNewTicket: !!requireRatingBeforeNewTicket,
-        maxUnratedTicketsAllowed: Math.max(0, parseInt(maxUnratedTicketsAllowed) || 0)
+        maxUnratedTicketsAllowed: Math.max(0, parseInt(maxUnratedTicketsAllowed) || 0),
+        allowDirectCancelBeforeOpen: allowDirectCancelBeforeOpen !== false,
+        allowCancellationRequest: allowCancellationRequest !== false,
+        cancellationReasons: Array.isArray(cancellationReasons) && cancellationReasons.length > 0
+          ? cancellationReasons
+          : (currentFormConfig.cancellationReasons || [
+              'حُلّت المشكلة ولم أعد بحاجة للطلب',
+              'خروج لمهمة خارجية أو اجتماع طارئ',
+              'تأخر إنجاز الطلب من قبل المهندس المكلف',
+              'أخرى (توضيح السبب يدوياً)'
+            ]),
+        allowPostponementRequest: allowPostponementRequest !== false,
+        postponementReasons: Array.isArray(postponementReasons) && postponementReasons.length > 0
+          ? postponementReasons
+          : (currentFormConfig.postponementReasons || [
+              'عدم التواجد في المكتب حالياً',
+              'انشغال باجتماع عمل طارئ',
+              'تأجيل التنسيق لوقت لاحق',
+              'أخرى (تحديد يدوي)'
+            ])
       };
 
       routes[idx].formConfig = updatedFormConfig;
