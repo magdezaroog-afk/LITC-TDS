@@ -432,7 +432,8 @@ function FieldInput({
 
   // 1. SELECT TYPES -> ROUTE TO MODERN SELECT OR CHIPS
   if (field.type === 'select') {
-    const isChips = (field as any).displayMode === 'chips';
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 840 : false;
+    const isChips = (field as any).displayMode === 'chips' || isMobile;
     const opts = (field.options || []).map(opt => {
       if (typeof opt === 'string') {
         const icon = getOptionIcon({ id: opt, label: opt });
@@ -470,8 +471,8 @@ function FieldInput({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '8px',
-                  width: '84px',
+                  gap: '6px',
+                  width: isMobile ? '72px' : '84px',
                   flexShrink: 0,
                   scrollSnapAlign: 'start',
                   outline: 'none',
@@ -484,8 +485,8 @@ function FieldInput({
                 {/* Orbital Circular Disc - NO OUTER SQUARE BOX! */}
                 <div style={{
                   position: 'relative',
-                  width: '52px',
-                  height: '52px',
+                  width: isMobile ? '44px' : '52px',
+                  height: isMobile ? '44px' : '52px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -950,14 +951,14 @@ function InPlaceTaxonomySelector({
         gridColumn: '1 / -1',
         width: '100%',
         borderRadius: '12px',
-        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
-        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-        padding: '14px 16px',
+        backgroundColor: 'transparent',
+        border: 'none',
+        padding: '4px 2px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
-        minHeight: '140px',
+        gap: '8px',
+        boxShadow: 'none',
+        minHeight: 'auto',
         boxSizing: 'border-box',
         transition: 'all 0.25s ease',
       }}
@@ -1024,8 +1025,8 @@ function InPlaceTaxonomySelector({
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
-                    width: '88px',
+                    gap: '6px',
+                    width: '74px',
                     flexShrink: 0,
                     scrollSnapAlign: 'start',
                     outline: 'none',
@@ -1037,8 +1038,8 @@ function InPlaceTaxonomySelector({
                 >
                   <div style={{
                     position: 'relative',
-                    width: '52px',
-                    height: '52px',
+                    width: '46px',
+                    height: '46px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -1361,14 +1362,14 @@ function InPlaceOrgHierarchySelector({
         gridColumn: '1 / -1',
         width: '100%',
         borderRadius: '12px',
-        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
-        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-        padding: '14px 16px',
+        backgroundColor: 'transparent',
+        border: 'none',
+        padding: '4px 2px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
-        minHeight: '140px',
+        gap: '8px',
+        boxShadow: 'none',
+        minHeight: 'auto',
         boxSizing: 'border-box',
         transition: 'all 0.25s ease',
       }}
@@ -1430,8 +1431,8 @@ function InPlaceOrgHierarchySelector({
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
-                    width: '94px',
+                    gap: '6px',
+                    width: '74px',
                     flexShrink: 0,
                     scrollSnapAlign: 'start',
                     outline: 'none',
@@ -1443,8 +1444,8 @@ function InPlaceOrgHierarchySelector({
                 >
                   <div style={{
                     position: 'relative',
-                    width: '52px',
-                    height: '52px',
+                    width: '46px',
+                    height: '46px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -1867,13 +1868,13 @@ function InPlaceBuildingSelector({
         gridColumn: '1 / -1',
         width: '100%',
         borderRadius: '12px',
-        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
-        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-        padding: '14px 16px',
+        backgroundColor: 'transparent',
+        border: 'none',
+        padding: '4px 2px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
-        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
+        gap: '8px',
+        boxShadow: 'none',
         boxSizing: 'border-box',
       }}
     >
@@ -2074,14 +2075,14 @@ function InPlaceDynamicCascadeSelector({
         gridColumn: '1 / -1',
         width: '100%',
         borderRadius: '12px',
-        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
-        border: darkMode ? '1.5px solid rgba(56, 189, 248, 0.25)' : '1.5px solid #cbd5e1',
-        padding: '14px 16px',
+        backgroundColor: 'transparent',
+        border: 'none',
+        padding: '4px 2px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 10px rgba(19, 93, 121, 0.05)',
-        minHeight: '140px',
+        gap: '8px',
+        boxShadow: 'none',
+        minHeight: 'auto',
         boxSizing: 'border-box',
         transition: 'all 0.25s ease',
       }}
@@ -2485,83 +2486,36 @@ function InPlaceThermalPrinterShow({
         </span>
       </div>
 
-      {/* Metallic Dispenser Machine Head Bezel (رأس ماكينة الطباعة الحرارية) */}
+      {/* Luminous Optical Rail Line Slit (خروج التذكرة مباشرة من وراء الخط المشع) */}
       <div
         style={{
           width: '380px',
           maxWidth: '92vw',
-          padding: '8px 14px',
-          borderRadius: '10px 10px 4px 4px',
-          background: darkMode
-            ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)'
-            : 'linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)',
-          border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.15)' : '1.5px solid #94a3b8',
-          borderBottom: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 -2px 10px rgba(0,0,0,0.15)',
-          position: 'relative',
-          zIndex: 5,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Printer size={14} color={flowColor} />
-          <span style={{ fontSize: '11px', fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a', fontFamily: "'Tajawal', sans-serif" }}>
-            LITC THERMAL DISPENSER • وحدة الإصدار الفوري
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-          <span style={{ fontSize: '9px', fontWeight: 700, color: '#10b981' }}>ONLINE</span>
-        </div>
-      </div>
-
-      {/* The Machine Slit Mouth (فتحة خروج التذكرة) */}
-      <div
-        style={{
-          width: '380px',
-          maxWidth: '92vw',
-          height: '14px',
-          borderRadius: '0 0 6px 6px',
-          backgroundColor: '#030712',
-          border: '1.5px solid rgba(255, 255, 255, 0.22)',
-          borderTop: 'none',
+          height: '3px',
+          borderRadius: '9999px',
+          background: tearState === 'ripping'
+            ? 'linear-gradient(90deg, #ef4444, #f59e0b, #ffffff, #ef4444)'
+            : `linear-gradient(90deg, transparent, ${flowColor}, #ffffff, ${flowColor}, transparent)`,
           boxShadow: tearState === 'ripping'
-            ? 'inset 0 4px 8px rgba(0, 0, 0, 0.95), 0 0 25px #ef4444'
-            : 'inset 0 4px 8px rgba(0, 0, 0, 0.95), 0 0 15px rgba(19, 93, 121, 0.5)',
+            ? '0 0 20px #ef4444, 0 0 10px #ffffff'
+            : `0 0 16px ${flowColor}, 0 0 6px #ffffff`,
           position: 'relative',
-          overflow: 'hidden',
-          zIndex: 4,
+          overflow: 'visible',
+          zIndex: 10,
+          marginBottom: '4px',
         }}
       >
-        {/* Laser Guide Beam inside mouth */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '5%',
-            right: '5%',
-            height: '2px',
-            transform: 'translateY(-50%)',
-            background: tearState === 'ripping'
-              ? 'linear-gradient(90deg, #ef4444, #f59e0b, #ef4444)'
-              : `linear-gradient(90deg, transparent, ${flowColor}, transparent)`,
-            boxShadow: tearState === 'ripping' ? '0 0 14px #ef4444' : `0 0 8px ${flowColor}`,
-          }}
-        />
         {tearState === 'ripping' && (
           <motion.div
-            initial={{ width: '0%', left: '0%' }}
+            initial={{ left: '0%', width: '0%' }}
             animate={{ width: '100%' }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              top: 0,
-              bottom: 0,
-              background: 'linear-gradient(90deg, #ffffff, #ef4444, #f59e0b)',
-              boxShadow: '0 0 18px #ffffff, 0 0 25px #ef4444',
-              zIndex: 10,
+              top: '-1px',
+              bottom: '-1px',
+              background: '#ffffff',
+              boxShadow: '0 0 18px #ffffff, 0 0 28px #ef4444',
             }}
           />
         )}
@@ -2836,6 +2790,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   // ── Realistic Progressive Tearing States ──
   const [tearState, setTearState] = useState<'idle' | 'dispensing' | 'ripping' | 'departing' | 'completed'>('idle');
   const [previewSerial, setPreviewSerial] = useState('');
+  const [sinkingFlowId, setSinkingFlowId] = useState<string | null>(null);
 
   // ── Organizational Structure & Dynamic Fields Store ──
   const [orgTree, setOrgTree] = useState<any>(null);
@@ -2929,18 +2884,21 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   };
 
   const handleSelectFlow = (flow: typeof requests[0]) => {
-    setSelectedFlow(flow);
-    setIsDispenserOpen(true);
-    setFormData({});
-    setCurrentStep(1);
-    setStatus('idle');
-    setErrorMsg('');
-    setTearState('idle');
-    setPreviewSerial(`REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-
+    setSinkingFlowId(flow.id);
     setTimeout(() => {
-      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
+      setSelectedFlow(flow);
+      setIsDispenserOpen(true);
+      setFormData({});
+      setCurrentStep(1);
+      setStatus('idle');
+      setErrorMsg('');
+      setTearState('idle');
+      setPreviewSerial(`REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+      setSinkingFlowId(null);
+      setTimeout(() => {
+        formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 80);
+    }, 320);
   };
 
   // ── Smart Dynamic Stages Architecture (Supports Admin Custom Configuration or Logical Standards) ──
@@ -3363,21 +3321,28 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 const fColor = flow.color || '#38bdf8';
                 const block = canCreateRequest(flow.id);
                 const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
+                const isThisSinking = sinkingFlowId === flow.id;
+                const isAnySinking = Boolean(sinkingFlowId);
 
                 return (
                   <button
                     key={flow.id}
                     type="button"
-                    disabled={!block.allowed}
-                    onClick={() => block.allowed && handleSelectFlow(flow)}
+                    disabled={!block.allowed || isAnySinking}
+                    onClick={() => block.allowed && !isAnySinking && handleSelectFlow(flow)}
                     className="service-floating-circle-btn"
                     title={flow.title}
                     style={{
                       background: 'none',
                       border: 'none',
                       padding: 0,
-                      cursor: block.allowed ? 'pointer' : 'not-allowed',
-                      opacity: block.allowed ? 1 : 0.45,
+                      cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
+                      opacity: isThisSinking ? 0 : (isAnySinking ? 0.25 : (block.allowed ? 1 : 0.45)),
+                      transform: isThisSinking
+                        ? 'translateY(28px) scale(0.45)'
+                        : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
+                      transition: 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1)',
+                      pointerEvents: isAnySinking ? 'none' : 'auto',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -3475,16 +3440,21 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               style={{
                 width: isMobileScreen ? '94%' : '88%',
                 maxWidth: '920px',
-                height: '2px',
-                background: darkMode
-                  ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(56, 189, 248, 0.35) 85%, transparent)'
-                  : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.3) 15%, rgba(243, 108, 33, 0.45) 50%, rgba(19, 93, 121, 0.3) 85%, transparent)',
-                boxShadow: darkMode ? '0 0 10px rgba(56, 189, 248, 0.35)' : '0 0 8px rgba(19, 93, 121, 0.2)',
+                height: sinkingFlowId ? '3px' : '2px',
+                background: sinkingFlowId
+                  ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
+                  : (darkMode
+                      ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(56, 189, 248, 0.35) 85%, transparent)'
+                      : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.3) 15%, rgba(243, 108, 33, 0.45) 50%, rgba(19, 93, 121, 0.3) 85%, transparent)'),
+                boxShadow: sinkingFlowId
+                  ? `0 0 16px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 30px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}80`
+                  : (darkMode ? '0 0 10px rgba(56, 189, 248, 0.35)' : '0 0 8px rgba(19, 93, 121, 0.2)'),
                 position: 'relative',
                 marginTop: isMobileScreen ? '-30px' : '-35px',
                 zIndex: 1,
                 marginBottom: isMobileScreen ? '24px' : '26px',
                 pointerEvents: 'none',
+                transition: 'all 0.25s ease',
               }}
             />
 
@@ -3525,18 +3495,18 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               overflow: 'visible',
               background: isMobileScreen
                 ? (darkMode
-                    ? `radial-gradient(ellipse at 50% -10%, ${flowColor}12 0%, rgba(11, 20, 31, 0.25) 70%, transparent 100%)`
-                    : `radial-gradient(ellipse at 50% -10%, ${flowColor}08 0%, rgba(255, 255, 255, 0.4) 70%, transparent 100%)`)
+                    ? `radial-gradient(ellipse at 50% -10%, ${flowColor}15 0%, rgba(11, 20, 31, 0.3) 70%, transparent 100%)`
+                    : `radial-gradient(ellipse at 50% -10%, ${flowColor}10 0%, rgba(255, 255, 255, 0.45) 70%, transparent 100%)`)
                 : (darkMode ? 'rgba(15, 23, 42, 0.65)' : '#ffffff'),
               borderRadius: isMobileScreen ? '20px' : '24px',
               border: isMobileScreen
-                ? (darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid rgba(19, 93, 121, 0.12)')
+                ? 'none'
                 : (darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1'),
               padding: isMobileScreen ? '14px 8px' : '20px 22px',
               boxShadow: isMobileScreen
                 ? (darkMode
-                    ? `0 12px 36px -10px rgba(0, 0, 0, 0.5), 0 0 25px -5px ${flowColor}20`
-                    : '0 12px 30px -10px rgba(19, 93, 121, 0.08)')
+                    ? `0 12px 36px -10px rgba(0, 0, 0, 0.5), 0 0 25px -4px ${flowColor}30, inset 0 0 0 1px ${flowColor}20`
+                    : `0 12px 30px -10px rgba(19, 93, 121, 0.08), 0 0 22px -4px ${flowColor}25, inset 0 0 0 1px ${flowColor}22`)
                 : (darkMode ? '0 16px 40px rgba(0,0,0,0.5)' : '0 8px 30px rgba(19, 93, 121, 0.08)'),
               backdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
               WebkitBackdropFilter: isMobileScreen ? 'blur(16px)' : 'none',
@@ -3971,354 +3941,189 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </motion.div>
                   )}
 
-                  {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار - تصميم تذكرة طيران مؤسسية فاخرة */}
+                  {/* Stage 3: مراجعة تفاصيل التذكرة قبل الاعتماد والإصدار (الأزرار بجانب التفاصيل مباشرة) */}
                   {currentStep === totalStages && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobileScreen ? '8px' : '12px' }}>
-                      {/* Executive Status Banner */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: isMobileScreen ? '8px' : '14px',
+                      alignItems: 'stretch',
+                      width: '100%',
+                    }}>
+                      {/* Side 1: Concise Ticket Details Coupon */}
                       <div style={{
-                        padding: isMobileScreen ? '8px 12px' : '12px 16px',
-                        borderRadius: '10px',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        border: '1.5px solid rgba(16, 185, 129, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '8px',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: isMobileScreen ? '11px' : '12px', fontWeight: 800, color: '#34d399' }}>
-                          <ShieldCheck size={isMobileScreen ? 15 : 18} />
-                          <span>{isMobileScreen ? 'جاهزة للمصادقة وتوليد القيد' : 'اكتملت بيانات المعاملة الرسمية: جاهزة للمصادقة وتوليد القيد الرقمي'}</span>
-                        </div>
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: darkMode ? 'rgba(0,0,0,0.3)' : '#ffffff',
-                          border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
-                          fontSize: isMobileScreen ? '10px' : '11px',
-                          color: darkMode ? '#38bdf8' : '#0284c7',
-                          fontWeight: 800,
-                        }}>
-                          <Hash size={12} />
-                          <span>{previewSerial}</span>
-                        </div>
-                      </div>
-
-                      {/* Luxury Perforated Ticket Card */}
-                      <div style={{
-                        position: 'relative',
-                        borderRadius: '14px',
-                        backgroundColor: darkMode ? '#101728' : '#ffffff',
-                        border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #cbd5e1',
-                        boxShadow: darkMode ? '0 10px 30px rgba(0,0,0,0.5)' : '0 8px 24px rgba(30,58,82,0.08)',
+                        flex: 1,
+                        minWidth: 0,
+                        borderRadius: '12px',
+                        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.7)',
+                        border: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                         overflow: 'hidden',
-                        maxHeight: isMobileScreen ? '220px' : 'none',
-                        overflowY: isMobileScreen ? 'auto' : 'visible',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: isMobileScreen ? '8px 10px' : '14px 16px',
+                        boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
                       }}>
-                        {/* Top Header Strip with Flow Color */}
+                        {/* Header: Icon + Title + Serial */}
                         <div style={{
-                          height: '4px',
-                          width: '100%',
-                          backgroundColor: flowColor,
-                        }} />
-
-                        {/* Ticket Header */}
-                        <div style={{
-                          padding: isMobileScreen ? '10px 12px' : '14px 18px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.12)' : '1px dashed #e2e8f0',
-                          backgroundColor: darkMode ? 'rgba(255,255,255,0.02)' : '#f8fafc',
+                          gap: '6px',
+                          borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.08)' : '1px dashed #e2e8f0',
+                          paddingBottom: '6px',
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                             <div style={{
-                              width: '36px',
-                              height: '36px',
-                              borderRadius: '9px',
+                              width: isMobileScreen ? '26px' : '32px',
+                              height: isMobileScreen ? '26px' : '32px',
+                              borderRadius: '7px',
                               backgroundColor: `${flowColor}20`,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               color: flowColor,
+                              flexShrink: 0,
                             }}>
-                              {resolveIcon(selectedFlow.icon, 20, flowColor)}
+                              {resolveIcon(selectedFlow.icon, isMobileScreen ? 14 : 18, flowColor)}
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                                {selectedFlow.title}
-                              </span>
-                              <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                                {selectedFlow.description || 'طلب إلكتروني موثق'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
-                              color: darkMode ? '#38bdf8' : '#2563eb',
-                              fontSize: '10.5px',
-                              fontWeight: 800,
-                            }}>
-                              {(selectedFlow as any).targetRole || 'موجه للإدارة'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Highlights Bento Row (Taxonomy, Schedule, Delegate, Attachment) */}
-                        <div style={{
-                          padding: isMobileScreen ? '10px 12px' : '14px 18px',
-                          display: 'grid',
-                          gridTemplateColumns: isMobileScreen ? '1fr' : 'repeat(auto-fit, minmax(210px, 1fr))',
-                          gap: '8px',
-                        }}>
-                          {/* 1. Taxonomy Main & Sub */}
-                          {formData.taxonomyMain && (
-                            <div style={{
-                              padding: '12px 14px',
-                              borderRadius: '10px',
-                              backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.08)' : 'rgba(37, 99, 235, 0.05)',
-                              border: darkMode ? '1px solid rgba(56, 189, 248, 0.2)' : '1px solid rgba(37, 99, 235, 0.15)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '6px',
-                            }}>
-                              <span style={{ fontSize: '10px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 700 }}>
-                                التصنيف المعتمد والنوع:
-                              </span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                  width: '26px', height: '26px', borderRadius: '7px',
-                                  backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.2)' : 'rgba(37, 99, 235, 0.15)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: darkMode ? '#38bdf8' : '#2563eb',
-                                }}>
-                                  {resolveIcon(getOptionIcon({ label: formData.taxonomyMain }), 15)}
-                                </div>
-                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                                  {formData.taxonomyMain}
-                                </span>
-                              </div>
-                              {formData.taxonomySub && (
-                                <div style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  marginTop: '4px',
-                                  padding: '3px 8px',
-                                  borderRadius: '6px',
-                                  backgroundColor: darkMode ? 'rgba(255,255,255,0.06)' : '#ffffff',
-                                  border: darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  color: darkMode ? '#38bdf8' : '#0284c7',
-                                }}>
-                                  {resolveIcon(getOptionIcon({ label: formData.taxonomySub }), 13)}
-                                  <span>{formData.taxonomySub}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* 2. Schedule Engine / Date Window */}
-                          {formData.scheduleEngine && (
-                            <div style={{
-                              padding: '12px 14px',
-                              borderRadius: '10px',
-                              backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.08)' : 'rgba(217, 119, 6, 0.06)',
-                              border: darkMode ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(217, 119, 6, 0.15)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '6px',
-                            }}>
-                              <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 700 }}>
-                                الجدولة والمدة الزمنية:
-                              </span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                  width: '26px', height: '26px', borderRadius: '7px',
-                                  backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#f59e0b',
-                                }}>
-                                  <Clock size={15} />
-                                </div>
-                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                                  {formData.scheduleEngine}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 3. Delegate Colleague */}
-                          {formData.delegateUser && (
-                            <div style={{
-                              padding: '12px 14px',
-                              borderRadius: '10px',
-                              backgroundColor: darkMode ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.06)',
-                              border: darkMode ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(79, 70, 229, 0.15)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '6px',
-                            }}>
-                              <span style={{ fontSize: '10px', color: '#818cf8', fontWeight: 700 }}>
-                                الزميل المكلف / البديل:
-                              </span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                  width: '26px', height: '26px', borderRadius: '7px',
-                                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#818cf8',
-                                }}>
-                                  <UserCheck size={15} />
-                                </div>
-                                <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>
-                                  {formData.delegateUser}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 4. Uploaded Attachment */}
-                          {formData.attachment && (() => {
-                            let attName = formData.attachment;
-                            let attSize = '';
-                            try {
-                              const parsed = JSON.parse(formData.attachment);
-                              attName = parsed.fileName || parsed.name || formData.attachment;
-                              attSize = parsed.sizeMB ? `${parsed.sizeMB} MB` : '';
-                            } catch {}
-
-                            return (
+                            <div style={{ minWidth: 0 }}>
                               <div style={{
-                                padding: '12px 14px',
-                                borderRadius: '10px',
-                                backgroundColor: darkMode ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)',
-                                border: darkMode ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(16, 185, 129, 0.15)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '6px',
+                                fontSize: isMobileScreen ? '11.5px' : '13px',
+                                fontWeight: 800,
+                                color: darkMode ? '#ffffff' : '#0f172a',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
                               }}>
-                                <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700 }}>
-                                  المستند والمرفق المعتمد:
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                                  <div style={{
-                                    width: '26px', height: '26px', borderRadius: '7px',
-                                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: '#10b981', flexShrink: 0
-                                  }}>
-                                    <FileText size={15} />
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {attName}
-                                    </span>
-                                    {attSize && (
-                                      <span style={{ fontSize: '9.5px', color: '#64748b' }}>{attSize} • جاهز للرفع والأرشفة</span>
-                                    )}
-                                  </div>
-                                </div>
+                                {selectedFlow.title}
                               </div>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Perforated Divider */}
-                        <div style={{
-                          position: 'relative',
-                          width: '100%',
-                          padding: '0 18px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                        }}>
-                          <div style={{
-                            flex: 1,
-                            borderBottom: darkMode ? '1.5px dashed rgba(255,255,255,0.14)' : '1.5px dashed #cbd5e1'
-                          }} />
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Scissors size={12} />
-                            <span>قسيمة تفاصيل المعاملة</span>
+                              <div style={{ fontSize: '9px', color: flowColor, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {targetDeptName}
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            color: '#38bdf8',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: 'rgba(56,189,248,0.12)',
+                            flexShrink: 0,
+                          }}>
+                            {previewSerial}
                           </span>
-                          <div style={{
+                        </div>
+
+                        {/* Bento Highlights */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                          {formData.taxonomyMain && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isMobileScreen ? '9.5px' : '11px' }}>
+                              <span style={{ color: '#64748b' }}>النوع/المشكلة:</span>
+                              <span style={{ fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                                {formData.taxonomyMain} {formData.taxonomySub ? `(${formData.taxonomySub})` : ''}
+                              </span>
+                            </div>
+                          )}
+                          {formData.scheduleEngine && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isMobileScreen ? '9.5px' : '11px' }}>
+                              <span style={{ color: '#64748b' }}>الجدولة:</span>
+                              <span style={{ fontWeight: 800, color: '#f59e0b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                                {formData.scheduleEngine}
+                              </span>
+                            </div>
+                          )}
+                          {formData.department && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isMobileScreen ? '9.5px' : '11px' }}>
+                              <span style={{ color: '#64748b' }}>الوحدة:</span>
+                              <span style={{ fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                                {formData.department} {formData.division ? `← ${formData.division}` : ''}
+                              </span>
+                            </div>
+                          )}
+                          {formData.building && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isMobileScreen ? '9.5px' : '11px' }}>
+                              <span style={{ color: '#64748b' }}>الموقع:</span>
+                              <span style={{ fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{formData.building}</span>
+                            </div>
+                          )}
+                          {formData.delegateUser && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isMobileScreen ? '9.5px' : '11px' }}>
+                              <span style={{ color: '#64748b' }}>البديل:</span>
+                              <span style={{ fontWeight: 800, color: '#818cf8' }}>{formData.delegateUser}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Side 2: Dedicated Action Cockpit (بجانب التفاصيل وليس أسفله) */}
+                      <div style={{
+                        width: isMobileScreen ? '118px' : '170px',
+                        flexShrink: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '6px',
+                      }}>
+                        {/* Main Send & Print Button */}
+                        <button
+                          type="button"
+                          onClick={handleTearAndSubmit}
+                          disabled={loading || tearState !== 'idle'}
+                          style={{
                             flex: 1,
-                            borderBottom: darkMode ? '1.5px dashed rgba(255,255,255,0.14)' : '1.5px dashed #cbd5e1'
-                          }} />
-                        </div>
+                            minHeight: isMobileScreen ? '64px' : '76px',
+                            padding: '8px 6px',
+                            borderRadius: '12px',
+                            background: `linear-gradient(135deg, ${flowColor} 0%, #10b981 100%)`,
+                            border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                            color: '#ffffff',
+                            cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            boxShadow: `0 8px 24px ${flowColor}55, inset 0 1px 0 rgba(255,255,255,0.4)`,
+                            fontFamily: "'Cairo', sans-serif",
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <Send size={isMobileScreen ? 17 : 20} />
+                          <span style={{ fontSize: isMobileScreen ? '11px' : '12.5px', fontWeight: 900, lineHeight: 1.2 }}>
+                            تأكيد وإرسال
+                          </span>
+                          <span style={{ fontSize: '8px', opacity: 0.9, fontWeight: 700 }}>
+                            إصدار فوري ⚡
+                          </span>
+                        </button>
 
-                        {/* Detailed Form Fields Grid */}
-                        <div style={{
-                          padding: isMobileScreen ? '10px 12px' : '16px 18px',
-                          display: 'grid',
-                          gridTemplateColumns: isMobileScreen ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
-                          gap: isMobileScreen ? '6px' : '10px',
-                        }}>
-                          {selectedFlow.fields.map(f => {
-                            if (['taxonomyMain', 'taxonomySub', 'scheduleEngine', 'delegateUser', 'attachment'].includes(f.name)) return null;
-                            const val = formData[f.name];
-                            if (!val) return null;
-                            return (
-                              <div
-                                key={f.name}
-                                style={{
-                                  padding: '8px 12px',
-                                  borderRadius: '8px',
-                                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                                  border: darkMode ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '2px',
-                                  gridColumn: f.type === 'textarea' ? '1 / -1' : undefined
-                                }}
-                              >
-                                <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', fontWeight: 600 }}>{f.label}</span>
-                                <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a', whiteSpace: 'pre-wrap' }}>{val}</span>
-                              </div>
-                            );
-                          })}
-
-                          {/* Dynamic Fields & Conditional Options */}
-                          {(() => {
-                            const cfg = (selectedFlow as any).formConfig;
-                            const optionInputsMap = cfg?.optionCustomInputs || {};
-                            const allOptionInputs: any[] = Object.values(optionInputsMap).flat();
-                            (cfg?.dynamicFields || []).forEach((df: any) => {
-                              (df.options || []).forEach((opt: any) => {
-                                if (opt.customInputs) allOptionInputs.push(...opt.customInputs);
-                              });
-                            });
-
-                            return allOptionInputs.map((ci: any) => {
-                              const val = formData[ci.name || ci.id];
-                              if (!val) return null;
-                              return (
-                                <div
-                                  key={ci.name || ci.id}
-                                  style={{
-                                    padding: '8px 12px',
-                                    borderRadius: '8px',
-                                    backgroundColor: darkMode ? 'rgba(56, 189, 248, 0.04)' : 'rgba(37, 99, 235, 0.03)',
-                                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.12)' : '1px solid rgba(37, 99, 235, 0.08)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '2px',
-                                  }}
-                                >
-                                  <span style={{ fontSize: '10px', color: darkMode ? '#38bdf8' : '#2563eb', fontWeight: 600 }}>↳ {ci.label}</span>
-                                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: darkMode ? '#ffffff' : '#0f172a' }}>{String(val)}</span>
-                                </div>
-                              );
-                            });
-                          })()}
-                        </div>
+                        {/* Back Button */}
+                        <button
+                          type="button"
+                          onClick={handlePrevStep}
+                          style={{
+                            height: '30px',
+                            padding: '3px 8px',
+                            borderRadius: '9999px',
+                            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
+                            border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                            color: darkMode ? '#cbd5e1' : '#475569',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            fontFamily: "'Cairo', sans-serif",
+                          }}
+                        >
+                          <ChevronRight size={12} />
+                          <span>السابق</span>
+                        </button>
                       </div>
                     </div>
                   )}
@@ -4341,16 +4146,17 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                     </div>
                   )}
 
-                  {/* Navigation Buttons Footer */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    paddingTop: '16px',
-                    gap: '12px',
-                    flexWrap: 'wrap',
-                  }}>
+                  {/* Navigation Buttons Footer (Only for steps < totalStages) */}
+                  {currentStep < totalStages && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderTop: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                      paddingTop: '16px',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}>
                     <div>
                       {currentStep > 1 && (
                         <button
@@ -4430,47 +4236,10 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                           <ChevronLeft size={16} />
                         </button>
                       )}
-
-                      {currentStep === totalStages && (
-                        <button
-                          type="button"
-                          onClick={handleTearAndSubmit}
-                          disabled={loading || tearState !== 'idle'}
-                          style={{
-                            minHeight: '48px',
-                            padding: '12px 28px',
-                            borderRadius: '9999px',
-                            background: `linear-gradient(135deg, ${flowColor} 0%, #10b981 100%)`,
-                            border: '1.5px solid rgba(255, 255, 255, 0.35)',
-                            color: '#ffffff',
-                            fontSize: '13.5px',
-                            fontWeight: 900,
-                            cursor: (loading || tearState !== 'idle') ? 'not-allowed' : 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: `0 10px 28px ${flowColor}50, inset 0 1px 0 rgba(255,255,255,0.4)`,
-                            fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                            width: isMobileScreen ? '100%' : 'auto',
-                          }}
-                          onMouseEnter={e => {
-                            if (!loading && tearState === 'idle') {
-                              (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px) scale(1.03)';
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.transform = 'none';
-                          }}
-                        >
-                          <Send size={16} />
-                          <span>تأكيد وإرسال الطلب</span>
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
               ) : (
                 <InPlaceThermalPrinterShow
                   tearState={tearState}

@@ -758,7 +758,7 @@ const Navigation: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط اللمس السفلي الكامل)
+          3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط زجاجي شبه شفاف فائق النعومة)
           ══════════════════════════════════════════════════════════ */}
       {isMobileScreen && (
         <nav
@@ -767,47 +767,46 @@ const Navigation: React.FC = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '56px',
-            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.94)' : 'rgba(255, 255, 255, 0.96)',
-            backdropFilter: 'blur(24px) saturate(190%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(190%)',
-            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.15)',
-            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.25)',
+            height: '42px',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.68)' : 'rgba(255, 255, 255, 0.72)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.1)',
+            boxShadow: '0 -2px 14px rgba(0, 0, 0, 0.15)',
             zIndex: 94000,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             direction: dir,
-            padding: '0 16px',
+            padding: '0 14px',
             boxSizing: 'border-box'
           }}
         >
-          {/* Menu Option (خيار القائمة - مهيأ لاستقبال الأزرار الإضافية لاحقاً) */}
+          {/* Menu / More Option (زر المزيد على يمين الشريط السفلي) */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
-            title="القائمة وبيئات العمل"
+            title="القائمة والمزيد"
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '8px 24px',
+              gap: '6px',
+              padding: '4px 12px',
               borderRadius: '9999px',
-              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(19, 93, 121, 0.08)',
-              border: isDark ? '1.5px solid rgba(56, 189, 248, 0.3)' : '1.5px solid rgba(19, 93, 121, 0.2)',
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(19, 93, 121, 0.07)',
+              border: isDark ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid rgba(19, 93, 121, 0.18)',
               color: isDark ? '#38bdf8' : '#135d79',
               cursor: 'pointer',
               fontFamily: "'Cairo', sans-serif",
-              fontSize: '13px',
+              fontSize: '11.5px',
               fontWeight: 800,
               outline: 'none',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <Menu size={18} strokeWidth={2.4} />
-            <span>القائمة</span>
+            <Menu size={14} strokeWidth={2.4} />
+            <span>المزيد</span>
           </button>
         </nav>
       )}

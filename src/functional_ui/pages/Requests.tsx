@@ -297,50 +297,60 @@ export default function RequestsPage() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        minHeight: isMobile ? 'calc(100vh - 56px)' : 'calc(100vh - 86px)',
+        minHeight: isMobile ? 'calc(100vh - 46px)' : 'calc(100vh - 86px)',
         gap: isMobile ? '2px' : '8px',
         position: 'relative',
         paddingTop: '0px',
-        paddingBottom: isMobile ? '68px' : '4px',
+        paddingBottom: isMobile ? '48px' : '4px',
       }}
     >
-      {/* ═══ 1. CLEAN REFINED HEADER ═══ */}
+      {/* ═══ 1. CLEAN REFINED HEADER (رسالة ترحيبية زجاجية فاخرة وخفيفة أسفل الشريط العلوي مباشرة) ═══ */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: isMobile ? '5px 12px' : '10px 16px',
-        marginTop: 0,
-        borderRadius: isMobile ? '8px' : '12px',
-        backgroundColor: darkMode ? '#0e1726' : '#ffffff',
-        border: darkMode ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0',
-        boxShadow: darkMode ? '0 4px 20px rgba(0, 0, 0, 0.25)' : '0 2px 10px rgba(19, 93, 121, 0.04)',
-        gap: isMobile ? '4px' : '10px',
+        padding: isMobile ? '5px 12px' : '8px 16px',
+        marginTop: isMobile ? '2px' : '4px',
+        borderRadius: isMobile ? '10px' : '12px',
+        backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.55)' : 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: darkMode ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(19, 93, 121, 0.08)',
+        boxShadow: darkMode ? '0 4px 16px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(19, 93, 121, 0.03)',
+        gap: isMobile ? '6px' : '10px',
         transition: 'all 0.2s ease',
       }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: isMobile ? '6px' : '8px',
+            height: isMobile ? '6px' : '8px',
+            borderRadius: '50%',
+            backgroundColor: '#10b981',
+            boxShadow: '0 0 8px #10b981',
+            flexShrink: 0,
+          }} />
           <h1 style={{
-            fontSize: isMobile ? '12.5px' : '17px',
+            fontSize: isMobile ? '11.8px' : '15px',
             fontWeight: 800,
-            color: darkMode ? '#ffffff' : '#0f172a',
+            color: darkMode ? '#f8fafc' : '#0f172a',
             margin: '0',
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.01em',
             fontFamily: "'Tajawal', sans-serif",
+            lineHeight: 1.25,
           }}>
             مرحباً بك، من هنا تستطيع إنشاء وإدارة طلباتك
           </h1>
-          {!isMobile && (
-            <p style={{
-              fontSize: '11.5px',
-              color: darkMode ? '#94a3b8' : '#64748b',
-              margin: '3px 0 0',
-              fontFamily: "'Cairo', sans-serif",
-              fontWeight: 500,
-            }}>
-              اختر نوع الخدمة لتقديم معاملة جديدة، وتابع مسار طلباتك الجارية والسابقة عبر الشريط أدناه.
-            </p>
-          )}
         </div>
+        {!isMobile && (
+          <span style={{
+            fontSize: '11px',
+            color: darkMode ? '#94a3b8' : '#64748b',
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 500,
+          }}>
+            اختر نوع الخدمة لتقديم معاملة جديدة، وتابع مسار طلباتك عبر الشريط أدناه
+          </span>
+        )}
       </div>
 
       {/* ═══ 2. PROMINENT CLEAN TICKET CONSOLE (ماكينة استخراج التذاكر الذكية - مركز الصفحة) ═══ */}
@@ -790,7 +800,7 @@ export default function RequestsPage() {
                           scale: 1,
                           width: isMobile ? 'calc((100% - 10px) / 2.35)' : 'calc((100% - 44px) / 5)',
                         }}
-                        exit={{ opacity: 0, scale: 0.7, width: 0 }}
+                        exit={{ opacity: 0, transition: { duration: 0.08 } }}
                         transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                         style={{
                           scrollSnapAlign: 'start',
