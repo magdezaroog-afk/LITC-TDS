@@ -2665,121 +2665,220 @@ export const OperationalQueueView: React.FC = () => {
           <div style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.5)',
-            backdropFilter: 'blur(8px)',
+            background: isDark ? 'rgba(3, 7, 18, 0.78)' : 'rgba(15, 23, 42, 0.62)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             zIndex: 100000,
             display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'stretch'
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px',
+            direction: 'rtl'
           }}>
             <motion.div
-              initial={{ x: '-100%', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '-100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              initial={{ scale: 0.95, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               style={{
                 width: '100%',
-                maxWidth: '650px',
-                background: '#ffffff',
-                boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
+                maxWidth: '880px',
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                borderRadius: '24px',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                boxShadow: isDark
+                  ? '0 25px 60px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)'
+                  : '0 25px 60px -15px rgba(15,23,42,0.22), 0 0 0 1px rgba(0,0,0,0.05)',
                 display: 'flex',
                 flexDirection: 'column',
-                height: '100%',
-                overflowY: 'auto'
+                maxHeight: '90vh',
+                height: 'auto',
+                overflow: 'hidden',
+                position: 'relative'
               }}
             >
-              {/* Modal Header */}
+              {/* Modal Top Header */}
               <div style={{
-                padding: '20px 28px',
-                borderBottom: '1px solid #e2e8f0',
+                padding: '18px 24px',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)'
+                background: isDark
+                  ? 'linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.9) 100%)'
+                  : 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+                gap: '16px'
               }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#6366f1' }}>#{inspectTicket.id}</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>•</span>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#475569' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, flex: 1 }}>
+                  {/* Badges Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      padding: '3px 10px',
+                      borderRadius: '8px',
+                      background: isDark ? 'rgba(99, 102, 241, 0.18)' : '#e0e7ff',
+                      color: isDark ? '#a5b4fc' : '#4338ca',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      letterSpacing: '0.02em',
+                      fontFamily: "'Cairo', sans-serif"
+                    }}>
+                      #{inspectTicket.code || inspectTicket.id}
+                    </div>
+
+                    <span style={{ fontSize: '11px', color: isDark ? '#64748b' : '#94a3b8' }}>•</span>
+
+                    <span style={{
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      color: isDark ? '#cbd5e1' : '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      <Layers size={13} color="#6366f1" />
                       {inspectTicket.flowDefinitionName || 'مسار عام'}
                     </span>
-                    {inspectTicketDetails?.state?.name === 'RESOLVED' && (
-                      <span style={{ background: '#fef3c7', color: '#b45309', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
-                        ⏳ بانتظار الاعتماد
-                      </span>
-                    )}
-                    {inspectTicketDetails?.state?.name === 'CLOSED' && (
-                      <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
-                        ✅ مغلقة نهائياً
-                      </span>
-                    )}
+
+                    {/* Dual Priority Badge */}
+                    {(() => {
+                      const lamp = getLampStyle(inspectTicket.businessPriority || inspectTicket.priority);
+                      return (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: isDark ? 'rgba(255,255,255,0.06)' : lamp.bg,
+                          color: lamp.color,
+                          fontSize: '11px',
+                          fontWeight: 800
+                        }}>
+                          <span style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            background: lamp.color,
+                            boxShadow: `0 0 6px ${lamp.color}`,
+                            display: 'inline-block'
+                          }} />
+                          <span>{formatPriorityText(inspectTicket.businessPriority || inspectTicket.priority)}</span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Status Pill */}
+                    <OpsStatusPill
+                      status={inspectTicket.status || inspectTicketDetails?.state?.name}
+                      stateLabel={inspectTicket.state?.label || inspectTicketDetails?.state?.label}
+                      isDark={isDark}
+                    />
                   </div>
-                  <h2 style={{ margin: 0, fontSize: '19px', fontWeight: 800, color: '#0f172a' }}>
+
+                  {/* Main Subject Title */}
+                  <h2 style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    fontWeight: 800,
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    lineHeight: 1.4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
                     {inspectTicket.subject || inspectTicket.title}
                   </h2>
                 </div>
+
+                {/* Close Button */}
                 <button
+                  type="button"
                   onClick={() => setInspectTicket(null)}
                   style={{
-                    background: '#f1f5f9',
-                    border: 'none',
-                    borderRadius: '10px',
-                    width: '36px',
-                    height: '36px',
+                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    width: '38px',
+                    height: '38px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    color: '#64748b'
+                    color: isDark ? '#cbd5e1' : '#64748b',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0
                   }}
+                  title="إغلاق النافذة"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              {/* Sub-tabs: Details vs History */}
-              <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', padding: '0 24px' }}>
+              {/* Sub-tabs: Details vs Audit History (Apple/Linear Segmented Style) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 24px',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #f1f5f9',
+                background: isDark ? '#0b1120' : '#f8fafc'
+              }}>
                 <button
+                  type="button"
                   onClick={() => setActiveDrawerTab('DETAILS')}
                   style={{
-                    padding: '12px 18px',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
                     border: 'none',
-                    background: 'transparent',
-                    borderBottom: activeDrawerTab === 'DETAILS' ? '2.5px solid #4f46e5' : '2.5px solid transparent',
-                    color: activeDrawerTab === 'DETAILS' ? '#4f46e5' : '#64748b',
+                    background: activeDrawerTab === 'DETAILS'
+                      ? (isDark ? 'rgba(99, 102, 241, 0.18)' : '#ffffff')
+                      : 'transparent',
+                    color: activeDrawerTab === 'DETAILS'
+                      ? (isDark ? '#a5b4fc' : '#4338ca')
+                      : (isDark ? '#94a3b8' : '#64748b'),
                     fontWeight: activeDrawerTab === 'DETAILS' ? 800 : 600,
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    boxShadow: activeDrawerTab === 'DETAILS' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <FileText size={15} /> تفاصيل ومجريات المعاملة
+                  <FileText size={14} /> تفاصيل وبيانات المعاملة
                 </button>
+
                 <button
+                  type="button"
                   onClick={() => setActiveDrawerTab('HISTORY')}
                   style={{
-                    padding: '12px 18px',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
                     border: 'none',
-                    background: 'transparent',
-                    borderBottom: activeDrawerTab === 'HISTORY' ? '2.5px solid #4f46e5' : '2.5px solid transparent',
-                    color: activeDrawerTab === 'HISTORY' ? '#4f46e5' : '#64748b',
+                    background: activeDrawerTab === 'HISTORY'
+                      ? (isDark ? 'rgba(99, 102, 241, 0.18)' : '#ffffff')
+                      : 'transparent',
+                    color: activeDrawerTab === 'HISTORY'
+                      ? (isDark ? '#a5b4fc' : '#4338ca')
+                      : (isDark ? '#94a3b8' : '#64748b'),
                     fontWeight: activeDrawerTab === 'HISTORY' ? 800 : 600,
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    boxShadow: activeDrawerTab === 'HISTORY' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <History size={15} /> سجل العمليات والتتبع ({inspectTicketDetails?.logs?.length || 0})
+                  <History size={14} /> سجل العمليات والتتبع ({inspectTicketDetails?.logs?.length || 0})
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div style={{ padding: '24px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+              <div style={{ padding: '20px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
                 {loadingTicketDetails ? (
                   <div style={{ padding: '60px 0', textAlign: 'center', color: '#94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                     <RefreshCw size={24} className="animate-spin text-indigo-600" />
@@ -2787,10 +2886,12 @@ export const OperationalQueueView: React.FC = () => {
                   </div>
                 ) : activeDrawerTab === 'DETAILS' ? (
                   <>
-                    {/* Strategic Claim Ticket Banner for Unassigned Ticket */}
+                    {/* Strategic Claim Ticket Hero Banner (Sole Hero Claim Button) */}
                     {(!inspectTicket.assignedTo || inspectTicket.isUnassigned !== false) && (
                       <div style={{
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.08) 100%)',
+                        background: isDark
+                          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(5, 150, 105, 0.08) 100%)'
+                          : 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.06) 100%)',
                         border: '1.5px solid rgba(16, 185, 129, 0.35)',
                         borderRadius: '16px',
                         padding: '16px 20px',
@@ -2799,7 +2900,7 @@ export const OperationalQueueView: React.FC = () => {
                         justifyContent: 'space-between',
                         gap: '14px',
                         flexWrap: 'wrap',
-                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.1)',
+                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.1)'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{
@@ -2812,21 +2913,22 @@ export const OperationalQueueView: React.FC = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                            flexShrink: 0,
+                            flexShrink: 0
                           }}>
                             <Zap size={20} strokeWidth={2.5} />
                           </div>
                           <div>
-                            <div style={{ fontWeight: 800, fontSize: '15px', color: '#065f46' }}>
-                              هذا الطلب شاغر حالياً في حوض العمليات
+                            <div style={{ fontWeight: 800, fontSize: '15px', color: isDark ? '#34d399' : '#065f46' }}>
+                              هذا الطلب شاغر حالياً في حوض العمليات العام
                             </div>
-                            <div style={{ fontSize: '12.5px', color: '#047857', marginTop: '2px' }}>
-                              يمكنك استلام وسحب هذه التذكرة لحسابك لمباشرة المعالجة والتنفيذ الفني.
+                            <div style={{ fontSize: '12.5px', color: isDark ? '#a7f3d0' : '#047857', marginTop: '2px' }}>
+                              يمكنك استلام وسحب هذه المعاملة لحسابك لمباشرة التنفيذ والمعالجة الفنية.
                             </div>
                           </div>
                         </div>
 
                         <button
+                          type="button"
                           onClick={() => handleClaimTicket(inspectTicket.id)}
                           disabled={claimingId === inspectTicket.id}
                           style={{
@@ -2842,13 +2944,13 @@ export const OperationalQueueView: React.FC = () => {
                             alignItems: 'center',
                             gap: '8px',
                             boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
-                            fontFamily: "'Cairo', sans-serif",
+                            fontFamily: "'Cairo', sans-serif"
                           }}
                         >
                           {claimingId === inspectTicket.id ? (
                             <><RefreshCw size={15} className="animate-spin" /> جاري السحب...</>
                           ) : (
-                            <><CheckCircle2 size={16} /> استلام وسحب الطلب لحسابي</>
+                            <><CheckCircle2 size={16} /> استلام وسحب المعاملة لحسابي</>
                           )}
                         </button>
                       </div>
@@ -2857,10 +2959,12 @@ export const OperationalQueueView: React.FC = () => {
                     {/* Handover Acceptance Banner */}
                     {inspectTicketDetails?.isPendingHandover && inspectTicketDetails?.handoverInfo?.toUserId === user?.id && (
                       <div style={{
-                        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                        background: isDark
+                          ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%)'
+                          : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                         border: '1.5px solid #f59e0b',
                         borderRadius: '16px',
-                        padding: '18px 20px',
+                        padding: '16px 20px',
                         boxShadow: '0 8px 24px rgba(245, 158, 11, 0.15)',
                         display: 'flex',
                         flexDirection: 'column',
@@ -2872,11 +2976,11 @@ export const OperationalQueueView: React.FC = () => {
                               <CornerDownLeft size={20} />
                             </div>
                             <div>
-                              <div style={{ fontWeight: 800, fontSize: '15px', color: '#92400e' }}>
-                                طلب تحويل تذكرة وارد إليك 📥
+                              <div style={{ fontWeight: 800, fontSize: '15px', color: isDark ? '#fbbf24' : '#92400e' }}>
+                                طلب تحويل معلق وارد إليك 📥
                               </div>
-                              <div style={{ fontSize: '13px', color: '#78350f', marginTop: '2px' }}>
-                                قام المهندس <span style={{ fontWeight: 700 }}>{inspectTicketDetails.handoverInfo.fromUserName}</span> بتحويل هذه التذكرة إليك
+                              <div style={{ fontSize: '13px', color: isDark ? '#fde68a' : '#78350f', marginTop: '2px' }}>
+                                قام الزميل <span style={{ fontWeight: 700 }}>{inspectTicketDetails.handoverInfo.fromUserName}</span> بتحويل هذه التذكرة إليك
                               </div>
                             </div>
                           </div>
@@ -2894,12 +2998,12 @@ export const OperationalQueueView: React.FC = () => {
 
                         {inspectTicketDetails.handoverInfo.note && (
                           <div style={{
-                            background: '#ffffff',
+                            background: isDark ? 'rgba(0,0,0,0.2)' : '#ffffff',
                             padding: '10px 14px',
                             borderRadius: '10px',
-                            border: '1px solid #fde68a',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
                             fontSize: '13px',
-                            color: '#451a03'
+                            color: isDark ? '#fef3c7' : '#451a03'
                           }}>
                             <span style={{ fontWeight: 700 }}>ملاحظة المحوّل: </span>
                             {inspectTicketDetails.handoverInfo.note}
@@ -2908,6 +3012,7 @@ export const OperationalQueueView: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
                           <button
+                            type="button"
                             onClick={() => handleAcceptHandover(inspectTicket.id)}
                             disabled={isExecutingAction}
                             style={{
@@ -2918,7 +3023,7 @@ export const OperationalQueueView: React.FC = () => {
                               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                               color: '#ffffff',
                               fontWeight: 800,
-                              fontSize: '13.5px',
+                              fontSize: '13px',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -2930,16 +3035,17 @@ export const OperationalQueueView: React.FC = () => {
                             <CheckCircle2 size={16} /> قبول استلام التذكرة وبدء المعالجة
                           </button>
                           <button
+                            type="button"
                             onClick={handleOpenRejectHandoverModal}
                             disabled={isExecutingAction}
                             style={{
                               padding: '11px 18px',
                               borderRadius: '12px',
                               border: '1px solid #fca5a5',
-                              background: '#ffffff',
+                              background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#ffffff',
                               color: '#b91c1c',
                               fontWeight: 700,
-                              fontSize: '13.5px',
+                              fontSize: '13px',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -2954,15 +3060,15 @@ export const OperationalQueueView: React.FC = () => {
 
                     {inspectTicketDetails?.isPendingHandover && inspectTicketDetails?.handoverInfo?.toUserId !== user?.id && (
                       <div style={{
-                        background: '#fffbeb',
-                        border: '1px solid #fde68a',
+                        background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
                         borderRadius: '14px',
                         padding: '12px 16px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
                         fontSize: '13px',
-                        color: '#92400e'
+                        color: isDark ? '#fbbf24' : '#92400e'
                       }}>
                         <Clock size={16} />
                         <span>
@@ -2974,10 +3080,10 @@ export const OperationalQueueView: React.FC = () => {
                     {/* Status Alert Banners */}
                     {inspectTicketDetails?.state?.name === 'RESOLVED' && (
                       <div style={{
-                        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                        border: '1px solid #fde68a',
+                        background: isDark ? 'rgba(245, 158, 11, 0.12)' : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
                         borderRadius: '16px',
-                        padding: '16px',
+                        padding: '14px 18px',
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '12px'
@@ -2985,102 +3091,96 @@ export const OperationalQueueView: React.FC = () => {
                         <div style={{ padding: '6px', borderRadius: '8px', background: '#fef08a', color: '#854d0e' }}>
                           <AlertTriangle size={18} />
                         </div>
-                        <div style={{ flex: 1, fontSize: '13px', color: '#92400e', lineHeight: 1.6 }}>
+                        <div style={{ flex: 1, fontSize: '13px', color: isDark ? '#fde68a' : '#92400e', lineHeight: 1.6 }}>
                           <div style={{ fontWeight: 800, marginBottom: '2px' }}>التذكرة منجزة وفي انتظار اعتماد الإغلاق النهائي</div>
-                          قام المهندس المعني بإنهاء المعالجة ورفع طلب الاعتماد. يرجى من مدير المسار أو المهندس المخول مراجعة التقرير واعتماد الإغلاق.
+                          قام المهندس المعني بإنهاء المعالجة ورفع طلب الاعتماد للمراجعة والموافقة النهائية من قبل مدير المسار أو المعتمدين.
                         </div>
                       </div>
                     )}
 
                     {inspectTicketDetails?.state?.name === 'CLOSED' && (
                       <div style={{
-                        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                        border: '1px solid #bbf7d0',
+                        background: isDark ? 'rgba(16, 185, 129, 0.12)' : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
                         borderRadius: '16px',
-                        padding: '16px',
+                        padding: '14px 18px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px'
                       }}>
                         <CheckCircle size={20} color="#15803d" />
-                        <div style={{ fontSize: '13px', color: '#166534', fontWeight: 700 }}>
-                          تم إغلاق هذه التذكرة نهائياً واستكمال جميع متطلبات الإنجاز.
+                        <div style={{ fontSize: '13px', color: isDark ? '#6ee7b7' : '#166534', fontWeight: 700 }}>
+                          تم إغلاق هذه التذكرة نهائياً واستكمال جميع متطلبات الإنجاز والمعالجة الفنية.
                         </div>
                       </div>
                     )}
 
-                    {inspectTicketDetails?.state?.name !== 'CLOSED' && inspectTicketDetails?.state?.name !== 'RESOLVED' && (
-                      <div style={{
-                        background: inspectPermissions?.canClose ? '#f0fdf4' : '#f8fafc',
-                        border: inspectPermissions?.canClose ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
-                        borderRadius: '14px',
-                        padding: '12px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '12.5px',
-                        color: inspectPermissions?.canClose ? '#166534' : '#475569'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Shield size={16} color={inspectPermissions?.canClose ? '#16a34a' : '#6366f1'} />
-                          <span>
-                            {inspectPermissions?.canClose
-                              ? 'أنت مخول بالإغلاق المباشر لهذا المسار (مدير المسار / معتمد مخول)'
-                              : 'إغلاق هذا الطلب يتطلب رفع طلب اعتماد للمراجعة والاعتماد من قبل مدير المسار أو المعتمدين'}
-                          </span>
-                        </div>
-                        <span style={{
-                          background: inspectPermissions?.canClose ? '#dcfce7' : '#e0e7ff',
-                          color: inspectPermissions?.canClose ? '#15803d' : '#4338ca',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: '6px'
-                        }}>
-                          {inspectPermissions?.canClose ? 'إغلاق مباشر' : 'طلب اعتماد'}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Meta grid */}
+                    {/* ── 1. Parties & Routing Bento Card ── */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '14px',
-                      background: '#f8fafc',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: '12px',
+                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
                       padding: '16px',
                       borderRadius: '16px',
-                      border: '1px solid #e2e8f0'
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0'
                     }}>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>المُرسل (صاحب الطلب)</span>
-                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {/* Creator */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                          المُرسل (صاحب المعاملة)
+                        </span>
+                        <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <User size={14} color="#6366f1" />
-                          {inspectTicketDetails?.creator?.fullName || inspectTicket.creatorName || 'غير معروف'}
+                          <span>{inspectTicketDetails?.creator?.fullName || inspectTicket.creatorName || inspectTicket.creator?.fullName || 'صاحب المعاملة'}</span>
                         </div>
                       </div>
 
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>الجهة المختصة</span>
-                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {/* Responsible Department */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                          الجهة المختصة بالمعالجة
+                        </span>
+                        <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Building2 size={14} color="#0284c7" />
-                          {inspectTicketDetails?.departmentObj?.name || inspectTicket.departmentName || 'إدارة تقنية المعلومات'}
+                          <span>
+                            {inspectTicketDetails?.departmentObj?.name || inspectTicket.departmentName || 'الإدارة العامة'}
+                            {inspectTicket.targetDivisionName ? ` • ${inspectTicket.targetDivisionName}` : ''}
+                          </span>
                         </div>
                       </div>
 
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>المهندس المكلف (المسند إليه)</span>
-                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <User size={14} color="#059669" />
-                          {inspectTicketDetails?.assignments?.find((a: any) => a.isCurrentActive)?.assignedTech?.fullName || inspectTicket.assignedTo?.fullName || 'غير مسند (حوض عام)'}
+                      {/* Current Assignee */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                          المسؤول الحالي (المسند إليه)
+                        </span>
+                        <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {(!inspectTicket.assignedTo || inspectTicket.isUnassigned !== false) ? (
+                            <span style={{ color: '#ea580c', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ea580c', display: 'inline-block' }} />
+                              شاغر (حوض العمليات)
+                            </span>
+                          ) : (
+                            <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                              {inspectTicketDetails?.assignments?.find((a: any) => a.isCurrentActive)?.assignedTech?.fullName || inspectTicket.assignedTo?.fullName || 'مهندس مكلف'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>تاريخ وتوقيت الإنشاء</span>
-                        <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {/* Creation Time & Elapsed */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
+                          التوقيت والمدة المنقضية
+                        </span>
+                        <div style={{ fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Clock size={14} color="#64748b" />
-                          {new Date(inspectTicket.createdAt).toLocaleString('ar-LY')}
+                          <span>{new Date(inspectTicket.createdAt).toLocaleString('ar-LY', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                          <span style={{ fontSize: '11px', color: isDark ? '#38bdf8' : '#2563eb', background: isDark ? 'rgba(56,189,248,0.1)' : '#eff6ff', padding: '1px 6px', borderRadius: '4px' }}>
+                            {formatTimeAgo(inspectTicket.createdAt)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -3088,22 +3188,22 @@ export const OperationalQueueView: React.FC = () => {
                     {/* Resolution Notes Box (If present) */}
                     {(inspectTicketDetails?.resolutionNotes || inspectTicket.resolutionNotes) && (
                       <div style={{
-                        background: '#ffffff',
+                        background: isDark ? 'rgba(16, 185, 129, 0.08)' : '#ffffff',
                         border: '1.5px solid #10b981',
                         borderRadius: '16px',
                         padding: '16px',
                         boxShadow: '0 4px 14px rgba(16, 185, 129, 0.08)'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#059669', fontWeight: 800, fontSize: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#10b981', fontWeight: 800, fontSize: '13.5px' }}>
                           <FileCheck size={18} />
-                          <span>تقرير الإنجاز والمعالجة الفنية:</span>
+                          <span>تقرير الإنجاز والمعالجة الفنية المعتمد:</span>
                         </div>
                         <div style={{
                           fontSize: '13px',
-                          color: '#1e293b',
+                          color: isDark ? '#e2e8f0' : '#1e293b',
                           lineHeight: 1.7,
                           whiteSpace: 'pre-wrap',
-                          background: '#f8fafc',
+                          background: isDark ? 'rgba(0,0,0,0.2)' : '#f8fafc',
                           padding: '12px 14px',
                           borderRadius: '10px'
                         }}>
@@ -3112,121 +3212,142 @@ export const OperationalQueueView: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Description */}
-                    <div>
-                      <h4 style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
-                        تفاصيل ومحتوى الطلب:
-                      </h4>
-                      <div style={{
-                        padding: '16px',
-                        borderRadius: '14px',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        lineHeight: 1.7,
-                        color: '#334155',
-                        fontSize: '13px',
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {inspectTicketDetails?.description || inspectTicket.description || 'لا يوجد وصف مدخل.'}
-                      </div>
-                    </div>
-
-                    {/* ── Form Fields & Detailed Route Data Bento Card ── */}
-                    {(() => {
-                      const rawMeta = inspectTicketDetails?.routingMetadata || inspectTicket?.routingMetadata;
-                      let resolvedMeta: any = {};
-                      if (rawMeta) {
-                        resolvedMeta = typeof rawMeta === 'object' ? rawMeta : (() => {
-                          try { return JSON.parse(rawMeta); } catch { return {}; }
-                        })();
-                      }
-                      const fieldsData = resolvedMeta.formData || resolvedMeta.dynamicFields || resolvedMeta.fields || {};
-                      const fieldEntries = Object.entries(fieldsData).filter(([k, v]) => {
-                        if (!v) return false;
-                        if (['submittedAt', 'targetDepartmentName', 'targetDivisionName', 'targetTeamName', 'attachment'].includes(k)) return false;
-                        return true;
-                      });
-
-                      const getFieldLabel = (key: string) => {
-                        if (key === 'taxonomyMain') return 'التصنيف والمستدلة الرئيسية';
-                        if (key === 'taxonomySub') return 'المشكلة / الخيار الفرعي';
-                        if (key === 'building' || key === 'buildingId') return 'المبنى والموقع';
-                        if (key === 'department') return 'الإدارة المعنية بالطلب';
-                        if (key === 'division') return 'القسم المؤسسي';
-                        if (key === 'team') return 'الفريق / الوحدة';
-                        if (key === 'scheduleEngine' || key === 'dateRange') return 'فترة السريان / الجدولة';
-                        if (key === 'delegateUser') return 'الموظف البديل المكلف';
-                        if (key.startsWith('dyn_')) return 'مستدلة ديناميكية مخصصة';
-                        if (key.startsWith('custom_') || key.startsWith('opt_input_')) return 'بيان إضافي مطلوب';
-                        return key;
-                      };
-
-                      if (fieldEntries.length === 0) return null;
-
-                      return (
+                    {/* ── 2. Request Content & Clean Form Fields Bento Card ── */}
+                    <div style={{
+                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '16px 18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px'
+                    }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 8px', fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#1e293b' }}>
+                          تفاصيل ومحتوى الطلب:
+                        </h4>
                         <div style={{
-                          background: isDark ? '#111827' : '#ffffff',
-                          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
-                          borderRadius: '16px',
-                          padding: '16px 18px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '12px'
+                          padding: '14px 16px',
+                          borderRadius: '12px',
+                          background: isDark ? '#0b1120' : '#f8fafc',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                          lineHeight: 1.7,
+                          color: isDark ? '#cbd5e1' : '#334155',
+                          fontSize: '13px',
+                          whiteSpace: 'pre-wrap'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{
-                                width: '28px', height: '28px', borderRadius: '8px',
-                                background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
-                                color: isDark ? '#38bdf8' : '#2563eb',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                              }}>
-                                <FileText size={16} />
-                              </div>
-                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                                بيانات نموذج المسار المعبأة:
-                              </h4>
-                            </div>
-                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
-                              {fieldEntries.length} حقول مدخلة
-                            </span>
-                          </div>
+                          {inspectTicketDetails?.description || inspectTicket.description || 'لا يوجد وصف مدخل لهذا الطلب.'}
+                        </div>
+                      </div>
 
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                            gap: '10px'
-                          }}>
-                            {fieldEntries.map(([key, val]: any) => {
-                              const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
-                              return (
+                      {/* Clean Form Fields (No debug labels, no raw junk) */}
+                      {(() => {
+                        const rawMeta = inspectTicketDetails?.routingMetadata || inspectTicket?.routingMetadata;
+                        let resolvedMeta: any = {};
+                        if (rawMeta) {
+                          resolvedMeta = typeof rawMeta === 'object' ? rawMeta : (() => {
+                            try { return JSON.parse(rawMeta); } catch { return {}; }
+                          })();
+                        }
+                        const fieldsData = resolvedMeta.formData || resolvedMeta.dynamicFields || resolvedMeta.fields || {};
+                        
+                        const ignoredKeys = [
+                          'submittedAt', 'targetDepartmentName', 'targetDivisionName', 'targetTeamName',
+                          'attachment', 'attachments', 'targetDepartmentId', 'targetDivisionId',
+                          'targetTeamId', 'flowDefinitionId', 'internalStatus', 'schemaVersion',
+                          '_id', 'id', 'token'
+                        ];
+
+                        const fieldEntries = Object.entries(fieldsData).filter(([k, v]) => {
+                          if (v === null || v === undefined || v === '') return false;
+                          if (ignoredKeys.includes(k) || k.startsWith('_')) return false;
+                          return true;
+                        });
+
+                        const getCleanLabel = (key: string): string => {
+                          const dictionary: Record<string, string> = {
+                            taxonomyMain: 'التصنيف الرئيسي',
+                            taxonomySub: 'الخدمة / المشكلة الفرعية',
+                            building: 'المبنى والموقع',
+                            buildingId: 'المبنى',
+                            department: 'الإدارة المعنية بالطلب',
+                            division: 'القسم المؤسسي',
+                            team: 'الفريق / الوحدة',
+                            scheduleEngine: 'فترة السريان والجدولة',
+                            dateRange: 'الفترة الزمنية المحددة',
+                            delegateUser: 'الموظف البديل المكلف',
+                            notes: 'الملاحظات الإضافية',
+                            reason: 'سبب ومبرر الطلب',
+                            applicantPhone: 'رقم هاتف التواصل',
+                            applicantEmail: 'البريد الإلكتروني',
+                            urgencyLevel: 'درجة الاستعجال',
+                            impactLevel: 'مستوى الأثر'
+                          };
+                          if (dictionary[key]) return dictionary[key];
+
+                          let clean = key
+                            .replace(/^(dyn_|custom_|opt_input_|opt_|fld_|form_|sys_)/i, '')
+                            .replace(/_/g, ' ')
+                            .trim();
+                          clean = clean.replace(/([a-z])([A-Z])/g, '$1 $2');
+                          return clean.charAt(0).toUpperCase() + clean.slice(1);
+                        };
+
+                        const formatFieldValue = (val: any): string => {
+                          if (typeof val === 'boolean') return val ? 'نعم' : 'لا';
+                          if (Array.isArray(val)) return val.join('، ');
+                          if (typeof val === 'object') {
+                            try { return JSON.stringify(val); } catch { return String(val); }
+                          }
+                          return String(val);
+                        };
+
+                        if (fieldEntries.length === 0) return null;
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '12.5px', fontWeight: 800, color: isDark ? '#94a3b8' : '#475569' }}>
+                                بيانات المسار المدخلة:
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                {fieldEntries.length} حقول
+                              </span>
+                            </div>
+
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                              gap: '10px'
+                            }}>
+                              {fieldEntries.map(([key, val]: any) => (
                                 <div
                                   key={key}
                                   style={{
-                                    padding: '10px 12px',
+                                    padding: '9px 12px',
                                     borderRadius: '10px',
-                                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                                    border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
+                                    background: isDark ? '#0b1120' : '#f8fafc',
+                                    border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #f1f5f9',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '3px'
                                   }}
                                 >
                                   <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                                    {getFieldLabel(key)}
+                                    {getCleanLabel(key)}
                                   </span>
-                                  <span style={{ fontSize: '12.5px', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 800, wordBreak: 'break-word' }}>
-                                    {displayVal}
+                                  <span style={{ fontSize: '12.5px', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 700, wordBreak: 'break-word' }}>
+                                    {formatFieldValue(val)}
                                   </span>
                                 </div>
-                              );
-                            })}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
+                    </div>
 
-                    {/* ── Official Attachments & Documents Bento Card ── */}
+                    {/* ── 3. Official Attachments & Documents Bento Card ── */}
                     {(() => {
                       const rawMeta = inspectTicketDetails?.routingMetadata || inspectTicket?.routingMetadata;
                       let resolvedMeta: any = {};
@@ -3238,7 +3359,6 @@ export const OperationalQueueView: React.FC = () => {
                       const dbFiles: any[] = inspectTicketDetails?.files || [];
                       const metaAttachments: any[] = resolvedMeta.attachments || (resolvedMeta.formData?.attachment ? [resolvedMeta.formData.attachment] : []);
 
-                      // Combine files cleanly
                       const combinedFiles: any[] = [...dbFiles];
                       metaAttachments.forEach(ma => {
                         const parsed = typeof ma === 'string' && ma.startsWith('{') ? JSON.parse(ma) : ma;
@@ -3261,8 +3381,8 @@ export const OperationalQueueView: React.FC = () => {
 
                       return (
                         <div style={{
-                          background: isDark ? '#111827' : '#ffffff',
-                          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                          background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                           borderRadius: '16px',
                           padding: '16px 18px',
                           display: 'flex',
@@ -3279,12 +3399,12 @@ export const OperationalQueueView: React.FC = () => {
                               }}>
                                 <Paperclip size={16} />
                               </div>
-                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                              <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                                 المرفقات والوثائق الرسمية ({combinedFiles.length}):
                               </h4>
                             </div>
                             <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
-                              {combinedFiles.length > 0 ? 'مستندات ثبوتية معتمدة' : 'لا توجد مرفقات'}
+                              {combinedFiles.length > 0 ? 'مستندات معتمدة' : 'لا توجد مرفقات'}
                             </span>
                           </div>
 
@@ -3304,144 +3424,120 @@ export const OperationalQueueView: React.FC = () => {
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'space-between',
-                                      padding: '10px 14px',
-                                      borderRadius: '12px',
-                                      background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                                      padding: '9px 12px',
+                                      borderRadius: '10px',
+                                      background: isDark ? '#0b1120' : '#f8fafc',
+                                      border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                                       gap: '12px'
                                     }}
                                   >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
                                       <div style={{
-                                        width: '32px', height: '32px', borderRadius: '8px',
+                                        width: '30px', height: '30px', borderRadius: '8px',
                                         background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(37, 99, 235, 0.1)',
                                         color: isDark ? '#38bdf8' : '#2563eb',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         flexShrink: 0
                                       }}>
-                                        <FileText size={18} />
+                                        <FileText size={16} />
                                       </div>
                                       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                         <span style={{
                                           fontSize: '12.5px', fontWeight: 700,
                                           color: isDark ? '#ffffff' : '#0f172a',
                                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                          maxWidth: '280px'
+                                          maxWidth: '320px'
                                         }}>
                                           {fName}
                                         </span>
                                         <span style={{ fontSize: '10.5px', color: '#64748b' }}>
-                                          {fSize && `${fSize} • `}مرفوع بواسطة: {file.uploadedBy?.fullName || inspectTicket.creatorName || 'صاحب الطلب'}
+                                          {fSize && `${fSize} • `}مرفوع بواسطة: {file.uploadedBy?.fullName || inspectTicket.creatorName || 'صاحب المعاملة'}
                                         </span>
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                      {fileTarget && fileTarget !== '#' && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (file.fileUrl && file.fileUrl.startsWith('data:')) {
-                                              const win = window.open();
-                                              if (win) {
-                                                win.document.write(`<iframe src="${file.fileUrl}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
-                                              }
-                                            } else {
-                                              window.open(fileTarget, '_blank');
+                                    {fileTarget && fileTarget !== '#' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (file.fileUrl && file.fileUrl.startsWith('data:')) {
+                                            const win = window.open();
+                                            if (win) {
+                                              win.document.write(`<iframe src="${file.fileUrl}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
                                             }
-                                          }}
-                                          style={{
-                                            padding: '5px 10px', borderRadius: '7px',
-                                            border: isDark ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid #bfdbfe',
-                                            background: isDark ? 'rgba(56, 189, 248, 0.12)' : '#eff6ff',
-                                            color: isDark ? '#38bdf8' : '#2563eb',
-                                            fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', gap: '5px'
-                                          }}
-                                        >
-                                          <Eye size={13} />
-                                          <span>معاينة</span>
-                                        </button>
-                                      )}
-                                    </div>
+                                          } else {
+                                            window.open(fileTarget, '_blank');
+                                          }
+                                        }}
+                                        style={{
+                                          padding: '5px 12px', borderRadius: '8px',
+                                          border: isDark ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid #bfdbfe',
+                                          background: isDark ? 'rgba(56, 189, 248, 0.12)' : '#eff6ff',
+                                          color: isDark ? '#38bdf8' : '#2563eb',
+                                          fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                                          display: 'flex', alignItems: 'center', gap: '5px'
+                                        }}
+                                      >
+                                        <Eye size={13} />
+                                        <span>معاينة</span>
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })}
                             </div>
                           ) : (
                             <div style={{
-                              padding: '14px', borderRadius: '10px',
-                              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+                              padding: '12px', borderRadius: '10px',
+                              background: isDark ? 'rgba(255, 255, 255, 0.01)' : '#f8fafc',
                               border: isDark ? '1px dashed rgba(255, 255, 255, 0.06)' : '1px dashed #e2e8f0',
                               textAlign: 'center', color: '#94a3b8', fontSize: '12px'
                             }}>
-                              لم يُرفق صاحب المعاملة أي ملفات إضافية مع هذا الطلب.
+                              لا توجد وثائق مرفقة مع هذه المعاملة.
                             </div>
                           )}
                         </div>
                       );
                     })()}
 
-                    {/* Linked Parent Ticket Info if this is a sub-ticket */}
-                    {(inspectTicketDetails?.parentTicket || inspectTicket.parentId) && (
-                      <div style={{
-                        background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                        border: '1.5px solid #c4b5fd',
-                        borderRadius: '16px',
-                        padding: '14px 18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ padding: '8px', borderRadius: '10px', background: '#ddd6fe', color: '#6d28d9' }}>
-                            <GitPullRequest size={18} />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '11.5px', color: '#6d28d9', fontWeight: 700 }}>مهمة فرعية منبثقة من تذكرة رئيسية</div>
-                            <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#4c1d95' }}>
-                              #{inspectTicketDetails?.parentTicket?.id || inspectTicket.parentId}: {inspectTicketDetails?.parentTicket?.subject || 'التذكرة الأصل'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Linked Sub-Tickets / Tasks Bento Card */}
+                    {/* ── 4. Sub-Tickets & Internal Tasks Bento Card ── */}
                     <div style={{
-                      background: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '18px',
-                      padding: '18px 20px',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '16px 18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ padding: '8px', borderRadius: '10px', background: '#f3e8ff', color: '#7e22ce' }}>
-                            <GitPullRequest size={18} />
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ padding: '6px', borderRadius: '8px', background: isDark ? 'rgba(126, 34, 206, 0.2)' : '#f3e8ff', color: '#a855f7' }}>
+                            <GitPullRequest size={16} />
                           </div>
                           <div>
-                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                            <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                               المهام والتذاكر الداخلية الفرعية المرتبطة
                             </h4>
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>
-                              توزيع أجزاء من العمل على أقسام وإدارات تشغيلية أخرى
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>
+                              توزيع أجزاء من العمل على الإدارات والفرق التشغيلية
                             </div>
                           </div>
                         </div>
 
+                        {/* Single Contextual Trigger for Sub-Tickets */}
                         {inspectPermissions?.canCreateSubTickets !== false && inspectTicketDetails?.state?.name !== 'CLOSED' && (
                           <button
+                            type="button"
                             onClick={openSubTicketModal}
                             style={{
-                              padding: '8px 14px',
+                              padding: '7px 14px',
                               borderRadius: '10px',
                               border: 'none',
                               background: 'linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%)',
                               color: '#ffffff',
                               fontWeight: 700,
-                              fontSize: '12.5px',
+                              fontSize: '12px',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -3454,28 +3550,27 @@ export const OperationalQueueView: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Sub-tickets Progress Bar */}
+                      {/* Sub-tickets Progress Bar & List */}
                       {Array.isArray(inspectTicketDetails?.subTickets) && inspectTicketDetails.subTickets.length > 0 ? (
                         <>
                           <div style={{
-                            background: '#f8fafc',
-                            borderRadius: '12px',
-                            padding: '10px 14px',
-                            marginBottom: '12px',
+                            background: isDark ? '#0b1120' : '#f8fafc',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             fontSize: '12px'
                           }}>
-                            <span style={{ fontWeight: 700, color: '#475569' }}>
-                              نسبة إنجاز المهام الداخلية: {inspectTicketDetails.subTickets.filter((s: any) => s.state?.name === 'CLOSED' || s.status === 'CLOSED').length} من {inspectTicketDetails.subTickets.length} مكتملة
+                            <span style={{ fontWeight: 700, color: isDark ? '#cbd5e1' : '#475569' }}>
+                              نسبة إنجاز المهام: {inspectTicketDetails.subTickets.filter((s: any) => s.state?.name === 'CLOSED' || s.status === 'CLOSED').length} من {inspectTicketDetails.subTickets.length} مكتملة
                             </span>
-                            <div style={{ width: '120px', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: '120px', height: '6px', background: isDark ? '#1e293b' : '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{
                                 width: `${Math.round((inspectTicketDetails.subTickets.filter((s: any) => s.state?.name === 'CLOSED' || s.status === 'CLOSED').length / inspectTicketDetails.subTickets.length) * 100)}%`,
                                 height: '100%',
                                 background: '#10b981',
-                                borderRadius: '4px',
+                                borderRadius: '3px',
                                 transition: 'width 0.3s ease'
                               }} />
                             </div>
@@ -3484,40 +3579,38 @@ export const OperationalQueueView: React.FC = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {inspectTicketDetails.subTickets.map((st: any) => (
                               <div key={st.id} style={{
-                                padding: '12px 14px',
-                                borderRadius: '12px',
-                                background: '#f8fafc',
-                                border: '1px solid #e2e8f0',
+                                padding: '10px 12px',
+                                borderRadius: '10px',
+                                background: isDark ? '#0b1120' : '#f8fafc',
+                                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 gap: '10px'
                               }}>
                                 <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                                    <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#7e22ce' }}>#{st.id}</span>
-                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{st.subject || st.title}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#a855f7' }}>#{st.id}</span>
+                                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: isDark ? '#f8fafc' : '#1e293b' }}>{st.subject || st.title}</span>
                                   </div>
-                                  <div style={{ fontSize: '11.5px', color: '#64748b', display: 'flex', gap: '10px' }}>
-                                    <span>الجهة: {st.departmentObj?.name || st.departmentName || 'إدارة تشغيلية'}{st.targetDivisionName ? ` • ${st.targetDivisionName}` : ''}</span>
+                                  <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '8px' }}>
+                                    <span>الجهة: {st.departmentObj?.name || st.departmentName || 'إدارة تشغيلية'}</span>
                                     {st.assignments?.[0]?.assignedTech && (
-                                      <span>المسند إليه: {st.assignments[0].assignedTech.fullName}</span>
+                                      <span>• المكلف: {st.assignments[0].assignedTech.fullName}</span>
                                     )}
                                   </div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    padding: '2px 8px',
-                                    borderRadius: '6px',
-                                    background: (st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? '#dcfce7' : '#fef3c7',
-                                    color: (st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? '#15803d' : '#b45309'
-                                  }}>
-                                    {(st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? 'مكتملة ✅' : (st.state?.label || 'قيد المعالجة ⏳')}
-                                  </span>
-                                </div>
+                                <span style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  background: (st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? '#dcfce7' : '#fef3c7',
+                                  color: (st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? '#15803d' : '#b45309'
+                                }}>
+                                  {(st.state?.name === 'CLOSED' || st.status === 'CLOSED') ? 'مكتملة ✅' : (st.state?.label || 'قيد المعالجة ⏳')}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -3525,14 +3618,14 @@ export const OperationalQueueView: React.FC = () => {
                       ) : (
                         <div style={{
                           textAlign: 'center',
-                          padding: '20px 10px',
+                          padding: '14px',
                           color: '#94a3b8',
-                          fontSize: '12.5px',
-                          background: '#f8fafc',
-                          borderRadius: '12px',
-                          border: '1px dashed #cbd5e1'
+                          fontSize: '12px',
+                          background: isDark ? 'rgba(255, 255, 255, 0.01)' : '#f8fafc',
+                          borderRadius: '10px',
+                          border: isDark ? '1px dashed rgba(255, 255, 255, 0.06)' : '1px dashed #cbd5e1'
                         }}>
-                          لم يتم فتح أي تذاكر أو مهام داخلية فرعية لهذه المعاملة بعد.
+                          لم يتم إسناد مهام فرعية لهذه المعاملة بعد.
                         </div>
                       )}
                     </div>
@@ -3569,44 +3662,24 @@ export const OperationalQueueView: React.FC = () => {
                 )}
               </div>
 
-              {/* Modal Footer Actions - ITIL Operational Action Bar */}
+              {/* Modal Footer Actions - ITIL Operational Action Bar (Unified & Decluttered) */}
               <div style={{
-                padding: '16px 24px',
-                borderTop: '1px solid #e2e8f0',
-                background: '#f8fafc',
+                padding: '14px 24px',
+                borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                background: isDark ? '#0b1120' : '#f8fafc',
                 display: 'flex',
                 gap: '10px',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap'
               }}>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {/* Action 1: Claim unassigned ticket */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Notice if ticket is unassigned: hero claim button already exists in top banner */}
                   {(!inspectTicket.assignedTo || inspectTicket.isUnassigned !== false) && (
-                    <button
-                      onClick={() => handleClaimTicket(inspectTicket.id)}
-                      disabled={claimingId === inspectTicket.id}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        color: '#ffffff',
-                        fontWeight: 700,
-                        fontSize: '13px',
-                        cursor: claimingId === inspectTicket.id ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
-                      }}
-                    >
-                      {claimingId === inspectTicket.id ? (
-                        <><RefreshCw size={14} className="animate-spin" /> جاري السحب...</>
-                      ) : (
-                        <><CheckCircle2 size={15} /> استلام وسحب الطلب لحسابي</>
-                      )}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#10b981', fontWeight: 700 }}>
+                      <Zap size={14} />
+                      <span>معاملة شاغرة في حوض العمليات العام (استلمها من البنر العلوي)</span>
+                    </div>
                   )}
 
                   {/* Action 2: If Active - Direct Close OR Request Closure */}
@@ -3817,31 +3890,10 @@ export const OperationalQueueView: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Action 4.5: Open Sub-Ticket */}
-                  {inspectPermissions?.canCreateSubTickets !== false && inspectTicketDetails?.state?.name !== 'CLOSED' && (
-                    <button
-                      onClick={openSubTicketModal}
-                      style={{
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        border: '1px solid #e9d5ff',
-                        background: '#faf5ff',
-                        color: '#7e22ce',
-                        fontWeight: 700,
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <GitPullRequest size={14} /> فتح مهمة فرعية
-                    </button>
-                  )}
-
                   {/* Action 5: Add Note */}
                   {inspectPermissions?.canAddInternalComment && (
                     <button
+                      type="button"
                       onClick={() => {
                         setActionModal({
                           type: 'ADD_NOTE',
@@ -3854,13 +3906,13 @@ export const OperationalQueueView: React.FC = () => {
                         setActionNote('');
                       }}
                       style={{
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        border: '1px solid #cbd5e1',
-                        background: '#ffffff',
-                        color: '#475569',
+                        padding: '9px 14px',
+                        borderRadius: '10px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                        background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
+                        color: isDark ? '#cbd5e1' : '#475569',
                         fontWeight: 600,
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -3874,6 +3926,7 @@ export const OperationalQueueView: React.FC = () => {
                   {/* Action 6: Reopen if closed */}
                   {inspectTicketDetails?.state?.name === 'CLOSED' && inspectPermissions?.canReopen && (
                     <button
+                      type="button"
                       onClick={() => {
                         setActionModal({
                           type: 'REOPEN',
@@ -3886,36 +3939,38 @@ export const OperationalQueueView: React.FC = () => {
                         setActionNote('');
                       }}
                       style={{
-                        padding: '10px 16px',
-                        borderRadius: '12px',
+                        padding: '9px 16px',
+                        borderRadius: '10px',
                         border: '1px solid #93c5fd',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
+                        background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
+                        color: isDark ? '#93c5fd' : '#1d4ed8',
                         fontWeight: 700,
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px'
                       }}
                     >
-                      <RotateCcw size={15} /> إعادة فتح التذكرة
+                      <RotateCcw size={14} /> إعادة فتح التذكرة
                     </button>
                   )}
                 </div>
 
-                {/* Dismiss Drawer */}
+                {/* Dismiss Modal */}
                 <button
+                  type="button"
                   onClick={() => setInspectTicket(null)}
                   style={{
-                    padding: '10px 18px',
-                    borderRadius: '12px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#64748b',
+                    padding: '9px 18px',
+                    borderRadius: '10px',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                    background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                    color: isDark ? '#cbd5e1' : '#64748b',
                     fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer'
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   إغلاق النافذة
