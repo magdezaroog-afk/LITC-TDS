@@ -216,7 +216,8 @@ export const defaultFormConfig = (): RouteFormConfig => ({
     'انشغال باجتماع عمل طارئ',
     'تأجيل التنسيق لوقت لاحق',
     'أخرى (تحديد يدوي)'
-  ]
+  ],
+  stages: []
 });
 
 /**
@@ -412,6 +413,33 @@ export const isDelegateFieldVisible = (
   return false;
 };
 
+/**
+ * Robust Field Name Matcher across different prefixes and historical aliases:
+ * - taxonomy <-> taxonomyMain <-> category
+ * - dyn_df_123 <-> dynamic_df_123 <-> df_123
+ * - custom_ci_123 <-> ci_123
+ */
+export const isMatchingFieldName = (a: string, b: string): boolean => {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // Taxonomy aliases
+  const isTax = (s: string) => s === 'taxonomy' || s === 'taxonomyMain' || s === 'category';
+  if (isTax(a) && isTax(b)) return true;
+  // Dynamic fields: strip 'dynamic_', 'dyn_', 'df_'
+  const normDyn = (s: string) => s.replace(/^(dynamic_|dyn_|df_)/, '');
+  const isDyn = (s: string) => s.startsWith('dyn_') || s.startsWith('dynamic_') || s.startsWith('df_');
+  if (isDyn(a) && isDyn(b)) {
+    return normDyn(a) === normDyn(b);
+  }
+  // Custom inputs: strip 'custom_', 'ci_'
+  const normCust = (s: string) => s.replace(/^(custom_|ci_)/, '');
+  const isCust = (s: string) => s.startsWith('custom_') || s.startsWith('ci_');
+  if (isCust(a) && isCust(b)) {
+    return normCust(a) === normCust(b);
+  }
+  return false;
+};
+
 export const normalizeRoute = (r: any): TicketRouteDefinition => {
   const baseConfig = defaultFormConfig();
   return {
@@ -445,6 +473,13 @@ export const normalizeRoute = (r: any): TicketRouteDefinition => {
       delegateScope: r.formConfig?.delegateScope || 'ALL_COMPANY_USERS',
       delegateTriggerMode: r.formConfig?.delegateTriggerMode || 'ONLY_ON_ASSIGNMENT',
       delegateTriggerOptionLabel: r.formConfig?.delegateTriggerOptionLabel || 'تكليف',
+      stages: Array.isArray(r.formConfig?.stages)
+        ? r.formConfig.stages.map((st: any, sIdx: number) => ({
+            id: st?.id || `stage_${sIdx + 1}`,
+            title: st?.title || `المرحلة ${sIdx + 1}`,
+            fieldNames: Array.isArray(st?.fieldNames) ? st.fieldNames : [],
+          }))
+        : (baseConfig.stages || []),
     }
   };
 };

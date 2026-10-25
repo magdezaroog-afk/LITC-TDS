@@ -23,7 +23,7 @@ import {
   Users, Landmark, MapPin
 } from 'lucide-react';
 import { useHub } from '../context/HubContext';
-import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon } from '../../services/ticketRouting.helpers';
+import { RouteFormStage, isDelegateFieldVisible, getOptionBehavior, OptionBehaviorRule, getOptionIcon, isMatchingFieldName } from '../../services/ticketRouting.helpers';
 import {
   getTopLevelDepartments,
   getDivisionsForDepartment,
@@ -2804,15 +2804,15 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return stg.fieldNames.some((fName: string) => {
         if (hasDept && (fName === 'division' || fName === 'team')) return false;
         if (hasTaxMain && fName === 'taxonomySub') return false;
-        if (fName.startsWith('dyn_')) {
-          const dynId = fName.replace('dyn_', '');
+        if (fName.startsWith('dyn_') || fName.startsWith('df_') || fName.startsWith('dynamic_')) {
+          const dynId = fName.replace(/^(dynamic_|dyn_|df_)/, '');
           const isBoundAsChild = effectiveDynamicFields.some(df =>
             df.childBindings?.some((b: any) => b.childFieldId === dynId) ||
             df.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId === dynId || o.childFieldId === dynId))
           );
           if (isBoundAsChild) return false;
         }
-        return selectedFlow.fields.some(f => f.name === fName);
+        return selectedFlow.fields.some(f => isMatchingFieldName(f.name, fName));
       });
     });
 
@@ -2825,8 +2825,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     if (effectiveAdminStages && effectiveAdminStages.length > 0) {
       return effectiveAdminStages.length + 1; // Stages + Final Ticket Review
     }
-    // Default standard criteria:
-    return selectedFlow.fields.length > 3 ? 3 : 2;
+    // Default standard criteria: 3 stages (Stage 1: Classification, Stage 2: Location/Dept, Stage 3: Details)
+    return selectedFlow.fields.length > 3 ? 4 : 3;
   }, [selectedFlow, effectiveAdminStages]);
 
   const currentStageDefinition = useMemo(() => {
@@ -2895,45 +2895,44 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     if (effectiveAdminStages && effectiveAdminStages.length > 0) {
       if (currentStep > effectiveAdminStages.length) return []; // Final review
       const cfg = effectiveAdminStages[currentStep - 1];
-      return all.filter(f => cfg.fieldNames.includes(f.name));
+      return all.filter(f => cfg.fieldNames.some(fn => isMatchingFieldName(fn, f.name)));
     }
 
-    // 2. Default Standard Criteria:
-    if (totalStages === 2) {
-      return currentStep === 1 ? all : [];
-    }
-
-    // 3 Stages Default:
-    // Stage 1: Routing & Core Classification (department, building, division, team, taxonomyMain, cascading dynamic fields, title)
-    // Stage 2: Details & Operational Requirements (remaining fields, scheduleEngine, description, etc.)
-    const isCore = (name: string) => {
-      if (['department', 'building', 'division', 'team', 'title', 'subject', 'category', 'taxonomyMain', 'priority'].includes(name)) return true;
+    // 2. Intelligent Clean Fallback (Ensures NO vertical stacking of multiple heavy selectors):
+    // Stage 1: Primary Selection & Main Issues (taxonomyMain or primary dyn selector)
+    // Stage 2: Location and Organization (building, department)
+    // Stage 3: Operational Requirements, Details & Attachments (description, attachment, custom, etc.)
+    const isPrimarySelector = (name: string) => {
+      if (name === 'taxonomyMain' || name === 'taxonomy' || name === 'category') return true;
       if (name.startsWith('dyn_')) {
         const dId = name.replace('dyn_', '');
         const dDef = effectiveDynamicFields.find(df => df.id === dId);
-        const isCascadeParent = Boolean(
-          dDef && (
-            (dDef.childBindings && dDef.childBindings.length > 0) ||
-            dDef.options?.some((o: any) => typeof o === 'object' && (o.triggerFieldId || o.childFieldId))
-          )
-        );
-        if (isCascadeParent) return true;
+        return Boolean(dDef && dDef.options && dDef.options.length > 0);
       }
       return false;
     };
+    const isLocationOrg = (name: string) => name === 'building' || name === 'department';
 
-    if (currentStep === 1) {
-      let s1 = all.filter(f => isCore(f.name));
-      if (s1.length === 0) s1 = all.slice(0, 2);
-      return s1;
+    const hasPrimary = all.some(f => isPrimarySelector(f.name));
+    const hasLocation = all.some(f => isLocationOrg(f.name));
+
+    if (hasPrimary) {
+      // Primary category has its OWN stage (no building or dept below it!)
+      if (currentStep === 1) return all.filter(f => isPrimarySelector(f.name));
+      if (currentStep === 2) {
+        if (hasLocation) return all.filter(f => isLocationOrg(f.name));
+        return all.filter(f => !isPrimarySelector(f.name));
+      }
+      if (currentStep === 3) {
+        return all.filter(f => !isPrimarySelector(f.name) && !isLocationOrg(f.name));
+      }
+      return [];
+    } else {
+      if (currentStep === 1) return hasLocation ? all.filter(f => isLocationOrg(f.name)) : all.slice(0, 2);
+      if (currentStep === 2) return hasLocation ? all.filter(f => !isLocationOrg(f.name)) : all.slice(2);
+      return [];
     }
-    if (currentStep === 2) {
-      let s2 = all.filter(f => !isCore(f.name));
-      if (s2.length === 0) s2 = all.slice(2);
-      return s2;
-    }
-    return [];
-  }, [selectedFlow, adminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
+  }, [selectedFlow, adminStages, effectiveAdminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
 
   const isFieldComplete = useCallback((field: RequestFormField, data: Record<string, any>) => {
     if (field.name === 'department') {

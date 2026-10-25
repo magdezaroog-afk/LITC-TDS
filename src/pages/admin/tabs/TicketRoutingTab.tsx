@@ -334,12 +334,69 @@ export const TicketRoutingTab: React.FC = () => {
   const openEdit = (route: TicketRouteDefinition) => {
     const r = normalizeRoute(route);
     setEditingId(r.id);
-    const existingStages = (r.formConfig.stages && r.formConfig.stages.length > 0)
-      ? r.formConfig.stages
-      : [
-          { id: 'stage_1', title: 'البيانات الأساسية والتصنيف', fieldNames: [] },
-          { id: 'stage_2', title: 'المتطلبات والمرفقات', fieldNames: [] }
-        ];
+
+    // Collect all active fields enabled on the route
+    const activeFieldNames: string[] = [];
+    if (r.formConfig.taxonomy && r.formConfig.taxonomy.length > 0) activeFieldNames.push('taxonomyMain');
+    (r.formConfig.routeDynamicFields || []).forEach((rf: any) => {
+      activeFieldNames.push(`dyn_${rf.fieldId}`);
+    });
+    if (r.formConfig.showBuildingField) activeFieldNames.push('building');
+    if (r.formConfig.showDepartmentField) activeFieldNames.push('department');
+    if (r.formConfig.showScheduleEngine || r.formConfig.showDateRange) activeFieldNames.push('scheduleEngine');
+    if (r.formConfig.showDelegateUser) activeFieldNames.push('delegateUser');
+    if (r.formConfig.showAmountField) activeFieldNames.push('amount');
+    (r.formConfig.customInputs || []).forEach((ci: any) => {
+      activeFieldNames.push(`custom_${ci.id}`);
+    });
+    if (r.formConfig.showDescription !== false) activeFieldNames.push('description');
+    if (r.formConfig.showAttachments) activeFieldNames.push('attachment');
+
+    let existingStages: RouteFormStage[] = [];
+    if (r.formConfig.stages && r.formConfig.stages.length > 0 && r.formConfig.stages.some(s => s.fieldNames && s.fieldNames.length > 0)) {
+      existingStages = r.formConfig.stages.map((st, sIdx) => ({
+        id: st.id || `stage_${sIdx + 1}`,
+        title: st.title || `المرحلة ${sIdx + 1}`,
+        fieldNames: Array.isArray(st.fieldNames) ? [...st.fieldNames] : []
+      }));
+      // Assign any newly enabled active fields to the last stage
+      const assigned = new Set(existingStages.flatMap(s => s.fieldNames || []));
+      const unassigned = activeFieldNames.filter(fn => !assigned.has(fn));
+      if (unassigned.length > 0 && existingStages.length > 0) {
+        existingStages[existingStages.length - 1].fieldNames.push(...unassigned);
+      }
+    } else {
+      // Smart default stage distribution:
+      // Stage 1: Categorization / Primary Dynamic Selector / Main Issues
+      // Stage 2: Location & Department
+      // Stage 3: Operational Requirements, Details & Attachments
+      const stage1Fields = activeFieldNames.filter(fn => fn === 'taxonomyMain' || fn.startsWith('dyn_'));
+      const stage2Fields = activeFieldNames.filter(fn => fn === 'building' || fn === 'department');
+      const stage3Fields = activeFieldNames.filter(fn => !stage1Fields.includes(fn) && !stage2Fields.includes(fn));
+
+      existingStages = [];
+      if (stage1Fields.length > 0) {
+        existingStages.push({
+          id: 'stage_1',
+          title: 'البيانات الأساسية والتصنيف الفني',
+          fieldNames: stage1Fields
+        });
+      }
+      if (stage2Fields.length > 0) {
+        existingStages.push({
+          id: `stage_${existingStages.length + 1}`,
+          title: 'موقع ومبنى العمل والتبعية المؤسسية',
+          fieldNames: stage2Fields
+        });
+      }
+      if (stage3Fields.length > 0 || existingStages.length === 0) {
+        existingStages.push({
+          id: `stage_${existingStages.length + 1}`,
+          title: 'تفاصيل المعاملة والمرفقات المطلوبة',
+          fieldNames: stage3Fields
+        });
+      }
+    }
 
     setWizard({
       name: r.name,
@@ -385,6 +442,14 @@ export const TicketRoutingTab: React.FC = () => {
     const r: TicketRouteDefinition = {
       id: editingId || `route_${Date.now()}`,
       ...wizard,
+      formConfig: {
+        ...wizard.formConfig,
+        stages: stages.map(s => ({
+          id: s.id,
+          title: s.title,
+          fieldNames: s.fieldNames || []
+        }))
+      },
       routeCategory: wizard.routeCategory || 'OPERATIONAL',
       managerId: wizard.managerId ? String(wizard.managerId) : undefined,
       managerName: wizard.managerName || undefined,
@@ -496,6 +561,7 @@ export const TicketRoutingTab: React.FC = () => {
     else if (fieldName === 'amount') setFC({ showAmountField: false });
     else if (fieldName === 'attachment') setFC({ showAttachments: false });
     else if (fieldName === 'description') setFC({ showDescription: false });
+    else if (fieldName === 'taxonomyMain') setFC({ taxonomy: [] });
     else if (fieldName.startsWith('custom_')) {
       const cid = fieldName.replace('custom_', '');
       setFC({ customInputs: (wizard.formConfig.customInputs || []).filter(ci => ci.id !== cid) });
@@ -1189,6 +1255,34 @@ export const TicketRoutingTab: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* 0. المشاكل الرئيسية / التصنيف الفني */}
+            <div
+              className="palette-btn"
+              onClick={() => {
+                if (!wizard.formConfig.taxonomy || wizard.formConfig.taxonomy.length === 0) {
+                  setFC({
+                    taxonomy: [
+                      { id: `tax_${Date.now()}`, label: 'مشكلة فنية عامة', subIssues: [], isActive: true }
+                    ]
+                  });
+                }
+                addFieldToActiveStage('taxonomyMain');
+              }}
+              style={{
+                padding: '10px 12px', borderRadius: 10, background: '#fff', border: `1px solid ${A.sep}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 18 }}>🏷️</span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: A.text }}>التصنيف الفني / المشاكل الرئيسية</div>
+                  <div style={{ fontSize: 9.5, color: A.textSub }}>قائمة المشاكل والأنواع الفنية للطلب</div>
+                </div>
+              </div>
+              <span style={{ width: 22, height: 22, borderRadius: '50%', background: `${wizard.color}15`, color: wizard.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>+</span>
+            </div>
+
             {/* 1. مستدلة / قائمة اختيارات */}
             <div
               className="palette-btn"
@@ -2309,8 +2403,19 @@ export const TicketRoutingTab: React.FC = () => {
                       );
                     }
 
-                    // 3. System Fields (Building, Department, Schedule, Delegate, Amount, Attachment, Description)
+                    // 3. System Fields (Taxonomy, Building, Department, Schedule, Delegate, Amount, Attachment, Description)
                     const sysConfigMap: Record<string, { label: string; icon: string; preview: React.ReactNode; isReq: boolean }> = {
+                      taxonomyMain: {
+                        label: 'المشاكل الرئيسية والتصنيف الفني',
+                        icon: '🏷️',
+                        preview: (
+                          <div style={{ height: 38, borderRadius: 7, background: '#fff', border: `1.5px dashed ${wizard.color}60`, padding: '8px 12px', fontSize: 11, color: wizard.color, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>🏷️ تصنيف المشاكل الرئيسية والمستدلات الفرعية</span>
+                            <span style={{ fontSize: 10, background: `${wizard.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>أيقونات دائرية تفاعلية</span>
+                          </div>
+                        ),
+                        isReq: true,
+                      },
                       building: {
                         label: 'موقع ومبنى العمل',
                         icon: '🏢',

@@ -325,6 +325,7 @@ export const parseRoutesToRequests = (
         targetTeamName: r.targetTeamName || '',
         formConfig: {
           ...cfg,
+          stages: cfg.stages || [],
           dynamicFields: resolvedDynamicFields,
         },
         fields: resolvedFields,
