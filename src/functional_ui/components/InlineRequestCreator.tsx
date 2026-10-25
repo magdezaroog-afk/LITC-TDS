@@ -2848,26 +2848,58 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     return valid.length > 0 ? valid : undefined;
   }, [selectedFlow, adminStages, effectiveDynamicFields]);
 
+  // Fallback stage definitions if Admin hasn't configured custom stages
+  const fallbackStageDefinitions = useMemo(() => {
+    if (!selectedFlow || (effectiveAdminStages && effectiveAdminStages.length > 0)) return [];
+    const fields = selectedFlow.fields;
+    const isPrimarySelector = (name: string) => {
+      if (name === 'taxonomyMain' || name === 'taxonomy' || name === 'category') return true;
+      if (name.startsWith('dyn_')) {
+        const dId = name.replace('dyn_', '');
+        const dDef = effectiveDynamicFields.find(df => df.id === dId);
+        return Boolean(dDef && dDef.options && dDef.options.length > 0);
+      }
+      return false;
+    };
+
+    const stages: RouteFormStage[] = [];
+    const primaryNames = fields.filter(f => isPrimarySelector(f.name)).map(f => f.name);
+    if (primaryNames.length > 0) {
+      stages.push({ id: 'stage_primary', title: 'البيانات الأساسية والتصنيف الفني', fieldNames: primaryNames });
+    }
+    if (fields.some(f => f.name === 'department')) {
+      stages.push({ id: 'stage_dept', title: 'التبعية المؤسسية والإدارة', fieldNames: ['department'] });
+    }
+    if (fields.some(f => f.name === 'building')) {
+      stages.push({ id: 'stage_bldg', title: 'موقع ومبنى العمل', fieldNames: ['building'] });
+    }
+    const remaining = fields
+      .filter(f => !primaryNames.includes(f.name) && f.name !== 'department' && f.name !== 'building')
+      .map(f => f.name);
+    if (remaining.length > 0) {
+      stages.push({ id: 'stage_details', title: 'تفاصيل المعاملة والمرفقات المطلوبة', fieldNames: remaining });
+    }
+    return stages;
+  }, [selectedFlow, effectiveAdminStages, effectiveDynamicFields]);
+
+  // Active stages list: strictly prioritizes Admin Custom Configuration 1:1, falls back to isolated single-component stages
+  const activeStages = useMemo(() => {
+    if (effectiveAdminStages && effectiveAdminStages.length > 0) return effectiveAdminStages;
+    return fallbackStageDefinitions;
+  }, [effectiveAdminStages, fallbackStageDefinitions]);
+
   const totalStages = useMemo(() => {
     if (!selectedFlow) return 2;
-    // If Admin defined custom stages in route builder:
-    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
-      return effectiveAdminStages.length + 1; // Stages + Final Ticket Review
-    }
-    // Default standard criteria: 3 stages (Stage 1: Classification, Stage 2: Location/Dept, Stage 3: Details)
-    return selectedFlow.fields.length > 3 ? 4 : 3;
-  }, [selectedFlow, effectiveAdminStages]);
+    return (activeStages.length > 0 ? activeStages.length : 2) + 1; // Stages + Final Ticket Review
+  }, [selectedFlow, activeStages]);
 
   const currentStageDefinition = useMemo(() => {
     if (!selectedFlow) return null;
-    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
-      if (currentStep <= effectiveAdminStages.length) {
-        return effectiveAdminStages[currentStep - 1];
-      }
-      return { id: 'final', title: 'مراجعة التذكرة والاعتماد', fieldNames: [] };
+    if (currentStep <= activeStages.length) {
+      return activeStages[currentStep - 1];
     }
-    return null;
-  }, [selectedFlow, effectiveAdminStages, currentStep]);
+    return { id: 'final', title: 'مراجعة التذكرة والاعتماد', fieldNames: [] };
+  }, [selectedFlow, activeStages, currentStep]);
 
   const currentOptionBehavior = useMemo(() => {
     return getOptionBehavior(formData, (selectedFlow as any)?.formConfig);
@@ -2920,50 +2952,20 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       return f;
     });
 
-    // 1. If Admin configured custom stages:
-    if (effectiveAdminStages && effectiveAdminStages.length > 0) {
-      if (currentStep > effectiveAdminStages.length) return []; // Final review
-      const cfg = effectiveAdminStages[currentStep - 1];
-      return all.filter(f => cfg.fieldNames.some(fn => isMatchingFieldName(fn, f.name)));
-    }
+    // Render fields for current stage (strictly mapped 1:1 to active stage definition)
+    if (currentStep > activeStages.length) return []; // Final ticket review
+    const cfg = activeStages[currentStep - 1];
+    if (!cfg) return [];
 
-    // 2. Intelligent Clean Fallback (Ensures NO vertical stacking of multiple heavy selectors):
-    // Stage 1: Primary Selection & Main Issues (taxonomyMain or primary dyn selector)
-    // Stage 2: Location and Organization (building, department)
-    // Stage 3: Operational Requirements, Details & Attachments (description, attachment, custom, etc.)
-    const isPrimarySelector = (name: string) => {
-      if (name === 'taxonomyMain' || name === 'taxonomy' || name === 'category') return true;
-      if (name.startsWith('dyn_')) {
-        const dId = name.replace('dyn_', '');
-        const dDef = effectiveDynamicFields.find(df => df.id === dId);
-        return Boolean(dDef && dDef.options && dDef.options.length > 0);
-      }
-      return false;
-    };
-    const isLocationOrg = (name: string) => name === 'building' || name === 'department';
+    const matched = all.filter(f => cfg.fieldNames.some(fn => isMatchingFieldName(fn, f.name)));
+    return matched.sort((a, b) => {
+      const idxA = cfg.fieldNames.findIndex(fn => isMatchingFieldName(fn, a.name));
+      const idxB = cfg.fieldNames.findIndex(fn => isMatchingFieldName(fn, b.name));
+      return (idxA >= 0 ? idxA : 999) - (idxB >= 0 ? idxB : 999);
+    });
+  }, [selectedFlow, activeStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
 
-    const hasPrimary = all.some(f => isPrimarySelector(f.name));
-    const hasLocation = all.some(f => isLocationOrg(f.name));
-
-    if (hasPrimary) {
-      // Primary category has its OWN stage (no building or dept below it!)
-      if (currentStep === 1) return all.filter(f => isPrimarySelector(f.name));
-      if (currentStep === 2) {
-        if (hasLocation) return all.filter(f => isLocationOrg(f.name));
-        return all.filter(f => !isPrimarySelector(f.name));
-      }
-      if (currentStep === 3) {
-        return all.filter(f => !isPrimarySelector(f.name) && !isLocationOrg(f.name));
-      }
-      return [];
-    } else {
-      if (currentStep === 1) return hasLocation ? all.filter(f => isLocationOrg(f.name)) : all.slice(0, 2);
-      if (currentStep === 2) return hasLocation ? all.filter(f => !isLocationOrg(f.name)) : all.slice(2);
-      return [];
-    }
-  }, [selectedFlow, adminStages, effectiveAdminStages, currentStep, totalStages, formData, currentOptionBehavior, divisionOptions.length, teamOptions.length, effectiveDynamicFields]);
-
-  const isFieldComplete = useCallback((field: RequestFormField, data: Record<string, any>) => {
+  const isFieldComplete = useCallback((field: any, data: Record<string, any>) => {
     if (field.name === 'department') {
       return Boolean(data.department?.trim());
     }
@@ -3735,9 +3737,9 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                           }}>
-                            {effectiveAdminStages && effectiveAdminStages[currentStep - 1]
-                              ? effectiveAdminStages[currentStep - 1].title
-                              : (currentStep === 1 ? 'البيانات الأساسية والتوجيه' : (currentStep === totalStages ? 'مراجعة التذكرة والاعتماد النهائي' : 'المتطلبات والجدولة'))}
+                            {currentStep === totalStages
+                              ? 'مراجعة التذكرة والاعتماد النهائي'
+                              : (currentStageDefinition?.title || activeStages[currentStep - 1]?.title || 'تفاصيل المعاملة')}
                           </span>
                         </div>
 

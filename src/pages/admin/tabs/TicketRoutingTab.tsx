@@ -372,7 +372,7 @@ export const TicketRoutingTab: React.FC = () => {
       // Stage 3: Operational Requirements, Details & Attachments
       const stage1Fields = activeFieldNames.filter(fn => fn === 'taxonomyMain' || fn.startsWith('dyn_'));
       const stage2Fields = activeFieldNames.filter(fn => fn === 'building' || fn === 'department');
-      const stage3Fields = activeFieldNames.filter(fn => !stage1Fields.includes(fn) && !stage2Fields.includes(fn));
+      const stage3Fields = activeFieldNames.filter(fn => !stage1Fields.includes(fn) && !(stage2Fields as string[]).includes(fn));
 
       existingStages = [];
       if (stage1Fields.length > 0) {

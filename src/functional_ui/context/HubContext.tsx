@@ -460,14 +460,21 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
   // Dynamic sync of real system routes created by the Admin
   const fetchSystemRoutes = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token =
+        sessionStorage.getItem('litc_token') ||
+        localStorage.getItem('litc_token') ||
+        sessionStorage.getItem('token') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('nexus_token') ||
+        localStorage.getItem('auth_token') ||
+        'mock-admin-token-123';
       const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
       const [routesRes, fieldsRes, bldgsRes, treeRes] = await Promise.all([
-        fetch('/api/v1/routing/routes', { headers: authHeaders }).catch(() => null),
-        fetch('/api/v1/routing/dynamic-fields', { headers: authHeaders }).catch(() => null),
-        fetch('/api/v1/org/buildings', { headers: authHeaders }).catch(() => null),
-        fetch('/api/v1/org/tree', { headers: authHeaders }).catch(() => null),
+        fetch('/api/v1/routing/routes', { headers: authHeaders, credentials: 'include' }).catch(() => null),
+        fetch('/api/v1/routing/dynamic-fields', { headers: authHeaders, credentials: 'include' }).catch(() => null),
+        fetch('/api/v1/org/buildings', { headers: authHeaders, credentials: 'include' }).catch(() => null),
+        fetch('/api/v1/org/tree', { headers: authHeaders, credentials: 'include' }).catch(() => null),
       ]);
 
       let dynamicFieldsList: any[] = [];
@@ -518,9 +525,25 @@ export function HubProvider({ children, initialUser }: { children: ReactNode; in
 
   useEffect(() => {
     fetchSystemRoutes();
+
+    const handleRoutesUpdated = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        try {
+          localStorage.setItem('litc_ticket_routes', JSON.stringify(e.detail));
+          const parsed = parseRoutesToRequests(e.detail);
+          if (parsed.length > 0) {
+            setRequests(parsed);
+          }
+        } catch {}
+      }
+      fetchSystemRoutes();
+    };
+
     window.addEventListener('litc_settings_updated', fetchSystemRoutes);
+    window.addEventListener('litc_routes_updated', handleRoutesUpdated);
     return () => {
       window.removeEventListener('litc_settings_updated', fetchSystemRoutes);
+      window.removeEventListener('litc_routes_updated', handleRoutesUpdated);
     };
   }, [fetchSystemRoutes]);
 

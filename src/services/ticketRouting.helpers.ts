@@ -501,8 +501,15 @@ export const saveRoutes = async (routes: TicketRouteDefinition[]): Promise<Ticke
   const { AdminAPI } = await import('./admin.api');
   const res = await AdminAPI.saveRoutesSnapshot(routes);
   if (!res?.success) throw new Error(res?.error || 'فشل حفظ المسارات');
+
+  const normalized = Array.isArray(res?.routes) ? res.routes.map(normalizeRoute) : routes;
+  try {
+    localStorage.setItem('litc_ticket_routes', JSON.stringify(normalized));
+  } catch {}
+
+  window.dispatchEvent(new CustomEvent('litc_routes_updated', { detail: normalized }));
   window.dispatchEvent(new Event('litc_settings_updated'));
-  return Array.isArray(res?.routes) ? res.routes.map(normalizeRoute) : routes;
+  return normalized;
 };
 
 export const loadDynamicFields = async (): Promise<DynamicCustomField[]> => {

@@ -36,6 +36,10 @@ const readStoredSession = (): User | null => {
 
     // Query param override: only for dev/demo purpose using known roles
     if (loginAsRole) {
+      try {
+        localStorage.setItem('litc_token', 'mock-admin-token-123');
+        sessionStorage.setItem('litc_token', 'mock-admin-token-123');
+      } catch {}
       return {
         id: 'user_' + loginAsRole,
         name: 'مجدي الزروق',

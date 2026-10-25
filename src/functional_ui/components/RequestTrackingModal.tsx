@@ -172,8 +172,9 @@ export function RequestTrackingModal({ isOpen, onClose, request }: RequestTracki
     if ((request as any).subIssue || (request as any).issueType) {
       details.push({ label: 'تصنيف ونوع المشكلة', value: (request as any).subIssue || (request as any).issueType });
     }
-    if (request.priority) {
-      const pLabel = request.priority === 'urgent' ? 'عاجلة جداً' : request.priority === 'high' ? 'أولوية عالية' : request.priority === 'normal' ? 'عادية' : 'منخفضة';
+    const reqPriority = (request as any).priority;
+    if (reqPriority) {
+      const pLabel = reqPriority === 'urgent' ? 'عاجلة جداً' : reqPriority === 'high' ? 'أولوية عالية' : reqPriority === 'normal' ? 'عادية' : 'منخفضة';
       details.push({ label: 'درجة الأولوية', value: pLabel });
     }
 

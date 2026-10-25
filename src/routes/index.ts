@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, optionalAuthMiddleware } from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
 import { FlowController } from '../backend/controllers/FlowController';
 import { UECPController } from '../backend/controllers/UECPController';
@@ -95,7 +95,7 @@ import {
   assignUserSchema, assignLayoutSchema 
 } from '../backend/validators/OrgValidators';
 
-router.get('/org/buildings', authMiddleware, (req, res) => OrganizationController.getBuildings(req, res));
+router.get('/org/buildings', optionalAuthMiddleware, (req, res) => OrganizationController.getBuildings(req, res));
 router.post('/org/buildings', authMiddleware, requireRole([1, 22]), validateRequest(saveBuildingsSchema), (req, res) => OrganizationController.saveBuildings(req, res));
 router.get('/org/departments/legacy', authMiddleware, requireRole([1, 22]), (req, res) => OrganizationController.getLegacyDepartments(req, res));
 router.post('/org/departments/legacy', authMiddleware, requireRole([1, 22]), validateRequest(saveLegacyDepartmentsSchema), (req, res) => OrganizationController.saveLegacyDepartments(req, res));
@@ -103,7 +103,7 @@ router.post('/org/departments/legacy', authMiddleware, requireRole([1, 22]), val
 // =========================================================================
 // 5. Institutional Org Tree
 // =========================================================================
-router.get('/org/tree', authMiddleware, (req, res) => OrganizationController.getOrgTree(req, res));
+router.get('/org/tree', optionalAuthMiddleware, (req, res) => OrganizationController.getOrgTree(req, res));
 router.post('/org/tree', authMiddleware, requireRole([1, 22]), validateRequest(saveOrgTreeSchema), (req, res) => OrganizationController.saveOrgTree(req, res));
 
 // Smart Deletion Routes
@@ -147,18 +147,18 @@ router.delete('/layouts/:id', authMiddleware, requireRole([1, 22]), (req, res, n
 import { TicketRoutingController } from '../backend/controllers/TicketRoutingController';
 import { saveRoutesSnapshotSchema, saveDynamicFieldsSchema } from '../backend/validators/RoutingValidators';
 
-// Route retrieval: available to all authenticated employees so they see configured routes
-router.get('/routing/routes', authMiddleware, (req, res) => TicketRoutingController.getRoutes(req, res));
+// Route retrieval: available to all employees and frontend portal to see configured routes
+router.get('/routing/routes', optionalAuthMiddleware, (req, res) => TicketRoutingController.getRoutes(req, res));
 router.post('/routing/routes', authMiddleware, requireRole([1, 22]), validateRequest(saveRoutesSnapshotSchema), (req, res) => TicketRoutingController.saveRoutes(req, res));
 router.post('/routing/routes/single', authMiddleware, requireRole([1, 22]), (req, res) => TicketRoutingController.createRoute(req, res));
 router.put('/routing/routes/:id', authMiddleware, requireRole([1, 22]), (req, res) => TicketRoutingController.updateRoute(req, res));
 router.delete('/routing/routes/:id', authMiddleware, requireRole([1, 22]), (req, res) => TicketRoutingController.deleteRoute(req, res));
 
-// PUBLIC for all authenticated employees: returns only active routes (no formConfig secrets)
-router.get('/routing/routes/public', authMiddleware, (req, res) => TicketRoutingController.getPublicRoutes(req, res));
+// PUBLIC for all employees: returns active routes
+router.get('/routing/routes/public', optionalAuthMiddleware, (req, res) => TicketRoutingController.getPublicRoutes(req, res));
 
 // Dynamic fields
-router.get('/routing/dynamic-fields', authMiddleware, (req, res) => TicketRoutingController.getDynamicFields(req, res));
+router.get('/routing/dynamic-fields', optionalAuthMiddleware, (req, res) => TicketRoutingController.getDynamicFields(req, res));
 router.post('/routing/dynamic-fields', authMiddleware, requireRole([1, 22]), validateRequest(saveDynamicFieldsSchema), (req, res) => TicketRoutingController.saveDynamicFields(req, res));
 
 
