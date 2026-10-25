@@ -169,6 +169,7 @@ import { FunctionalController } from '../backend/controllers/FunctionalControlle
 const functionalController = new FunctionalController();
 
 router.get('/v1/functional/me', authMiddleware, (req, res, next) => functionalController.getMe(req, res, next));
+router.put('/v1/functional/me', authMiddleware, (req, res, next) => functionalController.updateMe(req, res, next));
 
 router.get('/v1/functional/posts', authMiddleware, (req, res, next) => functionalController.getPosts(req, res, next));
 router.post('/v1/functional/posts', authMiddleware, (req, res, next) => functionalController.createPost(req, res, next));

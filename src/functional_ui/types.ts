@@ -80,6 +80,7 @@ export interface User {
   id: string;
   name: string;
   role: string;
+  jobTitle?: string;
   avatar: string;
   department: string;
   points: number; // Institutional Department Points (نقاط التميز الإدارية)
@@ -93,6 +94,7 @@ export interface User {
   userPrincipalName?: string;
   employeeId?: string;
   company?: string;
+  phone?: string;
   mobilePhone?: string;
   businessPhone?: string;
   officeLocation?: string;
@@ -106,6 +108,17 @@ export interface User {
     avatar: string;
     department?: string;
   };
+  subordinates?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    email: string;
+    avatar: string;
+    department?: string;
+  }>;
+  teams?: string[];
+  section?: string;
+  unit?: string;
   directReportsCount?: number;
   skills?: string[];
   aboutMe?: string;

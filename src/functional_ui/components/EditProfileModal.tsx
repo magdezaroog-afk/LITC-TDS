@@ -36,6 +36,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccessToast }: Ed
 
   const [formData, setFormData] = useState({
     name: user.name || '',
+    employeeId: user.employeeId || '',
     role: user.role || '',
     department: user.department || '',
     company: user.company || '',
@@ -55,6 +56,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccessToast }: Ed
     if (isOpen) {
       setFormData({
         name: user.name || '',
+        employeeId: user.employeeId || '',
         role: user.role || '',
         department: user.department || '',
         company: user.company || '',
@@ -80,13 +82,67 @@ export default function EditProfileModal({ isOpen, onClose, onSuccessToast }: Ed
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    setTimeout(() => {
+    try {
+      const tkn = sessionStorage.getItem('litc_token') || sessionStorage.getItem('token') || localStorage.getItem('litc_token') || localStorage.getItem('token');
+      const activeUserId = user?.id ? String(user.id).replace(/\D/g, '') : '';
+      
+      const res = await fetch('/api/v1/functional/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tkn ? { 'Authorization': `Bearer ${tkn}` } : {}),
+          ...(activeUserId ? { 'x-user-id': activeUserId } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullName: formData.name,
+          employeeId: formData.employeeId,
+          jobTitle: formData.role,
+          department: formData.department,
+          mobilePhone: formData.mobilePhone,
+          businessPhone: formData.businessPhone,
+          officeLocation: formData.officeLocation,
+          city: formData.city,
+          company: formData.company,
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        updateUserProfile({
+          name: formData.name,
+          employeeId: formData.employeeId,
+          role: formData.role,
+          jobTitle: formData.role,
+          department: formData.department,
+          company: formData.company,
+          mobilePhone: formData.mobilePhone,
+          businessPhone: formData.businessPhone,
+          officeLocation: formData.officeLocation,
+          city: formData.city,
+          aboutMe: formData.aboutMe,
+          skills: skills,
+        });
+
+        window.dispatchEvent(new CustomEvent('litc_profile_updated'));
+
+        if (onSuccessToast) {
+          onSuccessToast(t('profileUpdatedToast') || 'تم تحديث الملف الشخصي بنجاح في قاعدة البيانات');
+        }
+        onClose();
+      } else {
+        alert(data.message || 'تعذر تحديث البيانات في الخادم');
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      // Fallback local update
       updateUserProfile({
         name: formData.name,
+        employeeId: formData.employeeId,
         role: formData.role,
         department: formData.department,
         company: formData.company,
@@ -97,13 +153,13 @@ export default function EditProfileModal({ isOpen, onClose, onSuccessToast }: Ed
         aboutMe: formData.aboutMe,
         skills: skills,
       });
-
-      setIsSaving(false);
-      onClose();
       if (onSuccessToast) {
         onSuccessToast(t('profileUpdatedToast'));
       }
-    }, 600);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleResetDefaults = () => {
@@ -224,15 +280,13 @@ export default function EditProfileModal({ isOpen, onClose, onSuccessToast }: Ed
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                     {isRtl ? 'الرقم الوظيفي (Employee ID)' : 'Employee ID'}
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={user.employeeId || 'EMP-84920'}
-                      disabled
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                    />
-                    <Lock className="size-3.5 text-slate-400 absolute end-3 top-3" />
-                  </div>
+                  <input
+                    type="text"
+                    value={formData.employeeId}
+                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-hidden focus:border-accent"
+                    placeholder="EMP-1059"
+                  />
                 </div>
               </div>
             </div>

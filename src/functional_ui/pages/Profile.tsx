@@ -54,13 +54,8 @@ export default function ProfilePage() {
     showToast(t('profileSyncedToast'));
   };
 
-  // Direct reports mock list
-  const directReports = [
-    { name: isRtl ? 'سارة الهاشمي' : 'Sara Al-Hashemi', role: isRtl ? 'مهندسة واجهات' : 'UI Engineer', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
-    { name: isRtl ? 'خالد الفيتوري' : 'Khaled Al-Fitouri', role: isRtl ? 'مهندس شبكات' : 'Network Engineer', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
-    { name: isRtl ? 'طارق الزنتاني' : 'Tarek Al-Zintani', role: isRtl ? 'مسؤول قواعد بيانات' : 'Database Admin', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200' },
-    { name: isRtl ? 'أحمد الورفلي' : 'Ahmed Al-Warfalli', role: isRtl ? 'أخصائي أمن سيبراني' : 'Security Analyst', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' },
-  ];
+  // Subordinates from database / Entra ID
+  const subordinates = user.subordinates || [];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 text-start rtl:text-right pb-12">
@@ -185,17 +180,17 @@ export default function ProfilePage() {
                   </h1>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                     <CheckCircle2 className="size-3" />
-                    <span>{user.employeeId || 'EMP-84920'}</span>
+                    <span>{user.employeeId || (isRtl ? 'لم يُحدد بعد' : 'Not assigned')}</span>
                   </span>
                 </div>
 
                 <p className="text-accent font-black text-xs sm:text-sm tracking-wide">
-                  {user.role} • {user.department}
+                  {user.jobTitle || user.role} • {user.department}
                 </p>
 
                 <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold flex items-center justify-center sm:justify-start gap-2">
                   <Mail className="size-3.5 text-slate-400" />
-                  <span>{user.userPrincipalName || user.email || 'ahmed.almohammed@litc.ly'}</span>
+                  <span>{user.userPrincipalName || user.email || (isRtl ? 'لم يُحدد بعد' : 'Not set')}</span>
                 </p>
               </div>
             </div>
@@ -316,7 +311,7 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('joinDate')}</p>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.hireDate || '15 يناير 2022 (منذ سنتين)'}</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.hireDate || (isRtl ? 'لم يُحدد بعد' : 'Not recorded')}</p>
                       </div>
                     </div>
 
@@ -326,7 +321,7 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('workLocation')}</p>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.officeLocation || 'المبنى الإداري والتقني، طرابلس'}</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.officeLocation || (isRtl ? 'لم يُحدد بعد' : 'Not recorded')}</p>
                       </div>
                     </div>
                   </div>
@@ -416,7 +411,12 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">{isRtl ? 'غير محدد' : 'Not assigned'}</p>
+                  <div className="p-4 rounded-xl bg-white/40 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-3">
+                    <Briefcase className="size-4 text-slate-400" />
+                    <p className="text-xs text-slate-500 font-semibold">
+                      {isRtl ? 'لم يُسند مدير مباشر بعد (سيتم التعيين عبر الهيكل الإداري أو الربط مع Microsoft Entra ID)' : 'No direct manager assigned yet (pending org tree mapping or Entra ID sync)'}
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -425,39 +425,77 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                     <Users className="size-4 text-accent" />
-                    <span>{t('directReports')} ({directReports.length})</span>
+                    <span>{t('directReports')} ({subordinates.length})</span>
                   </h3>
                   <span className="text-[11px] text-slate-400 font-semibold">
                     {isRtl ? 'فريق العمل التابع' : 'Direct subordinates'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {directReports.map((member, i) => (
-                    <div
-                      key={i}
-                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={member.avatar}
-                          alt={member.name}
-                          className="size-11 rounded-xl object-cover border border-white dark:border-slate-600 shadow-2xs"
-                        />
-                        <div>
-                          <p className="text-xs font-black text-slate-900 dark:text-white">{member.name}</p>
-                          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{member.role}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => showToast(isRtl ? `جاري فتح محادثة Teams مع ${member.name}...` : `Opening Teams chat with ${member.name}...`)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors"
-                        title="Teams Chat"
+                {subordinates.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {subordinates.map((member, i) => (
+                      <div
+                        key={i}
+                        className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3"
                       >
-                        <MessageSquare className="size-4" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            className="size-11 rounded-xl object-cover border border-white dark:border-slate-600 shadow-2xs"
+                          />
+                          <div>
+                            <p className="text-xs font-black text-slate-900 dark:text-white">{member.name}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{member.role}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => showToast(isRtl ? `جاري فتح محادثة Teams مع ${member.name}...` : `Opening Teams chat with ${member.name}...`)}
+                          className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors"
+                          title="Teams Chat"
+                        >
+                          <MessageSquare className="size-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-2xl bg-slate-50/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-center space-y-1.5">
+                    <Users className="size-6 text-slate-400 mx-auto" />
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                      {isRtl ? 'لا يوجد مرؤوسين أو موظفين تابعين مسجلين لهذا الحساب حالياً' : 'No direct reports currently assigned to this account'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      {isRtl ? 'سيتم ربط الموظفين التابعين تلقائياً عبر الهيكل المؤسسي' : 'Subordinates will appear when mapped in the organization hierarchy'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Assigned Teams */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                    <Shield className="size-4 text-accent" />
+                    <span>{isRtl ? 'فرق العمل والوحدات التشغيلية التابع لها' : 'Assigned Operational Teams'}</span>
+                  </h3>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {user.teams && user.teams.length > 0 ? (
+                    user.teams.map((tName, i) => (
+                      <span
+                        key={i}
+                        className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-black border border-blue-200 dark:border-blue-800 flex items-center gap-2 shadow-2xs"
+                      >
+                        <Shield className="size-3.5 text-blue-600" />
+                        <span>{tName}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 font-semibold">{isRtl ? 'غير مسند لفريق عمل محدد' : 'No operational team assigned'}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -488,7 +526,7 @@ export default function ProfilePage() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                       {isRtl ? 'البريد الرسمي (M365)' : 'Corporate Email'}
                     </p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.userPrincipalName || user.email || 'ahmed.almohammed@litc.ly'}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.userPrincipalName || user.email || (isRtl ? 'لم يُحدد بعد' : 'Not set')}</p>
                   </div>
                 </div>
 
@@ -498,7 +536,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('mobilePhone')}</p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.mobilePhone || '+218 91 384 9201'}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.mobilePhone || user.phone || (isRtl ? 'لم يُحدد بعد' : 'Not set')}</p>
                   </div>
                 </div>
 
@@ -508,7 +546,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('businessPhone')}</p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.businessPhone || '+218 21 360 4022 (تحويلة 4022)'}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.businessPhone || (isRtl ? 'لم يُحدد بعد' : 'Not set')}</p>
                   </div>
                 </div>
 
@@ -518,7 +556,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('officeRoom')}</p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.officeLocation || 'المبنى الإداري والتقني - الطابق الثالث - مكتب 304'}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.officeLocation || (isRtl ? 'لم يُحدد بعد' : 'Not set')}</p>
                   </div>
                 </div>
               </div>
@@ -545,7 +583,7 @@ export default function ProfilePage() {
                       Directory Object ID (GUID)
                     </p>
                     <p className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 select-all bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                      {user.entraObjectId || '8f4c2e11-9a73-4b62-b912-78d91c6e40af'}
+                      {user.entraObjectId || (isRtl ? 'في انتظار المزامنة المركزية مع Microsoft Entra ID' : 'Pending Entra Sync')}
                     </p>
                   </div>
 

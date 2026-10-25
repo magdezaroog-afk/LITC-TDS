@@ -64,6 +64,8 @@ export interface CinemaTicketFrameProps {
   isSelected?: boolean;
   alwaysGlow?: boolean;
   onClick?: () => void;
+  onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
+  onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
   style?: React.CSSProperties;
   className?: string;
   contentStyle?: React.CSSProperties;
@@ -84,6 +86,8 @@ export function CinemaTicketFrame({
   isSelected = false,
   alwaysGlow = false,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
   style,
   className,
   contentStyle,
@@ -180,8 +184,14 @@ export function CinemaTicketFrame({
           onClick?.();
         }
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={(e) => {
+        setIsHovered(true);
+        onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        setIsHovered(false);
+        onMouseLeave?.(e);
+      }}
       className={className}
       style={{
         position: 'relative',

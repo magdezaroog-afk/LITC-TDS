@@ -18,8 +18,41 @@ export class FunctionalController {
           fullName: true,
           username: true,
           email: true,
-          role: { select: { name: true } },
-          department: { select: { name: true } },
+          phone: true,
+          businessPhone: true,
+          employeeId: true,
+          jobTitle: true,
+          company: true,
+          officeLocation: true,
+          city: true,
+          country: true,
+          avatarUrl: true,
+          tenantDomain: true,
+          syncStatus: true,
+          lastSyncedAt: true,
+          role: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } },
+          teams: { include: { team: true } },
+          manager: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              email: true,
+              jobTitle: true,
+              avatarUrl: true
+            }
+          },
+          subordinates: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              email: true,
+              jobTitle: true,
+              avatarUrl: true
+            }
+          },
           appCoins: true
         }
       });
@@ -31,11 +64,147 @@ export class FunctionalController {
         data: {
           id: String(userData.id),
           name: userData.fullName || userData.username,
-          email: userData.email,
-          role: userData.role?.name || "",
-          department: userData.department?.name || "",
+          username: userData.username,
+          email: userData.email || '',
+          role: userData.jobTitle || userData.role?.name || '',
+          department: userData.department?.name || 'غير محدد',
+          jobTitle: userData.jobTitle || '',
+          employeeId: userData.employeeId || '',
+          phone: userData.phone || '',
+          mobilePhone: userData.phone || '',
+          businessPhone: userData.businessPhone || '',
+          officeLocation: userData.officeLocation || '',
+          company: userData.company || 'الشركة الليبية للاتصالات وتقنية المعلومات (LITC)',
+          city: userData.city || 'طرابلس',
+          country: userData.country || 'ليبيا',
+          tenantDomain: userData.tenantDomain || 'litc.ly',
+          syncStatus: userData.syncStatus || 'synced',
+          lastSyncedAt: userData.lastSyncedAt ? userData.lastSyncedAt.toISOString() : null,
+          teams: userData.teams?.map((ut: any) => ut.team.name) || [],
+          manager: userData.manager ? {
+            id: String(userData.manager.id),
+            name: userData.manager.fullName || userData.manager.username,
+            email: userData.manager.email || '',
+            role: userData.manager.jobTitle || 'مدير مباشر',
+            avatar: userData.manager.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userData.manager.fullName || userData.manager.username)}`
+          } : null,
+          subordinates: userData.subordinates?.map((s: any) => ({
+            id: String(s.id),
+            name: s.fullName || s.username,
+            email: s.email || '',
+            role: s.jobTitle || 'عضو فريق',
+            avatar: s.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(s.fullName || s.username)}`
+          })) || [],
           points: 0,
-          appCoins: userData.appCoins || 0,
+          appCoins: userData.appCoins || 0
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // PUT /api/v1/functional/me
+  async updateMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const { fullName, name, phone, mobilePhone, businessPhone, employeeId, jobTitle, role, officeLocation, city, company } = req.body;
+
+      const effectiveName = fullName !== undefined ? fullName : name;
+      const effectivePhone = phone !== undefined ? phone : mobilePhone;
+      const effectiveJobTitle = jobTitle !== undefined ? jobTitle : role;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ...(effectiveName !== undefined ? { fullName: effectiveName } : {}),
+          ...(effectivePhone !== undefined ? { phone: effectivePhone } : {}),
+          ...(businessPhone !== undefined ? { businessPhone } : {}),
+          ...(employeeId !== undefined ? { employeeId } : {}),
+          ...(effectiveJobTitle !== undefined ? { jobTitle: effectiveJobTitle } : {}),
+          ...(officeLocation !== undefined ? { officeLocation } : {}),
+          ...(city !== undefined ? { city } : {}),
+          ...(company !== undefined ? { company } : {}),
+          syncStatus: 'overridden',
+          updatedAt: new Date()
+        },
+        select: {
+          id: true,
+          fullName: true,
+          username: true,
+          email: true,
+          phone: true,
+          businessPhone: true,
+          employeeId: true,
+          jobTitle: true,
+          company: true,
+          officeLocation: true,
+          city: true,
+          country: true,
+          role: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } },
+          teams: { include: { team: true } },
+          manager: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              email: true,
+              jobTitle: true,
+              avatarUrl: true
+            }
+          },
+          subordinates: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              email: true,
+              jobTitle: true,
+              avatarUrl: true
+            }
+          },
+          appCoins: true
+        }
+      });
+
+      res.json({
+        success: true,
+        data: {
+          id: String(updatedUser.id),
+          name: updatedUser.fullName || updatedUser.username,
+          username: updatedUser.username,
+          email: updatedUser.email || '',
+          role: updatedUser.jobTitle || updatedUser.role?.name || '',
+          department: updatedUser.department?.name || 'غير محدد',
+          jobTitle: updatedUser.jobTitle || '',
+          employeeId: updatedUser.employeeId || '',
+          phone: updatedUser.phone || '',
+          mobilePhone: updatedUser.phone || '',
+          businessPhone: updatedUser.businessPhone || '',
+          officeLocation: updatedUser.officeLocation || '',
+          company: updatedUser.company || 'الشركة الليبية للاتصالات وتقنية المعلومات (LITC)',
+          city: updatedUser.city || 'طرابلس',
+          country: updatedUser.country || 'ليبيا',
+          teams: updatedUser.teams?.map((ut: any) => ut.team.name) || [],
+          manager: updatedUser.manager ? {
+            id: String(updatedUser.manager.id),
+            name: updatedUser.manager.fullName || updatedUser.manager.username,
+            email: updatedUser.manager.email || '',
+            role: updatedUser.manager.jobTitle || 'مدير مباشر',
+            avatar: updatedUser.manager.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(updatedUser.manager.fullName || updatedUser.manager.username)}`
+          } : null,
+          subordinates: updatedUser.subordinates?.map((s: any) => ({
+            id: String(s.id),
+            name: s.fullName || s.username,
+            email: s.email || '',
+            role: s.jobTitle || 'عضو فريق',
+            avatar: s.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(s.fullName || s.username)}`
+          })) || [],
+          points: 0,
+          appCoins: updatedUser.appCoins || 0
         }
       });
     } catch (err) {

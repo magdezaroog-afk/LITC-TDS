@@ -41,7 +41,31 @@ export const authMiddleware = (
     token = req.cookies.litc_session;
   }
 
-  // 4. In local development / test environment, support explicit mock tokens
+  // 4. In local development / test environment, support explicit mock tokens and x-user-id header
+  const devUserIdHeader = req.headers['x-user-id'];
+  const devUserId = devUserIdHeader ? parseInt(String(devUserIdHeader).replace(/\D/g, ''), 10) : null;
+
+  if (isLocalDev && isLocalhost && devUserId && !isNaN(devUserId) && devUserId > 0) {
+    req.user = {
+      id: devUserId,
+      roleId: 1,
+      email: ''
+    };
+    return next();
+  }
+
+  if (token && typeof token === 'string' && token.startsWith('mock-user-')) {
+    const parsedId = parseInt(token.replace('mock-user-', ''), 10);
+    if (!isNaN(parsedId)) {
+      req.user = {
+        id: parsedId,
+        roleId: 1,
+        email: ''
+      };
+      return next();
+    }
+  }
+
   if (token === 'mock-admin-token-123' || token === 'dummy' || token === 'DUMMY_TOKEN') {
     req.user = {
       id: 20,
