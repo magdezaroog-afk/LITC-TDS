@@ -458,23 +458,47 @@ function MobileScrollableOptionsTrack({
   };
 
   return (
-    <div style={{ width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
-        {/* Right Arrow (Scroll towards Right) */}
-        {totalCount > 3 && (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          display: 'flex',
+          alignItems: 'center',
+          boxSizing: 'border-box',
+          padding: totalCount > 4 ? '0 28px' : '0 2px',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Right Arrow (Scroll towards Right / Start in RTL) */}
+        {totalCount > 4 && (
           <button
             type="button"
             onClick={() => handleScroll('right')}
             title="تحريك لليمين"
             style={{
               position: 'absolute',
-              right: '-6px',
+              right: '2px',
               top: '40%',
               transform: 'translateY(-50%)',
-              width: '28px',
-              height: '28px',
+              width: '26px',
+              height: '26px',
               borderRadius: '50%',
-              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.98)',
               border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
               color: darkMode ? '#ffffff' : '#0f172a',
               display: 'flex',
@@ -489,25 +513,27 @@ function MobileScrollableOptionsTrack({
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
         )}
 
-        {/* The Scrollable Track (Strictly Single Row on All Screen Sizes) */}
+        {/* The Scrollable Track (Strictly Single Row on All Screen Sizes, bounded within the rails) */}
         <div
           ref={trackRef}
           style={{
             width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
             display: 'flex',
             flexDirection: 'row',
             flexWrap: 'nowrap',
             alignItems: 'flex-start',
-            justifyContent: totalCount <= 4 ? 'center' : 'flex-start',
-            gap: '12px',
+            justifyContent: totalCount <= 5 ? 'space-evenly' : 'flex-start',
+            gap: totalCount <= 4 ? '18px' : '12px',
             overflowX: 'auto',
             overflowY: 'hidden',
             scrollbarWidth: 'none',
-            padding: '8px 6px 12px',
+            padding: '8px 2px 12px',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-x',
             boxSizing: 'border-box',
@@ -517,21 +543,21 @@ function MobileScrollableOptionsTrack({
           {children}
         </div>
 
-        {/* Left Arrow (Scroll towards Left) */}
-        {totalCount > 3 && (
+        {/* Left Arrow (Scroll towards Left / End in RTL) */}
+        {totalCount > 4 && (
           <button
             type="button"
             onClick={() => handleScroll('left')}
             title="تحريك لليسار"
             style={{
               position: 'absolute',
-              left: '-6px',
+              left: '2px',
               top: '40%',
               transform: 'translateY(-50%)',
-              width: '28px',
-              height: '28px',
+              width: '26px',
+              height: '26px',
               borderRadius: '50%',
-              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.98)',
               border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
               color: darkMode ? '#ffffff' : '#0f172a',
               display: 'flex',
@@ -546,12 +572,12 @@ function MobileScrollableOptionsTrack({
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
         )}
       </div>
 
-      {totalCount > 3 && (
+      {totalCount > 4 && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -2773,21 +2799,24 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   };
 
   const handleSelectFlow = (flow: typeof requests[0]) => {
-    setSinkingFlowId(flow.id);
-    setTimeout(() => {
-      setSelectedFlow(flow);
-      setIsDispenserOpen(true);
-      setFormData({});
-      setCurrentStep(1);
-      setStatus('idle');
-      setErrorMsg('');
-      setTearState('idle');
-      setPreviewSerial(`REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
-      setSinkingFlowId(null);
-      setTimeout(() => {
-        formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 80);
-    }, 320);
+    setSelectedFlow(flow);
+    setIsDispenserOpen(true);
+    setFormData({});
+    setCurrentStep(1);
+    setStatus('idle');
+    setErrorMsg('');
+    setTearState('idle');
+    setPreviewSerial(`REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  };
+
+  const handleResetRouteSelection = () => {
+    setSelectedFlow(null);
+    setIsDispenserOpen(false);
+    setFormData({});
+    setCurrentStep(1);
+    setStatus('idle');
+    setErrorMsg('');
+    setTearState('idle');
   };
 
   // ── Smart Dynamic Stages Architecture (Supports Admin Custom Configuration or Logical Standards) ──
@@ -3236,30 +3265,139 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const targetDivName = (selectedFlow as any)?.targetDivisionName;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px', position: 'relative', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+
+      {/* ═══ 0. ELEVATED SELECTED ROUTE HEADER BADGE (أيقونة المسار تصعد فوق الخط العلوي عند الاختيار) ═══ */}
+      <AnimatePresence>
+        {selectedFlow && (
+          <motion.div
+            key="elevated_route_badge"
+            initial={{ opacity: 0, y: 35, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.92 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              width: isMobileScreen ? '96%' : '90%',
+              maxWidth: '920px',
+              margin: '0 auto 10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: isMobileScreen ? '8px 12px' : '10px 16px',
+              borderRadius: '14px',
+              background: darkMode
+                ? `linear-gradient(135deg, ${flowColor}18 0%, rgba(15, 23, 42, 0.8) 100%)`
+                : `linear-gradient(135deg, ${flowColor}12 0%, rgba(255, 255, 255, 0.98) 100%)`,
+              border: `1.5px solid ${flowColor}50`,
+              boxShadow: `0 8px 24px ${flowColor}25, inset 0 1px 1.5px rgba(255, 255, 255, 0.15)`,
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxSizing: 'border-box',
+              zIndex: 10,
+            }}
+          >
+            {/* Service Identity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+              <div
+                style={{
+                  width: isMobileScreen ? '38px' : '44px',
+                  height: isMobileScreen ? '38px' : '44px',
+                  borderRadius: '50%',
+                  background: darkMode
+                    ? `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.22) 0%, ${flowColor}35 50%, rgba(15, 23, 42, 0.9) 100%)`
+                    : `radial-gradient(circle at 35% 35%, #ffffff 0%, ${flowColor}25 50%, rgba(241, 245, 249, 0.95) 100%)`,
+                  border: `2px solid ${flowColor}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: flowColor,
+                  flexShrink: 0,
+                  boxShadow: `0 4px 14px ${flowColor}40`,
+                }}
+              >
+                {resolveIcon(selectedFlow.icon, isMobileScreen ? 20 : 24, flowColor)}
+              </div>
+
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: isMobileScreen ? '13.5px' : '15px',
+                    fontWeight: 800,
+                    color: darkMode ? '#ffffff' : '#0f172a',
+                    fontFamily: "'Tajawal', sans-serif",
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {selectedFlow.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: flowColor,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>🎯</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Change Route Action */}
+            <button
+              type="button"
+              onClick={handleResetRouteSelection}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: darkMode ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                border: darkMode ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid #cbd5e1',
+                color: darkMode ? '#cbd5e1' : '#475569',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                flexShrink: 0,
+                fontFamily: "'Cairo', sans-serif",
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = flowColor; e.currentTarget.style.color = flowColor; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.16)' : '#cbd5e1'; e.currentTarget.style.color = darkMode ? '#cbd5e1' : '#475569'; }}
+            >
+              <X size={13} />
+              <span>تغيير المسار</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══ 1. PERMANENT UPPER LUMINOUS OPTICAL RAIL LINE (خط ضوئي علوي ثابت دائماً يعلو المحتوى) ═══ */}
       <div
         style={{
           width: isMobileScreen ? '96%' : '90%',
           maxWidth: '920px',
-          height: sinkingFlowId ? '3px' : '2px',
+          height: '2px',
           background: selectedFlow
             ? `linear-gradient(90deg, transparent, ${flowColor}80 20%, ${flowColor} 50%, ${flowColor}80 80%, transparent)`
-            : (sinkingFlowId
-                ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
-                : (darkMode
-                    ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
-                    : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)')),
+            : (darkMode
+                ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
           boxShadow: selectedFlow
             ? `0 0 16px ${flowColor}80, 0 0 28px ${flowColor}40`
-            : (sinkingFlowId
-                ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
-                : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)')),
+            : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
           position: 'relative',
           zIndex: 4,
           pointerEvents: 'none',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.35s ease',
         }}
       />
 
@@ -3291,17 +3429,21 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
       `}</style>
 
       {/* ═══ 2. IN-PLACE WORKSPACE BAY (المراحل تظهر مكان الأيقونات تماماً بين الخطين وبدون بطاقة منفصلة) ═══ */}
-      <div
+      <motion.div
+        layout
+        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
         style={{
-          width: '100%',
-          maxWidth: '940px',
+          width: isMobileScreen ? '96%' : '90%',
+          maxWidth: '920px',
           position: 'relative',
           zIndex: 2,
-          minHeight: '110px',
+          minHeight: selectedFlow ? '220px' : '105px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
       >
         <AnimatePresence mode="wait">
@@ -3311,19 +3453,25 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
               key="service_discs_view"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 15 }}
-              transition={{ duration: 0.24 }}
+              exit={{ opacity: 0, y: 35, scale: 0.92 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 padding: isMobileScreen ? '4px 0 8px' : '6px 0 12px',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
               <div
                 style={{
                   width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
                   display: 'flex',
                   flexDirection: 'row',
                   flexWrap: 'nowrap',
@@ -3336,37 +3484,31 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                   scrollbarWidth: 'none',
                   WebkitOverflowScrolling: 'touch',
                   touchAction: 'pan-x',
-                  padding: isMobileScreen ? '10px 12px 14px' : '14px 18px 18px',
+                  padding: isMobileScreen ? '10px 8px 14px' : '14px 12px 18px',
                   position: 'relative',
                   zIndex: 2,
+                  boxSizing: 'border-box',
                 }}
               >
                 {requests.map((flow, idx) => {
                   const fColor = flow.color || '#38bdf8';
                   const block = canCreateRequest(flow.id);
                   const targetDept = (flow as any).targetDepartmentName || 'إدارة تقنية المعلومات';
-                  const isThisSinking = sinkingFlowId === flow.id;
-                  const isAnySinking = Boolean(sinkingFlowId);
 
                   return (
                     <button
                       key={flow.id}
                       type="button"
-                      disabled={!block.allowed || isAnySinking}
-                      onClick={() => block.allowed && !isAnySinking && handleSelectFlow(flow)}
+                      disabled={!block.allowed}
+                      onClick={() => block.allowed && handleSelectFlow(flow)}
                       className="service-floating-circle-btn"
                       title={flow.title}
                       style={{
                         background: 'none',
                         border: 'none',
                         padding: 0,
-                        cursor: isAnySinking ? 'default' : (block.allowed ? 'pointer' : 'not-allowed'),
-                        opacity: isThisSinking ? 0 : (isAnySinking ? 0.2 : (block.allowed ? 1 : 0.45)),
-                        transform: isThisSinking
-                          ? 'translateY(24px) scale(0.55)'
-                          : (isAnySinking ? 'translateY(12px) scale(0.85)' : undefined),
-                        transition: 'transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1)',
-                        pointerEvents: isAnySinking ? 'none' : 'auto',
+                        cursor: block.allowed ? 'pointer' : 'not-allowed',
+                        opacity: block.allowed ? 1 : 0.45,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -3483,18 +3625,19 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             /* ── VIEW B: ACTIVE ROUTE STAGES IN-PLACE (تظهر مراحل المسار بانسيابية مكان الأيقونات بين الخطين) ── */
             <motion.div
               key={`active_flow_${selectedFlow?.id || 'dispenser'}`}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: -26, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -20, filter: 'blur(4px)' }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: '100%',
-                maxWidth: '940px',
-                overflow: 'visible',
+                maxWidth: '100%',
+                minWidth: 0,
+                overflow: 'hidden',
                 background: 'transparent',
                 borderRadius: '0px',
                 border: 'none',
-                padding: isMobileScreen ? '8px 4px 12px' : '12px 8px 16px',
+                padding: isMobileScreen ? '8px 2px 12px' : '12px 4px 16px',
                 boxShadow: 'none',
                 backdropFilter: 'none',
                 WebkitBackdropFilter: 'none',
@@ -3502,97 +3645,23 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                 flexDirection: 'column',
                 gap: '14px',
                 zIndex: 45,
+                boxSizing: 'border-box',
               }}
             >
             {tearState === 'idle' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Step Header: 2-Tier Linear/Stripe Enterprise Segmented Stepper */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                  {/* Step Header: Linear-Style Segmented Stepper */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
-                    borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    paddingBottom: '12px',
+                    gap: '8px',
                     width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                    borderBottom: darkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                    paddingBottom: '10px',
                   }}>
-                    {/* Tier 1: Service Identity & Change Route Action */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '10px',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                        <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '9px',
-                          backgroundColor: `${flowColor}20`,
-                          border: `1.5px solid ${flowColor}60`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: flowColor,
-                          flexShrink: 0,
-                          boxShadow: `0 2px 8px ${flowColor}25`,
-                        }}>
-                          {resolveIcon(selectedFlow.icon, 19, flowColor)}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{
-                            fontSize: '14px',
-                            fontWeight: 800,
-                            color: darkMode ? '#ffffff' : '#0f172a',
-                            fontFamily: "'Tajawal', sans-serif",
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}>
-                            {selectedFlow.title}
-                          </div>
-                          <div style={{
-                            fontSize: '11px',
-                            color: flowColor,
-                            fontWeight: 700,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}>
-                            <span>🎯</span>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              جهة الاختصاص: {targetDeptName} {targetDivName && `← ${targetDivName}`}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFlow(null)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9',
-                          border: darkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                          color: darkMode ? '#cbd5e1' : '#475569',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          flexShrink: 0,
-                          fontFamily: "'Cairo', sans-serif",
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <X size={13} />
-                        <span>تغيير المسار</span>
-                      </button>
-                    </div>
-
-                    {/* Tier 2: Linear-Style Segmented Stepper */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                       <div style={{
                         display: 'grid',
                         gridTemplateColumns: `repeat(${totalStages}, 1fr)`,
@@ -3704,7 +3773,6 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         </div>
                       </div>
                     </div>
-                  </div>
 
                   {/* Form Fields: Stages 1 & 2 */}
                   {status !== 'success' && currentStep < totalStages && (
@@ -3719,7 +3787,11 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' : '1fr',
                         gap: '12px',
                         alignItems: 'start',
-                        overflow: 'visible',
+                        width: '100%',
+                        maxWidth: '100%',
+                        minWidth: 0,
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
                         minHeight: isMobileScreen ? '175px' : 'auto',
                       }}
                     >
@@ -4253,30 +4325,28 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
-      {/* ═══ 3. PERMANENT LOWER LUMINOUS OPTICAL RAIL LINE (خط ضوئي سفلي ثابت دائماً أسفل المحتوى) ═══ */}
-      <div
+      {/* ═══ 3. PERMANENT LOWER LUMINOUS OPTICAL RAIL LINE (خط ضوئي سفلي يتوسع نزولاً بسلاسة) ═══ */}
+      <motion.div
+        layout
+        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
         style={{
           width: isMobileScreen ? '96%' : '90%',
           maxWidth: '920px',
-          height: sinkingFlowId ? '3px' : '2px',
+          height: '2px',
           background: selectedFlow
             ? `linear-gradient(90deg, transparent, ${flowColor}80 20%, ${flowColor} 50%, ${flowColor}80 80%, transparent)`
-            : (sinkingFlowId
-                ? `linear-gradient(90deg, transparent, ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'} 50%, transparent)`
-                : (darkMode
-                    ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
-                    : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)')),
+            : (darkMode
+                ? 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4) 15%, rgba(243, 108, 33, 0.55) 50%, rgba(56, 189, 248, 0.4) 85%, transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(19, 93, 121, 0.35) 15%, rgba(243, 108, 33, 0.5) 50%, rgba(19, 93, 121, 0.35) 85%, transparent)'),
           boxShadow: selectedFlow
             ? `0 0 16px ${flowColor}80, 0 0 28px ${flowColor}40`
-            : (sinkingFlowId
-                ? `0 0 20px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}, 0 0 35px ${requests.find(r => r.id === sinkingFlowId)?.color || '#38bdf8'}90`
-                : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)')),
+            : (darkMode ? '0 0 12px rgba(56, 189, 248, 0.4)' : '0 0 10px rgba(19, 93, 121, 0.25)'),
           position: 'relative',
           zIndex: 4,
           pointerEvents: 'none',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.35s ease',
         }}
       />
     </div>
