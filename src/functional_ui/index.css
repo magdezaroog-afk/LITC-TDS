@@ -622,6 +622,85 @@ html, body {
   box-sizing: border-box;
 }
 
+/* ── Operational Tickets Horizontal Rail ── */
+.ops-tickets-rail-wrapper {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ops-tickets-rail {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 18px 4px;
+  scroll-behavior: smooth;
+  cursor: grab;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.ops-tickets-rail:active {
+  cursor: grabbing;
+}
+
+.ops-tickets-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.ops-tickets-rail-item {
+  flex: 0 0 315px;
+  width: 315px;
+  min-width: 315px;
+  max-width: 315px;
+  box-sizing: border-box;
+}
+
+.ops-tickets-rail-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ops-tickets-rail-btn:hover {
+  transform: translateY(-50%) scale(1.12);
+  background: #2563eb;
+  border-color: #60a5fa;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+.ops-tickets-rail-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  transform: translateY(-50%) scale(1);
+}
+
+.ops-tickets-rail-btn-right {
+  right: -14px;
+}
+
+.ops-tickets-rail-btn-left {
+  left: -14px;
+}
+
 /* ── Operational Tickets Enterprise Table ── */
 .ops-tickets-table-wrapper {
   width: 100%;
@@ -632,9 +711,38 @@ html, body {
 }
 
 .ops-tickets-table-inner {
-  min-width: 960px;
+  min-width: 1020px;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* ── Circular Details Action Button ── */
+.ops-circular-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1.5px solid rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+  flex-shrink: 0;
+}
+
+.ops-circular-action-btn:hover {
+  transform: scale(1.14) rotate(-5deg);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border-color: #818cf8;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+}
+
+.ops-circular-action-btn:active {
+  transform: scale(0.94);
 }
 
 
