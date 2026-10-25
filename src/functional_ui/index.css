@@ -613,3 +613,28 @@ html, body {
   }
 }
 
+/* ── Operational Tickets Cards Grid ── */
+.ops-tickets-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Operational Tickets Enterprise Table ── */
+.ops-tickets-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+.ops-tickets-table-inner {
+  min-width: 960px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
