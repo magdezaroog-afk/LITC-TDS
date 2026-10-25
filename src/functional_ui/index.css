@@ -584,3 +584,32 @@ html, body {
     width: 100% !important;
   }
 }
+
+/* ── Top Operational Queues Switcher Bar (Responsive Grid to Horizontal Scroll) ── */
+.operational-top-queues-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .operational-top-queues-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    scrollbar-width: none !important;
+    padding-bottom: 6px !important;
+  }
+  .operational-top-queues-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+  .operational-top-queues-bar > button {
+    min-width: 210px !important;
+    flex: 1 0 auto !important;
+  }
+}
+

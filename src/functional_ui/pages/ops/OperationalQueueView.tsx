@@ -1076,53 +1076,19 @@ export const OperationalQueueView: React.FC = () => {
 
           {/* Touch-Scrollable Tabs Rail (Stacks vertically on desktop, swipes horizontally on mobile) */}
           <div className="mobile-tabs-rail" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* 1. حوض الطلبات الواردة */}
+            {/* 1. الطلبات الواردة (تجمع كافة أحواض العمل والمهام التشغيلية الأربعة) */}
             <OpsQueueTile
-            label="حوض الطلبات الواردة"
-            value={poolCount}
-            sublabel="معلقة بانتظار السحب والإسناد"
-            icon={Inbox}
-            accentColor="#0284c7"
-            isSelected={activeTab === 'POOL'}
-            onClick={() => setActiveTab('POOL')}
-            isDark={isDark}
-          />
-
-          {/* 2. بريدي (مسندة إليّ) */}
-          <OpsQueueTile
-            label="بريدي (مسندة إليّ)"
-            value={myCount}
-            sublabel="مهامك الجارية المباشرة"
-            icon={ShieldCheck}
-            accentColor="#4f46e5"
-            isSelected={activeTab === 'MY_QUEUE'}
-            onClick={() => setActiveTab('MY_QUEUE')}
-            isDark={isDark}
-          />
-
-          {/* 3. كافة طلبات الإدارة */}
-          <OpsQueueTile
-            label="كافة طلبات الإدارة"
-            value={stats.open}
-            sublabel="سجل القسم العام التشغيلي"
-            icon={Layers}
-            accentColor={isDark ? "#38bdf8" : "#0f172a"}
-            isSelected={activeTab === 'ALL_TICKETS'}
-            onClick={() => setActiveTab('ALL_TICKETS')}
-            isDark={isDark}
-          />
-
-          {/* 4. التذاكر والمهام الداخلية */}
-          <OpsQueueTile
-            label="التذاكر والمهام الداخلية"
-            value={subTicketsCount}
-            sublabel="التكليفات والمهام الفرعية"
-            icon={GitPullRequest}
-            accentColor="#7e22ce"
-            isSelected={activeTab === 'SUB_TICKETS'}
-            onClick={() => setActiveTab('SUB_TICKETS')}
-            isDark={isDark}
-          />
+              label="الطلبات الواردة"
+              value={stats.open}
+              sublabel="أحواض العمل والمهام التشغيلية"
+              icon={Inbox}
+              accentColor="#0284c7"
+              isSelected={isTicketView}
+              onClick={() => {
+                if (!isTicketView) setActiveTab('POOL');
+              }}
+              isDark={isDark}
+            />
 
           {/* 5. خصائص استقبال الطلبات */}
           {canManageFlows && (
@@ -1213,7 +1179,194 @@ export const OperationalQueueView: React.FC = () => {
         </aside>
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات الأربعة الموحدة أعلاها) ═══ */}
+          {isTicketView && (
+            <div className="operational-top-queues-bar">
+              {[
+                {
+                  id: 'POOL',
+                  label: 'حوض الطلبات الواردة',
+                  count: poolCount,
+                  badge: 'معلقة للسحب',
+                  sublabel: 'الطلبات العامة بانتظار الإسناد',
+                  icon: Inbox,
+                  accentColor: '#0284c7',
+                },
+                {
+                  id: 'MY_QUEUE',
+                  label: 'بريدي (مسندة إليّ)',
+                  count: myCount,
+                  badge: 'مهام جارية',
+                  sublabel: 'المعاملات المباشرة قيد إنجازك',
+                  icon: ShieldCheck,
+                  accentColor: '#4f46e5',
+                },
+                {
+                  id: 'ALL_TICKETS',
+                  label: 'كافة طلبات الإدارة',
+                  count: stats.open,
+                  badge: 'سجل القسم',
+                  sublabel: 'الأرشيف التشغيلي العام للقسم',
+                  icon: Layers,
+                  accentColor: isDark ? '#38bdf8' : '#0f172a',
+                },
+                {
+                  id: 'SUB_TICKETS',
+                  label: 'التذاكر والمهام الداخلية',
+                  count: subTicketsCount,
+                  badge: 'مهام فرعية',
+                  sublabel: 'التكليفات المنبثقة للفرق',
+                  icon: GitPullRequest,
+                  accentColor: '#7e22ce',
+                },
+              ].map((q) => {
+                const isSelected = activeTab === q.id;
+                const IconComponent = q.icon;
+                return (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => setActiveTab(q.id as any)}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      padding: '12px 14px',
+                      borderRadius: '16px',
+                      cursor: 'pointer',
+                      textAlign: 'right',
+                      fontFamily: "'Cairo', sans-serif",
+                      outline: 'none',
+                      transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                      background: isSelected
+                        ? (isDark
+                            ? `linear-gradient(135deg, ${q.accentColor}26 0%, rgba(15, 23, 42, 0.95) 100%)`
+                            : `linear-gradient(135deg, #ffffff 0%, ${q.accentColor}12 100%)`)
+                        : (isDark ? 'rgba(15, 23, 42, 0.72)' : '#ffffff'),
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      border: isSelected
+                        ? `1.5px solid ${q.accentColor}`
+                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                      boxShadow: isSelected
+                        ? (isDark
+                            ? `0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px ${q.accentColor}25`
+                            : `0 8px 20px -4px rgba(0, 0, 0, 0.08), 0 0 12px ${q.accentColor}20`)
+                        : (isDark ? '0 4px 14px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.03)'),
+                      transform: isSelected ? 'translateY(-1.5px)' : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = isDark ? `${q.accentColor}80` : `${q.accentColor}60`;
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
+                        e.currentTarget.style.transform = 'none';
+                      }
+                    }}
+                  >
+                    {/* Top Row: Icon + Count/Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '9px',
+                        backgroundColor: isSelected ? `${q.accentColor}22` : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                        border: isSelected ? `1px solid ${q.accentColor}40` : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                        color: q.accentColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                      }}>
+                        <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          fontSize: '18px',
+                          fontWeight: 900,
+                          color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#cbd5e1' : '#334155'),
+                          fontFamily: "'Tajawal', sans-serif",
+                          fontVariantNumeric: 'tabular-nums',
+                          lineHeight: 1,
+                        }}>
+                          {q.count}
+                        </span>
+                        <span style={{
+                          fontSize: '9.5px',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '9999px',
+                          color: isSelected ? q.accentColor : '#64748b',
+                          backgroundColor: isSelected ? `${q.accentColor}18` : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9'),
+                          border: isSelected ? `1px solid ${q.accentColor}35` : '1px solid transparent',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}>
+                          {isSelected && (
+                            <span style={{
+                              width: '4px',
+                              height: '4px',
+                              borderRadius: '50%',
+                              backgroundColor: q.accentColor,
+                              boxShadow: `0 0 6px ${q.accentColor}`,
+                            }} />
+                          )}
+                          {q.badge}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Middle: Title */}
+                    <div>
+                      <div style={{
+                        fontSize: '13px',
+                        fontWeight: isSelected ? 800 : 700,
+                        color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#e2e8f0' : '#1e293b'),
+                        lineHeight: 1.3,
+                        marginBottom: '2px',
+                      }}>
+                        {q.label}
+                      </div>
+                      <div style={{
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        color: isSelected ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#64748b' : '#94a3b8'),
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
+                        {q.sublabel}
+                      </div>
+                    </div>
+
+                    {/* Bottom Active Glow Line */}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: '16px',
+                        left: '16px',
+                        height: '2.5px',
+                        borderRadius: '9999px 9999px 0 0',
+                        backgroundColor: q.accentColor,
+                        boxShadow: `0 0 10px ${q.accentColor}`,
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <div 
             className="unified-operations-canvas-card"
             style={{
