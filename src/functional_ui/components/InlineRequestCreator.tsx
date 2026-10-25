@@ -435,7 +435,7 @@ function StageCircularOptionButton({
   );
 }
 
-// ── 2026 Single-Row Fluid Options Track with Glassmorphic Left/Right Nav Arrows ──
+// ── 2026 Single-Row Fluid Options Track with Velocity Momentum Drag & Glassmorphic Left/Right Nav Arrows ──
 function MobileScrollableOptionsTrack({
   children,
   totalCount,
@@ -450,15 +450,125 @@ function MobileScrollableOptionsTrack({
   accentColor?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Drag-to-scroll state
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startScrollLeftRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const velocityRef = useRef(0);
+  const momentumFrameRef = useRef<number | null>(null);
+  const hasMovedRef = useRef(false);
+  const suppressClickTimerRef = useRef<any>(null);
+  const [isDraggingState, setIsDraggingState] = useState(false);
 
   const handleScroll = (dir: 'left' | 'right') => {
     if (!trackRef.current) return;
-    const delta = dir === 'left' ? -220 : 220;
+    if (momentumFrameRef.current) {
+      cancelAnimationFrame(momentumFrameRef.current);
+      momentumFrameRef.current = null;
+    }
+    const delta = dir === 'left' ? -260 : 260;
     trackRef.current.scrollBy({ left: delta, behavior: 'smooth' });
   };
 
+  // ── Desktop Momentum Mouse Drag-to-Scroll ──
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Left click only
+    if (!trackRef.current) return;
+
+    if (momentumFrameRef.current) {
+      cancelAnimationFrame(momentumFrameRef.current);
+      momentumFrameRef.current = null;
+    }
+
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    startXRef.current = e.clientX;
+    startScrollLeftRef.current = trackRef.current.scrollLeft;
+    lastXRef.current = e.clientX;
+    lastTimeRef.current = performance.now();
+    velocityRef.current = 0;
+    setIsDraggingState(true);
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current || !trackRef.current) return;
+
+      const dx = e.clientX - startXRef.current;
+      if (Math.abs(dx) > 5) {
+        hasMovedRef.current = true;
+      }
+
+      // Instant velocity calculation with smoothing
+      const now = performance.now();
+      const dt = now - lastTimeRef.current;
+      if (dt > 0) {
+        const instantVelocity = (e.clientX - lastXRef.current) / dt;
+        velocityRef.current = velocityRef.current * 0.3 + instantVelocity * 0.7;
+      }
+      lastXRef.current = e.clientX;
+      lastTimeRef.current = now;
+
+      // Realtime drag movement
+      trackRef.current.scrollLeft = startScrollLeftRef.current - dx;
+    };
+
+    const onMouseUp = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsDraggingState(false);
+
+      if (hasMovedRef.current && trackRef.current) {
+        // Apply smooth momentum physics deceleration based on velocity
+        let v = velocityRef.current * 18;
+        v = Math.max(-32, Math.min(32, v)); // clamp max momentum speed
+        const friction = 0.94; // natural deceleration curve
+
+        const step = () => {
+          if (!trackRef.current || Math.abs(v) < 0.25) {
+            momentumFrameRef.current = null;
+            return;
+          }
+          trackRef.current.scrollLeft -= v;
+          v *= friction;
+          momentumFrameRef.current = requestAnimationFrame(step);
+        };
+        momentumFrameRef.current = requestAnimationFrame(step);
+
+        // Suppress child button clicks after drag
+        if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = setTimeout(() => {
+          hasMovedRef.current = false;
+        }, 120);
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+      if (momentumFrameRef.current) cancelAnimationFrame(momentumFrameRef.current);
+    };
+  }, []);
+
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (hasMovedRef.current) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+
+  const bgFade = darkMode ? 'rgba(11, 19, 41, 0.96)' : 'rgba(248, 250, 252, 0.98)';
+
   return (
     <div
+      ref={containerRef}
       style={{
         width: '100%',
         maxWidth: '100%',
@@ -477,50 +587,84 @@ function MobileScrollableOptionsTrack({
           width: '100%',
           maxWidth: '100%',
           minWidth: 0,
+          boxSizing: 'border-box',
+          overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
-          boxSizing: 'border-box',
-          padding: totalCount > 4 ? '0 28px' : '0 2px',
-          overflow: 'hidden',
         }}
+        onClickCapture={onClickCapture}
+        onMouseDown={onMouseDown}
       >
-        {/* Right Arrow (Scroll towards Right / Start in RTL) */}
+        {/* Soft Left Edge Fade Overlay */}
+        {totalCount > 4 && (
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '42px',
+              background: `linear-gradient(to right, ${bgFade} 25%, transparent 100%)`,
+              pointerEvents: 'none',
+              zIndex: 15,
+            }}
+          />
+        )}
+
+        {/* Soft Right Edge Fade Overlay */}
+        {totalCount > 4 && (
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: '42px',
+              background: `linear-gradient(to left, ${bgFade} 25%, transparent 100%)`,
+              pointerEvents: 'none',
+              zIndex: 15,
+            }}
+          />
+        )}
+
+        {/* Right Nav Arrow (Scroll towards Right / Start in RTL) */}
         {totalCount > 4 && (
           <button
             type="button"
-            onClick={() => handleScroll('right')}
-            title="تحريك لليمين"
+            onClick={(e) => { e.stopPropagation(); handleScroll('right'); }}
+            title="تحريك لليمين (الخيارات السابقة)"
             style={{
               position: 'absolute',
-              right: '2px',
-              top: '40%',
+              right: '6px',
+              top: '50%',
               transform: 'translateY(-50%)',
-              width: '26px',
-              height: '26px',
+              width: '28px',
+              height: '28px',
               borderRadius: '50%',
-              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-              border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.22)' : '1.5px solid rgba(0, 0, 0, 0.15)',
               color: darkMode ? '#ffffff' : '#0f172a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 10,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
+              zIndex: 30,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(10px)',
+              transition: 'transform 0.15s ease, border-color 0.15s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)'; e.currentTarget.style.borderColor = accentColor; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)'; }}
           >
-            <ChevronRight size={15} />
+            <ChevronRight size={16} strokeWidth={2.5} />
           </button>
         )}
 
-        {/* The Scrollable Track (Strictly Single Row on All Screen Sizes, bounded within the rails) */}
+        {/* The Scrollable Track (Supports Mobile Touch Swiping & Desktop Momentum Drag) */}
         <div
           ref={trackRef}
           style={{
+            flex: '1 1 0%',
             width: '100%',
             maxWidth: '100%',
             minWidth: 0,
@@ -533,46 +677,48 @@ function MobileScrollableOptionsTrack({
             overflowX: 'auto',
             overflowY: 'hidden',
             scrollbarWidth: 'none',
-            padding: '8px 2px 12px',
+            padding: totalCount > 4 ? '8px 38px 12px 38px' : '8px 4px 12px 4px',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-x',
             boxSizing: 'border-box',
             scrollBehavior: 'smooth',
+            cursor: isDraggingState ? 'grabbing' : 'grab',
+            userSelect: isDraggingState ? 'none' : 'auto',
           }}
         >
           {children}
         </div>
 
-        {/* Left Arrow (Scroll towards Left / End in RTL) */}
+        {/* Left Nav Arrow (Scroll towards Left / Next in RTL) */}
         {totalCount > 4 && (
           <button
             type="button"
-            onClick={() => handleScroll('left')}
-            title="تحريك لليسار"
+            onClick={(e) => { e.stopPropagation(); handleScroll('left'); }}
+            title="تحريك لليسار (عرض المزيد من الخيارات)"
             style={{
               position: 'absolute',
-              left: '2px',
-              top: '40%',
+              left: '6px',
+              top: '50%',
               transform: 'translateY(-50%)',
-              width: '26px',
-              height: '26px',
+              width: '28px',
+              height: '28px',
               borderRadius: '50%',
-              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-              border: darkMode ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.12)',
+              backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+              border: darkMode ? '1.5px solid rgba(255, 255, 255, 0.22)' : '1.5px solid rgba(0, 0, 0, 0.15)',
               color: darkMode ? '#ffffff' : '#0f172a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 10,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
+              zIndex: 30,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(10px)',
+              transition: 'transform 0.15s ease, border-color 0.15s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.borderColor = accentColor; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)'; e.currentTarget.style.borderColor = accentColor; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.borderColor = darkMode ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)'; }}
           >
-            <ChevronLeft size={15} />
+            <ChevronLeft size={16} strokeWidth={2.5} />
           </button>
         )}
       </div>
@@ -582,13 +728,13 @@ function MobileScrollableOptionsTrack({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '4px',
+          gap: '6px',
           fontSize: '9.5px',
           color: darkMode ? '#94a3b8' : '#64748b',
           fontFamily: "'Cairo', sans-serif",
           marginTop: '1px'
         }}>
-          <span>↔ اسحب أو اضغط الأسهم للتنقل ({totalCount} {itemName})</span>
+          <span>↔ اسحب بالماوس/الإصبع أو اضغط الأسهم للتنقل ({totalCount} {itemName})</span>
         </div>
       )}
     </div>
@@ -1085,6 +1231,9 @@ function InPlaceTaxonomySelector({
       style={{
         gridColumn: '1 / -1',
         width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         borderRadius: '12px',
         backgroundColor: 'transparent',
         border: 'none',
@@ -1106,7 +1255,7 @@ function InPlaceTaxonomySelector({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 10 }}
           transition={{ duration: 0.18 }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1173,7 +1322,7 @@ function InPlaceTaxonomySelector({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.18 }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1382,6 +1531,9 @@ function InPlaceOrgHierarchySelector({
       style={{
         gridColumn: '1 / -1',
         width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         borderRadius: '12px',
         backgroundColor: 'transparent',
         border: 'none',
@@ -1403,7 +1555,7 @@ function InPlaceOrgHierarchySelector({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 10 }}
           transition={{ duration: 0.18 }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1465,7 +1617,7 @@ function InPlaceOrgHierarchySelector({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.18 }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1535,7 +1687,7 @@ function InPlaceOrgHierarchySelector({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.18 }}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: darkMode ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed #e2e8f0', paddingBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3786,7 +3938,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' : '1fr',
+                        gridTemplateColumns: stageFieldsToRender.length > 1 ? 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' : 'minmax(0, 1fr)',
                         gap: '12px',
                         alignItems: 'start',
                         width: '100%',
@@ -3903,7 +4055,12 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                               flexDirection: 'column',
                               gap: '4px',
                               position: 'relative',
-                              gridColumn: isFullWidthField ? '1 / -1' : undefined
+                              gridColumn: isFullWidthField ? '1 / -1' : undefined,
+                              width: '100%',
+                              maxWidth: '100%',
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              boxSizing: 'border-box',
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <label style={{ fontSize: '11.5px', fontWeight: 700, color: darkMode ? '#e2e8f0' : '#1e3a52' }}>
