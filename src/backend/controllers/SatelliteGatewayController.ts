@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../../db/client';
 
 interface SatelliteSystemConfig {
@@ -9,6 +10,7 @@ interface SatelliteSystemConfig {
   targetUrl: string;
   isActive: boolean;
   allowedRoles: string[];
+  allowedDepartments?: number[];
   allowedUserIds?: number[];
   description: string;
 }
@@ -22,7 +24,8 @@ let SATELLITE_REGISTRY: Record<string, SatelliteSystemConfig> = {
     defaultPort: 3000,
     targetUrl: process.env.ASSET_INVENTORY_URL || 'http://localhost:3000',
     isActive: true,
-    allowedRoles: ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'IT_SUPPORT'],
+    allowedRoles: ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'IT_SUPPORT', '26'],
+    allowedDepartments: [1], // إدارة تقنية المعلومات
     description: 'إدارة وتتبع الأجهزة والمعدات التقنية والأصول التشغيلية لشركة LITC (743+ جهاز مسجل).'
   },
   hrms_satellite: {
@@ -46,9 +49,10 @@ export class SatelliteGatewayController {
   static async getSatellites(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const userRole = String(user?.role || '').toLowerCase();
+      const userRole = (typeof user?.role === 'string' ? user.role : user?.role?.name || '').toLowerCase();
       const userRoleId = user?.roleId ? Number(user?.roleId) : null;
-      const userId = user?.id;
+      const userDeptId = user?.departmentId ? Number(user?.departmentId) : null;
+      const userId = user?.id ? Number(user.id) : null;
 
       // Extract client hostname to adapt localhost into LAN IP if needed
       const rawHost = ((req.headers['x-forwarded-host'] || req.headers['host'] || req.hostname || 'localhost') as string).trim();
@@ -56,15 +60,44 @@ export class SatelliteGatewayController {
 
       const isPrivilegedAdmin = userRole === 'super_admin' || userRole === 'system_director' || userRole === 'co_admin' || userRoleId === 1 || userRoleId === 22;
 
+      // Single Sign-On (SSO) Handshake: Automatically establish asset inventory session cookie
+      try {
+        const inventorySecret = process.env.ASSET_INVENTORY_JWT_SECRET || 'super_secret_jwt_key_2026';
+        const inventoryToken = jwt.sign(
+          {
+            id: userId || 1,
+            username: user?.username || 'admin',
+            role: isPrivilegedAdmin ? 'Admin' : 'User',
+            permissions: '{}'
+          },
+          inventorySecret,
+          { expiresIn: '24h' }
+        );
+        res.cookie('token', inventoryToken, {
+          path: '/',
+          sameSite: 'lax',
+          httpOnly: false,
+          maxAge: 24 * 60 * 60 * 1000
+        });
+      } catch (err) {
+        console.warn('[SatelliteGatewayController] Failed to set inventory SSO cookie:', err);
+      }
+
       const results = await Promise.all(
         Object.values(SATELLITE_REGISTRY).map(async (satellite) => {
-          // Check role-based permission
-          const hasAccess = 
-            isPrivilegedAdmin ||
+          // Check role, department, or user based permission
+          const roleMatch = 
             satellite.allowedRoles.includes('ALL') ||
             satellite.allowedRoles.map(r => r.toLowerCase()).includes(userRole) ||
-            (userRoleId && satellite.allowedRoles.includes(String(userRoleId))) ||
-            (satellite.allowedUserIds && satellite.allowedUserIds.includes(userId));
+            (userRoleId !== null && satellite.allowedRoles.includes(String(userRoleId)));
+
+          const deptMatch = 
+            userDeptId !== null && Array.isArray(satellite.allowedDepartments) && satellite.allowedDepartments.includes(userDeptId);
+
+          const userMatch = 
+            userId !== null && Array.isArray(satellite.allowedUserIds) && satellite.allowedUserIds.includes(userId);
+
+          const hasAccess = Boolean(isPrivilegedAdmin || roleMatch || deptMatch || userMatch);
 
           let isOnline = false;
           let latencyMs = 0;
@@ -96,9 +129,13 @@ export class SatelliteGatewayController {
             }
           }
 
-          // Compute client-adapted URL (if target is localhost and client accesses from remote IP)
+          // Compute client-adapted URL (for asset inventory, always use single-origin reverse proxy)
           let clientAdaptedUrl = satellite.targetUrl;
-          if (satellite.targetUrl.includes('localhost') && clientHost !== 'localhost' && clientHost !== '127.0.0.1') {
+          let publicTargetUrl = satellite.targetUrl;
+          if (satellite.id === 'asset_inventory') {
+            clientAdaptedUrl = '/satellites/proxy/asset_inventory/';
+            publicTargetUrl = '/satellites/proxy/asset_inventory/';
+          } else if (satellite.targetUrl.includes('localhost') && clientHost !== 'localhost' && clientHost !== '127.0.0.1') {
             clientAdaptedUrl = satellite.targetUrl.replace('localhost', clientHost);
           }
 
@@ -106,7 +143,7 @@ export class SatelliteGatewayController {
             id: satellite.id,
             name: satellite.name,
             category: satellite.category,
-            targetUrl: satellite.targetUrl,
+            targetUrl: publicTargetUrl,
             clientAdaptedUrl,
             isActive: satellite.isActive,
             hasAccess,

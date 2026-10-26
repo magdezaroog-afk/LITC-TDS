@@ -36,7 +36,27 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/export': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/admin': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/events': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
       '/login.html': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/view.html': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,

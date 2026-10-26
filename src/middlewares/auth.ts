@@ -8,6 +8,8 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
     roleId: number;
+    role?: string;
+    departmentId?: number | null;
     email?: string;
   };
 }
@@ -60,7 +62,15 @@ export const authMiddleware = async (
     // 6. Real-time Account Status Check (Guards against frozen/suspended accounts)
     const dbUser = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, roleId: true, email: true, isActive: true, isFrozen: true }
+      select: { 
+        id: true, 
+        roleId: true, 
+        email: true, 
+        isActive: true, 
+        isFrozen: true,
+        departmentId: true,
+        role: { select: { name: true } }
+      }
     });
 
     if (!dbUser || !dbUser.isActive || dbUser.isFrozen) {
@@ -71,6 +81,8 @@ export const authMiddleware = async (
     req.user = {
       id: dbUser.id,
       roleId: dbUser.roleId,
+      role: dbUser.role?.name,
+      departmentId: dbUser.departmentId,
       email: dbUser.email || undefined
     };
     next();
@@ -105,7 +117,27 @@ export const optionalAuthMiddleware = async (
       const isRevoked = await redisManager.isTokenBlacklisted(token);
       if (!isRevoked) {
         const decoded = jwt.verify(token, JWT_SECRET as string) as any;
-        req.user = { id: decoded.id, roleId: decoded.roleId, email: decoded.email };
+        const dbUser = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { 
+            id: true, 
+            roleId: true, 
+            email: true, 
+            isActive: true, 
+            isFrozen: true,
+            departmentId: true,
+            role: { select: { name: true } }
+          }
+        });
+        if (dbUser && dbUser.isActive && !dbUser.isFrozen) {
+          req.user = { 
+            id: dbUser.id, 
+            roleId: dbUser.roleId, 
+            role: dbUser.role?.name,
+            departmentId: dbUser.departmentId,
+            email: dbUser.email || undefined 
+          };
+        }
       }
     } catch {
       // Ignored for optional auth

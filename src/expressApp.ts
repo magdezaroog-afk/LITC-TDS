@@ -11,6 +11,7 @@ import { redisManager } from './backend/infrastructure/RedisClient';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Set up rate limiter: maximum of 150 requests per minute per IP
 const apiLimiter = rateLimit({
@@ -18,6 +19,7 @@ const apiLimiter = rateLimit({
   max: 150, // Limit each IP to 150 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  validate: { xForwardedForHeader: false },
   message: { error: 'Too many requests, please try again later. Sovereign Circuit Breaker is active.' }
 });
 
@@ -101,6 +103,12 @@ if (redisManager.client) {
 }
 
 // ==========================================
+// 3. Request & Cookie Parsing
+// ==========================================
+app.use(express.json());
+app.use(cookieParser());
+
+// ==========================================
 // 2.8. Satellite Universal Reverse Proxy Gateway (Single-Origin Enterprise Architecture)
 // Forward traffic to local or distributed satellite services without exposing extra ports
 // ==========================================
@@ -121,14 +129,55 @@ app.use('/satellites/proxy/asset_inventory', createProxyMiddleware({
   ws: true
 }));
 
-// Route root endpoints called by embedded satellite scripts to the asset inventory service
-app.use(['/api/devices', '/api/columns', '/api/import', '/api/logs', '/login.html'], inventoryProxy);
+// Direct routes belonging exclusively to the asset inventory
+const SATELLITE_DIRECT_ROUTES = [
+  '/api/devices', 
+  '/api/columns', 
+  '/api/import', 
+  '/api/logs', 
+  '/api/export', 
+  '/api/admin', 
+  '/api/events', 
+  '/login.html', 
+  '/view.html', 
+  '/org-structure.html', 
+  '/maintenance.html'
+];
 
-// ==========================================
-// 3. Request Parsing
-// ==========================================
-app.use(express.json());
-app.use(cookieParser());
+app.use((req, res, next) => {
+  // 1. Direct satellite routes (devices, columns, logs, etc.)
+  if (SATELLITE_DIRECT_ROUTES.some(route => req.path === route || req.path.startsWith(route + '/') || req.path.startsWith(route + '?'))) {
+    return inventoryProxy(req, res, next);
+  }
+
+  // 2. Intelligent auth routing: /api/auth/me
+  if (req.path === '/api/auth/me') {
+    if ((req.cookies?.token && !req.headers['authorization']?.startsWith('Bearer')) ||
+        (req.headers.referer && (req.headers.referer.includes('asset_inventory') || req.headers.referer.includes('login.html')))) {
+      return inventoryProxy(req, res, next);
+    }
+  }
+
+  // 3. Intelligent auth routing: /api/auth/login
+  if (req.path === '/api/auth/login') {
+    if (req.body?.username && !req.body?.email) {
+      return inventoryProxy(req, res, next);
+    }
+  }
+
+  // 4. Intelligent auth routing: /api/auth/logout
+  if (req.path === '/api/auth/logout') {
+    if (req.cookies?.token && !req.headers['authorization']?.startsWith('Bearer')) {
+      return inventoryProxy(req, res, next);
+    }
+  }
+
+  if (req.path === '/api/auth/force-change-password') {
+    return inventoryProxy(req, res, next);
+  }
+
+  next();
+});
 
 // Main API Router prefix (supports both /api/v1 and /api)
 app.use('/api/v1', apiRouter);

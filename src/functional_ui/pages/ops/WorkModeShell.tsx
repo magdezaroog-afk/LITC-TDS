@@ -78,11 +78,12 @@ export const WorkModeShell: React.FC = () => {
   const isPrivilegedAdmin = ['super_admin', 'system_director', 'co_admin'].includes(user?.role || '');
 
   /**
-   * دالة اشتقاق الرابط الموحد عبر البوابة العكسية (Single-Origin Reverse Proxy Gateway)
-   * تضمن تشغيل المنظومة تحت نفس رابط النظام من أي دولة ومن أي شبكة دون تعارض
+   * دالة اشتقاق الرابط الفعلي لمنظومة جرد الأصول والمنظومات المساندة
+   * تضمن فتح المنظومة عبر البوابة العكسية الموحدة (Single-Origin Reverse Proxy Gateway)
+   * لضمان الوصول الفوري من المنزل أو الشبكة المحلية دون الحاجة لفتح منافذ إضافية
    */
   const resolveSatelliteUrl = (rawTargetUrl: string, clientAdaptedUrl?: string, satelliteId?: string): string => {
-    // 1. منظومة جرد الأصول: البوابة العكسية الموحدة (تعمل تحت نفس الدومين تلقائياً)
+    // 1. منظومة جرد الأصول: البوابة العكسية الموحدة (تعمل تحت نفس الدومين والمنفذ دائماً للعمل من المنزل والشبكة)
     if (satelliteId === 'asset_inventory' || rawTargetUrl.includes('localhost:3000') || rawTargetUrl.includes(':3000')) {
       return `/satellites/proxy/asset_inventory/`;
     }
