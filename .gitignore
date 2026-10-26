@@ -87,3 +87,8 @@ dist-ssr
 *.swp
 *.swo
 .DS_Store
+
+# Security tools downloaded binaries
+security-tools/bin/*.exe
+security-tools/*.zip
+

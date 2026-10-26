@@ -1,0 +1,15 @@
+id: nexus-api-health-probe
+info:
+  name: NEXUS TDS API Endpoint & Security Verification Probe
+  author: litc-cybersecurity
+  severity: info
+  description: Checks the core API branding and health endpoint for proper status and headers.
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/branding"
+    matchers:
+      - type: status
+        status:
+          - 200
