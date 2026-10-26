@@ -415,8 +415,8 @@ export const UnifiedProfileDropdown: React.FC<{ currentUserRole?: string }> = ({
           <div style={{ padding: '8px' }}>
             <button
               onClick={() => {
-                navigate('/profile');
                 setIsOpen(false);
+                window.dispatchEvent(new CustomEvent('litc_open_profile_modal'));
               }}
               type="button"
               style={{

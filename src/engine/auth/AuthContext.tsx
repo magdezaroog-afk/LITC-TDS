@@ -28,50 +28,9 @@ export interface AuthContextType {
 const AUTH_SESSION_KEY = 'litc_user_session';
 
 /** قراءة الجلسة المحفوظة من localStorage */
+/** قراءة الجلسة الموثقة المحفوظة بعد تسجيل الدخول الرسمي */
 const readStoredSession = (): User | null => {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const loginAsRole = params.get('login_as');
-    const loginAsUser = params.get('login_as_user');
-
-    // Query param override: only for dev/demo purpose using known roles
-    if (loginAsRole) {
-      try {
-        localStorage.setItem('litc_token', 'mock-admin-token-123');
-        sessionStorage.setItem('litc_token', 'mock-admin-token-123');
-      } catch {}
-      return {
-        id: 'user_' + loginAsRole,
-        name: 'مجدي الزروق',
-        role: loginAsRole as Role,
-        email: `${loginAsRole}@litc.ly`,
-        department: 'MASTER_BUILDER'
-      };
-    }
-
-    // loginAsUser override using operational users stored in localStorage
-    if (loginAsUser) {
-      const storedUsers = localStorage.getItem('mockOperationalUsers');
-      if (storedUsers) {
-        const usersList = JSON.parse(storedUsers);
-        const found = usersList.find((u: any) => u.id === loginAsUser);
-        if (found) {
-          const roleMap: Record<string, Role> = {
-            'OPERATIONAL_MANAGER': 'tech_director',
-            'SECTION_HEAD': 'dept_head',
-            'TEAM_LEADER': 'team_leader',
-            'OPERATIONAL_USER': 'operational_user',
-          };
-          return {
-            id: found.id,
-            name: found.name,
-            role: roleMap[found.role] || 'operational_user',
-            email: found.email,
-            department: found.departmentId || 'unassigned'
-          };
-        }
-      }
-    }
 
     // ✅ Check sessionStorage first (unique to this browser tab, preventing cross-tab account collision)
     const sessionStored = sessionStorage.getItem(AUTH_SESSION_KEY);

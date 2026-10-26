@@ -393,10 +393,13 @@ export function TopNav({ isEmbedded = true }: { isEmbedded?: boolean }) {
 
                     {/* Menu Action Links */}
                     <div className="space-y-1">
-                      <Link
-                        to="/profile"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors group"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          window.dispatchEvent(new CustomEvent('litc_open_profile_modal'));
+                        }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors group cursor-pointer text-start rtl:text-end"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="size-7 rounded-lg bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:text-accent transition-colors">
@@ -405,7 +408,7 @@ export function TopNav({ isEmbedded = true }: { isEmbedded?: boolean }) {
                           <span className="text-xs font-bold">{t('profileDocuments')}</span>
                         </div>
                         <ArrowIcon className="size-3.5 text-slate-400 group-hover:text-accent transition-colors" />
-                      </Link>
+                      </button>
 
                       <Link
                         to="/healthcare"

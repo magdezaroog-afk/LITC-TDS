@@ -9,9 +9,10 @@ const BASE_URL = '/api/v1';
  */
 const getHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  // Include Bearer token only when explicitly stored after a real login (fallback for environments
-  // where the HttpOnly cookie may not propagate, e.g. cross-origin dev proxies).
-  const token = typeof window !== 'undefined' ? localStorage.getItem('litc_token') : null;
+  // Check sessionStorage first, then fallback to localStorage
+  const token = typeof window !== 'undefined' 
+    ? (sessionStorage.getItem('litc_token') || localStorage.getItem('litc_token')) 
+    : null;
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,6 +28,51 @@ const handleResponse = async (res: Response) => {
 };
 
 export const AdminAPI = {
+  // ─── SOC & Enterprise Security ───────────────────────────────────────────
+  getSOCTelemetry: () =>
+    fetch(`${BASE_URL}/admin/soc/telemetry`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  getWAFNodes: () =>
+    fetch(`${BASE_URL}/admin/soc/waf-nodes`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  updateWAFNode: (id: string, status: string) =>
+    fetch(`${BASE_URL}/admin/soc/waf-nodes/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ status })
+    }).then(handleResponse),
+
+  getWAFRules: () =>
+    fetch(`${BASE_URL}/admin/soc/waf-rules`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  createWAFRule: (data: { ruleType: string; target: string; action: string }) =>
+    fetch(`${BASE_URL}/admin/soc/waf-rules`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+  deleteWAFRule: (id: string) =>
+    fetch(`${BASE_URL}/admin/soc/waf-rules/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      credentials: 'include'
+    }).then(handleResponse),
+
+  getSIEMLogs: () =>
+    fetch(`${BASE_URL}/admin/soc/siem-logs`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  getActiveSessions: () =>
+    fetch(`${BASE_URL}/admin/soc/sessions`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  kickUserSession: (userId: number | string) =>
+    fetch(`${BASE_URL}/admin/soc/sessions/${userId}/kick`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include'
+    }).then(handleResponse),
 
   // ─── Buildings & Locations ────────────────────────────────────────────────
   getBuildings: () =>

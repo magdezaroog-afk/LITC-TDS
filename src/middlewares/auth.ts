@@ -22,71 +22,27 @@ export const authMiddleware = (
   next: NextFunction
 ) => {
   const sourceIp = req.ip || req.socket.remoteAddress;
-  const isLocalDev = process.env.NODE_ENV !== 'production' || !process.env.NODE_ENV;
-  const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
-  // 1. Prioritize Authorization header (allows individual browser tabs to maintain isolated user sessions)
+  // 1. Prioritize Authorization Bearer header
   let token: string | undefined;
   if (req.headers['authorization']?.startsWith('Bearer ')) {
     token = req.headers['authorization'].substring(7).trim();
   }
 
-  // 2. Fallback to x-auth-token
+  // 2. Fallback to x-auth-token header
   if (!token && req.headers['x-auth-token']) {
     token = (req.headers['x-auth-token'] as string).trim();
   }
 
-  // 3. Fallback to HttpOnly Cookie
+  // 3. Fallback to HttpOnly litc_session Cookie
   if (!token && req.cookies?.litc_session) {
     token = req.cookies.litc_session;
   }
 
-  // 4. In local development / test environment, support explicit mock tokens and x-user-id header
-  const devUserIdHeader = req.headers['x-user-id'];
-  const devUserId = devUserIdHeader ? parseInt(String(devUserIdHeader).replace(/\D/g, ''), 10) : null;
-
-  if (isLocalDev && isLocalhost && devUserId && !isNaN(devUserId) && devUserId > 0) {
-    req.user = {
-      id: devUserId,
-      roleId: 1,
-      email: ''
-    };
-    return next();
-  }
-
-  if (token && typeof token === 'string' && token.startsWith('mock-user-')) {
-    const parsedId = parseInt(token.replace('mock-user-', ''), 10);
-    if (!isNaN(parsedId)) {
-      req.user = {
-        id: parsedId,
-        roleId: 1,
-        email: ''
-      };
-      return next();
-    }
-  }
-
-  if (token === 'mock-admin-token-123' || token === 'dummy' || token === 'DUMMY_TOKEN') {
-    req.user = {
-      id: 20,
-      roleId: 1,
-      email: 'admin@litc.ly'
-    };
-    return next();
-  }
-
+  // 4. Strict Validation: Reject if no token is present
   if (!token) {
-    if (isLocalDev && isLocalhost) {
-      req.user = {
-        id: 20,
-        roleId: 1,
-        email: 'admin@litc.ly'
-      };
-      return next();
-    }
-    console.error('[Auth] Token missing completely');
-    SIEMLogger.logEvent('UNAUTHORIZED_ACCESS_ATTEMPT', 'INFO', sourceIp, { url: req.url });
-    return res.status(401).json({ success: false, error: 'Unauthorized: Missing token.' });
+    SIEMLogger.logEvent('UNAUTHORIZED_ACCESS_ATTEMPT', 'INFO', sourceIp, { url: req.url, method: req.method });
+    return res.status(401).json({ success: false, error: 'Unauthorized: Missing or invalid authentication token.' });
   }
 
   try {
@@ -98,17 +54,8 @@ export const authMiddleware = (
     };
     next();
   } catch (error: any) {
-    if (isLocalDev && isLocalhost) {
-      req.user = {
-        id: 20,
-        roleId: 1,
-        email: 'admin@litc.ly'
-      };
-      return next();
-    }
-    console.error('[Auth] Token validation failed!', error.message, 'Token received:', token);
-    SIEMLogger.logEvent('INVALID_TOKEN_ATTEMPT', 'WARNING', sourceIp, { url: req.url });
-    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid token.' });
+    SIEMLogger.logEvent('INVALID_TOKEN_ATTEMPT', 'WARNING', sourceIp, { url: req.url, method: req.method, error: error.message });
+    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or expired token.' });
   }
 };
 
@@ -123,9 +70,6 @@ export const optionalAuthMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const isLocalDev = process.env.NODE_ENV !== 'production' || !process.env.NODE_ENV;
-  const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
-
   let token: string | undefined;
   if (req.headers['authorization']?.startsWith('Bearer ')) {
     token = req.headers['authorization'].substring(7).trim();
@@ -136,20 +80,12 @@ export const optionalAuthMiddleware = (
   }
 
   if (token) {
-    if (token === 'mock-admin-token-123' || token === 'dummy' || token === 'DUMMY_TOKEN') {
-      req.user = { id: 20, roleId: 1, email: 'admin@litc.ly' };
-      return next();
-    }
     try {
       const decoded = jwt.verify(token, JWT_SECRET as string) as any;
       req.user = { id: decoded.id, roleId: decoded.roleId, email: decoded.email };
     } catch {
-      if (isLocalDev && isLocalhost) {
-        req.user = { id: 20, roleId: 1, email: 'admin@litc.ly' };
-      }
+      // Ignored for optional auth
     }
-  } else if (isLocalDev && isLocalhost) {
-    req.user = { id: 20, roleId: 1, email: 'admin@litc.ly' };
   }
 
   next();

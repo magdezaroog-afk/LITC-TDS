@@ -18,6 +18,7 @@ const t = (key: any, fallback?: any) => fallback || key;
 
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
+import { ExecutiveProfileInspectionModal } from './components/infrastructure/ExecutiveProfileInspectionModal';
 import { Login } from './pages/auth/Login';
 import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
@@ -1016,6 +1017,14 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const [isGlobalProfileOpen, setIsGlobalProfileOpen] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleOpen = () => setIsGlobalProfileOpen(true);
+    window.addEventListener('litc_open_profile_modal', handleOpen);
+    return () => window.removeEventListener('litc_open_profile_modal', handleOpen);
+  }, []);
+
   const isLoginPage = location.pathname === '/login';
 
   // If we are on the login page or not logged in, render ONLY login page
@@ -1067,6 +1076,12 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+
+      {/* Global Executive Profile Bento Modal */}
+      <ExecutiveProfileInspectionModal
+        isOpen={isGlobalProfileOpen}
+        onClose={() => setIsGlobalProfileOpen(false)}
+      />
     </div>
   );
 };
