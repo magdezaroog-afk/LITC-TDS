@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OpsAPI } from '../../../services/ops.api';
 import { useAuth } from '../../../engine/auth/AuthContext';
+import { useMobileViewport } from '../../../mobile/hooks/useMobileViewport';
 import { FlowReceptionGovernanceView } from './FlowReceptionGovernanceView';
 import { DynamicFormAwareAnalytics } from '../../../components/analytics/DynamicFormAwareAnalytics';
 import { AnalyticsGovernanceView } from '../../../components/analytics/AnalyticsGovernanceView';
@@ -416,6 +417,7 @@ function OpsQueueTile({
 
 export const OperationalQueueView: React.FC = () => {
   const { user } = useAuth();
+  const isMobile = useMobileViewport(768);
 
   // Adaptive Dark/Light Mode Theme Listener
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -1065,6 +1067,7 @@ export const OperationalQueueView: React.FC = () => {
   return (
     <div style={{
       ...styles.container,
+      padding: isMobile ? '12px 10px 84px 10px' : '28px 32px',
       background: isDark
         ? 'radial-gradient(ellipse at 80% 0%, #172554 0%, #0b1120 70%, #050811 100%)'
         : 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -1105,17 +1108,18 @@ export const OperationalQueueView: React.FC = () => {
       {/* ═══ 1. OPERATIONAL HEADER & LIVE STATUS ═══ */}
       <div style={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-start' : 'center',
         justifyContent: 'space-between',
+        flexDirection: isMobile ? 'column' : 'row',
         flexWrap: 'wrap',
-        gap: '16px',
-        marginBottom: '24px'
+        gap: isMobile ? '10px' : '16px',
+        marginBottom: isMobile ? '14px' : '24px'
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <h1 style={{
               margin: 0,
-              fontSize: '24px',
+              fontSize: isMobile ? '20px' : '24px',
               fontWeight: 900,
               color: isDark ? '#ffffff' : '#0f172a',
               fontFamily: "'Tajawal', 'Cairo', sans-serif",
@@ -1124,9 +1128,9 @@ export const OperationalQueueView: React.FC = () => {
               إدارة واستقبال الطلبات
             </h1>
             <span style={{
-              fontSize: '11px',
+              fontSize: isMobile ? '10px' : '11px',
               fontWeight: 800,
-              padding: '3px 8px',
+              padding: '2px 7px',
               borderRadius: '6px',
               background: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.1)',
               border: isDark ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(37, 99, 235, 0.25)',
@@ -1135,35 +1139,34 @@ export const OperationalQueueView: React.FC = () => {
               مركز العمليات المباشر
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: '13px', color: isDark ? '#94a3b8' : '#64748b' }}>
+          <p style={{ margin: 0, fontSize: isMobile ? '11.5px' : '13px', color: isDark ? '#94a3b8' : '#64748b' }}>
             إدارة حوض الطلبات الواردة، مهام الكادر، وحوكمة الأتمتة للمسارات التشغيلية
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
           {/* Live System Indicator */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            fontSize: '12px',
+            gap: '6px',
+            fontSize: isMobile ? '11px' : '12px',
             fontWeight: 700,
             color: isDark ? '#4ade80' : '#16a34a',
             background: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(22, 163, 74, 0.08)',
             border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(22, 163, 74, 0.25)',
-            padding: '6px 12px',
+            padding: isMobile ? '4px 10px' : '6px 12px',
             borderRadius: '9999px',
           }}>
             <span style={{
-              width: '7px',
-              height: '7px',
+              width: '6px',
+              height: '6px',
               borderRadius: '50%',
               backgroundColor: '#16a34a',
               boxShadow: '0 0 8px #16a34a'
             }} />
-            <span>الخدمات التشغيلية: نشطة ومباشرة</span>
+            <span>{isMobile ? 'نشطة ومباشرة' : 'الخدمات التشغيلية: نشطة ومباشرة'}</span>
           </div>
-
 
           {/* Unified Refresh Button */}
           {activeTab !== 'FLOW_SETTINGS' && (
@@ -1173,13 +1176,13 @@ export const OperationalQueueView: React.FC = () => {
               style={{ 
                 background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#ffffff',
                 border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0',
-                padding: '8px 16px',
+                padding: isMobile ? '6px 12px' : '8px 16px',
                 borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                fontSize: '13px',
+                gap: '6px',
+                fontSize: isMobile ? '12px' : '13px',
                 fontWeight: 700,
                 color: isDark ? '#f1f5f9' : '#334155',
                 boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.03)',
@@ -1188,8 +1191,8 @@ export const OperationalQueueView: React.FC = () => {
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = isDark ? '#38bdf8' : '#cbd5e1'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0'; e.currentTarget.style.transform = 'none'; }}
             >
-              <RefreshCw size={15} color={isDark ? '#38bdf8' : '#475569'} className={loading ? 'animate-spin' : ''} />
-              <span>تحديث البيانات</span>
+              <RefreshCw size={14} color={isDark ? '#38bdf8' : '#475569'} className={loading ? 'animate-spin' : ''} />
+              <span>{isMobile ? 'تحديث' : 'تحديث البيانات'}</span>
             </button>
           )}
         </div>
@@ -1587,14 +1590,14 @@ export const OperationalQueueView: React.FC = () => {
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
               border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.85)',
-              borderRadius: '20px',
-              padding: '24px 28px',
+              borderRadius: isMobile ? '16px' : '20px',
+              padding: isMobile ? '14px 10px' : '24px 28px',
               boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.4)' : '0 4px 24px -2px rgba(15, 23, 42, 0.05)',
-              minHeight: '780px',
+              minHeight: isMobile ? 'auto' : '780px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px',
+              gap: isMobile ? '14px' : '20px',
               transition: 'all 0.25s ease'
             }}
           >
@@ -1604,15 +1607,15 @@ export const OperationalQueueView: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '16px',
-              paddingBottom: '18px',
+              gap: isMobile ? '12px' : '16px',
+              paddingBottom: isMobile ? '12px' : '18px',
               borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9'
             }}>
               {/* Identity (Icon + Title + Badge + Subtitle) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
                 <div style={{
-                  width: '44px',
-                  height: '44px',
+                  width: isMobile ? '38px' : '44px',
+                  height: isMobile ? '38px' : '44px',
                   borderRadius: '12px',
                   background: activeViewConfig.iconBg,
                   display: 'flex',
@@ -1622,13 +1625,13 @@ export const OperationalQueueView: React.FC = () => {
                   boxShadow: `0 4px 14px ${activeViewConfig.glowColor}`,
                   flexShrink: 0
                 }}>
-                  <activeViewConfig.icon size={22} />
+                  <activeViewConfig.icon size={isMobile ? 18 : 22} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <h2 style={{
                       margin: 0,
-                      fontSize: '18px',
+                      fontSize: isMobile ? '16px' : '18px',
                       fontWeight: 800,
                       color: isDark ? '#ffffff' : '#0f172a',
                       fontFamily: "'Cairo', sans-serif"
@@ -1636,7 +1639,7 @@ export const OperationalQueueView: React.FC = () => {
                       {activeViewConfig.title}
                     </h2>
                     <span style={{
-                      fontSize: '11px',
+                      fontSize: isMobile ? '10px' : '11px',
                       fontWeight: 800,
                       color: activeViewConfig.badgeColor,
                       backgroundColor: activeViewConfig.badgeBg,
@@ -1650,7 +1653,7 @@ export const OperationalQueueView: React.FC = () => {
                   </div>
                   <p style={{
                     margin: '3px 0 0 0',
-                    fontSize: '12.5px',
+                    fontSize: isMobile ? '11px' : '12.5px',
                     color: isDark ? '#94a3b8' : '#64748b'
                   }}>
                     {activeViewConfig.subtitle}
@@ -1660,7 +1663,7 @@ export const OperationalQueueView: React.FC = () => {
 
               {/* View-Specific Contextual Search / Refresh / Layout Controls for Tickets */}
               {isTicketView && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
                   {/* View Mode Switcher: Rail (~7 cards) vs. Grid vs. Table/List */}
                   <div style={{
                     display: 'inline-flex',
@@ -1670,6 +1673,8 @@ export const OperationalQueueView: React.FC = () => {
                     borderRadius: '10px',
                     padding: '2.5px',
                     gap: '2px',
+                    width: isMobile ? '100%' : 'auto',
+                    justifyContent: isMobile ? 'space-between' : 'flex-start'
                   }}>
                     <button
                       type="button"
@@ -1678,12 +1683,14 @@ export const OperationalQueueView: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: isMobile ? 1 : 'none',
                         gap: '5px',
-                        padding: '6px 12px',
+                        padding: isMobile ? '6px 8px' : '6px 12px',
                         borderRadius: '7px',
                         border: 'none',
                         cursor: 'pointer',
-                        fontSize: '11.5px',
+                        fontSize: isMobile ? '11px' : '11.5px',
                         fontWeight: ticketLayoutMode === 'RAIL' ? 800 : 600,
                         fontFamily: "'Cairo', sans-serif",
                         background: ticketLayoutMode === 'RAIL'
@@ -1699,7 +1706,7 @@ export const OperationalQueueView: React.FC = () => {
                       }}
                     >
                       <SlidersHorizontal size={13} />
-                      <span>شريط أفقي</span>
+                      <span>{isMobile ? 'شريط كروت' : 'شريط أفقي'}</span>
                     </button>
 
                     <button
@@ -1709,12 +1716,14 @@ export const OperationalQueueView: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: isMobile ? 1 : 'none',
                         gap: '5px',
-                        padding: '6px 12px',
+                        padding: isMobile ? '6px 8px' : '6px 12px',
                         borderRadius: '7px',
                         border: 'none',
                         cursor: 'pointer',
-                        fontSize: '11.5px',
+                        fontSize: isMobile ? '11px' : '11.5px',
                         fontWeight: ticketLayoutMode === 'LIST' ? 800 : 600,
                         fontFamily: "'Cairo', sans-serif",
                         background: ticketLayoutMode === 'LIST'
@@ -1730,11 +1739,11 @@ export const OperationalQueueView: React.FC = () => {
                       }}
                     >
                       <List size={13} />
-                      <span>قائمة منظمة (7 صفوف)</span>
+                      <span>{isMobile ? 'قائمة منظمة' : 'قائمة منظمة (7 صفوف)'}</span>
                     </button>
                   </div>
 
-                  <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '320px' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : '180px', maxWidth: isMobile ? '100%' : '320px' }}>
                     <Search size={15} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                     <input 
                       type="text" 
@@ -2073,31 +2082,35 @@ export const OperationalQueueView: React.FC = () => {
                   return (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       {ticketLayoutMode === 'RAIL' ? (
-                        /* ── 1. HORIZONTAL CAROUSEL / RAIL VIEW (Multi-row expandable track with drag handle + scroll arrows) ── */
+                        /* ── 1. HORIZONTAL CAROUSEL / RAIL VIEW (Multi-row expandable track on desktop, touch rail on mobile) ── */
                         <div className="ops-tickets-rail-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
-                          {/* Right Arrow Button (RTL) */}
-                          <button
-                            type="button"
-                            className="ops-tickets-rail-btn ops-tickets-rail-btn-right"
-                            onClick={() => handleScrollTicketsRail('right')}
-                            disabled={!canScrollTicketsRight}
-                            title="تمرير التذاكر لليمين"
-                            aria-label="تمرير لليمين"
-                          >
-                            <ChevronRight size={20} />
-                          </button>
+                          {/* Right Arrow Button (RTL) - Desktop Only */}
+                          {!isMobile && (
+                            <button
+                              type="button"
+                              className="ops-tickets-rail-btn ops-tickets-rail-btn-right"
+                              onClick={() => handleScrollTicketsRail('right')}
+                              disabled={!canScrollTicketsRight}
+                              title="تمرير التذاكر لليمين"
+                              aria-label="تمرير لليمين"
+                            >
+                              <ChevronRight size={20} />
+                            </button>
+                          )}
 
-                          {/* Left Arrow Button (RTL) */}
-                          <button
-                            type="button"
-                            className="ops-tickets-rail-btn ops-tickets-rail-btn-left"
-                            onClick={() => handleScrollTicketsRail('left')}
-                            disabled={!canScrollTicketsLeft}
-                            title="تمرير التذاكر لليسار"
-                            aria-label="تمرير لليسار"
-                          >
-                            <ChevronLeft size={20} />
-                          </button>
+                          {/* Left Arrow Button (RTL) - Desktop Only */}
+                          {!isMobile && (
+                            <button
+                              type="button"
+                              className="ops-tickets-rail-btn ops-tickets-rail-btn-left"
+                              onClick={() => handleScrollTicketsRail('left')}
+                              disabled={!canScrollTicketsLeft}
+                              title="تمرير التذاكر لليسار"
+                              aria-label="تمرير لليسار"
+                            >
+                              <ChevronLeft size={20} />
+                            </button>
+                          )}
 
                           {/* Top Rail Feed Info Bar */}
                           <div style={{
@@ -2106,9 +2119,11 @@ export const OperationalQueueView: React.FC = () => {
                             justifyContent: 'space-between',
                             marginBottom: '10px',
                             padding: '0 4px',
-                            fontSize: '11.5px',
+                            fontSize: isMobile ? '11px' : '11.5px',
                             color: isDark ? '#94a3b8' : '#64748b',
-                            fontFamily: "'Cairo', sans-serif"
+                            fontFamily: "'Cairo', sans-serif",
+                            flexWrap: 'wrap',
+                            gap: '6px'
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{
@@ -2119,19 +2134,21 @@ export const OperationalQueueView: React.FC = () => {
                                 backgroundColor: '#0284c7',
                                 boxShadow: '0 0 6px #0284c7'
                               }} />
-                              <span>شريط التذاكر المباشر • مرر بالأسهم أو اسحب بالماوس • انقر على أي تذكرة لفحصها</span>
+                              <span>{isMobile ? 'اسحب التذاكر أفقياً للتنقل • انقر للفحص' : 'شريط التذاكر المباشر • مرر بالأسهم أو اسحب بالماوس • انقر على أي تذكرة لفحصها'}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                color: isDark ? '#38bdf8' : '#0284c7',
-                                background: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)',
-                                padding: '1px 8px',
-                                borderRadius: '6px',
-                              }}>
-                                {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
-                              </span>
+                              {!isMobile && (
+                                <span style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  color: isDark ? '#38bdf8' : '#0284c7',
+                                  background: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)',
+                                  padding: '1px 8px',
+                                  borderRadius: '6px',
+                                }}>
+                                  {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
+                                </span>
+                              )}
                               <span style={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b' }}>
                                 معروض {filteredTickets.length} تذكرة
                               </span>
@@ -2149,12 +2166,12 @@ export const OperationalQueueView: React.FC = () => {
                             onMouseLeave={handleRailMouseUpOrLeave}
                             style={{
                               display: 'grid',
-                              gridTemplateRows: `repeat(${railVisibleRows}, minmax(215px, 1fr))`,
+                              gridTemplateRows: isMobile ? '1fr' : `repeat(${railVisibleRows}, minmax(215px, 1fr))`,
                               gridAutoFlow: 'column',
-                              gridAutoColumns: '315px',
-                              columnGap: '16px',
+                              gridAutoColumns: isMobile ? 'min(295px, 84vw)' : '315px',
+                              columnGap: isMobile ? '12px' : '16px',
                               rowGap: '14px',
-                              minHeight: `${railVisibleRows * 225 + 35}px`,
+                              minHeight: isMobile ? 'auto' : `${railVisibleRows * 225 + 35}px`,
                               transition: 'min-height 0.2s ease',
                               position: 'relative',
                             }}
@@ -2164,117 +2181,119 @@ export const OperationalQueueView: React.FC = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* ═══ مقبض السحب الرأسي في منتصف الحافة السفلية للتحكم بعدد الصفوف من 1 إلى 7 ═══ */}
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                              padding: '6px 12px',
-                              borderRadius: '9999px',
-                              backgroundColor: isDraggingHandle
-                                ? (isDark ? '#1e293b' : '#e2e8f0')
-                                : (isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(241, 245, 249, 0.95)'),
-                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(19, 93, 121, 0.15)',
-                              boxShadow: isDraggingHandle ? '0 0 14px rgba(2, 132, 199, 0.35)' : '0 2px 8px rgba(0,0,0,0.06)',
-                              transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
-                              userSelect: 'none',
-                              margin: '4px auto 0 auto',
-                              width: 'fit-content',
-                            }}
-                          >
-                            {/* زر تقليل الصفوف (-) */}
-                            <button
-                              type="button"
-                              onClick={() => handleSetRailRows(r => Math.max(1, r - 1))}
-                              disabled={railVisibleRows <= 1}
-                              title="تقليل عدد صفوف البطاقات (الحد الأدنى: 1 صف)"
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                border: 'none',
-                                backgroundColor: railVisibleRows <= 1 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
-                                color: railVisibleRows <= 1 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
-                                cursor: railVisibleRows <= 1 ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: 0,
-                                fontSize: '11px',
-                                fontWeight: 900,
-                                boxShadow: railVisibleRows <= 1 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
-                              }}
-                            >
-                              <Minus size={12} strokeWidth={2.8} />
-                            </button>
-
-                            {/* مقبض السحب بالماوس أو اللمس (Drag Bar) */}
+                          {/* ═══ مقبض السحب الرأسي للتحكم بعدد الصفوف (على سطح المكتب فقط) ═══ */}
+                          {!isMobile && (
                             <div
-                              onPointerDown={handlePointerDownResize}
-                              onPointerMove={handlePointerMoveResize}
-                              onPointerUp={handlePointerUpResize}
-                              onPointerCancel={handlePointerUpResize}
-                              title="امسكه واسحب لأسفل لزيادة صفوف البطاقات أو لأعلى للتقليل (من 1 إلى 7 صفوف)"
                               style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                cursor: 'ns-resize',
-                                touchAction: 'none',
-                                padding: '2px 6px',
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: '38px',
-                                  height: '4.5px',
-                                  borderRadius: '9999px',
-                                  backgroundColor: isDraggingHandle
-                                    ? '#0284c7'
-                                    : (isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(19, 93, 121, 0.35)'),
-                                  transition: 'background-color 0.15s ease',
-                                }}
-                              />
-                              <span style={{
-                                fontSize: '10px',
-                                fontWeight: 800,
-                                color: isDark ? '#cbd5e1' : '#475569',
-                                fontFamily: "'Cairo', sans-serif",
-                                fontVariantNumeric: 'tabular-nums',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
-                              </span>
-                            </div>
-
-                            {/* زر زيادة الصفوف (+) */}
-                            <button
-                              type="button"
-                              onClick={() => handleSetRailRows(r => Math.min(7, r + 1))}
-                              disabled={railVisibleRows >= 7}
-                              title="زيادة عدد صفوف البطاقات (الحد الأقصى: 7 صفوف)"
-                              style={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                border: 'none',
-                                backgroundColor: railVisibleRows >= 7 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
-                                color: railVisibleRows >= 7 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
-                                cursor: railVisibleRows >= 7 ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                padding: 0,
-                                fontSize: '11px',
-                                fontWeight: 900,
-                                boxShadow: railVisibleRows >= 7 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+                                gap: '8px',
+                                padding: '6px 12px',
+                                borderRadius: '9999px',
+                                backgroundColor: isDraggingHandle
+                                  ? (isDark ? '#1e293b' : '#e2e8f0')
+                                  : (isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(241, 245, 249, 0.95)'),
+                                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(19, 93, 121, 0.15)',
+                                boxShadow: isDraggingHandle ? '0 0 14px rgba(2, 132, 199, 0.35)' : '0 2px 8px rgba(0,0,0,0.06)',
+                                transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+                                userSelect: 'none',
+                                margin: '4px auto 0 auto',
+                                width: 'fit-content',
                               }}
                             >
-                              <Plus size={12} strokeWidth={2.8} />
-                            </button>
-                          </div>
+                              {/* زر تقليل الصفوف (-) */}
+                              <button
+                                type="button"
+                                onClick={() => handleSetRailRows(r => Math.max(1, r - 1))}
+                                disabled={railVisibleRows <= 1}
+                                title="تقليل عدد صفوف البطاقات (الحد الأدنى: 1 صف)"
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  border: 'none',
+                                  backgroundColor: railVisibleRows <= 1 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
+                                  color: railVisibleRows <= 1 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
+                                  cursor: railVisibleRows <= 1 ? 'not-allowed' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: 0,
+                                  fontSize: '11px',
+                                  fontWeight: 900,
+                                  boxShadow: railVisibleRows <= 1 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+                                }}
+                              >
+                                <Minus size={12} strokeWidth={2.8} />
+                              </button>
+
+                              {/* مقبض السحب بالماوس أو اللمس (Drag Bar) */}
+                              <div
+                                onPointerDown={handlePointerDownResize}
+                                onPointerMove={handlePointerMoveResize}
+                                onPointerUp={handlePointerUpResize}
+                                onPointerCancel={handlePointerUpResize}
+                                title="امسكه واسحب لأسفل لزيادة صفوف البطاقات أو لأعلى للتقليل (من 1 إلى 7 صفوف)"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  cursor: 'ns-resize',
+                                  touchAction: 'none',
+                                  padding: '2px 6px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: '38px',
+                                    height: '4.5px',
+                                    borderRadius: '9999px',
+                                    backgroundColor: isDraggingHandle
+                                      ? '#0284c7'
+                                      : (isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(19, 93, 121, 0.35)'),
+                                    transition: 'background-color 0.15s ease',
+                                  }}
+                                />
+                                <span style={{
+                                  fontSize: '10px',
+                                  fontWeight: 800,
+                                  color: isDark ? '#cbd5e1' : '#475569',
+                                  fontFamily: "'Cairo', sans-serif",
+                                  fontVariantNumeric: 'tabular-nums',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
+                                </span>
+                              </div>
+
+                              {/* زر زيادة الصفوف (+) */}
+                              <button
+                                type="button"
+                                onClick={() => handleSetRailRows(r => Math.min(7, r + 1))}
+                                disabled={railVisibleRows >= 7}
+                                title="زيادة عدد صفوف البطاقات (الحد الأقصى: 7 صفوف)"
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  border: 'none',
+                                  backgroundColor: railVisibleRows >= 7 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
+                                  color: railVisibleRows >= 7 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
+                                  cursor: railVisibleRows >= 7 ? 'not-allowed' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: 0,
+                                  fontSize: '11px',
+                                  fontWeight: 900,
+                                  boxShadow: railVisibleRows >= 7 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+                                }}
+                              >
+                                <Plus size={12} strokeWidth={2.8} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         /* ── 2. ENTERPRISE STRUCTURED LIST (معيار الـ 7 صفوف المنظم مع الترقيم وأزرار التصفح) ── */
@@ -2286,38 +2305,274 @@ export const OperationalQueueView: React.FC = () => {
 
                           return (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div className="ops-tickets-table-wrapper" style={{
-                                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                                background: isDark ? 'rgba(15, 23, 42, 0.45)' : '#ffffff',
-                                backdropFilter: 'blur(16px)',
-                                boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.03)',
-                              }}>
-                                <div className="ops-tickets-table-inner">
-                                  {/* Table Header Strip (8 الأعمدة الكاملة بدون عمود زر التفاصيل المنفصل) */}
-                                  <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
-                                    padding: '11px 16px',
-                                    background: isDark ? 'rgba(30, 41, 59, 0.75)' : '#f8fafc',
-                                    borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                                    fontSize: '11px',
-                                    fontWeight: 800,
-                                    color: isDark ? '#94a3b8' : '#64748b',
-                                    fontFamily: "'Cairo', sans-serif",
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                  }}>
-                                    <div>الرمز</div>
-                                    <div>المعاملة والمسار</div>
-                                    <div>المُرسل والجهة التابع لها</div>
-                                    <div>الجهة المختصة</div>
-                                    <div>الأولوية</div>
-                                    <div>الحالة</div>
-                                    <div>المسؤول الحالي</div>
-                                    <div>التوقيت والمدة</div>
-                                  </div>
+                              {!isMobile ? (
+                                /* ── 2.A: DESKTOP TABLE VIEW (8 أعمدة كاملة) ── */
+                                <div className="ops-tickets-table-wrapper" style={{
+                                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                                  background: isDark ? 'rgba(15, 23, 42, 0.45)' : '#ffffff',
+                                  backdropFilter: 'blur(16px)',
+                                  boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.25)' : '0 2px 10px rgba(0,0,0,0.03)',
+                                }}>
+                                  <div className="ops-tickets-table-inner">
+                                    {/* Table Header Strip (8 الأعمدة الكاملة) */}
+                                    <div style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
+                                      padding: '11px 16px',
+                                      background: isDark ? 'rgba(30, 41, 59, 0.75)' : '#f8fafc',
+                                      borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                                      fontSize: '11px',
+                                      fontWeight: 800,
+                                      color: isDark ? '#94a3b8' : '#64748b',
+                                      fontFamily: "'Cairo', sans-serif",
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                    }}>
+                                      <div>الرمز</div>
+                                      <div>المعاملة والمسار</div>
+                                      <div>المُرسل والجهة التابع لها</div>
+                                      <div>الجهة المختصة</div>
+                                      <div>الأولوية</div>
+                                      <div>الحالة</div>
+                                      <div>المسؤول الحالي</div>
+                                      <div>التوقيت والمدة</div>
+                                    </div>
 
-                                  {/* Table Rows (Exactly up to 7 rows per page) */}
+                                    {/* Table Rows (Exactly up to 7 rows per page) */}
+                                    <AnimatePresence mode="wait">
+                                      {pageTickets.map((ticket, i) => {
+                                        const reqPriority = ticket.requesterPriority || ticket.priority;
+                                        const bizPriority = ticket.businessPriority || ticket.priority;
+                                        const lamp = getLampStyle(reqPriority);
+                                        const isUnassigned = ticket.isUnassigned !== false && !ticket.assignedTo;
+                                        const ticketCode = ticket.code || `REQ-${String(ticket.id).padStart(4, '0')}`;
+                                        
+                                        const accentColor = (bizPriority === 'CRITICAL' || bizPriority === 'URGENT')
+                                          ? '#ef4444'
+                                          : bizPriority === 'HIGH'
+                                          ? '#ea580c'
+                                          : isUnassigned
+                                          ? '#0284c7'
+                                          : '#4f46e5';
+
+                                        const timeStr = new Date(ticket.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+                                        const timeAgoStr = formatTimeAgo(ticket.createdAt);
+
+                                        return (
+                                          <motion.div
+                                            key={ticket.id}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ delay: Math.min(i * 0.015, 0.15) }}
+                                            onClick={() => setInspectTicket(ticket)}
+                                            title="انقر على أي مكان في الصف لعرض التفاصيل وفحص المعاملة"
+                                            style={{
+                                              display: 'grid',
+                                              gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
+                                              padding: '12px 16px',
+                                              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
+                                              borderRight: `3.5px solid ${accentColor}`,
+                                              alignItems: 'center',
+                                              gap: '12px',
+                                              cursor: 'pointer',
+                                              transition: 'background 0.15s ease',
+                                              background: inspectTicket?.id === ticket.id
+                                                ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(2, 132, 199, 0.06)')
+                                                : 'transparent',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              if (inspectTicket?.id !== ticket.id) {
+                                                e.currentTarget.style.backgroundColor = isDark ? 'rgba(56, 189, 248, 0.04)' : '#f8fafc';
+                                              }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              if (inspectTicket?.id !== ticket.id) {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                              }
+                                            }}
+                                          >
+                                            {/* 1. الرمز */}
+                                            <div>
+                                              <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                            </div>
+
+                                            {/* 2. المعاملة والمسار */}
+                                            <div style={{ minWidth: 0 }}>
+                                              <div style={{
+                                                fontSize: '12.5px',
+                                                fontWeight: 800,
+                                                color: isDark ? '#ffffff' : '#0f172a',
+                                                fontFamily: "'Tajawal', sans-serif",
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                              }}>
+                                                {ticket.subject || ticket.title}
+                                              </div>
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                marginTop: '2px',
+                                                flexWrap: 'wrap',
+                                              }}>
+                                                <span style={{ fontSize: '10.5px', color: '#6366f1', fontWeight: 600 }}>
+                                                  {ticket.flowDefinitionName || 'مسار عام'}
+                                                </span>
+                                                {ticket.isPendingHandover && (
+                                                  <span style={{
+                                                    background: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+                                                    color: isDark ? '#fbbf24' : '#b45309',
+                                                    fontSize: '9px',
+                                                    fontWeight: 800,
+                                                    padding: '0 4px',
+                                                    borderRadius: '4px',
+                                                  }}>
+                                                    ⏳ تحويل معلق
+                                                  </span>
+                                                )}
+                                                {(ticket.isSubTicket || ticket.parentId) && (
+                                                  <span style={{
+                                                    background: isDark ? 'rgba(168, 85, 247, 0.2)' : '#f3e8ff',
+                                                    color: isDark ? '#c084fc' : '#7e22ce',
+                                                    fontSize: '9px',
+                                                    fontWeight: 800,
+                                                    padding: '0 4px',
+                                                    borderRadius: '4px',
+                                                  }}>
+                                                    📎 مهمة فرعية
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* 3. المُرسل والجهة التابع لها */}
+                                            <div style={{ minWidth: 0 }}>
+                                              <div style={{
+                                                fontSize: '11.5px',
+                                                fontWeight: 700,
+                                                color: isDark ? '#cbd5e1' : '#1e293b',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                              }}>
+                                                {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
+                                              </div>
+                                              <div style={{
+                                                fontSize: '10px',
+                                                color: '#64748b',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                marginTop: '1px',
+                                              }}>
+                                                {ticket.creator?.department?.name || ticket.departmentName || 'إدارة التشغيل'}
+                                              </div>
+                                            </div>
+
+                                            {/* 4. الجهة المختصة */}
+                                            <div style={{ minWidth: 0 }}>
+                                              <div style={{
+                                                fontSize: '11px',
+                                                fontWeight: 600,
+                                                color: isDark ? '#94a3b8' : '#475569',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                              }}>
+                                                {ticket.departmentName || 'إدارة الخدمات'}
+                                              </div>
+                                            </div>
+
+                                            {/* 5. الأولوية */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{
+                                                ...styles.priorityBadge(bizPriority),
+                                                fontSize: '10px',
+                                                padding: '2px 7px',
+                                                borderRadius: '5px',
+                                                fontFamily: "'Cairo', sans-serif",
+                                              }}>
+                                                {formatPriorityText(bizPriority)}
+                                              </span>
+                                              <span
+                                                style={{
+                                                  width: '6px',
+                                                  height: '6px',
+                                                  borderRadius: '50%',
+                                                  backgroundColor: lamp.color,
+                                                  boxShadow: `0 0 5px ${lamp.color}`,
+                                                  flexShrink: 0,
+                                                }}
+                                                title={`طالب: ${lamp.label}`}
+                                              />
+                                            </div>
+
+                                            {/* 6. الحالة */}
+                                            <div>
+                                              <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
+                                            </div>
+
+                                            {/* 7. المسؤول الحالي */}
+                                            <div style={{ minWidth: 0 }}>
+                                              {ticket.assignedTo ? (
+                                                <div style={{
+                                                  fontSize: '11px',
+                                                  fontWeight: 700,
+                                                  color: isDark ? '#a5b4fc' : '#4f46e5',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: '4px',
+                                                  overflow: 'hidden',
+                                                  textOverflow: 'ellipsis',
+                                                  whiteSpace: 'nowrap',
+                                                }}>
+                                                  <ShieldCheck size={11} style={{ flexShrink: 0 }} />
+                                                  <span>{ticket.assignedTo.fullName}</span>
+                                                </div>
+                                              ) : (
+                                                <span style={{
+                                                  fontSize: '10px',
+                                                  fontWeight: 700,
+                                                  color: isDark ? '#38bdf8' : '#0284c7',
+                                                  background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.08)',
+                                                  padding: '2px 6px',
+                                                  borderRadius: '4px',
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: '3px',
+                                                }}>
+                                                  <Zap size={9.5} />
+                                                  <span>شاغر (بالحوض)</span>
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* 8. التوقيت والمدة المنقضية */}
+                                            <div style={{
+                                              fontSize: '10.5px',
+                                              color: isDark ? '#94a3b8' : '#64748b',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              gap: '1px',
+                                            }}>
+                                              <span style={{ fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155' }}>
+                                                {timeAgoStr}
+                                              </span>
+                                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '9.5px', color: '#94a3b8' }}>
+                                                {timeStr}
+                                              </span>
+                                            </div>
+                                          </motion.div>
+                                        );
+                                      })}
+                                    </AnimatePresence>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* ── 2.B: MOBILE CARDS VIEW (تحويل تلقائي لبطاقات مدمجة فاخرة للهاتف) ── */
+                                <div className="mobile-cards-view" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                   <AnimatePresence mode="wait">
                                     {pageTickets.map((ticket, i) => {
                                       const reqPriority = ticket.requesterPriority || ticket.priority;
@@ -2340,215 +2595,104 @@ export const OperationalQueueView: React.FC = () => {
                                       return (
                                         <motion.div
                                           key={ticket.id}
-                                          initial={{ opacity: 0 }}
-                                          animate={{ opacity: 1 }}
+                                          initial={{ opacity: 0, y: 8 }}
+                                          animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0 }}
-                                          transition={{ delay: Math.min(i * 0.015, 0.15) }}
+                                          transition={{ delay: Math.min(i * 0.02, 0.15) }}
                                           onClick={() => setInspectTicket(ticket)}
-                                          title="انقر على أي مكان في الصف لعرض التفاصيل وفحص المعاملة"
                                           style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
-                                            padding: '12px 16px',
-                                            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
-                                            borderRight: `3.5px solid ${accentColor}`,
-                                            alignItems: 'center',
-                                            gap: '12px',
-                                            cursor: 'pointer',
-                                            transition: 'background 0.15s ease',
                                             background: inspectTicket?.id === ticket.id
-                                              ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(2, 132, 199, 0.06)')
-                                              : 'transparent',
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            if (inspectTicket?.id !== ticket.id) {
-                                              e.currentTarget.style.backgroundColor = isDark ? 'rgba(56, 189, 248, 0.04)' : '#f8fafc';
-                                            }
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            if (inspectTicket?.id !== ticket.id) {
-                                              e.currentTarget.style.backgroundColor = 'transparent';
-                                            }
+                                              ? (isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)')
+                                              : (isDark ? 'rgba(15, 23, 42, 0.75)' : '#ffffff'),
+                                            backdropFilter: 'blur(14px)',
+                                            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                                            borderRight: `4px solid ${accentColor}`,
+                                            borderRadius: '14px',
+                                            padding: '12px 14px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '8px',
+                                            boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.03)',
+                                            transition: 'all 0.15s ease'
                                           }}
                                         >
-                                          {/* 1. الرمز */}
-                                          <div>
-                                            <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                          {/* Row 1: Code + Status + Priority */}
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                              <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                              <span style={{
+                                                ...styles.priorityBadge(bizPriority),
+                                                fontSize: '9.5px',
+                                                padding: '2px 6px',
+                                                borderRadius: '5px',
+                                                fontFamily: "'Cairo', sans-serif",
+                                              }}>
+                                                {formatPriorityText(bizPriority)}
+                                              </span>
+                                              <span
+                                                style={{
+                                                  width: '6px',
+                                                  height: '6px',
+                                                  borderRadius: '50%',
+                                                  backgroundColor: lamp.color,
+                                                  boxShadow: `0 0 5px ${lamp.color}`,
+                                                  flexShrink: 0,
+                                                }}
+                                                title={`طالب: ${lamp.label}`}
+                                              />
+                                            </div>
                                           </div>
 
-                                          {/* 2. المعاملة والمسار */}
-                                          <div style={{ minWidth: 0 }}>
+                                          {/* Row 2: Title & Flow */}
+                                          <div>
                                             <div style={{
-                                              fontSize: '12.5px',
+                                              fontSize: '13px',
                                               fontWeight: 800,
                                               color: isDark ? '#ffffff' : '#0f172a',
-                                              fontFamily: "'Tajawal', sans-serif",
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                              whiteSpace: 'nowrap',
+                                              fontFamily: "'Cairo', sans-serif",
+                                              lineHeight: 1.4,
+                                              marginBottom: '3px'
                                             }}>
                                               {ticket.subject || ticket.title}
                                             </div>
-                                            <div style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: '6px',
-                                              marginTop: '2px',
-                                              flexWrap: 'wrap',
-                                            }}>
-                                              <span style={{ fontSize: '10.5px', color: '#6366f1', fontWeight: 600 }}>
-                                                {ticket.flowDefinitionName || 'مسار عام'}
-                                              </span>
-                                              {ticket.isPendingHandover && (
-                                                <span style={{
-                                                  background: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
-                                                  color: isDark ? '#fbbf24' : '#b45309',
-                                                  fontSize: '9px',
-                                                  fontWeight: 800,
-                                                  padding: '0 4px',
-                                                  borderRadius: '4px',
-                                                }}>
-                                                  ⏳ تحويل معلق
-                                                </span>
-                                              )}
-                                              {(ticket.isSubTicket || ticket.parentId) && (
-                                                <span style={{
-                                                  background: isDark ? 'rgba(168, 85, 247, 0.2)' : '#f3e8ff',
-                                                  color: isDark ? '#c084fc' : '#7e22ce',
-                                                  fontSize: '9px',
-                                                  fontWeight: 800,
-                                                  padding: '0 4px',
-                                                  borderRadius: '4px',
-                                                }}>
-                                                  📎 مهمة فرعية
-                                                </span>
-                                              )}
+                                            <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                              <Layers size={11} color="#6366f1" />
+                                              <span>{ticket.flowDefinitionName || 'مسار عام'}</span>
                                             </div>
                                           </div>
 
-                                          {/* 3. المُرسل والجهة التابع لها */}
-                                          <div style={{ minWidth: 0 }}>
-                                            <div style={{
-                                              fontSize: '11.5px',
-                                              fontWeight: 700,
-                                              color: isDark ? '#cbd5e1' : '#1e293b',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                              whiteSpace: 'nowrap',
-                                            }}>
-                                              {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
-                                            </div>
-                                            <div style={{
-                                              fontSize: '10px',
-                                              color: '#64748b',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                              whiteSpace: 'nowrap',
-                                              marginTop: '1px',
-                                            }}>
-                                              {ticket.creator?.department?.name || ticket.departmentName || 'إدارة التشغيل'}
-                                            </div>
-                                          </div>
-
-                                          {/* 4. الجهة المختصة */}
-                                          <div style={{ minWidth: 0 }}>
-                                            <div style={{
-                                              fontSize: '11px',
-                                              fontWeight: 600,
-                                              color: isDark ? '#94a3b8' : '#475569',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                              whiteSpace: 'nowrap',
-                                            }}>
-                                              {ticket.departmentName || 'إدارة الخدمات'}
-                                            </div>
-                                          </div>
-
-                                          {/* 5. الأولوية */}
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{
-                                              ...styles.priorityBadge(bizPriority),
-                                              fontSize: '10px',
-                                              padding: '2px 7px',
-                                              borderRadius: '5px',
-                                              fontFamily: "'Cairo', sans-serif",
-                                            }}>
-                                              {formatPriorityText(bizPriority)}
-                                            </span>
-                                            <span
-                                              style={{
-                                                width: '6px',
-                                                height: '6px',
-                                                borderRadius: '50%',
-                                                backgroundColor: lamp.color,
-                                                boxShadow: `0 0 5px ${lamp.color}`,
-                                                flexShrink: 0,
-                                              }}
-                                              title={`طالب: ${lamp.label}`}
-                                            />
-                                          </div>
-
-                                          {/* 6. الحالة */}
-                                          <div>
-                                            <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
-                                          </div>
-
-                                          {/* 7. المسؤول الحالي */}
-                                          <div style={{ minWidth: 0 }}>
-                                            {ticket.assignedTo ? (
-                                              <div style={{
-                                                fontSize: '11px',
-                                                fontWeight: 700,
-                                                color: isDark ? '#a5b4fc' : '#4f46e5',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                              }}>
-                                                <ShieldCheck size={11} style={{ flexShrink: 0 }} />
-                                                <span>{ticket.assignedTo.fullName}</span>
-                                              </div>
-                                            ) : (
-                                              <span style={{
-                                                fontSize: '10px',
-                                                fontWeight: 700,
-                                                color: isDark ? '#38bdf8' : '#0284c7',
-                                                background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.08)',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '3px',
-                                              }}>
-                                                <Zap size={9.5} />
-                                                <span>شاغر (بالحوض)</span>
-                                              </span>
-                                            )}
-                                          </div>
-
-                                          {/* 8. التوقيت والمدة المنقضية */}
+                                          {/* Row 3: Requester & Target Dept + Assignee */}
                                           <div style={{
-                                            fontSize: '10.5px',
-                                            color: isDark ? '#94a3b8' : '#64748b',
                                             display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '1px',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            fontSize: '11px',
+                                            color: isDark ? '#94a3b8' : '#64748b',
+                                            paddingTop: '6px',
+                                            borderTop: isDark ? '1px dashed rgba(255, 255, 255, 0.06)' : '1px dashed #f1f5f9'
                                           }}>
-                                            <span style={{ fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155' }}>
-                                              {timeAgoStr}
-                                            </span>
-                                            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '9.5px', color: '#94a3b8' }}>
-                                              {timeStr}
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
+                                              <User size={11} color="#6366f1" />
+                                              <span style={{ fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155' }}>
+                                                {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
+                                              </span>
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontVariantNumeric: 'tabular-nums', fontSize: '10.5px' }}>
+                                              <Clock size={11} color="#64748b" />
+                                              <span>{timeAgoStr}</span>
+                                            </div>
                                           </div>
                                         </motion.div>
                                       );
                                     })}
                                   </AnimatePresence>
                                 </div>
-                              </div>
+                              )}
 
                               {/* ═══ Pagination Bar for 7-Row List View (أرقام الصفحات وأزرار التمرير لليمين واليسار) ═══ */}
                               <div style={{
@@ -2671,33 +2815,44 @@ export const OperationalQueueView: React.FC = () => {
             zIndex: 100000,
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
-            padding: '16px',
+            alignItems: isMobile ? 'flex-end' : 'center',
+            padding: isMobile ? 0 : '16px',
             direction: 'rtl'
           }}>
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 16 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              initial={isMobile ? { y: '100%', opacity: 0 } : { scale: 0.95, opacity: 0, y: 16 }}
+              animate={isMobile ? { y: 0, opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+              exit={isMobile ? { y: '100%', opacity: 0 } : { scale: 0.95, opacity: 0, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               style={{
                 width: '100%',
-                maxWidth: '880px',
+                maxWidth: isMobile ? '100%' : '880px',
                 background: isDark ? '#0f172a' : '#ffffff',
                 color: isDark ? '#f8fafc' : '#0f172a',
-                borderRadius: '24px',
+                borderRadius: isMobile ? '24px 24px 0 0' : '24px',
                 border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                 boxShadow: isDark
                   ? '0 25px 60px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)'
                   : '0 25px 60px -15px rgba(15,23,42,0.22), 0 0 0 1px rgba(0,0,0,0.05)',
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: '90vh',
-                height: 'auto',
+                maxHeight: isMobile ? '94vh' : '90vh',
+                height: isMobile ? '94vh' : 'auto',
                 overflow: 'hidden',
                 position: 'relative'
               }}
             >
+              {/* Drag indicator for mobile bottom sheet */}
+              {isMobile && (
+                <div style={{
+                  width: '42px',
+                  height: '4.5px',
+                  borderRadius: '9999px',
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.2)',
+                  margin: '8px auto 2px auto',
+                  flexShrink: 0
+                }} />
+              )}
               {/* Modal Top Header */}
               <div style={{
                 padding: '18px 24px',
@@ -3664,14 +3819,17 @@ export const OperationalQueueView: React.FC = () => {
 
               {/* Modal Footer Actions - ITIL Operational Action Bar (Unified & Decluttered) */}
               <div style={{
-                padding: '14px 24px',
+                padding: isMobile ? '12px 14px' : '14px 24px',
                 borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
                 background: isDark ? '#0b1120' : '#f8fafc',
                 display: 'flex',
                 gap: '10px',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                flexWrap: 'wrap'
+                flexWrap: 'wrap',
+                position: isMobile ? 'sticky' : 'relative',
+                bottom: 0,
+                zIndex: 10
               }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   {/* Notice if ticket is unassigned: hero claim button already exists in top banner */}
