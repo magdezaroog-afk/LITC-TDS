@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { SIEMLogger } from '../backend/security/SIEMLogger';
+import { redisManager } from '../backend/infrastructure/RedisClient';
+import { prisma } from '../db/client';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -16,7 +18,7 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: AuthenticatedRequest, 
   res: Response, 
   next: NextFunction
@@ -45,12 +47,31 @@ export const authMiddleware = (
     return res.status(401).json({ success: false, error: 'Unauthorized: Missing or invalid authentication token.' });
   }
 
+  // 5. Zero-Trust Token Blacklist Check (Redis + In-Memory Fallback)
+  const isRevoked = await redisManager.isTokenBlacklisted(token);
+  if (isRevoked) {
+    SIEMLogger.logEvent('REVOKED_TOKEN_ACCESS_ATTEMPT', 'WARNING', sourceIp, { url: req.url, method: req.method });
+    return res.status(401).json({ success: false, error: 'Unauthorized: Session terminated or token revoked.' });
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET as string) as any;
+
+    // 6. Real-time Account Status Check (Guards against frozen/suspended accounts)
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, roleId: true, email: true, isActive: true, isFrozen: true }
+    });
+
+    if (!dbUser || !dbUser.isActive || dbUser.isFrozen) {
+      SIEMLogger.logEvent('FROZEN_USER_ACCESS_BLOCKED', 'CRITICAL', sourceIp, { userId: decoded.id, url: req.url });
+      return res.status(401).json({ success: false, error: 'Unauthorized: Account is suspended or frozen.' });
+    }
+
     req.user = {
-      id: decoded.id,
-      roleId: decoded.roleId,
-      email: decoded.email
+      id: dbUser.id,
+      roleId: dbUser.roleId,
+      email: dbUser.email || undefined
     };
     next();
   } catch (error: any) {
@@ -65,7 +86,7 @@ export const authMiddleware = (
  * If no token is provided or invalid, proceeds without failing with 401.
  * Useful for public catalogs and configuration endpoints needed by employee portal.
  */
-export const optionalAuthMiddleware = (
+export const optionalAuthMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -81,8 +102,11 @@ export const optionalAuthMiddleware = (
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET as string) as any;
-      req.user = { id: decoded.id, roleId: decoded.roleId, email: decoded.email };
+      const isRevoked = await redisManager.isTokenBlacklisted(token);
+      if (!isRevoked) {
+        const decoded = jwt.verify(token, JWT_SECRET as string) as any;
+        req.user = { id: decoded.id, roleId: decoded.roleId, email: decoded.email };
+      }
     } catch {
       // Ignored for optional auth
     }
@@ -90,4 +114,3 @@ export const optionalAuthMiddleware = (
 
   next();
 };
-

@@ -4,6 +4,8 @@ import pidusage from 'pidusage';
 import { prisma } from '../../db/client';
 import { redisManager } from '../infrastructure/RedisClient';
 import { WAFMiddleware } from '../security/WAFMiddleware';
+import { ImmutableLogService } from '../services/ImmutableLogService';
+import { SIEMLogger } from '../security/SIEMLogger';
 
 export class SecurityController {
 
@@ -25,7 +27,8 @@ export class SecurityController {
         uptime: Math.round(process.uptime())
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[SOC Telemetry Error]:', error);
+      res.status(500).json({ error: 'Failed to retrieve hardware telemetry' });
     }
   }
 
@@ -35,7 +38,8 @@ export class SecurityController {
       const nodes = await prisma.wAFNode.findMany();
       res.json({ nodes });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[WAF Nodes Error]:', error);
+      res.status(500).json({ error: 'Failed to retrieve WAF nodes' });
     }
   }
 
@@ -49,7 +53,8 @@ export class SecurityController {
       });
       res.json({ node });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[WAF Node Update Error]:', error);
+      res.status(500).json({ error: 'Failed to update node status' });
     }
   }
 
@@ -62,35 +67,70 @@ export class SecurityController {
       });
       res.json({ rules });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[WAF Rules Error]:', error);
+      res.status(500).json({ error: 'Failed to retrieve WAF rules' });
     }
   }
 
   static async createWAFRule(req: Request, res: Response) {
     try {
       const { ruleType, target, action } = req.body;
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+
       const rule = await prisma.wAFRule.create({
         data: { ruleType, target, action, isActive: true }
       });
+
       // Instant WAF Cache Invalidation (Pub/Sub + Local Fallback)
       redisManager.publish('WAF_REFRESH', 'NEW_RULE');
       WAFMiddleware.refreshRulesCache(); // Force local update immediately as fallback
+
+      // Immutable Audit Trail & SIEM
+      await ImmutableLogService.appendLog(
+        'WAF_RULE', 
+        0, 
+        'CREATE_WAF_RULE', 
+        changedBy, 
+        { ruleId: rule.id, ruleType, target, action }, 
+        sourceIp
+      );
+      SIEMLogger.logEvent('WAF_RULE_CREATED', 'WARNING', sourceIp, { ruleType, target, action }, changedBy);
+
       res.json({ rule });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[Create WAF Rule Error]:', error);
+      res.status(500).json({ error: 'Failed to create WAF rule' });
     }
   }
 
   static async deleteWAFRule(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+
       await prisma.wAFRule.delete({ where: { id } });
+
       // Instant WAF Cache Invalidation
       redisManager.publish('WAF_REFRESH', 'DELETE_RULE');
       WAFMiddleware.refreshRulesCache(); // Force local update immediately as fallback
+
+      // Immutable Audit Trail & SIEM
+      await ImmutableLogService.appendLog(
+        'WAF_RULE', 
+        0, 
+        'DELETE_WAF_RULE', 
+        changedBy, 
+        { deletedRuleId: id }, 
+        sourceIp
+      );
+      SIEMLogger.logEvent('WAF_RULE_DELETED', 'INFO', sourceIp, { ruleId: id }, changedBy);
+
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[Delete WAF Rule Error]:', error);
+      res.status(500).json({ error: 'Failed to delete WAF rule' });
     }
   }
 
@@ -103,39 +143,59 @@ export class SecurityController {
       });
       res.json({ logs });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[SIEM Logs Error]:', error);
+      res.status(500).json({ error: 'Failed to retrieve SIEM logs' });
     }
   }
 
   // 4. Session Governance
   static async getActiveSessions(req: Request, res: Response) {
     try {
-      // For real distributed session tracking, we would query a Redis store.
-      // As a fallback, we return active users from DB (e.g. logged in last 24h)
-      // We simulate by returning recently active users (assuming we have lastLogin).
-      // Here we just return users who are NOT frozen and ARE active.
       const users = await prisma.user.findMany({
         where: { isActive: true, isFrozen: false },
         select: { id: true, fullName: true, email: true }
       });
       res.json({ users });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[Active Sessions Error]:', error);
+      res.status(500).json({ error: 'Failed to retrieve active sessions' });
     }
   }
 
   static async kickUser(req: Request, res: Response) {
     try {
       const { userId } = req.params;
-      // Realistically, to kick a user in a stateless JWT environment without Redis,
-      // we freeze them or update their security token version.
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+      const numericUserId = parseInt(userId, 10);
+
+      // Freeze user in DB
       await prisma.user.update({
-        where: { id: parseInt(userId, 10) },
+        where: { id: numericUserId },
         data: { isFrozen: true }
       });
+
+      // Immutable Audit Trail & SIEM
+      await ImmutableLogService.appendLog(
+        'USER', 
+        numericUserId, 
+        'SESSION_KICK_AND_FREEZE', 
+        changedBy, 
+        { targetUserId: numericUserId, reason: 'Admin kick from SOC' }, 
+        sourceIp
+      );
+      SIEMLogger.logEvent(
+        'USER_KICKED_FROM_SOC', 
+        'CRITICAL', 
+        sourceIp, 
+        { targetUserId: numericUserId }, 
+        changedBy
+      );
+
       res.json({ success: true, message: 'User frozen/kicked successfully.' });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('[Kick User Error]:', error);
+      res.status(500).json({ error: 'Failed to freeze and kick session' });
     }
   }
 }

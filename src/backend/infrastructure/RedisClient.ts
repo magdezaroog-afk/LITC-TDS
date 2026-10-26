@@ -1,18 +1,23 @@
 import Redis from 'ioredis';
+import crypto from 'crypto';
 
-// Singleton for Redis connection (Graceful Fallback mode)
+// Singleton for Redis connection (Graceful Fallback mode with Token Revocation Guard)
 class RedisManager {
   public client: Redis | null = null;
   public pub: Redis | null = null;
   public sub: Redis | null = null;
   public isConnected = false;
 
+  // In-Memory Fallback for Token Blacklist (when Redis is unavailable in local dev)
+  private memoryBlacklist: Map<string, number> = new Map();
+
   constructor() {
     this.init();
+    // Periodically clean up expired memory blacklist entries every 10 minutes
+    setInterval(() => this.cleanupMemoryBlacklist(), 10 * 60 * 1000);
   }
 
   private init() {
-    // Attempt to connect to local Redis (default port 6379)
     try {
       const options = {
         host: process.env.REDIS_HOST || '127.0.0.1',
@@ -37,7 +42,7 @@ class RedisManager {
 
       this.client.on('ready', () => {
         this.isConnected = true;
-        console.log('[Redis] Connected successfully. Distributed caching active.');
+        console.log('[Redis] Connected successfully. Distributed caching & token revocation active.');
       });
 
       this.client.on('error', handleErr);
@@ -57,9 +62,74 @@ class RedisManager {
   public publish(channel: string, message: string) {
     if (this.isConnected && this.pub) {
       this.pub.publish(channel, message);
-    } else {
-      // Fallback: If no Redis, we use Node's internal event loop (works for single-node)
-      // We will handle this in the subscriber side directly if needed
+    }
+  }
+
+  /**
+   * Helper to hash tokens with SHA-256 for secure key storage
+   */
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token.trim()).digest('hex');
+  }
+
+  /**
+   * Blacklist a token immediately upon logout or security compromise
+   */
+  public async blacklistToken(token: string, expirySeconds: number = 8 * 3600): Promise<void> {
+    const hash = this.hashToken(token);
+    const ttl = Math.max(1, Math.floor(expirySeconds));
+
+    // 1. In-Memory Blacklist Fallback
+    const expiresAt = Date.now() + ttl * 1000;
+    this.memoryBlacklist.set(hash, expiresAt);
+
+    // 2. Distributed Redis Storage
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.setex(`bl:${hash}`, ttl, 'revoked');
+      } catch (err) {
+        console.error('[Redis Blacklist] Failed to save token to Redis:', err);
+      }
+    }
+  }
+
+  /**
+   * Check if a token has been revoked / blacklisted
+   */
+  public async isTokenBlacklisted(token: string): Promise<boolean> {
+    const hash = this.hashToken(token);
+
+    // 1. Check in-memory blacklist
+    const memExpiry = this.memoryBlacklist.get(hash);
+    if (memExpiry) {
+      if (Date.now() < memExpiry) {
+        return true;
+      } else {
+        this.memoryBlacklist.delete(hash);
+      }
+    }
+
+    // 2. Check distributed Redis store
+    if (this.isConnected && this.client) {
+      try {
+        const result = await this.client.get(`bl:${hash}`);
+        if (result !== null) {
+          return true;
+        }
+      } catch (err) {
+        console.error('[Redis Blacklist] Failed to query Redis:', err);
+      }
+    }
+
+    return false;
+  }
+
+  private cleanupMemoryBlacklist() {
+    const now = Date.now();
+    for (const [hash, expiresAt] of this.memoryBlacklist.entries()) {
+      if (now >= expiresAt) {
+        this.memoryBlacklist.delete(hash);
+      }
     }
   }
 }

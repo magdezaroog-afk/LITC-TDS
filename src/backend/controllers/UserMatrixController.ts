@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../db/client';
+import { ImmutableLogService } from '../services/ImmutableLogService';
+import { SIEMLogger } from '../security/SIEMLogger';
 
 export class UserMatrixController {
   
@@ -56,6 +56,27 @@ export class UserMatrixController {
         data: { isFrozen: freeze }
       });
 
+      // Immutable Audit Log & SIEM Telemetry
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+      for (const uid of userIds) {
+        await ImmutableLogService.appendLog(
+          'USER', 
+          uid, 
+          freeze ? 'USER_FREEZE' : 'USER_UNFREEZE', 
+          changedBy, 
+          { freeze, targetUserId: uid }, 
+          sourceIp
+        );
+        SIEMLogger.logEvent(
+          freeze ? 'USER_FROZEN_BY_ADMIN' : 'USER_UNFROZEN_BY_ADMIN', 
+          freeze ? 'WARNING' : 'INFO', 
+          sourceIp, 
+          { targetUserId: uid }, 
+          changedBy
+        );
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('[UserMatrixController] freezeUsers Error:', error);
@@ -84,6 +105,20 @@ export class UserMatrixController {
         data: { departmentId: targetDeptId }
       });
 
+      // Immutable Audit Log
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+      for (const uid of userIds) {
+        await ImmutableLogService.appendLog(
+          'USER', 
+          uid, 
+          'DEPARTMENT_TRANSFER', 
+          changedBy, 
+          { targetDeptId }, 
+          sourceIp
+        );
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('[UserMatrixController] transferUsers Error:', error);
@@ -105,6 +140,25 @@ export class UserMatrixController {
         where: { id: userId },
         data: { roleId: role.id }
       });
+
+      // Immutable Audit Log & SIEM Event
+      const changedBy = (req as any).user?.id || 1;
+      const sourceIp = req.ip || req.socket.remoteAddress;
+      await ImmutableLogService.appendLog(
+        'USER', 
+        userId, 
+        'ROLE_CHANGE', 
+        changedBy, 
+        { newRole, newRoleId: role.id }, 
+        sourceIp
+      );
+      SIEMLogger.logEvent(
+        'USER_ROLE_CHANGED', 
+        'WARNING', 
+        sourceIp, 
+        { targetUserId: userId, newRole }, 
+        changedBy
+      );
 
       res.json({ success: true });
     } catch (error) {

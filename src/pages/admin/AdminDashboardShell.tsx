@@ -169,7 +169,11 @@ export const AdminDashboardShell: React.FC = () => {
     };
   }, [isStartMenuOpen]);
 
-  const isAdmin = user && (['system_director', 'super_admin', 'co_admin'].includes(user.role) || user.email === 'admin@litc.ly');
+  const isAdmin = user && (
+    ['system_director', 'super_admin', 'co_admin', 'System_Admin', 'SYSTEM_ADMIN'].includes((user as any).role?.name || user.role) ||
+    (user as any).roleId === 1 || 
+    (user as any).roleId === 22
+  );
 
   if (!isAdmin) {
     return (

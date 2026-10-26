@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { AuthService } from './AuthService';
 import { SIEMLogger } from '../security/SIEMLogger';
+import { redisManager } from '../infrastructure/RedisClient';
 import { prisma } from '../../db/client';
 import qrcode from 'qrcode';
 
@@ -53,10 +55,31 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction) {
     const sourceIp = req.ip || req.socket.remoteAddress || 'UNKNOWN';
-    SIEMLogger.logEvent('LOGOUT', 'INFO', sourceIp, { userId: (req as any).user?.id });
-    
+    const userId = (req as any).user?.id;
+
+    // Extract token to invalidate it immediately in Redis Blacklist
+    let token: string | undefined;
+    if (req.headers['authorization']?.startsWith('Bearer ')) {
+      token = req.headers['authorization'].substring(7).trim();
+    } else if (req.cookies?.litc_session) {
+      token = req.cookies.litc_session;
+    }
+
+    if (token) {
+      try {
+        const decoded = jwt.decode(token) as any;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const expSec = decoded?.exp || (nowSec + 8 * 3600);
+        const ttl = Math.max(1, expSec - nowSec);
+        await redisManager.blacklistToken(token, ttl);
+      } catch {
+        await redisManager.blacklistToken(token, 8 * 3600);
+      }
+    }
+
+    SIEMLogger.logEvent('LOGOUT_SUCCESS', 'INFO', sourceIp, { userId });
     res.clearCookie('litc_session');
-    res.json({ success: true, message: 'Logged out successfully' });
+    res.json({ success: true, message: 'Logged out successfully. Token revoked.' });
   }
 
   // جلب بيانات المستخدم الحالي

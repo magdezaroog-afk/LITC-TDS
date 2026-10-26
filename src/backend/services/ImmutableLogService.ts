@@ -2,36 +2,62 @@ import { prisma } from '../../db/client';
 
 export class ImmutableLogService {
   /**
-   * Appends a new immutable Audit Log.
+   * Appends a new immutable Audit Log statically or via instance.
+   * Records who performed what action, on which entity, and from which IP.
    */
-  public async appendLog(entity: string, entityId: number, action: string, changedBy: number, changes: string, ipAddress?: string, userAgent?: string) {
+  public static async appendLog(
+    entity: string, 
+    entityId: number, 
+    action: string, 
+    changedBy: number, 
+    changes: string | Record<string, any>, 
+    ipAddress?: string, 
+    userAgent?: string
+  ): Promise<void> {
     try {
+      const changesStr = typeof changes === 'string' ? changes : JSON.stringify(changes);
       await prisma.auditLog.create({
         data: {
           entity,
           entityId,
           action,
-          changedBy,
-          changes,
-          ipAddress,
-          userAgent,
+          changedBy: changedBy || 1,
+          changes: changesStr,
+          ipAddress: ipAddress || 'INTERNAL',
+          userAgent: userAgent || 'NEXUS_CORE',
         }
       });
-      console.log(`[ImmutableLogService] Log securely appended for ${entity} ID: ${entityId}`);
+      console.log(`[ImmutableLogService] Audit Log securely appended: ${action} on ${entity} #${entityId} by User #${changedBy}`);
     } catch (err) {
-      console.error('[ImmutableLogService] Failed to append log:', err);
+      console.error('[ImmutableLogService] Failed to append immutable audit log:', err);
     }
   }
 
+  // Instance method for backwards compatibility
+  public async appendLog(
+    entity: string, 
+    entityId: number, 
+    action: string, 
+    changedBy: number, 
+    changes: string | Record<string, any>, 
+    ipAddress?: string, 
+    userAgent?: string
+  ): Promise<void> {
+    return ImmutableLogService.appendLog(entity, entityId, action, changedBy, changes, ipAddress, userAgent);
+  }
+
   /**
-   * Retrieves logs but throws an error if an attempt is made to mutate them directly through this service.
-   * Note: In a true immutable setup, Prisma Extensions would block all updates/deletes at the client level.
+   * Retrieves logs for a specific entity
    */
-  public async getLogs(entity: string, entityId: number) {
+  public static async getLogs(entity: string, entityId: number) {
     return prisma.auditLog.findMany({
       where: { entity, entityId },
       orderBy: { createdAt: 'desc' }
     });
+  }
+
+  public async getLogs(entity: string, entityId: number) {
+    return ImmutableLogService.getLogs(entity, entityId);
   }
 
   // Any update or delete method will forcefully throw an exception
@@ -39,3 +65,5 @@ export class ImmutableLogService {
     throw new Error('Sovereign Circuit Breaker Active: Attempted to mutate an Immutable Workflow Violation Log!');
   }
 }
+
+export const immutableLogService = new ImmutableLogService();

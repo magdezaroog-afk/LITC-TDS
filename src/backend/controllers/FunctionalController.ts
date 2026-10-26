@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../db/client';
 import path from 'path';
 import { storageService } from '../infrastructure/StorageService';
+import { ImmutableLogService } from '../services/ImmutableLogService';
 
 export class FunctionalController {
   
@@ -1102,6 +1103,16 @@ export class FunctionalController {
         include: { state: true }
       });
 
+      // Immutable Audit Log
+      await ImmutableLogService.appendLog(
+        'TICKET',
+        updated.id,
+        'ADMIN_STATUS_UPDATE',
+        (req as any).user?.id || 1,
+        { status: updated.state.name, resolutionNotes },
+        req.ip || req.socket.remoteAddress
+      );
+
       res.json({
         success: true,
         message: 'تم تحديث حالة الطلب',
@@ -1196,6 +1207,16 @@ export class FunctionalController {
           action: `USER_RATED_AND_CLOSED: قام الموظف بتقييم الخدمة (${numRating} نجوم) وإغلاق التذكرة نهائياً.`
         }
       }).catch(() => {});
+
+      // Immutable Audit Log
+      await ImmutableLogService.appendLog(
+        'TICKET',
+        ticketWithState.id,
+        'USER_RATED_AND_CLOSED',
+        user.id,
+        { rating: numRating, feedback },
+        req.ip || req.socket.remoteAddress
+      );
 
       res.json({
         success: true,
