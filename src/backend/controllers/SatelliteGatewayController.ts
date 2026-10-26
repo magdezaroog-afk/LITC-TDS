@@ -15,7 +15,7 @@ interface SatelliteSystemConfig {
   description: string;
 }
 
-// In-memory registry with sensible defaults (can be overridden via system settings / DB)
+// In-memory registry with sensible defaults (synced and persisted in DB via SystemSetting)
 let SATELLITE_REGISTRY: Record<string, SatelliteSystemConfig> = {
   asset_inventory: {
     id: 'asset_inventory',
@@ -26,6 +26,7 @@ let SATELLITE_REGISTRY: Record<string, SatelliteSystemConfig> = {
     isActive: true,
     allowedRoles: ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'IT_SUPPORT', '26'],
     allowedDepartments: [1], // إدارة تقنية المعلومات
+    allowedUserIds: [1048], // نضال أبو غامجة
     description: 'إدارة وتتبع الأجهزة والمعدات التقنية والأصول التشغيلية لشركة LITC (743+ جهاز مسجل).'
   },
   hrms_satellite: {
@@ -36,9 +37,90 @@ let SATELLITE_REGISTRY: Record<string, SatelliteSystemConfig> = {
     targetUrl: process.env.HRMS_SATELLITE_URL || 'http://localhost:4000',
     isActive: false, // In preparation for colleague integration
     allowedRoles: ['super_admin', 'system_director', 'dept_head'],
+    allowedDepartments: [2], // الموارد البشرية
     description: 'منظومة مساندة قادمة لإدارة الكوادر والإجازات والهيكل الإداري.'
   }
 };
+
+let isRegistryLoaded = false;
+
+/**
+ * مزامنة واسترجاع سجل المنظومات المساندة من جدول SystemSetting في قاعدة البيانات
+ */
+async function ensureRegistryLoaded() {
+  if (isRegistryLoaded) return;
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { settingKey: 'SATELLITE_SYSTEMS_REGISTRY' }
+    });
+
+    if (setting?.settingValue) {
+      try {
+        const parsed = JSON.parse(setting.settingValue);
+        if (parsed && typeof parsed === 'object') {
+          // دمج السجل المحفوظ مع الحفاظ على المنظومات الأساسية
+          SATELLITE_REGISTRY = {
+            ...SATELLITE_REGISTRY,
+            ...parsed
+          };
+          // ضمان وجود منظومة جرد الأصول دائماً
+          if (!SATELLITE_REGISTRY.asset_inventory) {
+            SATELLITE_REGISTRY.asset_inventory = {
+              id: 'asset_inventory',
+              name: 'منظومة جرد الأصول والأنظمة التقنية',
+              category: 'IT_OPERATIONS',
+              defaultPort: 3000,
+              targetUrl: process.env.ASSET_INVENTORY_URL || 'http://localhost:3000',
+              isActive: true,
+              allowedRoles: ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'IT_SUPPORT', '26'],
+              allowedDepartments: [1],
+              allowedUserIds: [1048],
+              description: 'إدارة وتتبع الأجهزة والمعدات التقنية والأصول التشغيلية لشركة LITC (743+ جهاز مسجل).'
+            };
+          }
+        }
+      } catch (parseErr) {
+        console.warn('[SatelliteGatewayController] Failed to parse SATELLITE_SYSTEMS_REGISTRY setting:', parseErr);
+      }
+    } else {
+      // التهيئة الأولى في قاعدة البيانات
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'SATELLITE_SYSTEMS_REGISTRY' },
+        create: {
+          settingKey: 'SATELLITE_SYSTEMS_REGISTRY',
+          settingValue: JSON.stringify(SATELLITE_REGISTRY),
+          description: 'سجل حوكمة المنظومات المساندة والميكروسيرفس الموزعة لشركة LITC'
+        },
+        update: {}
+      });
+    }
+    isRegistryLoaded = true;
+  } catch (err) {
+    console.warn('[SatelliteGatewayController] Failed to query SystemSetting table:', err);
+  }
+}
+
+/**
+ * حفظ السجل كاملاً ومحدثاً في قاعدة البيانات بشكل دائم
+ */
+async function persistRegistryToDB() {
+  try {
+    await prisma.systemSetting.upsert({
+      where: { settingKey: 'SATELLITE_SYSTEMS_REGISTRY' },
+      create: {
+        settingKey: 'SATELLITE_SYSTEMS_REGISTRY',
+        settingValue: JSON.stringify(SATELLITE_REGISTRY),
+        description: 'سجل حوكمة المنظومات المساندة والميكروسيرفس الموزعة لشركة LITC'
+      },
+      update: {
+        settingValue: JSON.stringify(SATELLITE_REGISTRY),
+        updatedAt: new Date()
+      }
+    });
+  } catch (err) {
+    console.error('[SatelliteGatewayController] Failed to persist registry to DB:', err);
+  }
+}
 
 export class SatelliteGatewayController {
   
@@ -48,6 +130,8 @@ export class SatelliteGatewayController {
    */
   static async getSatellites(req: Request, res: Response) {
     try {
+      await ensureRegistryLoaded();
+
       const user = (req as any).user;
       const userRole = (typeof user?.role === 'string' ? user.role : user?.role?.name || '').toLowerCase();
       const userRoleId = user?.roleId ? Number(user?.roleId) : null;
@@ -162,6 +246,196 @@ export class SatelliteGatewayController {
   }
 
   /**
+   * جلب بيانات الحوكمة الكاملة للمنظومات المساندة (للأدمن ومدير النظام)
+   * GET /api/v1/satellites/governance
+   */
+  static async getGovernanceOverview(req: Request, res: Response) {
+    try {
+      await ensureRegistryLoaded();
+
+      // جلب قائمة الإدارات والأدوار الحقيقية من قاعدة البيانات
+      const [departments, roles] = await Promise.all([
+        prisma.department.findMany({
+          where: { isDeleted: false },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' }
+        }),
+        prisma.role.findMany({
+          select: { id: true, name: true },
+          orderBy: { id: 'asc' }
+        })
+      ]);
+
+      // استخراج تفاصيل الموظفين المخصصين استثنائياً لكل منظومة
+      const satelliteList = await Promise.all(
+        Object.values(SATELLITE_REGISTRY).map(async (sat) => {
+          let userOverrides: Array<{ id: number; fullName: string | null; username: string; email: string | null; departmentName?: string }> = [];
+
+          if (Array.isArray(sat.allowedUserIds) && sat.allowedUserIds.length > 0) {
+            const users = await prisma.user.findMany({
+              where: {
+                id: { in: sat.allowedUserIds },
+                isDeleted: false
+              },
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+                department: { select: { id: true, name: true } }
+              }
+            });
+
+            userOverrides = users.map(u => ({
+              id: u.id,
+              fullName: u.fullName,
+              username: u.username,
+              email: u.email,
+              departmentName: u.department?.name
+            }));
+          }
+
+          // فحص خفيف لحالة الاتصال الحية
+          let isOnline = false;
+          let latencyMs = 0;
+          const start = Date.now();
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1800);
+            const check = await fetch(`${sat.targetUrl}/api/auth/me`, { signal: controller.signal }).catch(() => null);
+            clearTimeout(timeoutId);
+            latencyMs = Date.now() - start;
+            if (check && (check.status >= 200 && check.status < 500)) {
+              isOnline = true;
+            } else {
+              const rootCheck = await fetch(sat.targetUrl, { method: 'HEAD' }).catch(() => null);
+              isOnline = !!rootCheck;
+            }
+          } catch {
+            isOnline = false;
+          }
+
+          return {
+            id: sat.id,
+            name: sat.name,
+            category: sat.category,
+            defaultPort: sat.defaultPort,
+            targetUrl: sat.targetUrl,
+            proxyUrl: sat.id === 'asset_inventory' ? '/satellites/proxy/asset_inventory/' : undefined,
+            isActive: sat.isActive,
+            allowedRoles: sat.allowedRoles || [],
+            allowedDepartments: sat.allowedDepartments || [],
+            allowedUserIds: sat.allowedUserIds || [],
+            userOverrides,
+            description: sat.description,
+            isOnline,
+            latencyMs,
+            isProtected: sat.id === 'asset_inventory'
+          };
+        })
+      );
+
+      return res.json({
+        success: true,
+        satellites: satelliteList,
+        departments,
+        roles
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] getGovernanceOverview error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر جلب بيانات حوكمة المنظومات المساندة.' });
+    }
+  }
+
+  /**
+   * محرك البحث عن الموظفين بالاسم أو الرقم لإضافتهم لقائمة الاستثناءات الحية
+   * GET /api/v1/satellites/users/search?q=...
+   */
+  static async searchUsers(req: Request, res: Response) {
+    try {
+      const q = String(req.query.q || '').trim();
+      if (!q || q.length < 2) {
+        return res.json({ success: true, users: [] });
+      }
+
+      const users = await prisma.user.findMany({
+        where: {
+          isDeleted: false,
+          OR: [
+            { fullName: { contains: q } },
+            { username: { contains: q } },
+            { email: { contains: q } }
+          ]
+        },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          departmentId: true,
+          department: { select: { id: true, name: true } },
+          role: { select: { id: true, name: true } }
+        },
+        take: 12
+      });
+
+      return res.json({ success: true, users });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] searchUsers error:', error);
+      return res.status(500).json({ success: false, error: 'فشل البحث عن الموظفين.' });
+    }
+  }
+
+  /**
+   * تحديث وتطبيق صلاحيات المنظومة (إدارات، أدوار، موظفين مستثنين)
+   * PUT /api/v1/satellites/:id/permissions
+   */
+  static async updateSatellitePermissions(req: Request, res: Response) {
+    try {
+      await ensureRegistryLoaded();
+      const { id } = req.params;
+      const { allowedRoles, allowedDepartments, allowedUserIds, isActive, name, targetUrl, description } = req.body;
+
+      if (!SATELLITE_REGISTRY[id]) {
+        return res.status(404).json({ success: false, error: 'المنظومة غير مسجلة في النظام.' });
+      }
+
+      if (Array.isArray(allowedRoles)) {
+        SATELLITE_REGISTRY[id].allowedRoles = allowedRoles;
+      }
+      if (Array.isArray(allowedDepartments)) {
+        SATELLITE_REGISTRY[id].allowedDepartments = allowedDepartments.map(Number).filter(n => !isNaN(n));
+      }
+      if (Array.isArray(allowedUserIds)) {
+        SATELLITE_REGISTRY[id].allowedUserIds = allowedUserIds.map(Number).filter(n => !isNaN(n));
+      }
+      if (typeof isActive === 'boolean') {
+        SATELLITE_REGISTRY[id].isActive = isActive;
+      }
+      if (name && typeof name === 'string') {
+        SATELLITE_REGISTRY[id].name = name.trim();
+      }
+      if (targetUrl && typeof targetUrl === 'string') {
+        SATELLITE_REGISTRY[id].targetUrl = targetUrl.trim();
+      }
+      if (description && typeof description === 'string') {
+        SATELLITE_REGISTRY[id].description = description.trim();
+      }
+
+      await persistRegistryToDB();
+
+      return res.json({
+        success: true,
+        message: `تم حفظ وتحديث صلاحيات منظومة "${SATELLITE_REGISTRY[id].name}" بنجاح في قاعدة البيانات.`,
+        config: SATELLITE_REGISTRY[id]
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] updateSatellitePermissions error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر حفظ صلاحيات المنظومة.' });
+    }
+  }
+
+  /**
    * فحص فوري لحالة أي رابط خارجي (Live Ping Test)
    * POST /api/v1/satellites/ping
    */
@@ -207,8 +481,9 @@ export class SatelliteGatewayController {
    */
   static async updateConfig(req: Request, res: Response) {
     try {
+      await ensureRegistryLoaded();
       const { id } = req.params;
-      const { name, targetUrl, isActive, allowedRoles, allowedUserIds, description } = req.body;
+      const { name, targetUrl, isActive, allowedRoles, allowedDepartments, allowedUserIds, description } = req.body;
 
       if (!SATELLITE_REGISTRY[id]) {
         return res.status(404).json({ success: false, error: 'المنظومة غير مسجلة في النظام.' });
@@ -218,12 +493,15 @@ export class SatelliteGatewayController {
       if (targetUrl) SATELLITE_REGISTRY[id].targetUrl = targetUrl;
       if (typeof isActive === 'boolean') SATELLITE_REGISTRY[id].isActive = isActive;
       if (Array.isArray(allowedRoles)) SATELLITE_REGISTRY[id].allowedRoles = allowedRoles;
+      if (Array.isArray(allowedDepartments)) SATELLITE_REGISTRY[id].allowedDepartments = allowedDepartments;
       if (Array.isArray(allowedUserIds)) SATELLITE_REGISTRY[id].allowedUserIds = allowedUserIds;
       if (description) SATELLITE_REGISTRY[id].description = description;
 
+      await persistRegistryToDB();
+
       return res.json({
         success: true,
-        message: 'تم تحديث إعدادات المنظومة بنجاح.',
+        message: 'تم تحديث إعدادات المنظومة بنجاح في قاعدة البيانات.',
         config: SATELLITE_REGISTRY[id]
       });
     } catch (error: any) {
@@ -237,7 +515,8 @@ export class SatelliteGatewayController {
    */
   static async registerSatellite(req: Request, res: Response) {
     try {
-      const { id, name, category, defaultPort, targetUrl, isActive, allowedRoles, description } = req.body;
+      await ensureRegistryLoaded();
+      const { id, name, category, defaultPort, targetUrl, isActive, allowedRoles, allowedDepartments, allowedUserIds, description } = req.body;
 
       if (!id || !name || !targetUrl) {
         return res.status(400).json({ success: false, error: 'المعرف والاسم ورابط الهدف مطلوبة لتسجيل المنظومة.' });
@@ -253,12 +532,16 @@ export class SatelliteGatewayController {
         targetUrl: String(targetUrl).trim(),
         isActive: isActive !== undefined ? Boolean(isActive) : true,
         allowedRoles: Array.isArray(allowedRoles) && allowedRoles.length > 0 ? allowedRoles : ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head'],
+        allowedDepartments: Array.isArray(allowedDepartments) ? allowedDepartments.map(Number) : [],
+        allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds.map(Number) : [],
         description: description || 'منظومة مساندة مستقلة مطورة من أحد الزملاء.'
       };
 
+      await persistRegistryToDB();
+
       return res.json({
         success: true,
-        message: `تم تسجيل منظومة "${name}" بنجاح في المنصة المركزية.`,
+        message: `تم تسجيل منظومة "${name}" بنجاح في المنصة المركزية وحفظها في قاعدة البيانات.`,
         satellite: SATELLITE_REGISTRY[cleanId]
       });
     } catch (error: any) {
@@ -272,13 +555,20 @@ export class SatelliteGatewayController {
    */
   static async deleteSatellite(req: Request, res: Response) {
     try {
+      await ensureRegistryLoaded();
       const { id } = req.params;
       if (!SATELLITE_REGISTRY[id]) {
         return res.status(404).json({ success: false, error: 'المنظومة غير موجودة.' });
       }
 
+      if (id === 'asset_inventory') {
+        return res.status(400).json({ success: false, error: 'لا يمكن حذف منظومة جرد الأصول الأساسية، يمكن فقط تعطيلها.' });
+      }
+
       delete SATELLITE_REGISTRY[id];
-      return res.json({ success: true, message: 'تم إزالة المنظومة بنجاح من السجل.' });
+      await persistRegistryToDB();
+
+      return res.json({ success: true, message: 'تم إزالة المنظومة بنجاح من السجل وقاعدة البيانات.' });
     } catch (error: any) {
       return res.status(500).json({ success: false, error: 'تعذر حذف المنظومة.' });
     }
@@ -290,6 +580,7 @@ export class SatelliteGatewayController {
    */
   static async getAssetSmartHint(req: Request, res: Response) {
     try {
+      await ensureRegistryLoaded();
       const { requesterEmail, department, building } = req.query;
       const inventoryUrl = SATELLITE_REGISTRY['asset_inventory']?.targetUrl || 'http://localhost:3000';
 

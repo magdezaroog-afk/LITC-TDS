@@ -40,7 +40,7 @@ const APPLE = {
   tabs: {
     overview: { color: '#3b82f6', bg: '#eff6ff', label: 'اللوحة المركزية', sublabel: 'System Telemetry', icon: '◱' },
     analytics: { color: '#0284c7', bg: '#e0f2fe', label: 'التحليلات والمقارنة', sublabel: 'Smart Analytics & Governance', icon: '📊' },
-    ui: { color: '#5856D6', bg: '#F0F0FF', label: 'هندسة الواجهات', sublabel: 'UI Layout Engine', icon: '✦' },
+    ui: { color: '#135d79', bg: '#eef6f9', label: 'حوكمة الواجهات والأنظمة', sublabel: 'Interface & Satellite Governance', icon: '✦' },
     operations: { color: '#007AFF', bg: '#EBF5FF', label: 'الهيكل التشغيلي', sublabel: 'Operations & Structure', icon: '⬡' },
     security: { color: '#FF3B30', bg: '#FFF0EF', label: 'الأمان والحوكمة', sublabel: 'Security Control Core', icon: '⬢' },
     policies: { color: '#AF52DE', bg: '#F7F0FF', label: 'سياسات التنبيهات', sublabel: 'Notification Policies', icon: '◈' },

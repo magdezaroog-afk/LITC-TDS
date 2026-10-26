@@ -301,6 +301,9 @@ router.put('/branding', authMiddleware, requireRole([1, 22]), (req, res) => upda
 // 12. Satellite Systems Gateway & Distributed Micro-Services (LEPC Architecture)
 // =========================================================================
 router.get('/satellites/config', authMiddleware, (req, res) => SatelliteGatewayController.getSatellites(req, res));
+router.get('/satellites/governance', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.getGovernanceOverview(req, res));
+router.get('/satellites/users/search', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.searchUsers(req, res));
+router.put('/satellites/:id/permissions', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.updateSatellitePermissions(req, res));
 router.post('/satellites/ping', authMiddleware, (req, res) => SatelliteGatewayController.pingHost(req, res));
 router.put('/satellites/:id/config', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.updateConfig(req, res));
 router.post('/satellites/register', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.registerSatellite(req, res));
