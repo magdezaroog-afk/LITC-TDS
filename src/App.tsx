@@ -19,6 +19,7 @@ const t = (key: any, fallback?: any) => fallback || key;
 import { NeonSignalToast } from './components/notifications/NeonSignalToast';
 import { UnifiedProfileDropdown } from './components/infrastructure/UnifiedProfileDropdown';
 import { ExecutiveProfileInspectionModal } from './components/infrastructure/ExecutiveProfileInspectionModal';
+import { InactivitySessionGuard } from './components/infrastructure/InactivitySessionGuard';
 import { Login } from './pages/auth/Login';
 import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
@@ -1082,6 +1083,9 @@ const AppContent: React.FC = () => {
         isOpen={isGlobalProfileOpen}
         onClose={() => setIsGlobalProfileOpen(false)}
       />
+
+      {/* LITC Policy 13-1-ح: 15-Minute Inactivity Session Auto-Logout Guard */}
+      <InactivitySessionGuard />
     </div>
   );
 };
