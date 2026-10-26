@@ -11,6 +11,7 @@ import { UECPMiddleware } from '../backend/security/UECPMiddleware';
 import { AnalyticsController } from '../backend/controllers/AnalyticsController';
 import { OperationalAdminController } from '../backend/controllers/OperationalAdminController';
 import { getBranding, updateBranding } from '../backend/controllers/BrandingController';
+import { SatelliteGatewayController } from '../backend/controllers/SatelliteGatewayController';
 const router = Router();
 const flowController = new FlowController();
 const uecpController = new UECPController();
@@ -295,6 +296,16 @@ router.delete('/admin/analytics/permissions/:id', authMiddleware, requireRole([1
 router.get('/branding', (req, res) => getBranding(req, res));
 router.post('/branding', authMiddleware, requireRole([1, 22]), (req, res) => updateBranding(req, res));
 router.put('/branding', authMiddleware, requireRole([1, 22]), (req, res) => updateBranding(req, res));
+
+// =========================================================================
+// 12. Satellite Systems Gateway & Distributed Micro-Services (LEPC Architecture)
+// =========================================================================
+router.get('/satellites/config', authMiddleware, (req, res) => SatelliteGatewayController.getSatellites(req, res));
+router.post('/satellites/ping', authMiddleware, (req, res) => SatelliteGatewayController.pingHost(req, res));
+router.put('/satellites/:id/config', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.updateConfig(req, res));
+router.post('/satellites/register', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.registerSatellite(req, res));
+router.delete('/satellites/:id', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.deleteSatellite(req, res));
+router.get('/satellites/inventory/smart-hint', authMiddleware, (req, res) => SatelliteGatewayController.getAssetSmartHint(req, res));
 
 // Note: Notification SSE Stream is mounted directly in app.ts to bypass CSRF, so not added here.
 
