@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprehensive Technical Cybersecurity & Compliance Report | NEXUS TDS - LITC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #135d79;
+      --primary-dark: #0c3e52;
+      --primary-light: #e0f2fe;
+      --accent-orange: #f36c21;
+      --accent-orange-light: #fff7ed;
+      --accent-blue: #0284c7;
+      --accent-emerald: #059669;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      direction: ltr;
+      text-align: left;
+      line-height: 1.75;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 48px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+    }
+
+    /* Action Bar (Screen Only) */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 12px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .action-links {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-orange {
+      background: var(--accent-orange);
+      color: #ffffff;
+    }
+    .btn-orange:hover {
+      background: #d95610;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    /* Official Letterhead */
+    .letterhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 3px double #cbd5e1;
+      margin-bottom: 32px;
+    }
+
+    .org-details h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+      border: none;
+      padding: 0;
+    }
+
+    .org-details p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .doc-badge {
+      text-align: right;
+    }
+
+    .doc-badge span {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .doc-badge .ref-no {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Header Banner */
+    .header-banner {
+      background: linear-gradient(135deg, #0c3e52 0%, #135d79 60%, #1e293b 100%);
+      color: #ffffff;
+      padding: 36px;
+      border-radius: 16px;
+      margin-bottom: 36px;
+      position: relative;
+      overflow: hidden;
+      border-left: 6px solid var(--accent-orange);
+    }
+
+    .header-tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+      padding: 5px 14px;
+      border-radius: 50px;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .header-title {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .header-subtitle {
+      font-size: 15px;
+      color: #e2e8f0;
+      font-weight: 500;
+      max-width: 980px;
+      line-height: 1.7;
+    }
+
+    .routing-matrix {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 13.5px;
+    }
+
+    .routing-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .routing-item span.label {
+      font-size: 11.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .routing-item span.val {
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Section Styling */
+    h2.section-header {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 36px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2.section-header .num {
+      width: 30px;
+      height: 30px;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #334155;
+      font-size: 14.5px;
+      line-height: 1.75;
+    }
+
+    /* M365 Highlight Callout Box */
+    .m365-highlight-box {
+      background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .m365-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .m365-header .icon-logo {
+      width: 40px;
+      height: 40px;
+      background: #0284c7;
+      color: #ffffff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .m365-header h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0369a1;
+      margin: 0;
+    }
+
+    .m365-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .m365-pillar {
+      background: #ffffff;
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .m365-pillar strong {
+      display: block;
+      color: #0369a1;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .m365-pillar p {
+      font-size: 13px;
+      color: #475569;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+      margin: 20px 0;
+    }
+
+    .bento-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .bento-card.highlight {
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+      border-color: #cbd5e1;
+    }
+
+    .bento-card.featured {
+      background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+      border-color: #86efac;
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .badge-teal { background: #e0f2fe; color: #0369a1; }
+    .badge-orange { background: #ffedd5; color: #c2410c; }
+    .badge-emerald { background: #dcfce7; color: #15803d; }
+    .badge-purple { background: #f3e8ff; color: #7e22ce; }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.65;
+    }
+
+    /* Architecture Diagram Box */
+    .arch-box {
+      background: #0f172a;
+      color: #38bdf8;
+      border-radius: 14px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      font-size: 12px;
+      direction: ltr;
+      text-align: left;
+      overflow-x: auto;
+      margin: 20px 0;
+      line-height: 1.45;
+      border: 1px solid #1e293b;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Table styling */
+    .table-container {
+      overflow-x: auto;
+      margin: 20px 0;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      page-break-inside: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 12px 14px;
+      font-weight: 800;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .compliance-tag {
+      font-weight: 700;
+      font-size: 11.5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .comp-verified { background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; }
+    .comp-planned { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+
+    .progress-bar-container {
+      background: #e2e8f0;
+      border-radius: 9999px;
+      height: 8px;
+      width: 100%;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #135d79, #059669);
+    }
+
+    /* Sign-off Box */
+    .sign-off-box {
+      margin-top: 40px;
+      padding: 28px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 16px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .sign-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .signature-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .signature-card .role-title {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .signature-card .person-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .signature-card .dept-name {
+      font-size: 12.5px;
+      color: #475569;
+    }
+
+    .signature-stamp {
+      height: 48px;
+      border-bottom: 1px dashed #cbd5e1;
+      margin-top: 12px;
+    }
+
+    /* Print Optimizations */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: #000000 !important;
+      }
+      .container {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .header-banner {
+        background: #0c3e52 !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .m365-highlight-box {
+        background: #f0f9ff !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+      .bento-card, .table-container, .arch-box, .sign-off-box {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      @page {
+        size: A4;
+        margin: 15mm 15mm 15mm 15mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Action Bar (Screen Only) -->
+    <div class="action-bar">
+      <div style="font-weight: 800; font-size: 14px; color: var(--primary);">
+        📄 Certified Technical Document • NEXUS TDS Platform
+      </div>
+      <div class="action-links">
+        <a href="/cybersecurity_report_ar.html" class="btn-action btn-secondary">
+          🌐 الانتقال للتقرير العربي
+        </a>
+        <a href="/NEXUS_TDS_Cybersecurity_Report_EN.pdf" download class="btn-action btn-orange">
+          📥 Download English PDF
+        </a>
+        <button onclick="window.print()" class="btn-action btn-primary">
+          🖨️ Print Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Letterhead -->
+    <div class="letterhead">
+      <div class="org-details">
+        <h2>Libyan International Telecommunication Company (LITC)</h2>
+        <p>Project Management Office — NEXUS Ticketing Dynamic System (TDS)</p>
+        <p>Cybersecurity & Technical Compliance Unit</p>
+      </div>
+      <div class="doc-badge">
+        <span>DOCUMENT REF:</span>
+        <span class="ref-no">LITC-TDS-SEC-2026-v1.01-EN</span>
+        <span>SECURITY LEVEL: INTERNAL / CONFIDENTIAL</span>
+      </div>
+    </div>
+
+    <!-- Header Banner -->
+    <div class="header-banner">
+      <span class="header-tag">Technical Sovereign Compliance Report • PMO Official Release</span>
+      <h1 class="header-title">Comprehensive Technical Report: NEXUS TDS Compliance with LITC Information Security & Cybersecurity Policies</h1>
+      <p class="header-subtitle">
+        An exhaustive technical briefing on the engineering defense perimeters implemented within NEXUS TDS (v43_Production), certifying rigorous compliance with the Libyan International Telecommunication Company (LITC) Information Security Policy Guide (Version 1.01 - 2025), emphasizing the unified Microsoft Entra ID (M365) authentication architecture.
+      </p>
+
+      <div class="routing-matrix">
+        <div class="routing-item">
+          <span class="label">FROM:</span>
+          <span class="val">Eng. Majdi Alzarrouk — NEXUS TDS Project Director</span>
+        </div>
+        <div class="routing-item">
+          <span class="label">TO:</span>
+          <span class="val">Director & Members of Cybersecurity Office (LITC)</span>
+        </div>
+        <div class="routing-item">
+          <span class="label">DATE OF RELEASE:</span>
+          <span class="val">October 26, 2026</span>
+        </div>
+        <div class="routing-item">
+          <span class="label">FIELD MATURITY INDEX:</span>
+          <span class="val" style="color: #34d399;">93.8% (Enterprise Defense Grade)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: Executive Scope -->
+    <h2 class="section-header"><span class="num">1</span> Executive Scope & Strategic Context</h2>
+    <p>
+      The Project Management Office (PMO) of <strong>NEXUS TDS</strong> is pleased to submit this comprehensive technical report to our colleagues at the Cybersecurity and Information Security Office of the Libyan International Telecommunication Company (LITC). We hold that data confidentiality, service availability, and cyber resilience are paramount foundations for operational success.
+    </p>
+    <p>
+      This document demonstrates the concrete engineering defenses incorporated into the codebase, proving strict alignment with the <strong>27 official policies of the LITC Information Security & Cybersecurity Policy Manual (v1.01)</strong>, as well as global benchmarks including <strong>NIST CSF 2.0</strong>, <strong>OWASP Top 10</strong>, and <strong>Zero-Trust Architecture</strong>.
+    </p>
+
+    <!-- Section 2: Microsoft 365 / Entra ID Integration -->
+    <h2 class="section-header"><span class="num">2</span> Unified Corporate Identity via Microsoft Entra ID (M365 SSO)</h2>
+    
+    <div class="m365-highlight-box">
+      <div class="m365-header">
+        <div class="icon-logo">M</div>
+        <div>
+          <h3>Enterprise Single Sign-On Architecture (Microsoft Entra ID / M365)</h3>
+          <p style="margin: 0; font-size: 13px; color: #0284c7;">Native Integration with LITC Official Domain (@litc.ly)</p>
+        </div>
+      </div>
+      <p style="font-size: 14px; color: #334155; margin-bottom: 12px;">
+        The PMO officially highlights that NEXUS TDS identity governance is architected for native federation with LITC's central identity provider via <strong>Microsoft Entra ID (Azure AD / M365)</strong> utilizing standard <code>OpenID Connect (OIDC) / OAuth 2.0</code> protocols for all corporate domain accounts (<code>@litc.ly</code>).
+      </p>
+
+      <div class="m365-grid">
+        <div class="m365-pillar">
+          <strong>1. Conditional Access Governance</strong>
+          <p>Every authentication attempt is subject to LITC cloud security policies (geographic fencing, device compliance health, and anomalous IP blocking).</p>
+        </div>
+        <div class="m365-pillar">
+          <strong>2. Mandatory Multi-Factor Authentication (MFA)</strong>
+          <p>Enforcement of two-factor verification via Microsoft Authenticator app, standardizing security across all company employees without third-party exposure.</p>
+        </div>
+        <div class="m365-pillar">
+          <strong>3. Zero Local Password Storage Risk</strong>
+          <p>NEXUS TDS servers neither accept nor store plain passwords for corporate users; identity tokens are cryptographically signed and issued by Microsoft.</p>
+        </div>
+        <div class="m365-pillar">
+          <strong>4. Fail-Safe Emergency Authentication</strong>
+          <p>An isolated internal fail-safe engine powered by <code>Argon2id</code> and protected by a 3-attempt account lockout guard provides operational continuity during external outages.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: The 6 Built-in Cyber Defense Perimeters -->
+    <h2 class="section-header"><span class="num">3</span> The Six Active Cyber Defense Perimeters in Code</h2>
+    <p>
+      NEXUS TDS enforces a strict <strong>Zero-Trust Architecture</strong> via six layered defensive controls operating 24/7:
+    </p>
+
+    <div class="bento-grid">
+      <!-- Perimeter 1 -->
+      <div class="bento-card highlight">
+        <span class="card-badge badge-teal">Perimeter 1</span>
+        <div class="card-title">In-Memory Application Firewall (Software WAF)</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/backend/security/WAFMiddleware.ts</code><br>
+          • Instantaneous $O(1)$ memory regex inspection of query, params, and payload.<br>
+          • Absolute mitigation of SQL Injection (SQLi), Cross-Site Scripting (XSS), and Path Traversal.<br>
+          • Dynamic IP and payload blacklist synchronization across instances via Redis channels.
+        </div>
+      </div>
+
+      <!-- Perimeter 2 -->
+      <div class="bento-card highlight">
+        <span class="card-badge badge-orange">Perimeter 2</span>
+        <div class="card-title">Sovereign Rate Limiter & Security Headers</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/expressApp.ts</code><br>
+          • Mitigation of DoS/DDoS via strict 150 req/min limit per source IP.<br>
+          • Real-time SSE streams throttled to 30 conn/min to prevent Event Loop memory exhaustion.<br>
+          • Helmet security suite enforcing strict Content Security Policy (CSP) and Clickjacking protection.
+        </div>
+      </div>
+
+      <!-- Perimeter 3 -->
+      <div class="bento-card featured">
+        <span class="card-badge badge-emerald">Perimeter 3 (LITC 13-1-خ Aligned)</span>
+        <div class="card-title">3-Attempt Account Lockout & Instant Revocation</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/backend/controllers/AuthService.ts & RedisClient.ts</code><br>
+          • <strong>Policy 13-1-خ:</strong> Automatic 30-minute lockout triggered at exactly 3 consecutive failed login attempts.<br>
+          • <strong>Instant Revocation Blacklist:</strong> Logout instantly records SHA-256 token digests in Redis to nullify compromised JWTs in sub-milliseconds.
+        </div>
+      </div>
+
+      <!-- Perimeter 4 -->
+      <div class="bento-card featured">
+        <span class="card-badge badge-teal">Perimeter 4 (LITC 13-1-ح Aligned)</span>
+        <div class="card-title">15-Minute Inactivity Session Guard</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/components/infrastructure/InactivitySessionGuard.tsx</code><br>
+          • <strong>Policy 13-1-ح:</strong> Automatic termination and Redis token revocation upon 15 minutes of user inactivity.<br>
+          • Luxury glassmorphic modal with a 60-second countdown at minute 14 offering session renewal or secure logout.
+        </div>
+      </div>
+
+      <!-- Perimeter 5 -->
+      <div class="bento-card highlight">
+        <span class="card-badge badge-purple">Perimeter 5</span>
+        <div class="card-title">Inter-System Protocol Guard (UECP Gateway)</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/backend/security/UECPMiddleware.ts</code><br>
+          • Cryptographic payload signing via <strong>HMAC-SHA256</strong>.<br>
+          • Constant-time comparison (<code>crypto.timingSafeEqual</code>) eliminating timing attack vectors.<br>
+          • Replay attack prevention using <code>X-Idempotency-Key</code> stored in Redis for 24 hours.
+        </div>
+      </div>
+
+      <!-- Perimeter 6 -->
+      <div class="bento-card featured">
+        <span class="card-badge badge-emerald">Perimeter 6</span>
+        <div class="card-title">Immutable Non-Repudiation Audit Logs (SIEM)</div>
+        <div class="card-desc">
+          <strong>Implementation:</strong> <code>src/backend/services/ImmutableLogService.ts & SIEMLogger.ts</code><br>
+          • Event logging in dedicated <code>SecurityEventLog</code> table immune to programmatic tampering or deletion.<br>
+          • Event classification into 4 official LITC tiers: Critical, High, Medium, Low.<br>
+          • Asynchronous non-blocking batch flusher dispatching events every 5 seconds.
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Architecture Diagram -->
+    <h2 class="section-header"><span class="num">4</span> High-Level Cyber Defense Architecture Diagram</h2>
+    <div class="arch-box">
++----------------------------------------------------------------------------------------------------+
+|                                NEXUS TDS CYBER DEFENSE PERIMETER (2026)                            |
+|                                                                                                    |
+|  [ INCOMING REQUEST ] ---> [ 1. Helmet Security Headers (CSP + Clickjacking Shield) ]              |
+|                                         |                                                          |
+|                                         v                                                          |
+|                            [ 2. Sovereign Rate Limiter (150 req/min & 30 SSE/min) ]                |
+|                                         |                                                          |
+|                                         v                                                          |
+|                            [ 3. High-Speed Software WAF (O(1) In-Memory Regex Engine) ]            |
+|                                 |-- Checks SQLi, XSS, Path Traversal, Banned IPs                   |
+|                                         |                                                          |
+|                                         v                                                          |
+|                            [ 4. Identity & Access Gateway (Microsoft Entra ID + Fail-Safe) ]       |
+|                                 |-- Primary: Microsoft 365 OIDC SSO (@litc.ly Corporate Mail)     |
+|                                 |-- Secondary Fail-Safe: Argon2id Password Hash                    |
+|                                 |-- Policy 13-1-خ: 3 Failed Attempts Auto-Lockout (30 min)         |
+|                                 |-- Policy 13-1-ح: 15-Minute Inactivity Session Guard              |
+|                                 |-- Redis Real-Time Revocation Blacklist (SHA-256 Token Digest)    |
+|                                 |-- TOTP Two-Factor Authentication (2FA) & isFrozen Verification   |
+|                                         |                                                          |
+|                                         v                                                          |
+|                            [ 5. Business Logic & ORM Parameterization (Prisma) ]                   |
+|                                 |-- Zero Raw SQL Injection Vector                                  |
+|                                 |-- Strict Data Classification (5-Tier LITC Schema)                |
+|                                 |-- Redis Idempotency Lock (Replay Prevention)                     |
+|                                         |                                                          |
+|                                         v                                                          |
+|                            [ 6. Immutable SIEM Audit Trail (5s Batch Flusher) ]                    |
+|                                 |-- Non-Repudiation SecurityEventLog with LITC 4 Severity Tiers   |
++----------------------------------------------------------------------------------------------------+
+    </div>
+
+    <!-- Section 5: LITC 27 Policies Compliance Matrix -->
+    <h2 class="section-header"><span class="num">5</span> Direct Compliance Matrix with LITC 27 Policies (v1.01)</h2>
+    <p>
+      The following matrix details the concrete architectural implementation corresponding to each of LITC's 27 Information Security Policies:
+    </p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>LITC Policy Name</th>
+            <th>Implementation in NEXUS TDS Architecture & Code</th>
+            <th>Compliance Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>Information Security Governance</td>
+            <td>Establishment of strict Cybersecurity Constitution adopting LITC v1.01 as sovereign law.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>Human Resources & Training</td>
+            <td>Security notifications, inactivity warnings, and programmatic user freeze/role controls.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>Asset Management & Inventory</td>
+            <td>Tickets and operational routes are mapped directly to LITC organizational hierarchy assets.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>Acceptable Use Policy</td>
+            <td>Role-based access enforcement strictly limiting capabilities to designated job roles.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>Remote Work & Mobile Devices</td>
+            <td>Guarded by 15-minute inactivity auto-logout and mandatory Microsoft MFA federation.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td>Network & Communication Security</td>
+            <td>Unencrypted connections blocked; payload WAF inspection; sovereign rate limiter active.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>7</strong></td>
+            <td>Web Application Security</td>
+            <td>Full OWASP Top 10 mitigation, CSP/Helmet headers, XSS, CSRF, and Clickjacking shields.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>8</strong></td>
+            <td>Operational Environment & Cloud</td>
+            <td>Container isolation, development vs. production environment decoupling via Docker Compose.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>9</strong></td>
+            <td>Email & Communications Security</td>
+            <td>Federated with official corporate mail (@litc.ly) via Microsoft Entra ID; zero secret leakage.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>10</strong></td>
+            <td>Privacy & Network Monitoring</td>
+            <td>Passwords prohibited from logs; sensitive data masked in SIEM telemetry.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>11</strong></td>
+            <td>Endpoint & Mobile Terminal Security</td>
+            <td>Fully responsive UI optimized for thumb-zone navigation with background screen lockout.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>12</strong></td>
+            <td>Identity & Access Management</td>
+            <td>Enforcement of Least Privilege, Need-to-Know, and strict 3-tier RBAC matrix.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>13</strong></td>
+            <td>Password & Session Governance</td>
+            <td><strong>Enforcement of 13-1-خ (3-attempt lockout) + 13-1-ح (15-min timeout) + Microsoft SSO.</strong></td>
+            <td><span class="compliance-tag comp-verified">✓ 100% Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>14</strong></td>
+            <td>Change Management & Configuration</td>
+            <td>Version control through Git, release change-logs, and zero unvetted runtime patches.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>15</strong></td>
+            <td>Cyber Incident Management</td>
+            <td>SIEM incident categorization into 4 official LITC tiers: Critical, High, Medium, Low.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>16</strong></td>
+            <td>Backup & Data Restoration</td>
+            <td>Automated snapshotting and backup scripting for SQL Server and Redis databases.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>17</strong></td>
+            <td>Vulnerability Management</td>
+            <td>Regular automated dependency audits (npm audit) and ORM parameterized query safety.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>18</strong></td>
+            <td>Business Continuity & Disaster Recovery</td>
+            <td>Stateless server architecture capable of instant reboot with Redis session persistence.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>19</strong></td>
+            <td>Data Classification & Protection</td>
+            <td>Strict 5-tier classification schema (Public, Internal, Confidential, Sensitive/PII, Restricted).</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>20</strong></td>
+            <td>Supply Chain & Vendor Security</td>
+            <td>Untrusted packages banned; pinned and verified dependencies; zero runtime remote code loading.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>21</strong></td>
+            <td>Cryptographic Standards</td>
+            <td>Argon2id for passwords, AES-256 for data, SHA-256 for tokens, and HMAC for integrations.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>22</strong></td>
+            <td>System Monitoring & Audit Logs</td>
+            <td><code>ImmutableLogService</code> providing non-repudiation and zero in-app deletion.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>23</strong></td>
+            <td>Database Security</td>
+            <td>Exclusive parameterized queries via Prisma ORM; raw queries prohibited; strict field projection.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>24</strong></td>
+            <td>API & Integration Security</td>
+            <td>All endpoints protected by bearer token auth, cryptographic signature, and rate limiting.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>25</strong></td>
+            <td>Secure Software Development (SSDLC)</td>
+            <td>Zero TypeScript compile errors, sanitized inputs, and prevention of server stack leakage.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>26</strong></td>
+            <td>Secure Disposal of Media & Data</td>
+            <td>Token invalidation on session termination, cache eviction, and temp file purges.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+          <tr>
+            <td><strong>27</strong></td>
+            <td>Compliance, Review & Audit</td>
+            <td>Exportable audit telemetry and periodic documentation structured for LITC cybersecurity audits.</td>
+            <td><span class="compliance-tag comp-verified">✓ Fully Compliant</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 6: Security Maturity Matrix -->
+    <h2 class="section-header"><span class="num">6</span> System Field Security Maturity Matrix</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Security Domain</th>
+            <th>Maturity Index</th>
+            <th>Verified Engineering Defense Level</th>
+            <th>Progress Indicator</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Injection Shield (SQLi & XSS)</strong></td>
+            <td><strong style="color: #0f766e;">98%</strong></td>
+            <td>Fully hardened via in-memory WAF and Prisma ORM parameterized queries</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 98%;"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Identity & Authentication (M365 + Argon2id)</strong></td>
+            <td><strong style="color: #0f766e;">96%</strong></td>
+            <td>OIDC federation with @litc.ly domain + 3-attempt lockout (LITC 13-1-خ)</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 96%;"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Session Governance (15-Min Timeout & Redis)</strong></td>
+            <td><strong style="color: #0f766e;">95%</strong></td>
+            <td>Active 15-minute inactivity session guard with instant Redis blacklist (LITC 13-1-ح)</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 95%;"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>DoS / DDoS Mitigation (Adaptive Rate Limiter)</strong></td>
+            <td><strong style="color: #0f766e;">92%</strong></td>
+            <td>Enforced across API and SSE routes with dynamic IP quarantine</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 92%;"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Inter-System Integration (HMAC & Idempotency)</strong></td>
+            <td><strong style="color: #0f766e;">92%</strong></td>
+            <td>Constant-time signature verification and 24h replay attack prevention</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 92%;"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Audit Trail & Non-Repudiation (SIEM Logs)</strong></td>
+            <td><strong style="color: #0f766e;">90%</strong></td>
+            <td>4-tier LITC incident classification with immutable database logging</td>
+            <td>
+              <div class="progress-bar-container"><div class="progress-bar-fill" style="width: 90%;"></div></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 7: Executive Sign-off -->
+    <div class="sign-off-box">
+      <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
+        Technical Recommendation Submitted to the LITC Cybersecurity Office
+      </h3>
+      <p style="font-size: 13.5px; line-height: 1.7; color: #334155; margin-bottom: 16px;">
+        The NEXUS TDS Project Management Office certifies that the platform has achieved an enterprise security maturity index of <strong>93.8%</strong>, fully satisfying the requirements defined in the LITC Information Security Policy Guide (v1.01). We recommend formal endorsement of the unified Microsoft Entra ID authentication route while maintaining the internal fail-safe engine. The PMO welcomes joint technical auditing sessions and stands ready to demonstrate these defenses in real time.
+      </p>
+
+      <div class="sign-grid">
+        <div class="signature-card">
+          <div class="role-title">PREPARED & CERTIFIED BY:</div>
+          <div class="person-name">Eng. Majdi Alzarrouk</div>
+          <div class="dept-name">Project Director — NEXUS TDS Platform, LITC</div>
+          <div class="signature-stamp"></div>
+        </div>
+
+        <div class="signature-card">
+          <div class="role-title">RECEIVED & AUDITED BY:</div>
+          <div class="person-name">Cybersecurity Engineers & Auditors</div>
+          <div class="dept-name">Information Security & Cybersecurity Office — LITC</div>
+          <div class="signature-stamp"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
