@@ -8,6 +8,7 @@ import session from 'express-session';
 const { RedisStore } = require('connect-redis');
 import { WAFMiddleware } from './backend/security/WAFMiddleware';
 import { redisManager } from './backend/infrastructure/RedisClient';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 
 const app = express();
 
@@ -36,14 +37,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:      ["'self'"],
-      scriptSrc:       ["'self'"],                          // Removed 'unsafe-inline' — XSS protection active
-      scriptSrcAttr:   ["'none'"],                          // Block inline event handlers (onclick, etc.)
-      styleSrc:        ["'self'", "'unsafe-inline'"],       // Kept for CSS-in-JS / inline styles (lower risk)
+      scriptSrc:       ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr:   ["'none'"],
+      styleSrc:        ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc:          ["'self'", "data:", "blob:"],
       connectSrc:      ["'self'"],
       fontSrc:         ["'self'", "https://fonts.gstatic.com"],
-      objectSrc:       ["'none'"],                          // Block Flash/plugins
-      frameAncestors:  ["'none'"],                          // Prevent Clickjacking
+      objectSrc:       ["'none'"],
+      frameAncestors:  ["'self'"],                          // Allow same-origin micro-frontend iframing
       upgradeInsecureRequests: [],
     },
   },
@@ -98,6 +99,30 @@ if (redisManager.client) {
   }));
   console.warn('[Auth] Memory Session Store Enabled (Fallback Mode). Distributed sessions inactive.');
 }
+
+// ==========================================
+// 2.8. Satellite Universal Reverse Proxy Gateway (Single-Origin Enterprise Architecture)
+// Forward traffic to local or distributed satellite services without exposing extra ports
+// ==========================================
+const inventoryTarget = process.env.ASSET_INVENTORY_URL || 'http://localhost:3000';
+
+const inventoryProxy = createProxyMiddleware({
+  target: inventoryTarget,
+  changeOrigin: true,
+  on: { proxyReq: fixRequestBody },
+  ws: true
+});
+
+app.use('/satellites/proxy/asset_inventory', createProxyMiddleware({
+  target: inventoryTarget,
+  changeOrigin: true,
+  pathRewrite: { '^/satellites/proxy/asset_inventory': '' },
+  on: { proxyReq: fixRequestBody },
+  ws: true
+}));
+
+// Route root endpoints called by embedded satellite scripts to the asset inventory service
+app.use(['/api/devices', '/api/columns', '/api/import', '/api/logs', '/login.html'], inventoryProxy);
 
 // ==========================================
 // 3. Request Parsing

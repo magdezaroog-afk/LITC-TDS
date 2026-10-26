@@ -76,17 +76,21 @@ export const WorkModeShell: React.FC = () => {
   const isPrivilegedAdmin = ['super_admin', 'system_director', 'co_admin'].includes(user?.role || '');
 
   /**
-   * دالة اشتقاق الرابط المتكيف شبكياً (Client-Adapted URL Resolver)
-   * تضمن عدم محاولة متصفح الموظف طلب localhost على جهازه الشخصي عند دخوله عبر LAN
+   * دالة اشتقاق الرابط الموحد عبر البوابة العكسية (Single-Origin Reverse Proxy Gateway)
+   * تضمن تشغيل المنظومة تحت نفس رابط النظام من أي دولة ومن أي شبكة دون تعارض
    */
-  const resolveSatelliteUrl = (rawTargetUrl: string, clientAdaptedUrl?: string): string => {
-    // 1. If backend already computed a clientAdaptedUrl that doesn't point to localhost, use it
+  const resolveSatelliteUrl = (rawTargetUrl: string, clientAdaptedUrl?: string, satelliteId?: string): string => {
+    // 1. منظومة جرد الأصول: البوابة العكسية الموحدة (تعمل تحت نفس الدومين تلقائياً)
+    if (satelliteId === 'asset_inventory' || rawTargetUrl.includes('localhost:3000') || rawTargetUrl.includes(':3000')) {
+      return `/satellites/proxy/asset_inventory/`;
+    }
+
+    // 2. منظومات الزملاء المساندة: استخدام الرابط المتكيف شبكياً
     if (clientAdaptedUrl && !clientAdaptedUrl.includes('localhost') && !clientAdaptedUrl.includes('127.0.0.1')) {
       return clientAdaptedUrl;
     }
 
     const currentHostname = window.location.hostname;
-    // 2. If client is on LAN IP/domain and target points to localhost, substitute with client's active server host
     if (currentHostname !== 'localhost' && currentHostname !== '127.0.0.1') {
       try {
         const parsed = new URL(rawTargetUrl);
@@ -168,7 +172,7 @@ export const WorkModeShell: React.FC = () => {
   // Find currently active satellite
   const activeSatellite = satellites.find(s => s.id === activeAppId);
   const activeComputedUrl = activeSatellite 
-    ? resolveSatelliteUrl(activeSatellite.targetUrl, activeSatellite.clientAdaptedUrl) 
+    ? resolveSatelliteUrl(activeSatellite.targetUrl, activeSatellite.clientAdaptedUrl, activeSatellite.id) 
     : '';
 
   // Ping Test Handler for modal

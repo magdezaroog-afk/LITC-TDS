@@ -8,6 +8,40 @@ export default defineConfig({
     port: 5173,
     allowedHosts: true,
     proxy: {
+      // 1. Satellite Systems Reverse Proxy Gateway (Single-Origin Architecture)
+      '/satellites/proxy/asset_inventory': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/satellites\/proxy\/asset_inventory/, '')
+      },
+      // When Asset Inventory scripts make API calls to their own endpoints
+      '/api/devices': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/columns': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/import': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/logs': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/login.html': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // 2. Main TDS Backend API Proxy
       '/api': {
         target: 'http://localhost:5555',
         changeOrigin: true,
