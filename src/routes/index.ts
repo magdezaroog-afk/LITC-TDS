@@ -309,6 +309,10 @@ router.put('/satellites/:id/config', authMiddleware, requireRole([1, 22]), (req,
 router.post('/satellites/register', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.registerSatellite(req, res));
 router.delete('/satellites/:id', authMiddleware, requireRole([1, 22]), (req, res) => SatelliteGatewayController.deleteSatellite(req, res));
 router.get('/satellites/inventory/smart-hint', authMiddleware, (req, res) => SatelliteGatewayController.getAssetSmartHint(req, res));
+router.get('/satellites/inventory/devices', authMiddleware, (req, res) => SatelliteGatewayController.getDevices(req, res));
+router.get('/satellites/inventory/maintenance/:assetId', authMiddleware, (req, res) => SatelliteGatewayController.getAssetMaintenanceHistory(req, res));
+router.get('/satellites/inventory/unlinked-requests', authMiddleware, (req, res) => SatelliteGatewayController.getUnlinkedRequestsLedger(req, res));
+router.post('/satellites/inventory/link-asset', authMiddleware, (req, res) => SatelliteGatewayController.linkAssetToTicket(req, res));
 
 // Note: Notification SSE Stream is mounted directly in app.ts to bypass CSRF, so not added here.
 

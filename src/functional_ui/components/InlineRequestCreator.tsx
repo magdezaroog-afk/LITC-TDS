@@ -33,6 +33,7 @@ import {
 import { renderRouteIcon } from '../../services/ticketIconLibrary';
 import { EmployeeDelegatePicker } from './EmployeeDelegatePicker';
 import { CinemaTicketFrame, TicketCodeBadge } from './CinemaTicketFrame';
+import { AssetInventorySelector, SelectedAssetInfo } from './AssetInventorySelector';
 import nexusIconTransparent from '../assets/nexus_official_icon_transparent.png';
 
 // ── Dynamic Icon Resolver ──────────────────────────────────
@@ -2836,6 +2837,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const { requests, canCreateRequest, darkMode, user } = useHub();
 
   const [selectedFlow, setSelectedFlow] = useState<typeof requests[0] | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<SelectedAssetInfo>({});
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
@@ -2843,6 +2845,29 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [errorMsg, setErrorMsg] = useState('');
   const [highlightPulse, setHighlightPulse] = useState(false);
   const [isDispenserOpen, setIsDispenserOpen] = useState(false);
+
+  const isAssetRoute = useMemo(() => {
+    if (!selectedFlow) return false;
+    const title = (selectedFlow.title || '').toLowerCase();
+    const id = (selectedFlow.id || '').toLowerCase();
+    const cat = ((selectedFlow as any).category || '').toLowerCase();
+    const targetDept = ((selectedFlow as any).targetDepartmentName || '').toLowerCase();
+    return (
+      (selectedFlow as any).formConfig?.requiresAsset === true ||
+      targetDept.includes('تقنية') ||
+      targetDept.includes('it') ||
+      cat.includes('it') ||
+      cat.includes('hardware') ||
+      title.includes('جهاز') ||
+      title.includes('حاسوب') ||
+      title.includes('طابع') ||
+      title.includes('شاش') ||
+      title.includes('شبك') ||
+      title.includes('صيانة') ||
+      id.includes('it') ||
+      id.includes('asset')
+    );
+  }, [selectedFlow]);
 
   // ── Realistic Progressive Tearing States ──
   const [tearState, setTearState] = useState<'idle' | 'dispensing' | 'ripping' | 'departing' | 'completed'>('idle');
@@ -2954,6 +2979,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     setSelectedFlow(flow);
     setIsDispenserOpen(true);
     setFormData({});
+    setSelectedAsset({});
     setCurrentStep(1);
     setStatus('idle');
     setErrorMsg('');
@@ -2965,6 +2991,7 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
     setSelectedFlow(null);
     setIsDispenserOpen(false);
     setFormData({});
+    setSelectedAsset({});
     setCurrentStep(1);
     setStatus('idle');
     setErrorMsg('');
@@ -3326,13 +3353,26 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
         targetTeamName: flowAny.targetTeamName || undefined,
         taxonomyMain: formData.taxonomyMain || undefined,
         taxonomySub: formData.taxonomySub || undefined,
+        assetId: selectedAsset.assetId || formData.assetId || undefined,
+        assetName: selectedAsset.assetName || formData.assetName || undefined,
+        assetCategory: selectedAsset.assetCategory || formData.assetCategory || undefined,
+        isUnregisteredAsset: selectedAsset.isUnregisteredAsset || false,
+        isUserUnableToIdentify: selectedAsset.isUserUnableToIdentify || false,
         description: formData.description?.trim() || Object.entries(formData).filter(([k]) => k !== 'attachment').map(([k, v]) => `${k}: ${v}`).join('\n') || selectedFlow.title,
-        fields: formData,
+        fields: {
+          ...formData,
+          assetId: selectedAsset.assetId,
+          assetName: selectedAsset.assetName,
+          assetCategory: selectedAsset.assetCategory,
+          isUnregisteredAsset: selectedAsset.isUnregisteredAsset,
+          isUserUnableToIdentify: selectedAsset.isUserUnableToIdentify,
+        },
         attachments: attachmentObj ? [attachmentObj] : [],
         routingMetadata: {
           formData,
           fields: formData,
           dynamicFields: formData,
+          asset: selectedAsset,
           attachments: attachmentObj ? [attachmentObj] : [],
           targetDepartmentName: flowAny.targetDepartmentName,
           targetDivisionName: flowAny.targetDivisionName,
@@ -3949,6 +3989,20 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
                         minHeight: isMobileScreen ? '175px' : 'auto',
                       }}
                     >
+                      {/* Asset Inventory Selector for Hardware/IT Routes */}
+                      {isAssetRoute && currentStep === 1 && (
+                        <div style={{ gridColumn: '1 / -1', width: '100%', marginBottom: '8px' }}>
+                          <AssetInventorySelector
+                            darkMode={darkMode}
+                            flowColor={flowColor}
+                            userEmail={user?.email}
+                            departmentName={formData.department || (user as any)?.department?.name}
+                            value={selectedAsset}
+                            onChange={setSelectedAsset}
+                          />
+                        </div>
+                      )}
+
                       {stageFieldsToRender.map((field) => {
                         let fieldToRender = { ...field };
                         if (field.name === 'department') {

@@ -13,6 +13,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../db/client';
 import { getEntityMembers } from './FlowGovernanceController';
+import { SatelliteGatewayController } from './SatelliteGatewayController';
 
 // ─── بناء فلتر نطاق الدور ────────────────────────────────────────────────────
 // كل دور يرى نطاقاً مختلفاً من التذاكر بشكل تلقائي
@@ -454,6 +455,12 @@ export class OperationalQueueController {
           departmentObj: { select: { id: true, name: true } },
           routingMetadata: true,
           resolutionNotes: true,
+          assetId: true,
+          assetName: true,
+          assetCategory: true,
+          assetResolutionLocked: true,
+          isUserUnableToIdentify: true,
+          isUnregisteredAsset: true,
           state: { select: { name: true } }
         }
       });
@@ -559,6 +566,11 @@ export class OperationalQueueController {
           }
 
           case 'CLOSE': {
+            // ─── Gated Resolution Lock: قيد الإغلاق للأصول غير المحققة ───
+            if (ticket.assetResolutionLocked) {
+              throw new Error('⚠️ قيد إغلاق حوكمة الأصول: لا يمكن إغلاق التذكرة نظراً لوجود قيد على الأصل (الموظف لم يحدد الجهاز بدقة أو جهاز غير مسجل). يرجى قيام المهندس بالتحقق من الأصل وربطه أولاً.');
+            }
+
             await verifyAllSubTicketsClosed(tx, ticketId);
             if (!resolutionNote?.trim()) throw new Error('ملاحظات الحل وتقرير الإنجاز مطلوبة لإغلاق التذكرة');
             const closedState = await getOrCreateState(tx, 'CLOSED', 'مغلقة');
@@ -571,6 +583,27 @@ export class OperationalQueueController {
             });
             await logAction(tx, ticketId, user.id, 'CLOSE', `إغلاق مباشر بواسطة ${fullUser?.fullName}: ${resolutionNote.trim()}`);
 
+            // مزامنة عكسية في طابور الصيانة لجرد الأصول
+            if (ticket.assetId) {
+              await tx.assetSyncOutbox.create({
+                data: {
+                  ticketId,
+                  assetId: ticket.assetId,
+                  actionType: 'MAINTENANCE_LOG',
+                  payload: JSON.stringify({
+                    ticketId,
+                    assetId: ticket.assetId,
+                    title: ticket.title,
+                    resolutionNotes: resolutionNote.trim(),
+                    technicianId: user.id,
+                    technicianName: fullUser?.fullName || 'مهندس الصيانة',
+                    closedAt: new Date().toISOString()
+                  }),
+                  status: 'PENDING'
+                }
+              }).catch(e => console.warn('[OperationalQueueController] Outbox queue error:', e));
+            }
+
             // إذا كانت هذه تذكرة فرعية — إشعار التذكرة الأم بإنجاز المهمة وعودتها لمستلم الطلب الرئيسي
             if (ticket.parentId) {
               await notifyParentOnSubTicketClosure(tx, ticket, user.id, fullUser?.fullName, resolutionNote.trim());
@@ -579,6 +612,11 @@ export class OperationalQueueController {
           }
 
           case 'REQUEST_CLOSURE': {
+            // ─── Gated Resolution Lock: قيد طلب اعتماد الإغلاق ───
+            if (ticket.assetResolutionLocked) {
+              throw new Error('⚠️ قيد إغلاق حوكمة الأصول: لا يمكن طلب اعتماد إغلاق التذكرة قبل التحقق من الأصل وربطه من قبل المهندس المسند.');
+            }
+
             await verifyAllSubTicketsClosed(tx, ticketId);
             if (!resolutionNote?.trim()) throw new Error('تقرير الإنجاز والأعمال المنفذة مطلوب لطلب اعتماد الإغلاق');
             const resolvedState = await getOrCreateState(tx, 'RESOLVED', 'تم الإنجاز (بانتظار الاعتماد)');
@@ -594,6 +632,11 @@ export class OperationalQueueController {
           }
 
           case 'APPROVE_CLOSURE': {
+            // ─── Gated Resolution Lock: قيد اعتماد الإغلاق النهائي ───
+            if (ticket.assetResolutionLocked) {
+              throw new Error('⚠️ قيد إغلاق حوكمة الأصول: لا يمكن اعتماد الإغلاق النهائي نظراً لوجود قيد على الأصل لم يتم حسمه.');
+            }
+
             await verifyAllSubTicketsClosed(tx, ticketId);
             const closedState = await getOrCreateState(tx, 'CLOSED', 'مغلقة');
             const approvalNote = note?.trim() ? ` [اعتماد: ${note.trim()}]` : '';
@@ -608,6 +651,27 @@ export class OperationalQueueController {
               }
             });
             await logAction(tx, ticketId, user.id, 'APPROVE_CLOSURE', `تم اعتماد الإغلاق النهائي بواسطة ${fullUser?.fullName}. ${note || ''}`);
+
+            // مزامنة عكسية في طابور الصيانة لجرد الأصول
+            if (ticket.assetId) {
+              await tx.assetSyncOutbox.create({
+                data: {
+                  ticketId,
+                  assetId: ticket.assetId,
+                  actionType: 'MAINTENANCE_LOG',
+                  payload: JSON.stringify({
+                    ticketId,
+                    assetId: ticket.assetId,
+                    title: ticket.title,
+                    resolutionNotes: finalNotes,
+                    technicianId: user.id,
+                    technicianName: fullUser?.fullName || 'معتمد الإغلاق',
+                    closedAt: new Date().toISOString()
+                  }),
+                  status: 'PENDING'
+                }
+              }).catch(e => console.warn('[OperationalQueueController] Outbox queue error:', e));
+            }
 
             // إذا كانت هذه تذكرة فرعية — إشعار التذكرة الأم بإنجاز المهمة وعودتها لمستلم الطلب الرئيسي
             if (ticket.parentId) {
@@ -838,6 +902,10 @@ export class OperationalQueueController {
           }
         }
       });
+
+      if (['CLOSE', 'APPROVE_CLOSURE'].includes(type) && ticket.assetId) {
+        SatelliteGatewayController.triggerOutboxWorker();
+      }
 
       res.json({ success: true, message: `تم تنفيذ الإجراء: ${type} بنجاح` });
     } catch (err: any) {

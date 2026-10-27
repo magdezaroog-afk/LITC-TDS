@@ -587,6 +587,13 @@ export class FunctionalController {
         buildingId, departmentId,
         fields = {},
         flowDefinitionId,
+        assetId,
+        assetName,
+        assetCategory,
+        isUnregisteredAsset,
+        isUserUnableToIdentify,
+        isInternalRequest,
+        internalScope,
       } = req.body;
 
       if (!routeId && flowDefinitionId) routeId = flowDefinitionId;
@@ -798,6 +805,14 @@ export class FunctionalController {
         if (existingFlowDef) validFlowDefId = existingFlowDef.id;
       }
 
+      const isUnreg = Boolean(isUnregisteredAsset);
+      const isUnable = Boolean(isUserUnableToIdentify);
+      const isResolutionLocked = isUnable || isUnreg;
+      let finalAssetSyncStatus = 'NONE';
+      if (isUnable) finalAssetSyncStatus = 'MANUAL_VERIFICATION_REQUIRED';
+      else if (isUnreg) finalAssetSyncStatus = 'UNREGISTERED_ASSET';
+      else if (assetId) finalAssetSyncStatus = 'LINKED';
+
       const ticket = await prisma.ticket.create({
         data: {
           title: title.trim(),
@@ -811,10 +826,41 @@ export class FunctionalController {
           priority: reqPriority,
           requesterPriority: reqPriority,
           routingMetadata,
-          ticketType: 'EMPLOYEE_REQUEST',
-          channel: 'PORTAL',
+          ticketType: isInternalRequest ? 'INTERNAL_REQUEST' : 'EMPLOYEE_REQUEST',
+          channel: isInternalRequest ? 'OPS_INTERNAL' : 'PORTAL',
+          assetId: assetId ? String(assetId).trim() : null,
+          assetName: assetName ? String(assetName).trim() : null,
+          assetCategory: assetCategory ? String(assetCategory).trim() : null,
+          isUnregisteredAsset: isUnreg,
+          isUserUnableToIdentify: isUnable,
+          assetSyncStatus: finalAssetSyncStatus,
+          assetResolutionLocked: isResolutionLocked,
+          isInternalRequest: Boolean(isInternalRequest),
+          internalScope: internalScope || (isInternalRequest ? 'TEAM' : null),
         }
       });
+
+      // تسجيل التذكرة في طابور التدقيق الرقابي إذا كانت تفتقر لربط الأصل المعتمد
+      if (isResolutionLocked) {
+        await prisma.assetSyncOutbox.create({
+          data: {
+            ticketId: ticket.id,
+            assetId: assetId || null,
+            actionType: 'UNLINKED_AUDIT',
+            payload: JSON.stringify({
+              ticketId: ticket.id,
+              title: ticket.title,
+              creatorId: user.id,
+              creatorName: user.fullName || user.username,
+              isUserUnableToIdentify: isUnable,
+              isUnregisteredAsset: isUnreg,
+              assetCategory: assetCategory || 'UNSPECIFIED',
+              createdAt: new Date().toISOString()
+            }),
+            status: 'PENDING'
+          }
+        }).catch(err => console.warn('[FunctionalController] Failed to record UNLINKED_AUDIT in outbox:', err));
+      }
 
       // ── Process and Store Ticket Attachments in Database ──
       for (const att of normalizedAttachments) {

@@ -331,6 +331,19 @@ model Ticket {
   routeId          String?
   routingMetadata  String?         @db.NVarChar(Max)
 
+  // ─── Asset Inventory & Satellite Integration (Bi-directional Binding) ───
+  assetId                String?   // Device ID in Asset Inventory (e.g. DEV-1042)
+  assetName              String?   // Device Name/Model
+  assetCategory          String?   // Category (PC, PRINTER, NETWORK, etc.)
+  isUnregisteredAsset    Boolean   @default(false) // Device is new/unregistered in Asset Inventory
+  isUserUnableToIdentify Boolean   @default(false) // Requester is unqualified/unable to identify asset
+  assetSyncStatus        String?   @default("NONE") // NONE, PENDING_RECONNECT, SYNCED, MANUAL_VERIFICATION_REQUIRED
+  assetResolutionLocked  Boolean   @default(false) // Gated Resolution: Cannot close ticket until asset is verified
+  
+  // ─── Dual-Type Internal Ticket Architecture ───
+  isInternalRequest      Boolean   @default(false) // Standalone or Linked Internal Request
+  internalScope          String?   // TEAM, DEPARTMENT, CROSS_DEPT
+
   stateId      Int
   state        TicketState   @relation(fields: [stateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   categoryId   Int
@@ -366,6 +379,9 @@ model Ticket {
   @@index([createdAt])
   @@index([flowDefinitionId])
   @@index([priority])
+  @@index([assetId])
+  @@index([isInternalRequest])
+  @@index([assetSyncStatus])
 }
 
 model TicketAssignment {
@@ -1016,3 +1032,23 @@ model AnalyticsPermission {
   @@index([userId])
   @@index([departmentId])
 }
+
+// ==========================================
+// 23. طابور المزامنة العكسية مع منظومة جرد الأصول (Bi-Directional Asset Sync Outbox)
+// ==========================================
+model AssetSyncOutbox {
+  id              Int       @id @default(autoincrement())
+  ticketId        Int
+  assetId         String?
+  actionType      String    // "MAINTENANCE_LOG", "REGISTER_PENDING_DEVICE", "UNLINKED_AUDIT"
+  payload         String    @db.NVarChar(Max)
+  status          String    @default("PENDING") // PENDING, SYNCED, FAILED
+  attempts        Int       @default(0)
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  syncedAt        DateTime?
+
+  @@index([status])
+  @@index([ticketId])
+}
+

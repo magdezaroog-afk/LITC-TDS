@@ -122,5 +122,31 @@ export const OpsAPI = {
     Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
     return fetch(`${BASE}/sub-tickets?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
   },
+
+  // استعلام الأجهزة من منظومة جرد الأصول
+  getInventoryDevices: (params: { search?: string; type?: string; department?: string; userOnly?: boolean } = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
+    return fetch(`/api/v1/satellites/inventory/devices?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
+  },
+
+  // استعلام سجل الصيانة التاريخي لجهاز
+  getAssetMaintenanceHistory: (assetId: string, hideTechnicianName = false) => {
+    const q = hideTechnicianName ? '?hideTechnicianName=true' : '';
+    return fetch(`/api/v1/satellites/inventory/maintenance/${encodeURIComponent(assetId)}${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
+  },
+
+  // السجل الرقابي للطلبات غير المرتبطة بأصل
+  getUnlinkedRequestsLedger: () =>
+    fetch(`/api/v1/satellites/inventory/unlinked-requests`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  // ربط أصل بتذكرة وفك قيد الإغلاق
+  linkAssetToTicket: (payload: { ticketId: number; assetId: string; assetName?: string; assetCategory?: string }) =>
+    fetch(`/api/v1/satellites/inventory/link-asset`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    }).then(handleResponse),
 };
 

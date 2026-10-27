@@ -575,7 +575,59 @@ export class SatelliteGatewayController {
   }
 
   /**
-   * استعلام التلميح الذكي للأصول بناءً على بيانات مقدم التذكرة
+   * جلب قائمة الأجهزة الفعلية من منظومة جرد الأصول مع دعم التصفية
+   * GET /api/v1/satellites/inventory/devices
+   */
+  static async getDevices(req: Request, res: Response) {
+    try {
+      await ensureRegistryLoaded();
+      const user = (req as any).user;
+      const { search, type, department, userOnly } = req.query;
+      const inventoryUrl = SATELLITE_REGISTRY['asset_inventory']?.targetUrl || 'http://localhost:3000';
+
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.set('search', String(search).trim());
+      if (type) queryParams.set('type', String(type).trim());
+      if (department) queryParams.set('department', String(department).trim());
+      if (userOnly === 'true' && user?.email) {
+        queryParams.set('email', user.email);
+      }
+
+      try {
+        const fetchRes = await fetch(`${inventoryUrl}/api/devices?${queryParams.toString()}`, {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(3500)
+        }).catch(() => null);
+
+        if (fetchRes && fetchRes.ok) {
+          const rawData = await fetchRes.json();
+          const devices = Array.isArray(rawData) ? rawData : (rawData.devices || rawData.data || []);
+          return res.json({
+            success: true,
+            isOffline: false,
+            source: 'LIVE_INVENTORY',
+            devices
+          });
+        }
+      } catch (netErr) {
+        // Fall through to offline notice
+      }
+
+      // Zero Fake Data Law: Never return mock devices if offline
+      return res.json({
+        success: true,
+        isOffline: true,
+        source: 'OFFLINE_STATUS',
+        message: 'منظومة جرد الأصول غير متاحة حالياً عبر الشبكة، يمكنك إدخال اسم الجهاز يدوياً أو اختيار عدم المعرفة لتسجيل التذكرة وتدقيقها لاحقاً.',
+        devices: []
+      });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: 'تعذر جلب قائمة الأجهزة من منظومة جرد الأصول.' });
+    }
+  }
+
+  /**
+   * استعلام التلميح الذكي للأصول بناءً على بيانات مقدم التذكرة الحقيقية
    * GET /api/v1/satellites/inventory/smart-hint?requesterEmail=...&department=...
    */
   static async getAssetSmartHint(req: Request, res: Response) {
@@ -584,40 +636,305 @@ export class SatelliteGatewayController {
       const { requesterEmail, department, building } = req.query;
       const inventoryUrl = SATELLITE_REGISTRY['asset_inventory']?.targetUrl || 'http://localhost:3000';
 
-      // Attempt to query the inventory SQLite/API if available
       try {
         const queryParams = new URLSearchParams();
-        if (requesterEmail) queryParams.set('email', String(requesterEmail));
-        if (department) queryParams.set('department', String(department));
+        if (requesterEmail) queryParams.set('email', String(requesterEmail).trim());
+        if (department) queryParams.set('department', String(department).trim());
+        if (building) queryParams.set('building', String(building).trim());
 
         const fetchRes = await fetch(`${inventoryUrl}/api/devices?${queryParams.toString()}`, {
-          headers: { 'Accept': 'application/json' }
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(3500)
         }).catch(() => null);
 
         if (fetchRes && fetchRes.ok) {
-          const data = await fetchRes.json();
-          return res.json({ success: true, source: 'LIVE_INVENTORY', devices: data });
+          const raw = await fetchRes.json();
+          const devices = Array.isArray(raw) ? raw : (raw.devices || raw.data || []);
+          return res.json({ success: true, isOffline: false, source: 'LIVE_INVENTORY', devices });
         }
       } catch {
-        // Fallback gracefully
+        // Fallback gracefully without fake data
       }
 
-      // Fallback: return heuristic match if inventory server is offline
+      // Zero Fake Data: If offline, notify cleanly
       return res.json({
         success: true,
-        source: 'HEURISTIC_CACHE',
-        devices: [
-          {
-            assetTag: 'AST-LITC-PRN-042',
-            deviceType: 'طابعة شبكية مركزية',
-            model: 'HP LaserJet Enterprise M608',
-            location: building ? `${building} - الطابق الثاني` : 'المقر الرئيسي',
-            status: 'نشط'
-          }
-        ]
+        isOffline: true,
+        source: 'OFFLINE_STATUS',
+        message: 'منظومة جرد الأصول غير متصلة بالشبكة حالياً.',
+        devices: []
       });
     } catch (error: any) {
       return res.status(500).json({ success: false, error: 'تعذر جلب تلميحات الأصول.' });
     }
+  }
+
+  /**
+   * استعلام سجل الصيانة التاريخي لجهاز محدد مع خيار حجب اسم الفني
+   * GET /api/v1/satellites/inventory/maintenance/:assetId?hideTechnicianName=true
+   */
+  static async getAssetMaintenanceHistory(req: Request, res: Response) {
+    try {
+      const { assetId } = req.params;
+      if (!assetId) {
+        return res.status(400).json({ success: false, error: 'معرف الجهاز assetId مطلوب.' });
+      }
+
+      const hideTechnician = req.query.hideTechnicianName === 'true';
+
+      // 1. استعلام التذاكر السابقة المغلقة أو المنجزة لهذا الأصل من قاعدة البيانات المركزية
+      const pastTickets = await prisma.ticket.findMany({
+        where: {
+          assetId: String(assetId).trim(),
+          state: { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } },
+          isDeleted: false
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          resolutionNotes: true,
+          createdAt: true,
+          updatedAt: true,
+          priority: true,
+          rating: {
+            select: { rating: true, feedback: true }
+          },
+          assignments: {
+            where: { isCurrentActive: true },
+            select: {
+              assignedTech: {
+                select: { id: true, fullName: true, jobTitle: true }
+              }
+            },
+            take: 1
+          }
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 10
+      });
+
+      const formattedHistory = pastTickets.map((t: any) => {
+        const activeTech = t.assignments?.[0]?.assignedTech;
+        return {
+          ticketId: t.id,
+          title: t.title,
+          resolutionNotes: t.resolutionNotes || 'تم استكمال أعمال الصيانة بنجاح.',
+          closedAt: t.updatedAt,
+          priority: t.priority,
+          rating: t.rating?.rating || null,
+          feedback: t.rating?.feedback || null,
+          technician: hideTechnician ? 'مهندس الصيانة المعتمد' : (activeTech?.fullName || 'فريق الدعم الفني')
+        };
+      });
+
+      return res.json({
+        success: true,
+        assetId,
+        history: formattedHistory,
+        count: formattedHistory.length
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] getAssetMaintenanceHistory error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر جلب سجل الصيانة للأصل.' });
+    }
+  }
+
+  /**
+   * السجل الرقابي للأجهزة والطلبات غير المرتبطة بأصل محدد
+   * GET /api/v1/satellites/inventory/unlinked-requests
+   */
+  static async getUnlinkedRequestsLedger(req: Request, res: Response) {
+    try {
+      const tickets = await prisma.ticket.findMany({
+        where: {
+          OR: [
+            { isUserUnableToIdentify: true },
+            { isUnregisteredAsset: true },
+            { assetResolutionLocked: true }
+          ],
+          isDeleted: false
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          createdAt: true,
+          priority: true,
+          assetId: true,
+          assetName: true,
+          assetCategory: true,
+          isUserUnableToIdentify: true,
+          isUnregisteredAsset: true,
+          assetResolutionLocked: true,
+          assetSyncStatus: true,
+          creator: {
+            select: { id: true, fullName: true, email: true, phone: true }
+          },
+          departmentObj: {
+            select: { id: true, name: true }
+          },
+          state: {
+            select: { name: true, label: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
+
+      return res.json({
+        success: true,
+        count: tickets.length,
+        tickets
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] getUnlinkedRequestsLedger error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر جلب السجل الرقابي للطلبات غير المرتبطة بأصل.' });
+    }
+  }
+
+  /**
+   * ربط وتدقيق أصل بتذكرة وفك قيد الإغلاق بواسطة المهندس المسند
+   * POST /api/v1/satellites/inventory/link-asset
+   */
+  static async linkAssetToTicket(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const { ticketId, assetId, assetName, assetCategory } = req.body;
+
+      if (!ticketId || !assetId) {
+        return res.status(400).json({ success: false, error: 'رقم التذكرة ticketId ومعرف الأصل assetId مطلوبان.' });
+      }
+
+      const cleanTicketId = Number(ticketId);
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: cleanTicketId },
+        select: { id: true, title: true, assetResolutionLocked: true }
+      });
+
+      if (!ticket) {
+        return res.status(404).json({ success: false, error: 'التذكرة غير موجودة.' });
+      }
+
+      // تحديث التذكرة وفك قيد الإغلاق
+      const updated = await prisma.ticket.update({
+        where: { id: cleanTicketId },
+        data: {
+          assetId: String(assetId).trim(),
+          assetName: assetName ? String(assetName).trim() : undefined,
+          assetCategory: assetCategory ? String(assetCategory).trim() : undefined,
+          isUserUnableToIdentify: false,
+          isUnregisteredAsset: false,
+          assetResolutionLocked: false, // فك قيد الإغلاق بنجاح
+          assetSyncStatus: 'LINKED_VERIFIED'
+        }
+      });
+
+      // تسجيل إجراء الربط في سجل التذكرة TicketLog
+      await prisma.ticketLog.create({
+        data: {
+          ticketId: cleanTicketId,
+          action: `ASSET_VERIFIED_AND_LINKED: تم ربط وتحقيق الأصل (${assetName || assetId}) بنجاح وفك قيد الإغلاق بواسطة المهندس ${user?.fullName || user?.username || 'المعتمد'}.`
+        }
+      }).catch(() => {});
+
+      // جدولة مزامنة الربط في طابور المزامنة العكسية AssetSyncOutbox
+      await prisma.assetSyncOutbox.create({
+        data: {
+          ticketId: cleanTicketId,
+          assetId: String(assetId).trim(),
+          actionType: 'ASSET_LINKED',
+          payload: JSON.stringify({
+            ticketId: cleanTicketId,
+            assetId: String(assetId).trim(),
+            assetName: assetName || '',
+            verifiedById: user?.id,
+            verifiedByName: user?.fullName || user?.username,
+            timestamp: new Date().toISOString()
+          }),
+          status: 'PENDING'
+        }
+      }).catch(err => console.warn('[SatelliteGatewayController] Failed to queue AssetSyncOutbox:', err));
+
+      // محاولة المزامنة الفورية في الخلفية
+      SatelliteGatewayController.triggerOutboxWorker();
+
+      return res.json({
+        success: true,
+        message: 'تم ربط الأصل وتحقيقه بنجاح وفك قيد الإغلاق للتذكرة.',
+        ticket: {
+          id: updated.id,
+          assetId: updated.assetId,
+          assetName: updated.assetName,
+          assetResolutionLocked: updated.assetResolutionLocked,
+          assetSyncStatus: updated.assetSyncStatus
+        }
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] linkAssetToTicket error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر ربط الأصل بالتذكرة.' });
+    }
+  }
+
+  /**
+   * تشغيل عامل معالجة طابور المزامنة العكسية Outbox Worker
+   */
+  static triggerOutboxWorker() {
+    setImmediate(async () => {
+      try {
+        await ensureRegistryLoaded();
+        const inventoryUrl = SATELLITE_REGISTRY['asset_inventory']?.targetUrl || 'http://localhost:3000';
+
+        const pendingItems = await prisma.assetSyncOutbox.findMany({
+          where: { status: 'PENDING', attempts: { lt: 5 } },
+          orderBy: { createdAt: 'asc' },
+          take: 15
+        });
+
+        for (const item of pendingItems) {
+          try {
+            let payload: any = {};
+            try { payload = JSON.parse(item.payload); } catch {}
+
+            const res = await fetch(`${inventoryUrl}/api/logs`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                action: item.actionType,
+                assetId: item.assetId,
+                ticketId: item.ticketId,
+                details: payload
+              }),
+              signal: AbortSignal.timeout(4000)
+            }).catch(() => null);
+
+            if (res && res.ok) {
+              await prisma.assetSyncOutbox.update({
+                where: { id: item.id },
+                data: { status: 'SYNCED', syncedAt: new Date() }
+              });
+            } else {
+              await prisma.assetSyncOutbox.update({
+                where: { id: item.id },
+                data: {
+                  attempts: { increment: 1 },
+                  lastError: res ? `HTTP ${res.status}` : 'Connection timeout / server offline'
+                }
+              });
+            }
+          } catch (syncErr: any) {
+            await prisma.assetSyncOutbox.update({
+              where: { id: item.id },
+              data: {
+                attempts: { increment: 1 },
+                lastError: syncErr?.message || 'Unknown sync error'
+              }
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.warn('[SatelliteGatewayController] Outbox worker failed:', err);
+      }
+    });
   }
 }

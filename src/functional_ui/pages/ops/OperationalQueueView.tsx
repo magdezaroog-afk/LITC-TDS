@@ -7,6 +7,9 @@ import { FlowReceptionGovernanceView } from './FlowReceptionGovernanceView';
 import { DynamicFormAwareAnalytics } from '../../../components/analytics/DynamicFormAwareAnalytics';
 import { AnalyticsGovernanceView } from '../../../components/analytics/AnalyticsGovernanceView';
 import { CinemaTicketFrame, TicketCodeBadge } from '../../components/CinemaTicketFrame';
+import { LinkAssetModal } from './LinkAssetModal';
+import { UnlinkedAssetsLedgerModal } from './UnlinkedAssetsLedgerModal';
+import { StandaloneInternalTicketModal } from './StandaloneInternalTicketModal';
 import { 
   Inbox, Activity, CheckCircle, Clock, Search, Filter, 
   AlertCircle, RefreshCw, Layers, MoreVertical, ArrowUpRight,
@@ -15,7 +18,7 @@ import {
   MessageSquare, RotateCcw, FileCheck, XCircle, History,
   ArrowRightLeft, Hourglass, Plus, PlusCircle, GitBranch, ArrowLeft, ExternalLink,
   GitPullRequest, Zap, Sun, Moon, BarChart3, Paperclip, Download, Eye,
-  LayoutGrid, List, SlidersHorizontal, Minus
+  LayoutGrid, List, SlidersHorizontal, Minus, Laptop, Lock, Unlock, Wrench
 } from 'lucide-react';
 
 // --- Types ---
@@ -49,6 +52,15 @@ interface Ticket {
   targetDivisionName?: string;
   handoverInfo?: any;
   isPendingHandover?: boolean;
+  assetId?: string | null;
+  assetName?: string | null;
+  assetCategory?: string | null;
+  isUnregisteredAsset?: boolean;
+  isUserUnableToIdentify?: boolean;
+  assetSyncStatus?: string | null;
+  assetResolutionLocked?: boolean;
+  isInternalRequest?: boolean;
+  internalScope?: string | null;
   parentTicket?: {
     id: number;
     code: string;
@@ -632,6 +644,48 @@ export const OperationalQueueView: React.FC = () => {
   const [subTicketDivisionId, setSubTicketDivisionId] = useState<string>('');
   const [subTicketPriority, setSubTicketPriority] = useState('MEDIUM');
   const [isCreatingSubTicket, setIsCreatingSubTicket] = useState(false);
+
+  // Asset Management & Internal Tickets Modals State
+  const [isLinkAssetModalOpen, setIsLinkAssetModalOpen] = useState(false);
+  const [linkAssetTicket, setLinkAssetTicket] = useState<Ticket | null>(null);
+  const [isUnlinkedLedgerModalOpen, setIsUnlinkedLedgerModalOpen] = useState(false);
+  const [isStandaloneInternalModalOpen, setIsStandaloneInternalModalOpen] = useState(false);
+  const [assetHistoryModal, setAssetHistoryModal] = useState<{
+    isOpen: boolean;
+    assetId: string;
+    assetName: string;
+    history: any[];
+    isLoading: boolean;
+    hideTech: boolean;
+  }>({
+    isOpen: false,
+    assetId: '',
+    assetName: '',
+    history: [],
+    isLoading: false,
+    hideTech: false
+  });
+
+  const handleOpenAssetHistory = async (assetId: string, assetName: string, hideTech = false) => {
+    setAssetHistoryModal({
+      isOpen: true,
+      assetId,
+      assetName,
+      history: [],
+      isLoading: true,
+      hideTech
+    });
+    try {
+      const res = await OpsAPI.getAssetMaintenanceHistory(assetId, hideTech);
+      if (res.success) {
+        setAssetHistoryModal(prev => ({ ...prev, history: res.history || [], isLoading: false }));
+      } else {
+        setAssetHistoryModal(prev => ({ ...prev, history: [], isLoading: false }));
+      }
+    } catch {
+      setAssetHistoryModal(prev => ({ ...prev, history: [], isLoading: false }));
+    }
+  };
 
   // Fetch Full Ticket Details on inspection
   useEffect(() => {
@@ -1791,6 +1845,54 @@ export const OperationalQueueView: React.FC = () => {
                   >
                     <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
                     <span>تحديث</span>
+                  </button>
+
+                  {/* Standalone Internal Ticket Button */}
+                  <button
+                    onClick={() => setIsStandaloneInternalModalOpen(true)}
+                    title="إنشاء طلب داخلي أو مهمة مستقلة بنطاق هرمي"
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(243, 108, 33, 0.4)',
+                      background: isDark ? 'rgba(243, 108, 33, 0.15)' : '#fff7ed',
+                      color: '#f36c21',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <PlusCircle size={14} />
+                    <span>طلب داخلي مستقل</span>
+                  </button>
+
+                  {/* Unlinked Assets Ledger Button */}
+                  <button
+                    onClick={() => setIsUnlinkedLedgerModalOpen(true)}
+                    title="السجل الرقابي للطلبات غير المرتبطة بأصل محدد"
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      border: isDark ? '1px solid rgba(19, 93, 121, 0.5)' : '1px solid #135d79',
+                      background: isDark ? 'rgba(19, 93, 121, 0.2)' : '#f0f9ff',
+                      color: isDark ? '#38bdf8' : '#0369a1',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Layers size={14} />
+                    <span>السجل الرقابي للأصول</span>
                   </button>
                 </div>
               )}
@@ -3340,6 +3442,218 @@ export const OperationalQueueView: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* ── 1.5 Technical Asset & Inventory Linkage Bento Card ── */}
+                    {(() => {
+                      const curAssetId = inspectTicketDetails?.assetId || inspectTicket.assetId;
+                      const curAssetName = inspectTicketDetails?.assetName || inspectTicket.assetName;
+                      const curAssetCategory = inspectTicketDetails?.assetCategory || inspectTicket.assetCategory;
+                      const isLocked = inspectTicketDetails?.assetResolutionLocked ?? inspectTicket.assetResolutionLocked;
+                      const isUnable = inspectTicketDetails?.isUserUnableToIdentify ?? inspectTicket.isUserUnableToIdentify;
+                      const isUnregistered = inspectTicketDetails?.isUnregisteredAsset ?? inspectTicket.isUnregisteredAsset;
+                      const isInternal = inspectTicketDetails?.isInternalRequest ?? inspectTicket.isInternalRequest;
+                      const internalScope = inspectTicketDetails?.internalScope || inspectTicket.internalScope;
+
+                      return (
+                        <div style={{
+                          background: isLocked 
+                            ? (isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(254, 242, 242, 0.8)')
+                            : (isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff'),
+                          border: isLocked 
+                            ? (isDark ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1.5px solid #fca5a5')
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                          borderRadius: '16px',
+                          padding: '16px 18px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          boxShadow: isLocked ? '0 4px 16px rgba(239, 68, 68, 0.08)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          {/* Card Header */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '30px', height: '30px', borderRadius: '8px',
+                                background: isLocked ? 'rgba(239, 68, 68, 0.15)' : 'rgba(19, 93, 121, 0.15)',
+                                color: isLocked ? '#ef4444' : '#135d79',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}>
+                                <Laptop size={17} />
+                              </div>
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                                  جرد الأجهزة والربط الفني (Asset Linkage):
+                                </h4>
+                                <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b' }}>
+                                  التحقق التبادلي المعتمد مع قاعدة بيانات الأصول المركزية
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Badges */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {isInternal && (
+                                <span style={{
+                                  fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
+                                  background: 'rgba(243, 108, 33, 0.12)', color: '#f36c21', border: '1px solid rgba(243, 108, 33, 0.3)'
+                                }}>
+                                  طلب داخلي ({internalScope === 'CROSS_DEPT' ? 'عابر للإدارات' : internalScope === 'DEPARTMENT' ? 'قسم' : 'فريق'})
+                                </span>
+                              )}
+                              {isLocked ? (
+                                <span style={{
+                                  fontSize: '11px', fontWeight: 800, padding: '3px 9px', borderRadius: '6px',
+                                  background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  display: 'flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                  <Lock size={12} />
+                                  قيد الإغلاق مفعل (يتطلب تدقيق)
+                                </span>
+                              ) : curAssetId ? (
+                                <span style={{
+                                  fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
+                                  background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  display: 'flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                  <ShieldCheck size={13} />
+                                  أصل معتمد وموثق
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* Lock Warning Banner */}
+                          {isLocked && (
+                            <div style={{
+                              background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fff1f2',
+                              border: '1px dashed #ef4444',
+                              borderRadius: '10px',
+                              padding: '10px 12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              fontSize: '12px',
+                              color: isDark ? '#fca5a5' : '#991b1b',
+                              lineHeight: 1.5
+                            }}>
+                              <AlertTriangle size={18} style={{ flexShrink: 0, color: '#ef4444' }} />
+                              <div>
+                                <strong>تنبيه قيد الإغلاق (Gated Resolution Lock):</strong> هذه التذكرة مقفلة برمجياً لمنع التجاوز. لا يمكن للجهة الفنية إنهاء أو اعتماد إغلاق التذكرة إلا بعد تدقيق الجهاز وربط الأصل الحقيقي.
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Asset Details Grid */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                            gap: '10px',
+                            background: isDark ? 'rgba(0,0,0,0.2)' : '#f8fafc',
+                            padding: '12px',
+                            borderRadius: '10px'
+                          }}>
+                            <div>
+                              <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '2px' }}>
+                                اسم / طراز الجهاز:
+                              </span>
+                              <strong style={{ fontSize: '13px', color: isDark ? '#f8fafc' : '#0f172a' }}>
+                                {curAssetName || (isUnable ? 'غير محدد (الموظف لا يعرف)' : isUnregistered ? 'جهاز جديد غير مسجل' : 'لم يُربط بعد')}
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '2px' }}>
+                                رقم الأصل (Asset Tag / ID):
+                              </span>
+                              <strong style={{ fontSize: '13px', color: curAssetId ? '#0284c7' : '#64748b', direction: 'ltr', display: 'inline-block' }}>
+                                {curAssetId || '—'}
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', display: 'block', marginBottom: '2px' }}>
+                                تصنيف الجهاز:
+                              </span>
+                              <strong style={{ fontSize: '12.5px', color: isDark ? '#cbd5e1' : '#334155' }}>
+                                {curAssetCategory || 'معدات تقنية'}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {/* Requester Asset Flag Notes */}
+                          {(isUnable || isUnregistered) && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {isUnable && (
+                                <span style={{ fontSize: '11.5px', color: '#ea580c', background: 'rgba(234, 88, 12, 0.1)', padding: '3px 8px', borderRadius: '6px' }}>
+                                  ℹ️ صاحب الطلب أشار: لا يعرف نوع الجهاز أو غير مؤهل لتحديده
+                                </span>
+                              )}
+                              {isUnregistered && (
+                                <span style={{ fontSize: '11.5px', color: '#0284c7', background: 'rgba(2, 132, 199, 0.1)', padding: '3px 8px', borderRadius: '6px' }}>
+                                  ℹ️ صاحب الطلب أشار: الجهاز تم تركيبه حديثاً أو غير مسجل في الجرد
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action Buttons for Engineers */}
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: '4px' }}>
+                            {curAssetId && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssetHistory(curAssetId, curAssetName || curAssetId)}
+                                style={{
+                                  padding: '7px 12px',
+                                  borderRadius: '8px',
+                                  border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #cbd5e1',
+                                  background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                                  color: isDark ? '#f8fafc' : '#334155',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <History size={13} />
+                                <span>سجل الصيانة التاريخي للأصل</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLinkAssetTicket(inspectTicket);
+                                setIsLinkAssetModalOpen(true);
+                              }}
+                              style={{
+                                padding: '7px 14px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: isLocked
+                                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                                  : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                                color: '#ffffff',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: isLocked
+                                  ? '0 2px 8px rgba(239, 68, 68, 0.3)'
+                                  : '0 2px 8px rgba(2, 132, 199, 0.3)'
+                              }}
+                            >
+                              {isLocked ? <Unlock size={13} /> : <Laptop size={13} />}
+                              <span>{isLocked ? 'ربط وتدقيق الأصل وفك القيد' : 'تحديث ربط الأصل'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Resolution Notes Box (If present) */}
                     {(inspectTicketDetails?.resolutionNotes || inspectTicket.resolutionNotes) && (
                       <div style={{
@@ -4625,6 +4939,189 @@ export const OperationalQueueView: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Link Asset Modal */}
+      {isLinkAssetModalOpen && linkAssetTicket && (
+        <LinkAssetModal
+          isOpen={isLinkAssetModalOpen}
+          ticketId={linkAssetTicket.id}
+          ticketTitle={linkAssetTicket.title || linkAssetTicket.subject || `تذكرة #${linkAssetTicket.id}`}
+          isDark={isDark}
+          onClose={() => {
+            setIsLinkAssetModalOpen(false);
+            setLinkAssetTicket(null);
+          }}
+          onSuccess={() => {
+            fetchData();
+            if (inspectTicket && inspectTicket.id === linkAssetTicket.id) {
+              OpsAPI.getTicketDetails(inspectTicket.id).then(res => {
+                if (res.success && res.data) {
+                  setInspectTicketDetails(res.data);
+                  setInspectTicket(prev => prev ? { ...prev, ...res.data, assetResolutionLocked: false } : null);
+                }
+              });
+            }
+            setIsLinkAssetModalOpen(false);
+            setLinkAssetTicket(null);
+          }}
+        />
+      )}
+
+      {/* Unlinked Assets Ledger Modal */}
+      {isUnlinkedLedgerModalOpen && (
+        <UnlinkedAssetsLedgerModal
+          isOpen={isUnlinkedLedgerModalOpen}
+          isDark={isDark}
+          onClose={() => setIsUnlinkedLedgerModalOpen(false)}
+          onSelectTicketToLink={(t) => {
+            setIsUnlinkedLedgerModalOpen(false);
+            const target = tickets.find(item => item.id === t.id);
+            if (target) {
+              setInspectTicket(target);
+            } else {
+              OpsAPI.getTicketDetails(t.id).then(res => {
+                if (res.success && res.data) {
+                  setInspectTicket(res.data);
+                }
+              });
+            }
+            setLinkAssetTicket(t);
+            setIsLinkAssetModalOpen(true);
+          }}
+        />
+      )}
+
+      {/* Standalone Internal Ticket Modal */}
+      {isStandaloneInternalModalOpen && (
+        <StandaloneInternalTicketModal
+          isOpen={isStandaloneInternalModalOpen}
+          departments={departments}
+          isDark={isDark}
+          onClose={() => setIsStandaloneInternalModalOpen(false)}
+          onSuccess={() => {
+            setIsStandaloneInternalModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Asset Maintenance History Modal */}
+      {assetHistoryModal.isOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '640px', maxHeight: '85vh',
+            background: isDark ? '#0f172a' : '#ffffff',
+            borderRadius: '20px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
+            direction: 'rtl'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <History size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a' }}>
+                    سجل الصيانة التاريخي للأصل ({assetHistoryModal.assetId})
+                  </h3>
+                  <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }}>
+                    {assetHistoryModal.assetName} • جميع التدخلات الفنية المعتمدة
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setAssetHistoryModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Privacy Toggle Bar */}
+            <div style={{
+              padding: '10px 24px',
+              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #f1f5f9',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', color: isDark ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={assetHistoryModal.hideTech}
+                  onChange={e => handleOpenAssetHistory(assetHistoryModal.assetId, assetHistoryModal.assetName, e.target.checked)}
+                />
+                <span>حجب اسم الفني (معايير الخصوصية للمنظومة)</span>
+              </label>
+              <span style={{ fontSize: '11.5px', color: '#0284c7', fontWeight: 700 }}>
+                {assetHistoryModal.history.length} عمليات سابقة
+              </span>
+            </div>
+
+            {/* History Content */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {assetHistoryModal.isLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px' }} />
+                  <span>جاري استرجاع سجل الصيانة من قاعدة البيانات...</span>
+                </div>
+              ) : assetHistoryModal.history.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  <span>لا توجد عمليات صيانة سابقة مسجلة لهذا الأصل في المنظومة.</span>
+                </div>
+              ) : (
+                assetHistoryModal.history.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                        #{item.ticketId} — {item.title}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        {item.closedAt ? new Date(item.closedAt).toLocaleDateString('ar-LY') : ''}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, background: isDark ? 'rgba(0,0,0,0.2)' : '#ffffff', padding: '8px 10px', borderRadius: '8px' }}>
+                      {item.resolutionNotes}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#64748b' }}>
+                      <span>الفني القائم بالعمل: <strong>{item.technician}</strong></span>
+                      {item.rating && <span>التقييم: ⭐ {item.rating}/5</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
