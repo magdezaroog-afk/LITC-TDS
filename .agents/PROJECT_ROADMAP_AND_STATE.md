@@ -190,12 +190,35 @@
   * **توثيق السياسات الـ 27 لشركة LITC كمرجع سيادي أول:** تحديث مهارة الأمن السيبراني [`.agents/skills/cybersecurity-and-privacy-constitution/SKILL.md`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/.agents/skills/cybersecurity-and-privacy-constitution/SKILL.md) والقواعد [`.agents/rules/cybersecurity_and_privacy_standards.md`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/.agents/rules/cybersecurity_and_privacy_standards.md) بالبنود التفصيلية لدليل LITC v1.01.
   * **تحديث التقرير الأمني الاستراتيجي المرجعي:** تحديث [`public/cybersecurity_report.html`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/public/cybersecurity_report.html) ليشمل جدول مصفوفة الامتثال الـ 27 لشركة LITC ومؤشرات النضج الميداني التي ارتفعت إلى **93.8%**.
 
+- [x] **تأسيس حزمة الأمان الثلاثية وترقية منظومة المهارات والدستور لعام 2026 (Triple Security Suite & Universal Agent Skills):**
+  * **تثبيت وفحص الحزمة الأمنية الثلاثية المعتمدة:**
+    - `Nuclei v3.11.1`: لفحص مسارات الـ APIs و ثغرات الـ Web Endpoints.
+    - `Semgrep v1.182.1`: لفحص الكود المصدري الساكن (SAST) وحظر الثغرات قبل الـ Commit.
+    - `Trivy v0.76.1`: لفحص حزم المكتبات والاعتماديات (SCA) وكشف ثغرات الـ CVEs.
+    - توفير سكربت الفحص الموحد الميداني [`security-tools\test_security_tools.ps1`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/security-tools/test_security_tools.ps1) بنجاح فحص 100%.
+  * **تنظيف وأرشفة جذر المشروع:**
+    - أرشفة كافة التقارير القديمة والمكررة من جذر المشروع إلى مجلد الأرشيف الموحد [`docs/archive/`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/docs/archive).
+    - دمج المجلد المفرد `.agent` كلياً في المجلد الموحد `.agents`.
+    - إزالة ملفات الأدوار المتعارضة وترشيق دستور المنظومة [`AGENTS.md`](file:///c:/Users/majdi.alzarrouk/OneDrive%20-%20LITC/Desktop/المشاريع/v43_Production/.agents/AGENTS.md) ليكون ميثاقاً مؤسسياً موحداً ومصدراً واحداً للحقيقة (Single Source of Truth).
+  * **نشر حزمة المهارات المؤسسية العشر (Top 10 Universal Enterprise Skills):**
+    1. `zero-fake-data-auditor` (تلقائية)
+    2. `security-auditing` (عند الطلب وتلقائياً قبل الـ Commit)
+    3. `database-migration-guard` (تلقائية لحماية Prisma و PostgreSQL)
+    4. `playwright-e2e-testing` (عند الطلب وتلقائياً لاختبار الواجهات)
+    5. `api-contract-and-openapi-sync` (تلقائية لحوكمة العقود البرمجية)
+    6. `arabic-bilingual-i18n-linter` (تلقائية لضبط RTL والخصائص المنطقية)
+    7. `performance-and-memory-profiling` (تلقائية لرصد تسريب الذاكرة)
+    8. `mobile-responsive-ergonomics-audit` (تلقائية لضبط منطقة الإبهام والجداول)
+    9. `systematic-debugging-and-root-cause` (تلقائية لتشخيص الأعطال من جذورها)
+    10. `git-semantic-release-and-changelog` (تلقائية لحفظ النسخ كل 5 مهام)
+
 ---
 
 ### 4. الحالة الراهنة (Current Operational State)
 
 * **الحالة:** مكتمل ومفحوص ميدانياً بنجاح 100%، البناء المصدري `npm run build` وفحص الأنواع `tsc --noEmit` يعملان بنجاح تام وبصفر أخطاء.
 * **الجاهزية والامتثال الأمني:** ممتثل بالكامل لدليل سياسات شركة الاتصالات الدولية الليبية (LITC v1.01 - 2025) ومعايير NIST CSF 2.0 و OWASP Top 10 لعام 2026 بنسبة نضج ميداني تفوق **93.8%**.
+* **المنظومة المعرفية للمهندس التنفيذي:** تعمل وفق دستور 2026 المؤسسي الموحد مع 13 مهارة متخصصة ومصنفة (تلقائية وعند الطلب) قابلة للاستخدام في هذا المشروع وأي مشروع مؤسسي قادم.
 
 ---
 
@@ -204,8 +227,3 @@
 * متابعة توجيهات سعادة مدير المشروع في تعزيز باقي وظائف النظام وتطويره وفق أعلى المعايير.
 
 *(جاهز للانتقال للخطوة الإدارية التالية بتوجيه سعادة مدير المشروع).*
-
-
-
-
-
