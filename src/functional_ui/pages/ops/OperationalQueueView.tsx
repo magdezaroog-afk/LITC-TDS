@@ -651,6 +651,8 @@ export const OperationalQueueView: React.FC = () => {
   const [linkAssetTicket, setLinkAssetTicket] = useState<Ticket | null>(null);
   const [isUnlinkedLedgerModalOpen, setIsUnlinkedLedgerModalOpen] = useState(false);
   const [isStandaloneInternalModalOpen, setIsStandaloneInternalModalOpen] = useState(false);
+  const [subTicketDirection, setSubTicketDirection] = useState<'RECEIVED' | 'SENT' | 'ALL'>('RECEIVED');
+  const [subTicketLinkage, setSubTicketLinkage] = useState<'ALL' | 'LINKED' | 'STANDALONE'>('ALL');
   const [assetHistoryModal, setAssetHistoryModal] = useState<{
     isOpen: boolean;
     assetId: string;
@@ -759,7 +761,7 @@ export const OperationalQueueView: React.FC = () => {
           : activeTab === 'MY_QUEUE'
           ? OpsAPI.getMyQueue({ limit: 50 }).catch(() => ({ data: [] }))
           : activeTab === 'SUB_TICKETS'
-          ? OpsAPI.getAllSubTickets({ limit: 50 }).catch(() => ({ data: [] }))
+          ? OpsAPI.getAllSubTickets({ limit: 50, direction: subTicketDirection, linkage: subTicketLinkage }).catch(() => ({ data: [] }))
           : activeTab === 'ARCHIVE'
           ? OpsAPI.getAllTickets({ archive: true, limit: 50 }).catch(() => ({ data: [] }))
           : OpsAPI.getAllTickets({ limit: 50 }).catch(() => ({ data: [] }))
@@ -788,11 +790,19 @@ export const OperationalQueueView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, subTicketDirection, subTicketLinkage]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    OpsAPI.getDepartments().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setDepartments(res.data);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Handle claiming ticket from pool
   const handleClaimTicket = async (ticketId: number) => {
@@ -1936,6 +1946,174 @@ export const OperationalQueueView: React.FC = () => {
             ) : (
               /* Tickets List Rendered in RAIL, GRID, or LIST */
               <div style={{ minHeight: '520px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {/* Dedicated Control Bar for Sub-Tickets & Internal Requests */}
+                {activeTab === 'SUB_TICKETS' && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    marginBottom: '16px',
+                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                    borderRadius: '14px',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'
+                  }}>
+                    {/* Direction Switcher */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>
+                        الاتجاه:
+                      </span>
+                      <div style={{
+                        display: 'inline-flex',
+                        background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#e2e8f0',
+                        borderRadius: '10px',
+                        padding: '3px',
+                        gap: '2px'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketDirection('RECEIVED')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: subTicketDirection === 'RECEIVED' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketDirection === 'RECEIVED'
+                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketDirection === 'RECEIVED' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketDirection === 'RECEIVED' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          📥 المهام المستلمة (الواردة إلينا)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketDirection('SENT')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: subTicketDirection === 'SENT' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketDirection === 'SENT'
+                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketDirection === 'SENT' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketDirection === 'SENT' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          📤 المهام المرسلة (الصادرة منا)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketDirection('ALL')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: subTicketDirection === 'ALL' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketDirection === 'ALL'
+                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketDirection === 'ALL' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketDirection === 'ALL' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          🌐 كافة المهام الداخلية
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Linkage Filter */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>
+                        التصنيف:
+                      </span>
+                      <div style={{
+                        display: 'inline-flex',
+                        background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#e2e8f0',
+                        borderRadius: '10px',
+                        padding: '3px',
+                        gap: '2px'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketLinkage('ALL')}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '11.5px',
+                            fontWeight: subTicketLinkage === 'ALL' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketLinkage === 'ALL'
+                              ? (isDark ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketLinkage === 'ALL' ? (isDark ? '#ffffff' : '#059669') : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketLinkage === 'ALL' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+                          }}
+                        >
+                          الكل
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketLinkage('LINKED')}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '11.5px',
+                            fontWeight: subTicketLinkage === 'LINKED' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketLinkage === 'LINKED'
+                              ? (isDark ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketLinkage === 'LINKED' ? (isDark ? '#ffffff' : '#059669') : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketLinkage === 'LINKED' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+                          }}
+                        >
+                          🔗 مهام فرعية لطلب
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubTicketLinkage('STANDALONE')}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '11.5px',
+                            fontWeight: subTicketLinkage === 'STANDALONE' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: subTicketLinkage === 'STANDALONE'
+                              ? (isDark ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' : '#ffffff')
+                              : 'transparent',
+                            color: subTicketLinkage === 'STANDALONE' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: subTicketLinkage === 'STANDALONE' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+                          }}
+                        >
+                          📄 طلبات داخلية مستقلة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8', gap: '14px', flex: 1 }}>
                     <RefreshCw size={28} className="animate-spin" color="#2563eb" />
@@ -5147,6 +5325,69 @@ export const OperationalQueueView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ═══ 7. NEW MODALS: LINK ASSET, UNLINKED ASSETS LEDGER, STANDALONE INTERNAL TICKET ═══ */}
+      {isLinkAssetModalOpen && linkAssetTicket && (
+        <LinkAssetModal
+          isOpen={isLinkAssetModalOpen}
+          ticketId={linkAssetTicket.id}
+          ticketTitle={linkAssetTicket.title || linkAssetTicket.subject || `REQ-${linkAssetTicket.id}`}
+          isDark={isDark}
+          onClose={() => {
+            setIsLinkAssetModalOpen(false);
+            setLinkAssetTicket(null);
+          }}
+          onSuccess={(updatedTicket) => {
+            setIsLinkAssetModalOpen(false);
+            setLinkAssetTicket(null);
+            fetchData();
+            if (inspectTicket && inspectTicket.id === updatedTicket?.id) {
+              setInspectTicket((prev: any) => ({
+                ...prev,
+                assetId: updatedTicket.assetId,
+                assetName: updatedTicket.assetName,
+                assetCategory: updatedTicket.assetCategory,
+                assetResolutionLocked: false
+              }));
+              if (inspectTicketDetails) {
+                setInspectTicketDetails((prev: any) => ({
+                  ...prev,
+                  assetId: updatedTicket.assetId,
+                  assetName: updatedTicket.assetName,
+                  assetCategory: updatedTicket.assetCategory,
+                  assetResolutionLocked: false
+                }));
+              }
+            }
+          }}
+        />
+      )}
+
+      {isUnlinkedLedgerModalOpen && (
+        <UnlinkedAssetsLedgerModal
+          isOpen={isUnlinkedLedgerModalOpen}
+          isDark={isDark}
+          onClose={() => setIsUnlinkedLedgerModalOpen(false)}
+          onSelectTicketToLink={(ticket) => {
+            setIsUnlinkedLedgerModalOpen(false);
+            setLinkAssetTicket(ticket);
+            setIsLinkAssetModalOpen(true);
+          }}
+        />
+      )}
+
+      {isStandaloneInternalModalOpen && (
+        <StandaloneInternalTicketModal
+          isOpen={isStandaloneInternalModalOpen}
+          departments={departments}
+          isDark={isDark}
+          onClose={() => setIsStandaloneInternalModalOpen(false)}
+          onSuccess={() => {
+            setIsStandaloneInternalModalOpen(false);
+            fetchData();
+          }}
+        />
       )}
     </div>
   );

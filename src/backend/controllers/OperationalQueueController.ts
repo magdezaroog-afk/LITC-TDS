@@ -1636,7 +1636,7 @@ export class OperationalQueueController {
   static async getAllSubTickets(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 30, status, priority, search } = req.query;
+      const { cursor, limit = 30, status, priority, search, direction = 'ALL', linkage = 'ALL' } = req.query;
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
@@ -1648,17 +1648,41 @@ export class OperationalQueueController {
       const take = Math.min(Number(limit), 100);
 
       const where: any = {
-        isDeleted: false,
-        parentId: { not: null }
+        isDeleted: false
       };
 
-      if (!isAdmin) {
+      // 1. تحديد نمط الربط (فرعية مرتبطة بطلب رئيسي، أم طلبات داخلية مستقلة)
+      if (linkage === 'STANDALONE') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+      } else if (linkage === 'LINKED') {
+        where.parentId = { not: null };
+      } else {
         where.OR = [
-          { departmentId: fullUser?.departmentId },
-          { creatorId: user.id },
-          { assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } },
-          { parentTicket: { departmentId: fullUser?.departmentId } }
+          { parentId: { not: null } },
+          { isInternalRequest: true }
         ];
+      }
+
+      // 2. تحديد اتجاه المهام الداخلية (المستلمة / الواردة للتنفيذ، أم المرسلة / الصادرة للمتابعة)
+      if (direction === 'SENT') {
+        where.creatorId = user.id;
+      } else if (direction === 'RECEIVED') {
+        if (!isAdmin) {
+          where.departmentId = fullUser?.departmentId;
+        }
+      } else {
+        if (!isAdmin) {
+          const authFilter = {
+            OR: [
+              { departmentId: fullUser?.departmentId },
+              { creatorId: user.id },
+              { assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } },
+              { parentTicket: { departmentId: fullUser?.departmentId } }
+            ]
+          };
+          where.AND = [authFilter];
+        }
       }
 
       const isArchiveSub = req.query.archive === 'true' || status === 'ARCHIVED' || status === 'CLOSED';
@@ -1881,6 +1905,15 @@ function formatTicketItem(t: any) {
     handoverInfo,
     isPendingHandover: t.state?.name === 'PENDING_HANDOVER',
     slaBreached: hasSlaBreached,
+    assetId: t.assetId || null,
+    assetName: t.assetName || null,
+    assetCategory: t.assetCategory || null,
+    isUnregisteredAsset: !!t.isUnregisteredAsset,
+    isUserUnableToIdentify: !!t.isUserUnableToIdentify,
+    assetSyncStatus: t.assetSyncStatus || null,
+    assetResolutionLocked: !!t.assetResolutionLocked,
+    isInternalRequest: !!t.isInternalRequest,
+    internalScope: t.internalScope || null,
     commentsCount: t._count?.comments || 0,
     filesCount: t._count?.files || 0,
     createdAt: t.createdAt,

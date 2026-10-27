@@ -118,7 +118,7 @@ export const OpsAPI = {
     }).then(handleResponse),
 
   // كافة التذاكر والمهام الداخلية (تبويب مخصص في منصة العمل أو الأرشيف)
-  getAllSubTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; archive?: boolean } = {}) => {
+  getAllSubTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; archive?: boolean; direction?: 'RECEIVED' | 'SENT' | 'ALL'; linkage?: 'LINKED' | 'STANDALONE' | 'ALL' } = {}) => {
     const q = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
     return fetch(`${BASE}/sub-tickets?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);

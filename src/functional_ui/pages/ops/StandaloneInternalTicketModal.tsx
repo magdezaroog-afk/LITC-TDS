@@ -45,7 +45,7 @@ export const StandaloneInternalTicketModal: React.FC<StandaloneInternalTicketMod
     setIsSubmitting(true);
     setErrorMsg('');
     try {
-      const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token') || localStorage.getItem('token');
+      const token = localStorage.getItem('nexus_token') || localStorage.getItem('litc_token') || sessionStorage.getItem('nexus_token') || localStorage.getItem('token');
       const targetDeptObj = departments.find(d => Number(d.id) === Number(targetDeptId));
 
       const res = await fetch('/api/v1/functional/requests', {
