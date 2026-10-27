@@ -457,12 +457,13 @@ export const OperationalQueueView: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
+  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ARCHIVE' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
   const [poolCount, setPoolCount] = useState<number>(0);
   const [myCount, setMyCount] = useState<number>(0);
   const [subTicketsCount, setSubTicketsCount] = useState<number>(0);
+  const [archiveCount, setArchiveCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [managedFlowsCount, setManagedFlowsCount] = useState<number>(0);
@@ -747,17 +748,20 @@ export const OperationalQueueView: React.FC = () => {
     if (activeTab === 'FLOW_SETTINGS') return;
     setLoading(true);
     try {
-      const [statsRes, poolRes, myRes, subRes, targetRes] = await Promise.all([
-        OpsAPI.getStats().catch(() => ({ data: { openCount: 0, slaBreachedCount: 0, closedTodayCount: 0 } })),
+      const [statsRes, poolRes, myRes, subRes, archiveRes, targetRes] = await Promise.all([
+        OpsAPI.getStats().catch(() => ({ data: { openCount: 0, slaBreachedCount: 0, closedTodayCount: 0, totalClosedCount: 0 } })),
         OpsAPI.getAllTickets({ unassigned: true, limit: 50 }).catch(() => ({ data: [] })),
         OpsAPI.getMyQueue({ limit: 50 }).catch(() => ({ data: [] })),
         OpsAPI.getAllSubTickets({ limit: 50 }).catch(() => ({ data: [] })),
+        OpsAPI.getAllTickets({ archive: true, limit: 50 }).catch(() => ({ data: [] })),
         activeTab === 'POOL'
           ? OpsAPI.getAllTickets({ unassigned: true, limit: 50 }).catch(() => ({ data: [] }))
           : activeTab === 'MY_QUEUE'
           ? OpsAPI.getMyQueue({ limit: 50 }).catch(() => ({ data: [] }))
           : activeTab === 'SUB_TICKETS'
           ? OpsAPI.getAllSubTickets({ limit: 50 }).catch(() => ({ data: [] }))
+          : activeTab === 'ARCHIVE'
+          ? OpsAPI.getAllTickets({ archive: true, limit: 50 }).catch(() => ({ data: [] }))
           : OpsAPI.getAllTickets({ limit: 50 }).catch(() => ({ data: [] }))
       ]);
 
@@ -771,11 +775,13 @@ export const OperationalQueueView: React.FC = () => {
       const pList = poolRes.data || poolRes.tickets || [];
       const mList = myRes.data || myRes.tickets || [];
       const sList = subRes.data || subRes.tickets || [];
+      const aList = archiveRes.data || archiveRes.tickets || [];
       const tList = targetRes.data || targetRes.tickets || [];
 
-      setPoolCount(pList.length);
-      setMyCount(mList.length);
-      setSubTicketsCount(sList.length);
+      setPoolCount(statPayload.poolCount ?? pList.length);
+      setMyCount(statPayload.myQueueCount ?? mList.length);
+      setSubTicketsCount(statPayload.activeSubTicketsCount ?? sList.length);
+      setArchiveCount(statPayload.totalClosedCount ?? aList.length);
       setTickets(tList);
     } catch (error) {
       console.error('Failed to fetch ops data', error);
@@ -1011,14 +1017,14 @@ export const OperationalQueueView: React.FC = () => {
   };
 
   // ── Unified View Configurations & Standards ──
-  const isTicketView = ['POOL', 'MY_QUEUE', 'ALL_TICKETS', 'SUB_TICKETS'].includes(activeTab);
+  const isTicketView = ['POOL', 'MY_QUEUE', 'ALL_TICKETS', 'SUB_TICKETS', 'ARCHIVE'].includes(activeTab);
 
   const activeViewConfig = React.useMemo(() => {
     switch (activeTab) {
       case 'POOL':
         return {
           title: 'حوض الطلبات الواردة',
-          subtitle: 'الطلبات العامة المعلقة بانتظار السحب والإسناد المباشر للفريق',
+          subtitle: 'الطلبات العامة المعلقة بانتظار السحب والإسناد المباشر للفريق (المفتوحة فقط)',
           badgeText: `${poolCount} معلقة`,
           badgeColor: '#0284c7',
           badgeBg: 'rgba(2, 132, 199, 0.12)',
@@ -1029,13 +1035,35 @@ export const OperationalQueueView: React.FC = () => {
       case 'MY_QUEUE':
         return {
           title: 'بريدي (المهام المسندة إليّ)',
-          subtitle: 'المعاملات والتذاكر التشغيلية المسندة إليك مباشرة قيد المتابعة والإنجاز',
+          subtitle: 'المعاملات والتذاكر التشغيلية النشطة المسندة إليك مباشرة قيد المتابعة والإنجاز',
           badgeText: `${myCount} جارية`,
           badgeColor: '#4f46e5',
           badgeBg: 'rgba(79, 70, 229, 0.12)',
           icon: ShieldCheck,
           iconBg: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
           glowColor: 'rgba(79, 70, 229, 0.35)'
+        };
+      case 'SUB_TICKETS':
+        return {
+          title: 'التذاكر والمهام الداخلية المنبثقة',
+          subtitle: 'التكليفات والمهام الفرعية الجارية المستحدثة لمعالجة أجزاء من الطلبات الرئيسية',
+          badgeText: `${subTicketsCount} نشطة`,
+          badgeColor: '#7e22ce',
+          badgeBg: 'rgba(126, 34, 206, 0.12)',
+          icon: GitPullRequest,
+          iconBg: 'linear-gradient(135deg, #7e22ce 0%, #581c87 100%)',
+          glowColor: 'rgba(126, 34, 206, 0.35)'
+        };
+      case 'ARCHIVE':
+        return {
+          title: 'أرشيف الطلبات والمعاملات المنجزة',
+          subtitle: 'السجل الأرشيفي التوثيقي لكافة التذاكر والمعاملات المقفلة والمحلولة المعتمدة بنجاح',
+          badgeText: `${archiveCount} معاملة مغلقة`,
+          badgeColor: '#10b981',
+          badgeBg: 'rgba(16, 185, 129, 0.12)',
+          icon: FileCheck,
+          iconBg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          glowColor: 'rgba(16, 185, 129, 0.35)'
         };
       case 'ALL_TICKETS':
         return {
@@ -1047,17 +1075,6 @@ export const OperationalQueueView: React.FC = () => {
           icon: Layers,
           iconBg: 'linear-gradient(135deg, #1e3a52 0%, #0f172a 100%)',
           glowColor: 'rgba(30, 58, 82, 0.35)'
-        };
-      case 'SUB_TICKETS':
-        return {
-          title: 'التذاكر والمهام الداخلية المنبثقة',
-          subtitle: 'التكليفات والمهام الفرعية المستحدثة لمعالجة أجزاء من الطلبات الرئيسية',
-          badgeText: `${subTicketsCount} فرعية`,
-          badgeColor: '#7e22ce',
-          badgeBg: 'rgba(126, 34, 206, 0.12)',
-          icon: GitPullRequest,
-          iconBg: 'linear-gradient(135deg, #7e22ce 0%, #581c87 100%)',
-          glowColor: 'rgba(126, 34, 206, 0.35)'
         };
       case 'FLOW_SETTINGS':
         return {
@@ -1450,7 +1467,7 @@ export const OperationalQueueView: React.FC = () => {
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات الأربعة الموحدة أعلاها) ═══ */}
+          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات الخمسة المنظمة) ═══ */}
           {isTicketView && (
             <div className="operational-top-queues-bar">
               {[
@@ -1468,27 +1485,36 @@ export const OperationalQueueView: React.FC = () => {
                   label: 'بريدي (مسندة إليّ)',
                   count: myCount,
                   badge: 'مهام جارية',
-                  sublabel: 'المعاملات المباشرة قيد إنجازك',
+                  sublabel: 'المعاملات النشطة قيد إنجازك',
                   icon: ShieldCheck,
                   accentColor: '#4f46e5',
-                },
-                {
-                  id: 'ALL_TICKETS',
-                  label: 'كافة طلبات الإدارة',
-                  count: stats.open,
-                  badge: 'سجل القسم',
-                  sublabel: 'الأرشيف التشغيلي العام للقسم',
-                  icon: Layers,
-                  accentColor: isDark ? '#38bdf8' : '#0f172a',
                 },
                 {
                   id: 'SUB_TICKETS',
                   label: 'التذاكر والمهام الداخلية',
                   count: subTicketsCount,
-                  badge: 'مهام فرعية',
-                  sublabel: 'التكليفات المنبثقة للفرق',
+                  badge: 'مهام نشطة',
+                  sublabel: 'التكليفات المنبثقة الجارية',
                   icon: GitPullRequest,
                   accentColor: '#7e22ce',
+                },
+                {
+                  id: 'ARCHIVE',
+                  label: 'أرشيف الطلبات المنجزة',
+                  count: archiveCount,
+                  badge: 'مغلقة ومحلولة',
+                  sublabel: 'الأرشيف التوثيقي المقفل',
+                  icon: FileCheck,
+                  accentColor: '#10b981',
+                },
+                {
+                  id: 'ALL_TICKETS',
+                  label: 'كافة طلبات الإدارة',
+                  count: stats.open,
+                  badge: 'سجل شامل',
+                  sublabel: 'السجل العام الموحد للقسم',
+                  icon: Layers,
+                  accentColor: isDark ? '#38bdf8' : '#0f172a',
                 },
               ].map((q) => {
                 const isSelected = activeTab === q.id;

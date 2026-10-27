@@ -98,7 +98,7 @@ export class OperationalQueueController {
   static async getMyQueue(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 20, status, priority } = req.query;
+      const { cursor, limit = 20, status, priority, includeClosed } = req.query;
 
       const take = Math.min(Number(limit), 100);
 
@@ -117,7 +117,18 @@ export class OperationalQueueController {
           }
         ]
       };
-      if (status) where.state = { name: (status as string).toUpperCase() };
+
+      if (status && status !== 'ACTIVE') {
+        if (status === 'CLOSED' || status === 'ARCHIVED') {
+          where.state = { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } };
+        } else {
+          where.state = { name: (status as string).toUpperCase() };
+        }
+      } else if (includeClosed !== 'true') {
+        // افتراضياً وبشكل صارم: استبعاد كافة التذاكر المغلقة والمحلولة من قائمة الانتظار النشطة للمهندس
+        where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
+      }
+
       if (priority) where.priority = (priority as string).toUpperCase();
       if (cursor) where.id = { lt: Number(cursor) };
 
@@ -181,13 +192,21 @@ export class OperationalQueueController {
       const take = Math.min(Number(limit), 100);
       let where = buildScopeFilter(roleName, user.id, fullUser.departmentId);
 
-      if (status) where.state = { name: (status as string).toUpperCase() };
+      const isArchive = req.query.archive === 'true' || status === 'ARCHIVED' || status === 'CLOSED';
+      if (isArchive) {
+        // أرشيف الطلبات: حصراً التذاكر المغلقة والمحلولة والمكتملة
+        where.state = { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } };
+      } else if (unassigned === 'true') {
+        // حوض الطلبات الواردة: حصراً الطلبات الشاغرة المفتوحة بانتظار السحب (استبعاد المغلق والمحلول نهائياً)
+        where.assignments = { none: { isCurrentActive: true } };
+        where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
+      } else if (status && status !== 'ALL') {
+        where.state = { name: (status as string).toUpperCase() };
+      }
+
       if (priority) where.priority = (priority as string).toUpperCase();
       if (flowId) where.flowDefinitionId = flowId as string;
       if (cursor) where.id = { lt: Number(cursor) };
-      if (unassigned === 'true') {
-        where.assignments = { none: { isCurrentActive: true } };
-      }
       if (search) {
         where.OR = [
           { title: { contains: search as string } },
@@ -581,6 +600,11 @@ export class OperationalQueueController {
                 resolutionNotes: resolutionNote.trim()
               }
             });
+            // إنهاء وتجميد التكليف النشط للتذكرة لنقلها إلى الأرشيف وإزالتها من المهام النشطة
+            await tx.ticketAssignment.updateMany({
+              where: { ticketId, isCurrentActive: true },
+              data: { isCurrentActive: false }
+            });
             await logAction(tx, ticketId, user.id, 'CLOSE', `إغلاق مباشر بواسطة ${fullUser?.fullName}: ${resolutionNote.trim()}`);
 
             // مزامنة عكسية في طابور الصيانة لجرد الأصول
@@ -649,6 +673,11 @@ export class OperationalQueueController {
                 stateId: closedState.id, 
                 resolutionNotes: finalNotes
               }
+            });
+            // إنهاء وتجميد التكليف النشط للتذكرة لنقلها إلى الأرشيف وإزالتها من المهام النشطة
+            await tx.ticketAssignment.updateMany({
+              where: { ticketId, isCurrentActive: true },
+              data: { isCurrentActive: false }
             });
             await logAction(tx, ticketId, user.id, 'APPROVE_CLOSURE', `تم اعتماد الإغلاق النهائي بواسطة ${fullUser?.fullName}. ${note || ''}`);
 
@@ -1003,10 +1032,23 @@ export class OperationalQueueController {
         ? { departmentId: fullUser.departmentId }
         : {};
 
-      const [myQueueCount, openCount, inProgressCount, closedTodayCount, slaBreachedCount, avgResolutionMins] = await Promise.all([
-        // طلباتي في الانتظار
+      const [myQueueCount, poolCount, openCount, inProgressCount, closedTodayCount, totalClosedCount, slaBreachedCount, activeSubTicketsCount] = await Promise.all([
+        // طلباتي النشطة في الانتظار (استبعاد المغلقة)
         prisma.ticket.count({
-          where: { isDeleted: false, assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } }
+          where: { 
+            isDeleted: false, 
+            assignments: { some: { assignedTechId: user.id, isCurrentActive: true } },
+            state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } }
+          }
+        }),
+        // حوض الطلبات المفتوحة الشاغرة (استبعاد المغلقة)
+        prisma.ticket.count({
+          where: { 
+            isDeleted: false, 
+            ...deptFilter, 
+            assignments: { none: { isCurrentActive: true } },
+            state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } }
+          }
         }),
         // مفتوحة في نطاق الدور
         prisma.ticket.count({
@@ -1024,23 +1066,40 @@ export class OperationalQueueController {
             updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
           }
         }),
+        // إجمالي المؤرشفة والمغلقة (أرشيف الطلبات المكتملة)
+        prisma.ticket.count({
+          where: {
+            isDeleted: false, ...deptFilter,
+            state: { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } }
+          }
+        }),
         // خرق SLA
         prisma.ticketStatusSlaTracker.count({
           where: { slaStatus: 'BREACHED', ticket: { isDeleted: false, ...deptFilter } }
         }),
-        // متوسط وقت الحل (تقريبي)
-        Promise.resolve(0) // يُحسب لاحقاً بعملية aggregation
+        // المهام الفرعية والداخلية النشطة فقط
+        prisma.ticket.count({
+          where: {
+            isDeleted: false,
+            parentId: { not: null },
+            state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } },
+            ...deptFilter
+          }
+        })
       ]);
 
       res.json({
         success: true,
         data: {
           myQueueCount,
+          poolCount,
           openCount,
           inProgressCount,
           closedTodayCount,
+          totalClosedCount,
           slaBreachedCount,
-          avgResolutionMins
+          activeSubTicketsCount,
+          avgResolutionMins: 0
         }
       });
     } catch (err) {
@@ -1602,7 +1661,16 @@ export class OperationalQueueController {
         ];
       }
 
-      if (status) where.state = { name: (status as string).toUpperCase() };
+      const isArchiveSub = req.query.archive === 'true' || status === 'ARCHIVED' || status === 'CLOSED';
+      if (isArchiveSub) {
+        where.state = { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } };
+      } else if (status && status !== 'ALL') {
+        where.state = { name: (status as string).toUpperCase() };
+      } else if (!status || status === 'ACTIVE') {
+        // افتراضياً: فقط المهام الداخلية الجارية المفتوحة (استبعاد المهام المقفلة والمحلولة)
+        where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
+      }
+
       if (priority) where.priority = (priority as string).toUpperCase();
       if (cursor) where.id = { lt: Number(cursor) };
       if (search) {

@@ -1246,6 +1246,12 @@ export class FunctionalController {
         data: { stateId: closedState.id }
       });
 
+      // إلغاء تنشيط التكليف حتى تختفي التذكرة فوراً من مهام المهندس النشطة وتنتقل للأرشيف
+      await prisma.ticketAssignment.updateMany({
+        where: { ticketId: ticketWithState.id, isCurrentActive: true },
+        data: { isCurrentActive: false }
+      });
+
       // Add a journey log
       await prisma.ticketLog.create({
         data: {

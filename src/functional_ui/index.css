@@ -588,10 +588,16 @@ html, body {
 /* ── Top Operational Queues Switcher Bar (Responsive Grid to Horizontal Scroll) ── */
 .operational-top-queues-bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (min-width: 1025px) and (max-width: 1360px) {
+  .operational-top-queues-bar {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
 }
 
 @media (max-width: 1024px) {
