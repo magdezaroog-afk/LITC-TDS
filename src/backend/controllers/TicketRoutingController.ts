@@ -155,7 +155,15 @@ export class TicketRoutingController {
 
       if (index === -1) return res.status(404).json({ error: 'Route not found' });
 
-      routes[index] = { ...routes[index], ...updates };
+      // تحصين ضد حقن الخصائص وثغرات Prototype Pollution
+      const safeUpdates: Record<string, any> = {};
+      for (const [k, v] of Object.entries(updates || {})) {
+        if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') {
+          safeUpdates[k] = v;
+        }
+      }
+
+      routes[index] = Object.assign({}, routes[index], safeUpdates);
 
       await prisma.systemSetting.update({
         where: { settingKey: 'litc_ticket_routes' },
