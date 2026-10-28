@@ -149,5 +149,26 @@ export const OpsAPI = {
       credentials: 'include',
       body: JSON.stringify(payload)
     }).then(handleResponse),
+
+  // تسجيل جهاز جديد كأصل رسمي في منظومة الجرد
+  registerInventoryDevice: (payload: {
+    assetName: string;
+    assetCategory: string;
+    serialNumber?: string;
+    model?: string;
+    location?: string;
+    assignedToEmail?: string;
+    department?: string;
+    ticketId?: number;
+    maintenanceNotes?: string;
+  }) =>
+    fetch(`/api/v1/satellites/inventory/devices`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    }).then(handleResponse),
 };
+
+export const opsApi = OpsAPI;
 

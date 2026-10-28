@@ -877,6 +877,133 @@ export class SatelliteGatewayController {
   }
 
   /**
+   * تسجيل جهاز جديد في منظومة جرد الأصول مع ربطه بالطلب وفك قيد الإغلاق تلقائياً
+   * POST /api/v1/satellites/inventory/devices
+   */
+  static async registerDevice(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      const {
+        assetName,
+        assetCategory,
+        serialNumber,
+        model,
+        location,
+        assignedToEmail,
+        department,
+        ticketId,
+        maintenanceNotes
+      } = req.body;
+
+      if (!assetName?.trim() || !assetCategory?.trim()) {
+        return res.status(400).json({ success: false, error: 'اسم الأصل ونوعه/تصنيفه حقول إجبارية لتسجيل الأصل.' });
+      }
+
+      await ensureRegistryLoaded();
+      const inventoryUrl = SATELLITE_REGISTRY['asset_inventory']?.targetUrl || 'http://localhost:3000';
+
+      const cleanName = assetName.trim();
+      const cleanCategory = assetCategory.trim();
+      let generatedAssetId = `AST-${Date.now().toString(36).toUpperCase()}`;
+      let isLiveSaved = false;
+
+      // محاولة الحفظ الفوري في منظومة جرد الأصول الخارجية
+      try {
+        const liveRes = await fetch(`${inventoryUrl}/api/devices`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            name: cleanName,
+            category: cleanCategory,
+            serialNumber: serialNumber ? serialNumber.trim() : undefined,
+            model: model ? model.trim() : undefined,
+            location: location ? location.trim() : undefined,
+            assignedTo: assignedToEmail ? assignedToEmail.trim() : undefined,
+            department: department ? department.trim() : undefined,
+            registeredBy: user?.fullName || user?.username,
+            source: 'NEXUS_TDS'
+          }),
+          signal: AbortSignal.timeout(3500)
+        }).catch(() => null);
+
+        if (liveRes && liveRes.ok) {
+          const resJson = await liveRes.json();
+          generatedAssetId = resJson.id || resJson.assetId || resJson.barcode || generatedAssetId;
+          isLiveSaved = true;
+        }
+      } catch (err) {
+        // Fallback to local outbox registration
+      }
+
+      let updatedTicket: any = null;
+      if (ticketId) {
+        const cleanTicketId = Number(ticketId);
+        updatedTicket = await prisma.ticket.update({
+          where: { id: cleanTicketId },
+          data: {
+            assetId: generatedAssetId,
+            assetName: cleanName,
+            assetCategory: cleanCategory,
+            isUserUnableToIdentify: false,
+            isUnregisteredAsset: false,
+            assetResolutionLocked: false, // فك قيد الإغلاق فورياً
+            assetSyncStatus: isLiveSaved ? 'LINKED_VERIFIED' : 'PENDING_REGISTRATION'
+          }
+        });
+
+        // تسجيل في سجل التذكرة
+        await prisma.ticketLog.create({
+          data: {
+            ticketId: cleanTicketId,
+            action: `ASSET_REGISTERED_IN_INVENTORY: قام المهندس ${user?.fullName || user?.username} بتسجيل الجهاز (${cleanName}) كأصل رسمي جديد [${generatedAssetId}] وفك قيد الإغلاق.`
+          }
+        }).catch(() => {});
+
+        // تدوين في طابور المزامنة العكسية AssetSyncOutbox
+        await prisma.assetSyncOutbox.create({
+          data: {
+            ticketId: cleanTicketId,
+            assetId: generatedAssetId,
+            actionType: isLiveSaved ? 'MAINTENANCE_LOG' : 'REGISTER_AND_MAINTAIN',
+            payload: JSON.stringify({
+              ticketId: cleanTicketId,
+              assetId: generatedAssetId,
+              assetName: cleanName,
+              assetCategory: cleanCategory,
+              serialNumber: serialNumber || '',
+              model: model || '',
+              location: location || '',
+              maintenanceNotes: maintenanceNotes || 'تسجيل الأصل الجديد واستكمال الصيانة.',
+              registeredBy: user?.fullName || user?.username,
+              timestamp: new Date().toISOString()
+            }),
+            status: isLiveSaved ? 'COMPLETED' : 'PENDING'
+          }
+        }).catch(() => {});
+
+        SatelliteGatewayController.triggerOutboxWorker();
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: isLiveSaved ? 'تم تسجيل الأصل في منظومة الجرد بنجاح وربطه بالطلب.' : 'تم تسجيل الأصل محلياً وجدولته للمزامنة مع منظومة الجرد.',
+        isLiveSaved,
+        asset: {
+          id: generatedAssetId,
+          name: cleanName,
+          category: cleanCategory,
+          serialNumber,
+          model
+        },
+        ticket: updatedTicket
+      });
+    } catch (error: any) {
+      console.error('[SatelliteGatewayController] registerDevice error:', error);
+      return res.status(500).json({ success: false, error: 'تعذر تسجيل الجهاز كأصل رسمي.' });
+    }
+  }
+
+  /**
    * تشغيل عامل معالجة طابور المزامنة العكسية Outbox Worker
    */
   static triggerOutboxWorker() {

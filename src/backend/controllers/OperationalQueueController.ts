@@ -237,7 +237,23 @@ export class OperationalQueueController {
       const items = hasMore ? tickets.slice(0, take) : tickets;
       const nextCursor = hasMore ? items[items.length - 1].id : null;
 
-      res.json({ success: true, data: items.map(formatTicketItem), nextCursor, hasMore });
+      // Enforce VISIBILITY_FILTER for restricted flow routing rules
+      const userIsAdmin = user.roleId === 1 || user.roleId === 22 || canDo(roleName, 80);
+      const filteredItems = items.filter(t => {
+        if (userIsAdmin || t.creatorId === user.id) return true;
+        let meta: any = null;
+        try {
+          meta = typeof t.routingMetadata === 'string' ? JSON.parse(t.routingMetadata) : t.routingMetadata;
+        } catch {}
+        if (meta && Array.isArray(meta.visibleToUserIds) && meta.visibleToUserIds.length > 0) {
+          const isAssigned = t.assignments?.some((a: any) => a.assignedTechId === user.id && a.isCurrentActive);
+          if (isAssigned) return true;
+          return meta.visibleToUserIds.includes(user.id);
+        }
+        return true;
+      });
+
+      res.json({ success: true, data: filteredItems.map(formatTicketItem), nextCursor, hasMore });
     } catch (err) {
       console.error('[OpsQueue] getAllTickets error:', err);
       res.status(500).json({ success: false, message: 'فشل تحميل الطلبات' });
@@ -1914,6 +1930,7 @@ function formatTicketItem(t: any) {
     assetResolutionLocked: !!t.assetResolutionLocked,
     isInternalRequest: !!t.isInternalRequest,
     internalScope: t.internalScope || null,
+    isVip: Boolean(parsedRoutingMeta?.isVip || (t.creator?.jobTitle && /مدير|رئيس|وكيل|مستشار|عضو|CEO|General Manager|Director|Minister|أمين/i.test(t.creator.jobTitle))),
     commentsCount: t._count?.comments || 0,
     filesCount: t._count?.files || 0,
     createdAt: t.createdAt,

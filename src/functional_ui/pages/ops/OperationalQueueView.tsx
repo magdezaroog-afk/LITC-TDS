@@ -10,6 +10,7 @@ import { CinemaTicketFrame, TicketCodeBadge } from '../../components/CinemaTicke
 import { LinkAssetModal } from './LinkAssetModal';
 import { UnlinkedAssetsLedgerModal } from './UnlinkedAssetsLedgerModal';
 import { StandaloneInternalTicketModal } from './StandaloneInternalTicketModal';
+import { RegisterAssetModal } from './RegisterAssetModal';
 import { 
   Inbox, Activity, CheckCircle, Clock, Search, Filter, 
   AlertCircle, RefreshCw, Layers, MoreVertical, ArrowUpRight,
@@ -18,7 +19,7 @@ import {
   MessageSquare, RotateCcw, FileCheck, XCircle, History,
   ArrowRightLeft, Hourglass, Plus, PlusCircle, GitBranch, ArrowLeft, ExternalLink,
   GitPullRequest, Zap, Sun, Moon, BarChart3, Paperclip, Download, Eye,
-  LayoutGrid, List, SlidersHorizontal, Minus, Laptop, Lock, Unlock, Wrench
+  LayoutGrid, List, SlidersHorizontal, Minus, Laptop, Lock, Unlock, Wrench, Crown
 } from 'lucide-react';
 
 // --- Types ---
@@ -61,6 +62,7 @@ interface Ticket {
   assetResolutionLocked?: boolean;
   isInternalRequest?: boolean;
   internalScope?: string | null;
+  isVip?: boolean;
   parentTicket?: {
     id: number;
     code: string;
@@ -649,6 +651,8 @@ export const OperationalQueueView: React.FC = () => {
   // Asset Management & Internal Tickets Modals State
   const [isLinkAssetModalOpen, setIsLinkAssetModalOpen] = useState(false);
   const [linkAssetTicket, setLinkAssetTicket] = useState<Ticket | null>(null);
+  const [isRegisterAssetModalOpen, setIsRegisterAssetModalOpen] = useState(false);
+  const [registerAssetTicket, setRegisterAssetTicket] = useState<Ticket | null>(null);
   const [isUnlinkedLedgerModalOpen, setIsUnlinkedLedgerModalOpen] = useState(false);
   const [isStandaloneInternalModalOpen, setIsStandaloneInternalModalOpen] = useState(false);
   const [subTicketDirection, setSubTicketDirection] = useState<'RECEIVED' | 'SENT' | 'ALL'>('RECEIVED');
@@ -3825,6 +3829,32 @@ export const OperationalQueueView: React.FC = () => {
                               </button>
                             )}
 
+                            {/* Register New Asset Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRegisterAssetTicket(inspectTicket);
+                                setIsRegisterAssetModalOpen(true);
+                              }}
+                              title="تسجيل جهاز جديد كلياً في منظومة الجرد وربطه بالتذكرة وفك قيد الإغلاق"
+                              style={{
+                                padding: '7px 13px',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(243, 108, 33, 0.4)',
+                                background: isDark ? 'rgba(243, 108, 33, 0.15)' : '#fff7ed',
+                                color: '#f36c21',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <PlusCircle size={13} />
+                              <span>تسجيل أصل جديد في المنظومة</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => {
@@ -5386,6 +5416,43 @@ export const OperationalQueueView: React.FC = () => {
           onSuccess={() => {
             setIsStandaloneInternalModalOpen(false);
             fetchData();
+          }}
+        />
+      )}
+
+      {isRegisterAssetModalOpen && (
+        <RegisterAssetModal
+          isOpen={isRegisterAssetModalOpen}
+          ticket={registerAssetTicket}
+          isDark={isDark}
+          onClose={() => {
+            setIsRegisterAssetModalOpen(false);
+            setRegisterAssetTicket(null);
+          }}
+          onSuccess={(newAsset, updatedTicket) => {
+            setIsRegisterAssetModalOpen(false);
+            setRegisterAssetTicket(null);
+            fetchData();
+            if (inspectTicket && inspectTicket.id === updatedTicket?.id) {
+              setInspectTicket((prev: any) => ({
+                ...prev,
+                assetId: updatedTicket.assetId,
+                assetName: updatedTicket.assetName,
+                assetCategory: updatedTicket.assetCategory,
+                assetResolutionLocked: false,
+                isUnregisteredAsset: false
+              }));
+              if (inspectTicketDetails) {
+                setInspectTicketDetails((prev: any) => ({
+                  ...prev,
+                  assetId: updatedTicket.assetId,
+                  assetName: updatedTicket.assetName,
+                  assetCategory: updatedTicket.assetCategory,
+                  assetResolutionLocked: false,
+                  isUnregisteredAsset: false
+                }));
+              }
+            }
           }}
         />
       )}

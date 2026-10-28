@@ -541,10 +541,11 @@ export class FlowGovernanceController {
       if (!Array.isArray(conditions) || conditions.length === 0) {
         return res.status(400).json({ success: false, message: 'يجب تحديد شرط واحد على الأقل' });
       }
-      if (!['VISIBILITY_FILTER', 'DIRECT_ASSIGN', 'ROUND_ROBIN'].includes(actionType)) {
+      const allowedActionTypes = ['VISIBILITY_FILTER', 'DIRECT_ASSIGN', 'ROUND_ROBIN', 'AUTO_PRIORITY', 'VIP_FAST_TRACK'];
+      if (!allowedActionTypes.includes(actionType)) {
         return res.status(400).json({ success: false, message: 'نوع الإجراء غير صالح' });
       }
-      if (!Array.isArray(targetUserIds) || targetUserIds.length === 0) {
+      if (actionType !== 'AUTO_PRIORITY' && (!Array.isArray(targetUserIds) || targetUserIds.length === 0)) {
         return res.status(400).json({ success: false, message: 'يجب اختيار الموظفين المعنيين بالإجراء' });
       }
 

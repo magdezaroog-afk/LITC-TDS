@@ -733,6 +733,16 @@ export class FunctionalController {
       // Evaluate Automated Workflow Rules for this route/flow
       let autoAssignedTechId: number | null = null;
       let visibleToUserIds: number[] | null = null;
+      let isVipTicket = false;
+      let ruleEscalatedPriority = false;
+      let reqPriority = (req.body.priority || 'MEDIUM').toUpperCase();
+
+      // فحص صفة كبار الشخصيات أو الإدارة العليا لمقدم الطلب
+      const creatorJob = user.jobTitle || '';
+      const isSeniorOrVip = Boolean(
+        /مدير|رئيس|وكيل|مستشار|عضو|CEO|General Manager|Director|Minister|أمين/i.test(creatorJob) ||
+        user.roleId === 1 || user.roleId === 22
+      );
 
       if (routeId) {
         try {
@@ -747,21 +757,46 @@ export class FunctionalController {
             if (conditions.length === 0) continue;
 
             const isMatch = conditions.every(c => {
+              // 1. مقدم الطلب شخص محدد
+              if (c.fieldId === 'creatorId' || c.conditionType === 'REQUESTER') {
+                if (Array.isArray(c.value)) return c.value.map(String).includes(String(user.id));
+                return String(c.value) === String(user.id);
+              }
+              // 2. فئة مقدم الطلب (إدارة عليا / VIP / منصب إداري)
+              if (c.fieldId === 'requesterGroup' || c.conditionType === 'REQUESTER_GROUP') {
+                if (c.value === 'VIP' || c.value === 'SENIOR_EXEC') return isSeniorOrVip;
+                if (c.value === 'DEPARTMENT_HEAD') return Boolean(/رئيس قسم|مدير إدارة/i.test(creatorJob));
+                if (c.value === 'ALL_MANAGERS') return Boolean(/مدير|رئيس|مشرف/i.test(creatorJob));
+                return false;
+              }
+              // 3. إدارة أو قسم مقدم الطلب
+              if (c.fieldId === 'requesterDepartmentId' || c.conditionType === 'REQUESTER_DEPARTMENT') {
+                return String(user.departmentId) === String(c.value);
+              }
+              // 4. نوع أو تصنيف الأصل التقني
+              if (c.fieldId === 'assetCategory' || c.conditionType === 'ASSET_TYPE') {
+                return String(assetCategory || '').toUpperCase() === String(c.value).toUpperCase();
+              }
+              // 5. الأولوية
+              if (c.fieldId === 'priority' || c.conditionType === 'PRIORITY') {
+                return String(reqPriority).toUpperCase() === String(c.value).toUpperCase();
+              }
+              // 6. المبنى والموقع
               if (c.fieldId === 'buildingId' || c.fieldName === 'building') {
                 return String(buildingId) === String(c.value);
               }
-              const userVal = fields && fields[c.fieldId];
+              // 7. حقول النموذج الديناميكية
+              const userVal = fields && (fields[c.fieldId] !== undefined ? fields[c.fieldId] : fields[c.fieldName]);
               return String(userVal) === String(c.value);
             });
 
             if (isMatch) {
               let targetIds: number[] = [];
               try { targetIds = JSON.parse(r.targetUserIds || '[]'); } catch {}
-              if (targetIds.length === 0) continue;
 
-              if (r.actionType === 'DIRECT_ASSIGN' && !autoAssignedTechId) {
+              if (r.actionType === 'DIRECT_ASSIGN' && !autoAssignedTechId && targetIds.length > 0) {
                 autoAssignedTechId = targetIds[0];
-              } else if (r.actionType === 'ROUND_ROBIN' && !autoAssignedTechId) {
+              } else if (r.actionType === 'ROUND_ROBIN' && !autoAssignedTechId && targetIds.length > 0) {
                 const lastId = r.lastAssignedUserId;
                 let nextIdx = 0;
                 if (lastId && targetIds.includes(lastId)) {
@@ -772,8 +807,18 @@ export class FunctionalController {
                   where: { id: r.id },
                   data: { lastAssignedUserId: autoAssignedTechId }
                 }).catch(() => {});
-              } else if (r.actionType === 'VISIBILITY_FILTER') {
+              } else if (r.actionType === 'VISIBILITY_FILTER' && targetIds.length > 0) {
                 visibleToUserIds = targetIds;
+              } else if (r.actionType === 'AUTO_PRIORITY') {
+                reqPriority = 'HIGH';
+                ruleEscalatedPriority = true;
+              } else if (r.actionType === 'VIP_FAST_TRACK') {
+                reqPriority = 'CRITICAL';
+                ruleEscalatedPriority = true;
+                isVipTicket = true;
+                if (targetIds.length > 0 && !autoAssignedTechId) {
+                  autoAssignedTechId = targetIds[0];
+                }
               }
             }
           }
@@ -781,6 +826,9 @@ export class FunctionalController {
           console.error('[FunctionalController] Workflow rules evaluation error:', ruleErr);
         }
       }
+
+      if (isSeniorOrVip) isVipTicket = true;
+      (mergedMeta as any).isVip = isVipTicket;
 
       if (visibleToUserIds) {
         (mergedMeta as any).visibleToUserIds = visibleToUserIds;
@@ -797,7 +845,6 @@ export class FunctionalController {
       (mergedMeta as any).dynamicFields = fields || {};
 
       const routingMetadata = JSON.stringify(mergedMeta);
-      const reqPriority = (req.body.priority || 'MEDIUM').toUpperCase();
 
       let validFlowDefId: string | null = null;
       if (routeId) {
