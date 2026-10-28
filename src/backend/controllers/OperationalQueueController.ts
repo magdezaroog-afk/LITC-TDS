@@ -167,7 +167,7 @@ export class OperationalQueueController {
   static async getAllTickets(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 30, status, priority, flowId, search, unassigned } = req.query;
+      const { cursor, limit = 30, status, priority, flowId, search, unassigned, category } = req.query;
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
@@ -202,6 +202,31 @@ export class OperationalQueueController {
         where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
       } else if (status && status !== 'ALL') {
         where.state = { name: (status as string).toUpperCase() };
+      }
+
+      const userDeptId = fullUser?.departmentId;
+      if (category === 'GENERAL_INBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = false;
+      } else if (category === 'INTERNAL_STANDALONE_INBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+        if (userDeptId) where.departmentId = userDeptId;
+        where.creatorId = { not: user.id };
+      } else if (category === 'INTERNAL_SUB_INBOUND') {
+        where.parentId = { not: null };
+        if (userDeptId) where.departmentId = userDeptId;
+      } else if (category === 'INTERNAL_STANDALONE_OUTBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+        where.creatorId = user.id;
+      } else if (category === 'INTERNAL_SUB_OUTBOUND') {
+        where.parentId = { not: null };
+        where.creatorId = user.id;
+      } else if (category === 'ASSET_LOCKED') {
+        where.assetResolutionLocked = true;
+      } else if (category === 'SLA_BREACHED') {
+        where.slaTrackers = { some: { slaStatus: 'BREACHED' } };
       }
 
       if (priority) where.priority = (priority as string).toUpperCase();
