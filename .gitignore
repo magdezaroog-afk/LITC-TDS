@@ -88,7 +88,9 @@ dist-ssr
 *.swo
 .DS_Store
 
-# Security tools downloaded binaries
-security-tools/bin/*.exe
+# Security tools downloaded binaries & vendor files
+security-tools/bin/*
+!security-tools/bin/README.md
+!security-tools/bin/LICENSE
 security-tools/*.zip
 
