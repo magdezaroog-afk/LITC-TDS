@@ -24,18 +24,14 @@ async function handleResponse(res: Response) {
 
 export const OpsAPI = {
   // قائمة انتظاري الشخصية (المهام المسندة النشطة)
-  getMyQueue: (params: { cursor?: number; limit?: number; status?: string; priority?: string; includeClosed?: boolean } = {}) => {
+  getMyQueue: (params: { cursor?: number; limit?: number; status?: string; priority?: string; includeClosed?: boolean; departmentId?: number; buildingId?: number; flowId?: string; categoryId?: number; search?: string } = {}) => {
     const q = new URLSearchParams();
-    if (params.cursor) q.set('cursor', String(params.cursor));
-    if (params.limit) q.set('limit', String(params.limit));
-    if (params.status) q.set('status', params.status);
-    if (params.priority) q.set('priority', params.priority);
-    if (params.includeClosed) q.set('includeClosed', 'true');
+    Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
     return fetch(`${BASE}/queue?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
   },
 
-  // كل الطلبات (حسب نطاق الدور أو أرشيف الطلبات)
-  getAllTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; unassigned?: boolean; archive?: boolean; flowId?: string } = {}) => {
+  // كل الطلبات (حسب نطاق الدور أو أرشيف الطلبات أو الصادرة أو الحوض)
+  getAllTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; unassigned?: boolean; archive?: boolean; flowId?: string; categoryId?: number; category?: string; departmentId?: number; buildingId?: number } = {}) => {
     const q = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
     return fetch(`${BASE}/tickets?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
@@ -118,11 +114,15 @@ export const OpsAPI = {
     }).then(handleResponse),
 
   // كافة التذاكر والمهام الداخلية (تبويب مخصص في منصة العمل أو الأرشيف)
-  getAllSubTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; archive?: boolean; direction?: 'RECEIVED' | 'SENT' | 'ALL'; linkage?: 'LINKED' | 'STANDALONE' | 'ALL' } = {}) => {
+  getAllSubTickets: (params: { cursor?: number; limit?: number; status?: string; priority?: string; search?: string; archive?: boolean; direction?: 'RECEIVED' | 'SENT' | 'ALL'; linkage?: 'LINKED' | 'STANDALONE' | 'ALL'; subTab?: string; departmentId?: number; buildingId?: number } = {}) => {
     const q = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
     return fetch(`${BASE}/sub-tickets?${q}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
   },
+
+  // المباني والمواقع الرسمية
+  getBuildings: () =>
+    fetch('/api/v1/org/buildings', { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
 
   // استعلام الأجهزة من منظومة جرد الأصول
   getInventoryDevices: (params: { search?: string; type?: string; department?: string; userOnly?: boolean } = {}) => {

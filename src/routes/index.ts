@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { prisma } from '../db/client';
 import { authMiddleware, optionalAuthMiddleware } from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
 import { FlowController } from '../backend/controllers/FlowController';
@@ -264,6 +265,41 @@ router.post('/flow-governance/:flowId/transfer-config', authMiddleware, (req, re
 router.post('/flow-governance/:flowId/sub-ticket-config', authMiddleware, (req, res) => FlowGovernanceController.saveSubTicketConfig(req, res));
 router.post('/flow-governance/:flowId/submission-governance', authMiddleware, (req, res) => FlowGovernanceController.saveSubmissionGovernance(req, res));
 router.patch('/flow-governance/tickets/:ticketId/calibrate-priority', authMiddleware, (req, res) => FlowGovernanceController.calibrateTicketPriority(req, res));
+
+// =========================================================================
+// 9.7 Inter-Department Standalone Governance — حوكمة التنسيق والطلبات المستقلة
+// =========================================================================
+router.get('/admin/standalone-governance', authMiddleware, async (req, res) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { settingKey: 'litc_standalone_governance' } });
+    const config = setting?.settingValue ? JSON.parse(setting.settingValue) : {
+      globalEnabled: true,
+      departmentConfigs: {},
+      dispatchLimits: { defaultMaxActive: 5 }
+    };
+    res.json({ success: true, data: config });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.post('/admin/standalone-governance', authMiddleware, requireRole([1, 22]), async (req, res) => {
+  try {
+    const config = req.body;
+    await prisma.systemSetting.upsert({
+      where: { settingKey: 'litc_standalone_governance' },
+      update: { settingValue: JSON.stringify(config) },
+      create: {
+        settingKey: 'litc_standalone_governance',
+        settingValue: JSON.stringify(config),
+        description: 'Inter-department standalone requests governance configuration'
+      }
+    });
+    res.json({ success: true, message: 'تم حفظ إعدادات حوكمة الطلبات الداخلية بنجاح' });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
 
 // =========================================================================
 // 10. Analytics & Governance (Audit Fixes)

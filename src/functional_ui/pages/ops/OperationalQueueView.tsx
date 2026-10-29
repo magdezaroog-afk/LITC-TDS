@@ -71,6 +71,24 @@ interface Ticket {
     state?: { name: string; label: string };
     departmentName?: string;
   } | null;
+  subTicketsSummary?: {
+    total: number;
+    open: number;
+    items: Array<{
+      id: number;
+      code: string;
+      title: string;
+      priority: string;
+      state?: { name: string; label: string };
+      assignedTo?: { id: number; fullName: string; avatarUrl?: string } | null;
+      departmentName?: string;
+      createdAt: string;
+      isOpen: boolean;
+    }>;
+  };
+  creatorBuilding?: string | null;
+  creatorBuildingId?: number | null;
+  targetDeptId?: number | null;
 }
 
 interface Stats {
@@ -460,7 +478,18 @@ export const OperationalQueueView: React.FC = () => {
   }, []);
 
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'OVERVIEW' | 'COMPARISON' | 'GOVERNANCE'>('OVERVIEW');
-  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ARCHIVE' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
+  const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'OUTBOUND' | 'SUB_TICKETS' | 'ARCHIVE' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
+
+  // Universal Filter Engine & Standalone Requests States
+  const [outboundCount, setOutboundCount] = useState<number>(0);
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState<number | 'ALL'>('ALL');
+  const [selectedFlowFilter, setSelectedFlowFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<number | 'ALL'>('ALL');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [buildings, setBuildings] = useState<Array<{ id: number; name: string }>>([]);
+  const [flowsList, setFlowsList] = useState<Array<{ id: string; name: string }>>([]);
+  const [subTasksPopoverTicket, setSubTasksPopoverTicket] = useState<Ticket | null>(null);
+  const [standaloneSubTab, setStandaloneSubTab] = useState<'MY_ASSIGNED' | 'INBOUND' | 'MY_OUTBOUND' | 'DEPT_OUTBOUND'>('MY_ASSIGNED');
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -786,21 +815,30 @@ export const OperationalQueueView: React.FC = () => {
     if (activeTab === 'FLOW_SETTINGS') return;
     setLoading(true);
     try {
+      const filterParams: any = {};
+      if (selectedDeptFilter !== 'ALL') filterParams.departmentId = selectedDeptFilter;
+      if (selectedBuildingFilter !== 'ALL') filterParams.buildingId = selectedBuildingFilter;
+      if (selectedFlowFilter !== 'ALL') filterParams.flowId = selectedFlowFilter;
+      if (selectedStatusFilter !== 'ALL') filterParams.status = selectedStatusFilter;
+      if (search.trim()) filterParams.search = search.trim();
+
       const [statsRes, poolRes, myRes, subRes, archiveRes, targetRes] = await Promise.all([
-        OpsAPI.getStats().catch(() => ({ data: { openCount: 0, slaBreachedCount: 0, closedTodayCount: 0, totalClosedCount: 0 } })),
-        OpsAPI.getAllTickets({ unassigned: true, limit: 50 }).catch(() => ({ data: [] })),
-        OpsAPI.getMyQueue({ limit: 50 }).catch(() => ({ data: [] })),
-        OpsAPI.getAllSubTickets({ limit: 50 }).catch(() => ({ data: [] })),
-        OpsAPI.getAllTickets({ archive: true, limit: 50 }).catch(() => ({ data: [] })),
+        OpsAPI.getStats().catch(() => ({ data: { openCount: 0, slaBreachedCount: 0, closedTodayCount: 0, totalClosedCount: 0, outboundCount: 0 } })),
+        OpsAPI.getAllTickets({ unassigned: true, limit: 50, ...filterParams }).catch(() => ({ data: [] })),
+        OpsAPI.getMyQueue({ limit: 50, ...filterParams }).catch(() => ({ data: [] })),
+        OpsAPI.getAllSubTickets({ limit: 50, subTab: standaloneSubTab, ...filterParams }).catch(() => ({ data: [] })),
+        OpsAPI.getAllTickets({ archive: true, limit: 50, ...filterParams }).catch(() => ({ data: [] })),
         activeTab === 'POOL'
-          ? OpsAPI.getAllTickets({ unassigned: true, limit: 50 }).catch(() => ({ data: [] }))
+          ? OpsAPI.getAllTickets({ unassigned: true, limit: 50, ...filterParams }).catch(() => ({ data: [] }))
           : activeTab === 'MY_QUEUE'
-          ? OpsAPI.getMyQueue({ limit: 50 }).catch(() => ({ data: [] }))
+          ? OpsAPI.getMyQueue({ limit: 50, ...filterParams }).catch(() => ({ data: [] }))
+          : activeTab === 'OUTBOUND'
+          ? OpsAPI.getAllTickets({ category: 'OUTBOUND', limit: 50, ...filterParams }).catch(() => ({ data: [] }))
           : activeTab === 'SUB_TICKETS'
-          ? OpsAPI.getAllSubTickets({ limit: 50, direction: subTicketDirection, linkage: subTicketLinkage }).catch(() => ({ data: [] }))
+          ? OpsAPI.getAllSubTickets({ limit: 50, subTab: standaloneSubTab, ...filterParams }).catch(() => ({ data: [] }))
           : activeTab === 'ARCHIVE'
-          ? OpsAPI.getAllTickets({ archive: true, limit: 50 }).catch(() => ({ data: [] }))
-          : OpsAPI.getAllTickets({ limit: 50 }).catch(() => ({ data: [] }))
+          ? OpsAPI.getAllTickets({ archive: true, limit: 50, ...filterParams }).catch(() => ({ data: [] }))
+          : OpsAPI.getAllTickets({ limit: 50, ...filterParams }).catch(() => ({ data: [] }))
       ]);
 
       const statPayload = statsRes.data || statsRes.stats || {};
@@ -818,26 +856,44 @@ export const OperationalQueueView: React.FC = () => {
 
       setPoolCount(statPayload.poolCount ?? pList.length);
       setMyCount(statPayload.myQueueCount ?? mList.length);
-      setSubTicketsCount(statPayload.activeSubTicketsCount ?? sList.length);
+      setSubTicketsCount(statPayload.activeSubTicketsCount ?? statPayload.standaloneInternalCount ?? sList.length);
       setArchiveCount(statPayload.totalClosedCount ?? aList.length);
+      setOutboundCount(statPayload.outboundCount ?? 0);
       setTickets(tList);
     } catch (error) {
       console.error('Failed to fetch ops data', error);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, subTicketDirection, subTicketLinkage]);
+  }, [activeTab, selectedDeptFilter, selectedBuildingFilter, selectedFlowFilter, selectedStatusFilter, standaloneSubTab, search]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  // Load auxiliary data: departments, buildings, flows
   useEffect(() => {
     OpsAPI.getDepartments().then(res => {
       if (res.success && Array.isArray(res.data)) {
         setDepartments(res.data);
       }
     }).catch(() => {});
+
+    OpsAPI.getBuildings().then(res => {
+      if (Array.isArray(res)) setBuildings(res);
+      else if (res.success && Array.isArray(res.data)) setBuildings(res.data);
+    }).catch(() => {});
+
+    fetch('/api/v1/routing/routes/public', { credentials: 'include' })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.routes)) {
+          setFlowsList(res.routes.map((r: any) => ({ id: r.id, name: r.name })));
+        } else if (Array.isArray(res)) {
+          setFlowsList(res.map((r: any) => ({ id: r.id, name: r.name })));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Handle claiming ticket from pool
@@ -1063,7 +1119,7 @@ export const OperationalQueueView: React.FC = () => {
   };
 
   // ── Unified View Configurations & Standards ──
-  const isTicketView = ['POOL', 'MY_QUEUE', 'ALL_TICKETS', 'SUB_TICKETS', 'ARCHIVE'].includes(activeTab);
+  const isTicketView = ['POOL', 'MY_QUEUE', 'OUTBOUND', 'SUB_TICKETS', 'ARCHIVE'].includes(activeTab);
 
   const activeViewConfig = React.useMemo(() => {
     switch (activeTab) {
@@ -1089,14 +1145,25 @@ export const OperationalQueueView: React.FC = () => {
           iconBg: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
           glowColor: 'rgba(79, 70, 229, 0.35)'
         };
+      case 'OUTBOUND':
+        return {
+          title: 'الطلبات والمعاملات الصادرة',
+          subtitle: 'المعاملات والتذاكر الصادرة منك أو من إدارتك لمتابعة إنجازها وسير العمل عليها',
+          badgeText: `${outboundCount} صادرة`,
+          badgeColor: '#0ea5e9',
+          badgeBg: 'rgba(14, 165, 233, 0.12)',
+          icon: Send,
+          iconBg: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+          glowColor: 'rgba(14, 165, 233, 0.35)'
+        };
       case 'SUB_TICKETS':
         return {
-          title: 'التذاكر والمهام الداخلية المنبثقة',
-          subtitle: 'التكليفات والمهام الفرعية الجارية المستحدثة لمعالجة أجزاء من الطلبات الرئيسية',
+          title: 'الطلبات الداخلية والتنسيق البيني المستقل',
+          subtitle: 'المعاملات والتكليفات التشغيلية المستقلة المتبادلة بين الإدارات والأقسام',
           badgeText: `${subTicketsCount} نشطة`,
           badgeColor: '#7e22ce',
           badgeBg: 'rgba(126, 34, 206, 0.12)',
-          icon: GitPullRequest,
+          icon: ArrowRightLeft,
           iconBg: 'linear-gradient(135deg, #7e22ce 0%, #581c87 100%)',
           glowColor: 'rgba(126, 34, 206, 0.35)'
         };
@@ -1110,17 +1177,6 @@ export const OperationalQueueView: React.FC = () => {
           icon: FileCheck,
           iconBg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
           glowColor: 'rgba(16, 185, 129, 0.35)'
-        };
-      case 'ALL_TICKETS':
-        return {
-          title: 'كافة طلبات وسجل الإدارة',
-          subtitle: 'الأرشيف والسجل التشغيلي الشامل لكافة طلبات ومعاملات القسم',
-          badgeText: `${stats.open} مفتوحة`,
-          badgeColor: isDark ? '#38bdf8' : '#0f172a',
-          badgeBg: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.08)',
-          icon: Layers,
-          iconBg: 'linear-gradient(135deg, #1e3a52 0%, #0f172a 100%)',
-          glowColor: 'rgba(30, 58, 82, 0.35)'
         };
       case 'FLOW_SETTINGS':
         return {
@@ -1524,12 +1580,21 @@ export const OperationalQueueView: React.FC = () => {
                   accentColor: '#4f46e5',
                 },
                 {
+                  id: 'OUTBOUND',
+                  label: 'الطلبات الصادرة',
+                  count: outboundCount,
+                  badge: 'معاملات صادرة',
+                  sublabel: 'المعاملات الصادرة لمتابعتها',
+                  icon: Send,
+                  accentColor: '#0ea5e9',
+                },
+                {
                   id: 'SUB_TICKETS',
-                  label: 'التذاكر والمهام الداخلية',
+                  label: 'الطلبات الداخلية والمستقلة',
                   count: subTicketsCount,
-                  badge: 'مهام نشطة',
-                  sublabel: 'التكليفات المنبثقة الجارية',
-                  icon: GitPullRequest,
+                  badge: 'بينية ومستقلة',
+                  sublabel: 'التنسيق البيني بين الإدارات',
+                  icon: ArrowRightLeft,
                   accentColor: '#7e22ce',
                 },
                 {
@@ -1540,15 +1605,6 @@ export const OperationalQueueView: React.FC = () => {
                   sublabel: 'الأرشيف التوثيقي المقفل',
                   icon: FileCheck,
                   accentColor: '#10b981',
-                },
-                {
-                  id: 'ALL_TICKETS',
-                  label: 'كافة طلبات الإدارة',
-                  count: stats.open,
-                  badge: 'سجل شامل',
-                  sublabel: 'السجل العام الموحد للقسم',
-                  icon: Layers,
-                  accentColor: isDark ? '#38bdf8' : '#0f172a',
                 },
               ].map((q) => {
                 const isSelected = activeTab === q.id;
@@ -2049,7 +2105,147 @@ export const OperationalQueueView: React.FC = () => {
             ) : (
               /* Tickets List Rendered in RAIL, GRID, or LIST */
               <div style={{ minHeight: '520px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Dedicated Control Bar for Sub-Tickets & Internal Requests */}
+                {/* ═══ Universal Operational Filter Engine (شريط الفلاتر المؤسسي الموحد) ═══ */}
+                {isTicketView && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: isMobile ? '6px' : '10px',
+                    flexWrap: 'wrap',
+                    padding: isMobile ? '8px 10px' : '10px 14px',
+                    borderRadius: '14px',
+                    background: isDark ? 'rgba(30, 41, 59, 0.45)' : '#ffffff',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                    marginBottom: '12px',
+                    fontSize: '12px',
+                    fontFamily: "'Cairo', sans-serif"
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 800 }}>
+                      <Filter size={13} color="#0ea5e9" />
+                      <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>تصفية سريعة:</span>
+                    </div>
+
+                    {/* 1. فلتر الإدارة */}
+                    <select
+                      value={selectedDeptFilter}
+                      onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        background: isDark ? '#1e293b' : '#f8fafc',
+                        color: isDark ? '#f8fafc' : '#0f172a',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="ALL">🏢 كافة الإدارات</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+
+                    {/* 2. فلتر المشكلة / المسار */}
+                    <select
+                      value={selectedFlowFilter}
+                      onChange={(e) => setSelectedFlowFilter(e.target.value)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        background: isDark ? '#1e293b' : '#f8fafc',
+                        color: isDark ? '#f8fafc' : '#0f172a',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="ALL">🎯 كافة المسارات والمشاكل</option>
+                      {flowsList.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+
+                    {/* 3. فلتر المبنى / الموقع */}
+                    <select
+                      value={selectedBuildingFilter}
+                      onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        background: isDark ? '#1e293b' : '#f8fafc',
+                        color: isDark ? '#f8fafc' : '#0f172a',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="ALL">📍 كافة المباني والمواقع</option>
+                      {buildings.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+
+                    {/* 4. فلتر الحالة */}
+                    <select
+                      value={selectedStatusFilter}
+                      onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                        background: isDark ? '#1e293b' : '#f8fafc',
+                        color: isDark ? '#f8fafc' : '#0f172a',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="ALL">🔄 كل الحالات</option>
+                      <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
+                      <option value="PENDING">⏳ قيد الانتظار</option>
+                      <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
+                      <option value="CLOSED">✅ المغلقة والمكتملة</option>
+                    </select>
+
+                    {/* زر تصفير الفلاتر النشطة */}
+                    {(selectedDeptFilter !== 'ALL' || selectedFlowFilter !== 'ALL' || selectedBuildingFilter !== 'ALL' || selectedStatusFilter !== 'ALL') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeptFilter('ALL');
+                          setSelectedFlowFilter('ALL');
+                          setSelectedBuildingFilter('ALL');
+                          setSelectedStatusFilter('ALL');
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                          color: isDark ? '#f87171' : '#dc2626',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <X size={11} />
+                        <span>إلغاء التصفية</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* ═══ Dedicated Sub-navbar for Standalone Internal Requests (الطلبات المستقلة بين الإدارات) ═══ */}
                 {activeTab === 'SUB_TICKETS' && (
                   <div style={{
                     display: 'flex',
@@ -2057,164 +2253,146 @@ export const OperationalQueueView: React.FC = () => {
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: '12px',
-                    padding: '12px 16px',
+                    padding: isMobile ? '10px 12px' : '12px 16px',
                     marginBottom: '16px',
-                    background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
-                    borderRadius: '14px',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'
+                    background: isDark ? 'rgba(30, 41, 59, 0.65)' : '#ffffff',
+                    borderRadius: '16px',
+                    border: isDark ? '1px solid rgba(126, 34, 206, 0.3)' : '1px solid #e9d5ff',
+                    boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(126, 34, 206, 0.05)'
                   }}>
-                    {/* Direction Switcher */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>
-                        الاتجاه:
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <div style={{
                         display: 'inline-flex',
-                        background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#e2e8f0',
-                        borderRadius: '10px',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        background: 'rgba(126, 34, 206, 0.12)',
+                        color: '#7e22ce',
+                        fontSize: '12px',
+                        fontWeight: 800
+                      }}>
+                        <ArrowRightLeft size={14} />
+                        <span>الطلبات المستقلة:</span>
+                      </div>
+
+                      <div style={{
+                        display: 'inline-flex',
+                        background: isDark ? 'rgba(15, 23, 42, 0.7)' : '#f1f5f9',
+                        borderRadius: '12px',
                         padding: '3px',
-                        gap: '2px'
+                        gap: '3px',
+                        flexWrap: 'wrap'
                       }}>
                         <button
                           type="button"
-                          onClick={() => setSubTicketDirection('RECEIVED')}
+                          onClick={() => setStandaloneSubTab('MY_ASSIGNED')}
                           style={{
-                            padding: '6px 14px',
-                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '9px',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: subTicketDirection === 'RECEIVED' ? 800 : 600,
+                            fontSize: '11.5px',
+                            fontWeight: standaloneSubTab === 'MY_ASSIGNED' ? 800 : 600,
                             fontFamily: "'Cairo', sans-serif",
-                            background: subTicketDirection === 'RECEIVED'
-                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                            background: standaloneSubTab === 'MY_ASSIGNED'
+                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
                               : 'transparent',
-                            color: subTicketDirection === 'RECEIVED' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketDirection === 'RECEIVED' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            color: standaloneSubTab === 'MY_ASSIGNED' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: standaloneSubTab === 'MY_ASSIGNED' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          📥 المهام المستلمة (الواردة إلينا)
+                          👤 المسندة إليّ
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSubTicketDirection('SENT')}
+                          onClick={() => setStandaloneSubTab('INBOUND')}
                           style={{
-                            padding: '6px 14px',
-                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '9px',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: subTicketDirection === 'SENT' ? 800 : 600,
+                            fontSize: '11.5px',
+                            fontWeight: standaloneSubTab === 'INBOUND' ? 800 : 600,
                             fontFamily: "'Cairo', sans-serif",
-                            background: subTicketDirection === 'SENT'
-                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                            background: standaloneSubTab === 'INBOUND'
+                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
                               : 'transparent',
-                            color: subTicketDirection === 'SENT' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketDirection === 'SENT' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            color: standaloneSubTab === 'INBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: standaloneSubTab === 'INBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          📤 المهام المرسلة (الصادرة منا)
+                          📥 الواردة لقسمي / إدارتي
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSubTicketDirection('ALL')}
+                          onClick={() => setStandaloneSubTab('MY_OUTBOUND')}
                           style={{
-                            padding: '6px 14px',
-                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '9px',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: subTicketDirection === 'ALL' ? 800 : 600,
+                            fontSize: '11.5px',
+                            fontWeight: standaloneSubTab === 'MY_OUTBOUND' ? 800 : 600,
                             fontFamily: "'Cairo', sans-serif",
-                            background: subTicketDirection === 'ALL'
-                              ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                            background: standaloneSubTab === 'MY_OUTBOUND'
+                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
                               : 'transparent',
-                            color: subTicketDirection === 'ALL' ? (isDark ? '#ffffff' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketDirection === 'ALL' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                            color: standaloneSubTab === 'MY_OUTBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: standaloneSubTab === 'MY_OUTBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          🌐 كافة المهام الداخلية
+                          📤 الصادرة مني
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStandaloneSubTab('DEPT_OUTBOUND')}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '9px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '11.5px',
+                            fontWeight: standaloneSubTab === 'DEPT_OUTBOUND' ? 800 : 600,
+                            fontFamily: "'Cairo', sans-serif",
+                            background: standaloneSubTab === 'DEPT_OUTBOUND'
+                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
+                              : 'transparent',
+                            color: standaloneSubTab === 'DEPT_OUTBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                            boxShadow: standaloneSubTab === 'DEPT_OUTBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          🏢 كافة الصادرة من الإدارة
                         </button>
                       </div>
                     </div>
 
-                    {/* Linkage Filter */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>
-                        التصنيف:
-                      </span>
-                      <div style={{
+                    <button
+                      type="button"
+                      onClick={() => setIsStandaloneInternalModalOpen(true)}
+                      style={{
                         display: 'inline-flex',
-                        background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#e2e8f0',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
                         borderRadius: '10px',
-                        padding: '3px',
-                        gap: '2px'
-                      }}>
-                        <button
-                          type="button"
-                          onClick={() => setSubTicketLinkage('ALL')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: subTicketLinkage === 'ALL' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: subTicketLinkage === 'ALL'
-                              ? (isDark ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#ffffff')
-                              : 'transparent',
-                            color: subTicketLinkage === 'ALL' ? (isDark ? '#ffffff' : '#059669') : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketLinkage === 'ALL' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-                          }}
-                        >
-                          الكل
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSubTicketLinkage('LINKED')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: subTicketLinkage === 'LINKED' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: subTicketLinkage === 'LINKED'
-                              ? (isDark ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#ffffff')
-                              : 'transparent',
-                            color: subTicketLinkage === 'LINKED' ? (isDark ? '#ffffff' : '#059669') : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketLinkage === 'LINKED' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-                          }}
-                        >
-                          🔗 مهام فرعية لطلب
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSubTicketLinkage('STANDALONE')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: subTicketLinkage === 'STANDALONE' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: subTicketLinkage === 'STANDALONE'
-                              ? (isDark ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' : '#ffffff')
-                              : 'transparent',
-                            color: subTicketLinkage === 'STANDALONE' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: subTicketLinkage === 'STANDALONE' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
-                          }}
-                        >
-                          📄 طلبات داخلية مستقلة
-                        </button>
-                      </div>
-                    </div>
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)',
+                        color: '#ffffff',
+                        fontSize: '12.5px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        boxShadow: '0 3px 12px rgba(126, 34, 206, 0.3)',
+                        transition: 'all 0.18s ease'
+                      }}
+                    >
+                      <Plus size={15} strokeWidth={2.5} />
+                      <span>فتح طلب داخلي مستقل بين الإدارات</span>
+                    </button>
                   </div>
                 )}
                 {loading ? (
@@ -2245,13 +2423,25 @@ export const OperationalQueueView: React.FC = () => {
                     </p>
                   </div>
                 ) : (() => {
-                  const filteredTickets = tickets.filter(t => 
-                    (t.subject || t.title || '').toLowerCase().includes(search.toLowerCase()) || 
-                    t.id.toString().includes(search) || 
-                    (t.creatorName || '').toLowerCase().includes(search.toLowerCase()) ||
-                    (t.code || '').toLowerCase().includes(search.toLowerCase()) ||
-                    (t.departmentName || '').toLowerCase().includes(search.toLowerCase())
-                  );
+                  const filteredTickets = tickets.filter(t => {
+                    const matchesSearch = !search || (
+                      (t.subject || t.title || '').toLowerCase().includes(search.toLowerCase()) || 
+                      t.id.toString().includes(search) || 
+                      (t.creatorName || '').toLowerCase().includes(search.toLowerCase()) ||
+                      (t.code || '').toLowerCase().includes(search.toLowerCase()) ||
+                      (t.departmentName || '').toLowerCase().includes(search.toLowerCase())
+                    );
+                    const matchesDept = selectedDeptFilter === 'ALL' || t.targetDeptId === selectedDeptFilter || (t.creator as any)?.department?.id === selectedDeptFilter;
+                    const matchesFlow = selectedFlowFilter === 'ALL' || t.flowDefinitionId === selectedFlowFilter;
+                    const matchesBuilding = selectedBuildingFilter === 'ALL' || (t as any).creatorBuildingId === selectedBuildingFilter;
+                    const sName = (t.state?.name || t.status || '').toUpperCase();
+                    const matchesStatus = selectedStatusFilter === 'ALL' || (
+                      selectedStatusFilter === 'ACTIVE' ? !['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'].includes(sName) :
+                      selectedStatusFilter === 'CLOSED' ? ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName) :
+                      sName === selectedStatusFilter
+                    );
+                    return matchesSearch && matchesDept && matchesFlow && matchesBuilding && matchesStatus;
+                  });
 
                                     const renderCinemaCard = (ticket: Ticket, i: number, isRail: boolean = false) => {
                     const reqPriority = ticket.requesterPriority || ticket.priority;
@@ -2424,6 +2614,34 @@ export const OperationalQueueView: React.FC = () => {
                                   📎 مهمة فرعية {ticket.parentId ? `(#${ticket.parentId})` : ''}
                                 </span>
                               )}
+                              {ticket.subTicketsSummary && ticket.subTicketsSummary.total > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSubTasksPopoverTicket(subTasksPopoverTicket?.id === ticket.id ? null : ticket);
+                                  }}
+                                  style={{
+                                    background: isDark ? 'rgba(168, 85, 247, 0.25)' : 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)',
+                                    color: isDark ? '#d8b4fe' : '#6b21a8',
+                                    border: isDark ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid #d8b4fe',
+                                    fontSize: '9.5px',
+                                    fontWeight: 800,
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    cursor: 'pointer',
+                                    boxShadow: ticket.subTicketsSummary.open > 0 ? '0 0 8px rgba(168, 85, 247, 0.35)' : 'none',
+                                    transition: 'all 0.18s ease'
+                                  }}
+                                  title="انقر لاستعراض المهام الفرعية التابعة"
+                                >
+                                  <GitPullRequest size={10.5} />
+                                  <span>📎 تذاكر فرعية ({ticket.subTicketsSummary.total}) • {ticket.subTicketsSummary.open} جارية</span>
+                                </button>
+                              )}
                             </div>
 
                             {/* Detailed Metadata: Requester & Requester Department + Target Dept + Assignee */}
@@ -2445,6 +2663,13 @@ export const OperationalQueueView: React.FC = () => {
                                   ({ticket.creator?.department?.name || ticket.departmentName || 'إدارة التشغيل'})
                                 </span>
                               </div>
+
+                              {ticket.creatorBuilding && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <Building2 size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
+                                  <span>المبنى: {ticket.creatorBuilding}</span>
+                                </div>
+                              )}
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <Building2 size={12} color="#0284c7" style={{ flexShrink: 0 }} />
@@ -2849,6 +3074,32 @@ export const OperationalQueueView: React.FC = () => {
                                                   }}>
                                                     📎 مهمة فرعية
                                                   </span>
+                                                )}
+                                                {ticket.subTicketsSummary && ticket.subTicketsSummary.total > 0 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setSubTasksPopoverTicket(subTasksPopoverTicket?.id === ticket.id ? null : ticket);
+                                                    }}
+                                                    style={{
+                                                      background: isDark ? 'rgba(168, 85, 247, 0.25)' : '#faf5ff',
+                                                      color: isDark ? '#d8b4fe' : '#7e22ce',
+                                                      border: isDark ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid #d8b4fe',
+                                                      fontSize: '9.5px',
+                                                      fontWeight: 800,
+                                                      padding: '1px 6px',
+                                                      borderRadius: '5px',
+                                                      cursor: 'pointer',
+                                                      display: 'inline-flex',
+                                                      alignItems: 'center',
+                                                      gap: '3px'
+                                                    }}
+                                                    title="انقر لاستعراض المهام الفرعية التابعة"
+                                                  >
+                                                    <GitPullRequest size={9.5} />
+                                                    <span>تذاكر فرعية ({ticket.subTicketsSummary.total}) • {ticket.subTicketsSummary.open} جارية</span>
+                                                  </button>
                                                 )}
                                               </div>
                                             </div>
@@ -5727,6 +5978,212 @@ export const OperationalQueueView: React.FC = () => {
           }}
         />
       )}
+      {/* ═══ Inline Sub-Tasks Mini-Drawer / Popover ═══ */}
+      <AnimatePresence>
+        {subTasksPopoverTicket && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 100020,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              direction: 'rtl'
+            }}
+            onClick={() => setSubTasksPopoverTicket(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.18 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '540px',
+                background: isDark ? '#0f172a' : '#ffffff',
+                borderRadius: '20px',
+                border: isDark ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid #e9d5ff',
+                boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.6)' : '0 20px 40px -10px rgba(126, 34, 206, 0.15)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                padding: '16px 20px',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: isDark ? 'rgba(30, 41, 59, 0.5)' : '#faf5ff'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #7e22ce 0%, #a855f7 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(126, 34, 206, 0.3)'
+                  }}>
+                    <GitPullRequest size={18} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a' }}>
+                      المهام والتذاكر الداخلية التابعة للطلب #{subTasksPopoverTicket.id}
+                    </h3>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', maxWidth: '380px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {subTasksPopoverTicket.subject || subTasksPopoverTicket.title}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSubTasksPopoverTicket(null)}
+                  style={{
+                    background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Sub-tickets Body */}
+              <div style={{ padding: '16px 20px', maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {subTasksPopoverTicket.subTicketsSummary?.items && subTasksPopoverTicket.subTicketsSummary.items.length > 0 ? (
+                  subTasksPopoverTicket.subTicketsSummary.items.map((st: any) => (
+                    <div
+                      key={st.id}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        background: isDark ? 'rgba(30, 41, 59, 0.45)' : '#f8fafc',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            color: '#7e22ce',
+                            background: 'rgba(126, 34, 206, 0.1)',
+                            padding: '2px 7px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(126, 34, 206, 0.2)'
+                          }}>
+                            {st.code}
+                          </span>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a' }}>
+                            {st.title}
+                          </span>
+                        </div>
+                        <OpsStatusPill status={st.state?.name} stateLabel={st.state?.label} isDark={isDark} />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Building2 size={12} color="#0284c7" />
+                            <span>{st.departmentName || 'إدارة التشغيل'}</span>
+                          </span>
+                          {st.assignedTo && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#a5b4fc' : '#4f46e5', fontWeight: 700 }}>
+                              <ShieldCheck size={12} />
+                              <span>{st.assignedTo.fullName}</span>
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '10.5px' }}>{formatTimeAgo(st.createdAt)}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '30px 20px', color: '#94a3b8', fontSize: '13px' }}>
+                    لا توجد مهام فرعية منبثقة مسجلة على هذه المعاملة
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '12px 20px',
+                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: isDark ? 'rgba(15, 23, 42, 0.85)' : '#ffffff'
+              }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#cbd5e1' : '#475569' }}>
+                  إجمالي المهام: {subTasksPopoverTicket.subTicketsSummary?.total || 0} • (الجارية: {subTasksPopoverTicket.subTicketsSummary?.open || 0})
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const t = subTasksPopoverTicket;
+                      setSubTasksPopoverTicket(null);
+                      setInspectTicket(t);
+                    }}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '9px',
+                      background: 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 10px rgba(126, 34, 206, 0.3)'
+                    }}
+                  >
+                    فحص المعاملة الرئيسية
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubTasksPopoverTicket(null)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '9px',
+                      background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9',
+                      color: isDark ? '#cbd5e1' : '#475569',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

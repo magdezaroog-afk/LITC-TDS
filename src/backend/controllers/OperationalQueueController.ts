@@ -98,13 +98,14 @@ export class OperationalQueueController {
   static async getMyQueue(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 20, status, priority, includeClosed } = req.query;
+      const { cursor, limit = 20, status, priority, includeClosed, departmentId, buildingId, flowId, categoryId, search } = req.query;
 
       const take = Math.min(Number(limit), 100);
 
-      // فلتر: الطلبات المسندة للموظف الحالي أو المحولة إليه بانتظار قبوله
+      // فلتر: الطلبات المسندة للموظف الحالي أو المحولة إليه بانتظار قبوله (مع حجب التذاكر الفرعية التابعة)
       const where: any = {
         isDeleted: false,
+        parentId: null,
         OR: [
           { assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } },
           {
@@ -118,31 +119,66 @@ export class OperationalQueueController {
         ]
       };
 
-      if (status && status !== 'ACTIVE') {
+      if (status && status !== 'ACTIVE' && status !== 'ALL') {
         if (status === 'CLOSED' || status === 'ARCHIVED') {
           where.state = { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } };
         } else {
           where.state = { name: (status as string).toUpperCase() };
         }
-      } else if (includeClosed !== 'true') {
+      } else if (includeClosed !== 'true' && status !== 'ALL') {
         // افتراضياً وبشكل صارم: استبعاد كافة التذاكر المغلقة والمحلولة من قائمة الانتظار النشطة للمهندس
         where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
       }
 
       if (priority) where.priority = (priority as string).toUpperCase();
       if (cursor) where.id = { lt: Number(cursor) };
+      if (departmentId) where.departmentId = Number(departmentId);
+      if (buildingId) where.creator = { ...where.creator, buildingId: Number(buildingId) };
+      if (flowId) where.flowDefinitionId = String(flowId);
+      if (categoryId) where.categoryId = Number(categoryId);
+      if (search) {
+        where.AND = [
+          {
+            OR: [
+              { title: { contains: search as string } },
+              { description: { contains: search as string } },
+              { id: isNaN(Number(search)) ? undefined : Number(search) }
+            ].filter(Boolean)
+          }
+        ];
+      }
 
       const tickets = await prisma.ticket.findMany({
         where,
         include: {
           state: true,
-          creator: { select: { id: true, fullName: true, avatarUrl: true, department: { select: { name: true } } } },
-          departmentObj: { select: { name: true } },
-          flowDefinition: { select: { name: true } },
+          creator: { 
+            select: { 
+              id: true, 
+              fullName: true, 
+              avatarUrl: true, 
+              buildingId: true,
+              building: { select: { id: true, name: true } },
+              department: { select: { id: true, name: true } } 
+            } 
+          },
+          departmentObj: { select: { id: true, name: true } },
+          flowDefinition: { select: { id: true, name: true, icon: true } },
           slaTrackers: { where: { slaStatus: { not: 'COMPLIANT' } }, take: 1 },
           assignments: {
             where: { isCurrentActive: true },
             include: { assignedTech: { select: { id: true, fullName: true, avatarUrl: true } } }
+          },
+          subTickets: {
+            where: { isDeleted: false },
+            include: {
+              state: true,
+              departmentObj: { select: { id: true, name: true } },
+              assignments: {
+                where: { isCurrentActive: true },
+                include: { assignedTech: { select: { id: true, fullName: true, avatarUrl: true } } }
+              }
+            }
           },
           _count: { select: { comments: true, files: true } }
         },
@@ -167,7 +203,7 @@ export class OperationalQueueController {
   static async getAllTickets(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 30, status, priority, flowId, search, unassigned, category } = req.query;
+      const { cursor, limit = 30, status, priority, flowId, categoryId, search, unassigned, category, departmentId, buildingId } = req.query;
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
@@ -191,6 +227,7 @@ export class OperationalQueueController {
 
       const take = Math.min(Number(limit), 100);
       let where = buildScopeFilter(roleName, user.id, fullUser.departmentId);
+      const userDeptId = fullUser?.departmentId;
 
       const isArchive = req.query.archive === 'true' || status === 'ARCHIVED' || status === 'CLOSED';
       if (isArchive) {
@@ -201,11 +238,28 @@ export class OperationalQueueController {
         where.assignments = { none: { isCurrentActive: true } };
         where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
       } else if (status && status !== 'ALL') {
-        where.state = { name: (status as string).toUpperCase() };
+        if (status === 'ACTIVE' || status === 'OPEN_ALL') {
+          where.state = { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } };
+        } else if (status === 'CLOSED' || status === 'ARCHIVED') {
+          where.state = { name: { in: ['CLOSED', 'RESOLVED', 'COMPLETED'] } };
+        } else {
+          where.state = { name: (status as string).toUpperCase() };
+        }
       }
 
-      const userDeptId = fullUser?.departmentId;
-      if (category === 'GENERAL_INBOUND') {
+      if (category === 'OUTBOUND') {
+        // الطلبات الصادرة: التذاكر المنشأة من المستخدم أو من إدارته إلى جهات أخرى
+        where = { isDeleted: false, parentId: null };
+        if (canDo(roleName, 40) && userDeptId) {
+          where.OR = [
+            { creatorId: user.id },
+            { creator: { departmentId: userDeptId } }
+          ];
+        } else {
+          where.creatorId = user.id;
+        }
+        if (departmentId) where.departmentId = Number(departmentId);
+      } else if (category === 'GENERAL_INBOUND') {
         where.parentId = null;
         where.isInternalRequest = false;
       } else if (category === 'INTERNAL_STANDALONE_INBOUND') {
@@ -229,6 +283,15 @@ export class OperationalQueueController {
         where.slaTrackers = { some: { slaStatus: 'BREACHED' } };
       }
 
+      // افتراضياً: حجب التذاكر التابعة (subTickets) من الأحواض العادية لعرضها كشارات منبثقة داخل التذكرة الأم
+      if (category !== 'INTERNAL_SUB_INBOUND' && category !== 'INTERNAL_SUB_OUTBOUND') {
+        where.parentId = null;
+      }
+
+      // عوامل التصفية الإضافية (Universal Filters)
+      if (departmentId && category !== 'OUTBOUND') where.departmentId = Number(departmentId);
+      if (buildingId) where.creator = { ...where.creator, buildingId: Number(buildingId) };
+      if (categoryId) where.categoryId = Number(categoryId);
       if (priority) where.priority = (priority as string).toUpperCase();
       if (flowId) where.flowDefinitionId = flowId as string;
       if (cursor) where.id = { lt: Number(cursor) };
@@ -244,13 +307,33 @@ export class OperationalQueueController {
         where,
         include: {
           state: true,
-          creator: { select: { id: true, fullName: true, avatarUrl: true, department: { select: { name: true } } } },
-          departmentObj: { select: { name: true } },
-          flowDefinition: { select: { name: true, icon: true } },
+          creator: { 
+            select: { 
+              id: true, 
+              fullName: true, 
+              avatarUrl: true, 
+              buildingId: true,
+              building: { select: { id: true, name: true } },
+              department: { select: { id: true, name: true } } 
+            } 
+          },
+          departmentObj: { select: { id: true, name: true } },
+          flowDefinition: { select: { id: true, name: true, icon: true } },
           slaTrackers: { where: { slaStatus: { not: 'COMPLIANT' } }, take: 1 },
           assignments: {
             where: { isCurrentActive: true },
             include: { assignedTech: { select: { id: true, fullName: true, avatarUrl: true } } }
+          },
+          subTickets: {
+            where: { isDeleted: false },
+            include: {
+              state: true,
+              departmentObj: { select: { id: true, name: true } },
+              assignments: {
+                where: { isCurrentActive: true },
+                include: { assignedTech: { select: { id: true, fullName: true, avatarUrl: true } } }
+              }
+            }
           },
           _count: { select: { comments: true, files: true } }
         },
@@ -1073,11 +1156,12 @@ export class OperationalQueueController {
         ? { departmentId: fullUser.departmentId }
         : {};
 
-      const [myQueueCount, poolCount, openCount, inProgressCount, closedTodayCount, totalClosedCount, slaBreachedCount, activeSubTicketsCount] = await Promise.all([
+      const [myQueueCount, poolCount, openCount, inProgressCount, closedTodayCount, totalClosedCount, slaBreachedCount, activeSubTicketsCount, outboundCount, standaloneInternalCount] = await Promise.all([
         // طلباتي النشطة في الانتظار (استبعاد المغلقة)
         prisma.ticket.count({
           where: { 
             isDeleted: false, 
+            parentId: null,
             assignments: { some: { assignedTechId: user.id, isCurrentActive: true } },
             state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } }
           }
@@ -1086,6 +1170,8 @@ export class OperationalQueueController {
         prisma.ticket.count({
           where: { 
             isDeleted: false, 
+            parentId: null,
+            isInternalRequest: false,
             ...deptFilter, 
             assignments: { none: { isCurrentActive: true } },
             state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } }
@@ -1093,11 +1179,11 @@ export class OperationalQueueController {
         }),
         // مفتوحة في نطاق الدور
         prisma.ticket.count({
-          where: { isDeleted: false, ...deptFilter, state: { name: 'OPEN' } }
+          where: { isDeleted: false, parentId: null, ...deptFilter, state: { name: 'OPEN' } }
         }),
         // قيد التنفيذ
         prisma.ticket.count({
-          where: { isDeleted: false, ...deptFilter, state: { name: 'IN_PROGRESS' } }
+          where: { isDeleted: false, parentId: null, ...deptFilter, state: { name: 'IN_PROGRESS' } }
         }),
         // مغلقة اليوم
         prisma.ticket.count({
@@ -1126,6 +1212,25 @@ export class OperationalQueueController {
             state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } },
             ...deptFilter
           }
+        }),
+        // الطلبات الصادرة النشطة
+        prisma.ticket.count({
+          where: {
+            isDeleted: false,
+            parentId: null,
+            creatorId: user.id,
+            state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } }
+          }
+        }),
+        // الطلبات المستقلة بين الإدارات
+        prisma.ticket.count({
+          where: {
+            isDeleted: false,
+            parentId: null,
+            isInternalRequest: true,
+            state: { name: { notIn: ['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'] } },
+            ...deptFilter
+          }
         })
       ]);
 
@@ -1140,6 +1245,8 @@ export class OperationalQueueController {
           totalClosedCount,
           slaBreachedCount,
           activeSubTicketsCount,
+          outboundCount,
+          standaloneInternalCount,
           avgResolutionMins: 0
         }
       });
@@ -1677,7 +1784,7 @@ export class OperationalQueueController {
   static async getAllSubTickets(req: Request, res: Response) {
     try {
       const user = (req as any).user;
-      const { cursor, limit = 30, status, priority, search, direction = 'ALL', linkage = 'ALL' } = req.query;
+      const { cursor, limit = 30, status, priority, search, direction = 'ALL', linkage = 'ALL', subTab, departmentId, buildingId } = req.query;
 
       const fullUser = await prisma.user.findUnique({
         where: { id: user.id },
@@ -1692,39 +1799,64 @@ export class OperationalQueueController {
         isDeleted: false
       };
 
-      // 1. تحديد نمط الربط (فرعية مرتبطة بطلب رئيسي، أم طلبات داخلية مستقلة)
-      if (linkage === 'STANDALONE') {
+      // 1. تحديد نمط التبويب الفرعي للطلبات المستقلة بين الأقسام والإدارات
+      if (subTab === 'MY_ASSIGNED') {
         where.parentId = null;
         where.isInternalRequest = true;
-      } else if (linkage === 'LINKED') {
-        where.parentId = { not: null };
+        where.assignments = { some: { assignedTechId: user.id, isCurrentActive: true } };
+      } else if (subTab === 'INBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+        if (!isAdmin && fullUser?.departmentId) where.departmentId = fullUser.departmentId;
+        where.creatorId = { not: user.id };
+      } else if (subTab === 'MY_OUTBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+        where.creatorId = user.id;
+      } else if (subTab === 'DEPT_OUTBOUND') {
+        where.parentId = null;
+        where.isInternalRequest = true;
+        if (!isAdmin && fullUser?.departmentId) {
+          where.creator = { departmentId: fullUser.departmentId };
+        }
       } else {
-        where.OR = [
-          { parentId: { not: null } },
-          { isInternalRequest: true }
-        ];
+        // نمط الربط التقليدي
+        if (linkage === 'STANDALONE') {
+          where.parentId = null;
+          where.isInternalRequest = true;
+        } else if (linkage === 'LINKED') {
+          where.parentId = { not: null };
+        } else {
+          where.OR = [
+            { parentId: { not: null } },
+            { isInternalRequest: true }
+          ];
+        }
+
+        // تحديد اتجاه المهام
+        if (direction === 'SENT') {
+          where.creatorId = user.id;
+        } else if (direction === 'RECEIVED') {
+          if (!isAdmin) {
+            where.departmentId = fullUser?.departmentId;
+          }
+        } else {
+          if (!isAdmin) {
+            const authFilter = {
+              OR: [
+                { departmentId: fullUser?.departmentId },
+                { creatorId: user.id },
+                { assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } },
+                { parentTicket: { departmentId: fullUser?.departmentId } }
+              ]
+            };
+            where.AND = [authFilter];
+          }
+        }
       }
 
-      // 2. تحديد اتجاه المهام الداخلية (المستلمة / الواردة للتنفيذ، أم المرسلة / الصادرة للمتابعة)
-      if (direction === 'SENT') {
-        where.creatorId = user.id;
-      } else if (direction === 'RECEIVED') {
-        if (!isAdmin) {
-          where.departmentId = fullUser?.departmentId;
-        }
-      } else {
-        if (!isAdmin) {
-          const authFilter = {
-            OR: [
-              { departmentId: fullUser?.departmentId },
-              { creatorId: user.id },
-              { assignments: { some: { assignedTechId: user.id, isCurrentActive: true } } },
-              { parentTicket: { departmentId: fullUser?.departmentId } }
-            ]
-          };
-          where.AND = [authFilter];
-        }
-      }
+      if (departmentId) where.departmentId = Number(departmentId);
+      if (buildingId) where.creator = { ...where.creator, buildingId: Number(buildingId) };
 
       const isArchiveSub = req.query.archive === 'true' || status === 'ARCHIVED' || status === 'CLOSED';
       if (isArchiveSub) {
@@ -1753,7 +1885,16 @@ export class OperationalQueueController {
         where,
         include: {
           state: true,
-          creator: { select: { id: true, fullName: true, avatarUrl: true, department: { select: { name: true } } } },
+          creator: { 
+            select: { 
+              id: true, 
+              fullName: true, 
+              avatarUrl: true, 
+              buildingId: true,
+              building: { select: { id: true, name: true } },
+              department: { select: { id: true, name: true } } 
+            } 
+          },
           departmentObj: { select: { id: true, name: true } },
           parentTicket: {
             select: {
@@ -1915,6 +2056,25 @@ function formatTicketItem(t: any) {
 
   const handoverInfo = parsedRoutingMeta?.handover || null;
 
+  // استخراج ملخص وقائمة التذاكر الفرعية المنبثقة التابعة
+  const subTicketsList = (t.subTickets || []).map((st: any) => ({
+    id: st.id,
+    code: `SUB-${String(st.id).padStart(4, '0')}`,
+    title: st.title,
+    priority: st.priority,
+    state: { name: st.state?.name, label: st.state?.label },
+    assignedTo: st.assignments?.[0]?.assignedTech || null,
+    departmentName: st.departmentObj?.name || null,
+    createdAt: st.createdAt,
+    isOpen: !['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'].includes((st.state?.name || '').toUpperCase())
+  }));
+
+  const subTicketsSummary = {
+    total: subTicketsList.length,
+    open: subTicketsList.filter((s: any) => s.isOpen).length,
+    items: subTicketsList
+  };
+
   return {
     id: t.id,
     code: `REQ-${String(t.id).padStart(4, '0')}`,
@@ -1930,6 +2090,9 @@ function formatTicketItem(t: any) {
     state: { name: t.state?.name, label: t.state?.label },
     creator: t.creator,
     creatorName: t.creator?.fullName,
+    creatorBuilding: t.creator?.building?.name || null,
+    creatorBuildingId: t.creator?.buildingId || null,
+    creatorDepartment: t.creator?.department?.name || null,
     departmentName: t.departmentObj?.name,
     targetDept: t.departmentObj?.name,
     targetDeptId: t.departmentId,
@@ -1937,6 +2100,7 @@ function formatTicketItem(t: any) {
     targetDivisionName: parsedRoutingMeta?.targetDivisionName || null,
     parentId: t.parentId,
     isSubTicket: !!t.parentId,
+    subTicketsSummary,
     flow: t.flowDefinition ? { name: t.flowDefinition.name, icon: t.flowDefinition.icon } : null,
     flowDefinitionName: t.flowDefinition?.name,
     flowDefinitionId: t.flowDefinitionId,

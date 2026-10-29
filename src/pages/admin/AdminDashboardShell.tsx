@@ -16,6 +16,7 @@ import { AnalyticsGovernanceSubTab } from './tabs/AnalyticsGovernanceSubTab';
 import { OrgNode, initialOrgTree } from './tabs/orgStructureTypes';
 import { AdminAPI } from '../../services/admin.api';
 import { RoleSimulatorTab } from './tabs/RoleSimulatorTab';
+import { InternalRequestsGovernanceTab } from './tabs/InternalRequestsGovernanceTab';
 
 /* ─────────────────────────────────────────────────────────────
    Apple-Inspired Design System Tokens
@@ -49,6 +50,7 @@ const APPLE = {
     identityHub: { color: '#10B981', bg: '#E6F4EA', label: 'إداراة الهوية والربط', sublabel: 'Identity Federation', icon: '🔑' },
     institutional: { color: '#8B5CF6', bg: '#F3E8FF', label: 'المباني والمواقع', sublabel: 'Buildings & Locations', icon: '🏢' },
     admins: { color: '#FF3B30', bg: '#FFF0EF', label: 'حوض مدراء النظام', sublabel: 'System Admins', icon: '🛡️' },
+    internalRequests: { color: '#0ea5e9', bg: '#f0f9ff', label: 'الطلبات الداخلية والمستقلة', sublabel: 'Inter-Dept Requests', icon: '⇄' },
     simulator: { color: '#f59e0b', bg: '#fef3c7', label: 'محاكي بيئة العمل', sublabel: 'Impersonation Testing', icon: '🎭' }
   }
 };
@@ -137,11 +139,11 @@ export const AdminDashboardShell: React.FC = () => {
   }, []);
 
   // Auto-saving from Shell is removed to prevent React Strict Mode and localStorage from overwriting the DB.
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator'>(() => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'>(() => {
     try {
       const p = new URLSearchParams(window.location.search);
       const tabParam = p.get('tab') as any;
-      if (tabParam && ['overview', 'analytics', 'ui', 'operations', 'security', 'policies', 'routing', 'uecpHub', 'institutional', 'admins', 'simulator'].includes(tabParam)) {
+      if (tabParam && ['overview', 'analytics', 'ui', 'operations', 'security', 'policies', 'routing', 'uecpHub', 'institutional', 'admins', 'simulator', 'internalRequests'].includes(tabParam)) {
         return tabParam;
       }
     } catch {}
@@ -198,10 +200,10 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator'> = [
+  const TAB_KEYS: Array<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'> = [
     'overview', 'analytics',
     'ui', 'operations', 'security', 'policies', 'routing'
-  , 'uecpHub', 'institutional', 'admins', 'simulator'];
+  , 'uecpHub', 'institutional', 'admins', 'simulator', 'internalRequests'];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
@@ -370,6 +372,7 @@ export const AdminDashboardShell: React.FC = () => {
             {activeTab === 'institutional' && <InstitutionalStructureTab orgTree={orgTree} setOrgTree={setOrgTree} />}
             {activeTab === 'admins' && <SystemAdminsTab />}
             {activeTab === 'simulator' && <RoleSimulatorTab />}
+            {activeTab === 'internalRequests' && <InternalRequestsGovernanceTab />}
           </div>
         </main>
       </div>
