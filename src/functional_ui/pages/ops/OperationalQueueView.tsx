@@ -460,6 +460,20 @@ export const OperationalQueueView: React.FC = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ARCHIVE' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      if (e.detail?.tab) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('nexus_ops_switch_tab', handler);
+    return () => window.removeEventListener('nexus_ops_switch_tab', handler);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('nexus_ops_tab_changed', { detail: { tab: activeTab } }));
+  }, [activeTab]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
   const [poolCount, setPoolCount] = useState<number>(0);

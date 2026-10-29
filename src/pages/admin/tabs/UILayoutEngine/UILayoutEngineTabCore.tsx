@@ -25,6 +25,7 @@ import {
   ExternalLink,
   Plus,
   Trash2,
+  Edit3,
   Save,
   RefreshCw,
   AlertCircle,
@@ -109,6 +110,58 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
 
   // Add New Satellite Modal
   const [showAddSatelliteModal, setShowAddSatelliteModal] = useState<boolean>(false);
+
+  // Edit Satellite Modal
+  const [editingSatellite, setEditingSatellite] = useState<SatelliteSystem | null>(null);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [editSatelliteForm, setEditSatelliteForm] = useState({
+    name: '',
+    targetUrl: '',
+    category: 'IT_OPERATIONS',
+    description: ''
+  });
+  const [savingEditSatellite, setSavingEditSatellite] = useState<boolean>(false);
+
+  const handleOpenEditSatelliteModal = (sat: SatelliteSystem) => {
+    setEditingSatellite(sat);
+    setEditSatelliteForm({
+      name: sat.name || '',
+      targetUrl: sat.targetUrl || '',
+      category: sat.category || 'IT_OPERATIONS',
+      description: sat.description || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEditSatellite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSatellite) return;
+    setSavingEditSatellite(true);
+    try {
+      const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
+      const res = await fetch(`/api/v1/satellites/${editingSatellite.id}/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(editSatelliteForm)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSaveSuccessMsg(`تم تحديث بيانات المنظومة "${editSatelliteForm.name}" بنجاح.`);
+        setSatellites(prev => prev.map(s => s.id === editingSatellite.id ? { ...s, ...editSatelliteForm } : s));
+        setShowEditModal(false);
+        setEditingSatellite(null);
+      } else {
+        alert(data.error || 'فشل تحديث بيانات المنظومة.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'خطأ في الاتصال بالخادم.');
+    } finally {
+      setSavingEditSatellite(false);
+    }
+  };
   const [newSatelliteForm, setNewSatelliteForm] = useState({
     id: '',
     name: '',
@@ -716,6 +769,30 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        {/* Edit Satellite Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditSatelliteModal(currentSatellite)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0369a1',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="تعديل اسم ورابط وبيانات المنظومة"
+                    >
+                      <Edit3 size={14} />
+                      تعديل بيانات المنظومة
+                    </button>
+
                     {/* Delete Satellite Button */}
                     {currentSatellite.id !== 'asset_inventory' && (
                       <button
@@ -1095,6 +1172,114 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
             onDeleteInterface={handleDeleteInterface}
             onStartNewLayout={handleStartNewLayout}
           />
+        </div>
+      )}
+
+      
+      {/* ─── MODAL: Edit Existing Satellite System ───────────────── */}
+      {showEditModal && editingSatellite && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: '#ffffff', borderRadius: 20, padding: '28px 32px', width: '100%', maxWidth: 540, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Edit3 size={20} color="#0284c7" />
+                تعديل بيانات المنظومة: {editingSatellite.name}
+              </h3>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 18 }}>
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSatellite} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                  اسم المنظومة (بالعربية) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="اسم المنظومة"
+                  value={editSatelliteForm.name}
+                  onChange={e => setEditSatelliteForm({ ...editSatelliteForm, name: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 13, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                  رابط الخدمة المباشر (Target URL) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="http://localhost:4000 or https://hr.internal"
+                  value={editSatelliteForm.targetUrl}
+                  onChange={e => setEditSatelliteForm({ ...editSatelliteForm, targetUrl: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 13, direction: 'ltr', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                  تصنيف الخدمة
+                </label>
+                <select
+                  value={editSatelliteForm.category}
+                  onChange={e => setEditSatelliteForm({ ...editSatelliteForm, category: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 13, boxSizing: 'border-box' }}
+                >
+                  <option value="IT_OPERATIONS">تقنية المعلومات والتشغيل (IT)</option>
+                  <option value="HR_SERVICES">الموارد البشرية وشؤون الموظفين</option>
+                  <option value="FINANCE">المالية والمحاسبة</option>
+                  <option value="COLLEAGUE_SERVICE">خدمات ومنظومات الزملاء</option>
+                  <option value="GOVERNANCE">الحوكمة والامتثال</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                  الوصف والغرض الإداري
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="وصف مختصر للمنظومة وما تقدمه للموظفين..."
+                  value={editSatelliteForm.description}
+                  onChange={e => setEditSatelliteForm({ ...editSatelliteForm, description: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 13, boxSizing: 'border-box', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditSatellite}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #135d79, #0d3e51)',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: savingEditSatellite ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <Save size={16} />
+                  {savingEditSatellite ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
         </div>
       )}
 

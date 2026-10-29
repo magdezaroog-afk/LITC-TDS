@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './engine/ui-loader/ThemeProvider';
 import { AuthProvider, useAuth } from './engine/auth/AuthContext';
 import { UnifiedSmartAnalytics } from './components/analytics/UnifiedSmartAnalytics';
@@ -25,7 +25,7 @@ import { NotificationBell } from './components/infrastructure/NotificationBell';
 import { useMobileViewport } from './mobile/hooks/useMobileViewport';
 import { MobileShell } from './mobile/MobileShell';
 import { LanguageProvider, useLanguage } from './engine/ui-loader/LanguageContext';
-import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut, Layers, Smartphone } from 'lucide-react';
+import { Sun, Moon, Search, Plus, Menu, X, Building2, Shield, Zap, ChevronLeft, LogOut, Layers, Smartphone, Inbox, Sliders, BarChart3, ArrowRightLeft } from 'lucide-react';
 import { NexusTdsBrand } from './components/brand/NexusTdsBrand';
 import { OperationalEntitiesConsole } from './pages/admin/OperationalEntitiesConsole';
 import { NotificationPolicyConsole } from './pages/admin/NotificationPolicyConsole';
@@ -119,7 +119,18 @@ const NotFoundPage: React.FC = () => {
 // Floating Island Top Navigation Bar
 const Navigation: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const [opsActiveTab, setOpsActiveTab] = React.useState<'POOL' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON'>('POOL');
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      if (e.detail?.tab) setOpsActiveTab(e.detail.tab);
+    };
+    window.addEventListener('nexus_ops_tab_changed', handler);
+    return () => window.removeEventListener('nexus_ops_tab_changed', handler);
+  }, []);
   const { t, toggleLanguage, language, dir } = useLanguage();
   
   const [hasOpsInterface, setHasOpsInterface] = React.useState<boolean>(false);
@@ -760,7 +771,7 @@ const Navigation: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط زجاجي شبه شفاف فائق النعومة)
+          3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط العمليات والمهام السفلي لمنطقة الإبهام)
           ══════════════════════════════════════════════════════════ */}
       {isMobileScreen && (
         <nav
@@ -769,46 +780,155 @@ const Navigation: React.FC = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '42px',
-            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.68)' : 'rgba(255, 255, 255, 0.72)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(19, 93, 121, 0.1)',
-            boxShadow: '0 -2px 14px rgba(0, 0, 0, 0.15)',
+            height: '54px',
+            backgroundColor: isDark ? 'rgba(11, 20, 31, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(24px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(19, 93, 121, 0.15)',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.2)',
             zIndex: 94000,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-start',
+            justifyContent: 'space-around',
             direction: dir,
-            padding: '0 14px',
+            padding: '0 8px',
             boxSizing: 'border-box'
           }}
         >
-          {/* Menu / More Option (زر المزيد على يمين الشريط السفلي) */}
+          {/* 1. حوض التذاكر (الطلبات الواردة) */}
+          <button
+            type="button"
+            onClick={() => {
+              setOpsActiveTab('POOL');
+              window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab: 'POOL' } }));
+              if (location.pathname !== '/ops') navigate('/ops');
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              background: opsActiveTab === 'POOL' ? (isDark ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.1)') : 'transparent',
+              border: opsActiveTab === 'POOL' ? (isDark ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(2, 132, 199, 0.25)') : '1px solid transparent',
+              color: opsActiveTab === 'POOL' ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
+              cursor: 'pointer',
+              padding: '4px 10px',
+              borderRadius: '10px',
+              fontFamily: "'Cairo', sans-serif",
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <Inbox size={18} strokeWidth={opsActiveTab === 'POOL' ? 2.4 : 1.8} />
+            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'POOL' ? 800 : 600 }}>حوض التذاكر</span>
+          </button>
+
+          {/* 2. خصائص استقبال الطلبات */}
+          <button
+            type="button"
+            onClick={() => {
+              setOpsActiveTab('FLOW_SETTINGS');
+              window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab: 'FLOW_SETTINGS' } }));
+              if (location.pathname !== '/ops') navigate('/ops');
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              background: opsActiveTab === 'FLOW_SETTINGS' ? (isDark ? 'rgba(245, 158, 11, 0.14)' : 'rgba(217, 119, 6, 0.1)') : 'transparent',
+              border: opsActiveTab === 'FLOW_SETTINGS' ? (isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(217, 119, 6, 0.25)') : '1px solid transparent',
+              color: opsActiveTab === 'FLOW_SETTINGS' ? '#d97706' : (isDark ? '#94a3b8' : '#64748b'),
+              cursor: 'pointer',
+              padding: '4px 10px',
+              borderRadius: '10px',
+              fontFamily: "'Cairo', sans-serif",
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <Sliders size={18} strokeWidth={opsActiveTab === 'FLOW_SETTINGS' ? 2.4 : 1.8} />
+            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'FLOW_SETTINGS' ? 800 : 600 }}>خصائص الطلبات</span>
+          </button>
+
+          {/* 3. التقارير والتحاليل */}
+          <button
+            type="button"
+            onClick={() => {
+              setOpsActiveTab('ANALYTICS');
+              window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab: 'ANALYTICS' } }));
+              if (location.pathname !== '/ops') navigate('/ops');
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              background: opsActiveTab === 'ANALYTICS' ? (isDark ? 'rgba(19, 93, 121, 0.2)' : 'rgba(19, 93, 121, 0.1)') : 'transparent',
+              border: opsActiveTab === 'ANALYTICS' ? (isDark ? '1px solid rgba(19, 93, 121, 0.4)' : '1px solid rgba(19, 93, 121, 0.25)') : '1px solid transparent',
+              color: opsActiveTab === 'ANALYTICS' ? '#135d79' : (isDark ? '#94a3b8' : '#64748b'),
+              cursor: 'pointer',
+              padding: '4px 10px',
+              borderRadius: '10px',
+              fontFamily: "'Cairo', sans-serif",
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <BarChart3 size={18} strokeWidth={opsActiveTab === 'ANALYTICS' ? 2.4 : 1.8} />
+            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'ANALYTICS' ? 800 : 600 }}>التحليلات</span>
+          </button>
+
+          {/* 4. المقارنات */}
+          <button
+            type="button"
+            onClick={() => {
+              setOpsActiveTab('COMPARISON');
+              window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab: 'COMPARISON' } }));
+              if (location.pathname !== '/ops') navigate('/ops');
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2px',
+              background: opsActiveTab === 'COMPARISON' ? (isDark ? 'rgba(243, 108, 33, 0.18)' : 'rgba(243, 108, 33, 0.1)') : 'transparent',
+              border: opsActiveTab === 'COMPARISON' ? (isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.25)') : '1px solid transparent',
+              color: opsActiveTab === 'COMPARISON' ? '#f36c21' : (isDark ? '#94a3b8' : '#64748b'),
+              cursor: 'pointer',
+              padding: '4px 10px',
+              borderRadius: '10px',
+              fontFamily: "'Cairo', sans-serif",
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <ArrowRightLeft size={18} strokeWidth={opsActiveTab === 'COMPARISON' ? 2.4 : 1.8} />
+            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'COMPARISON' ? 800 : 600 }}>المقارنات</span>
+          </button>
+
+          {/* 5. زر المزيد (القائمة الجانبية) */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
             title="القائمة والمزيد"
             style={{
-              display: 'inline-flex',
+              display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '9999px',
-              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(19, 93, 121, 0.07)',
-              border: isDark ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid rgba(19, 93, 121, 0.18)',
-              color: isDark ? '#38bdf8' : '#135d79',
+              justifyContent: 'center',
+              gap: '2px',
+              background: 'transparent',
+              border: '1px solid transparent',
+              color: isDark ? '#94a3b8' : '#64748b',
               cursor: 'pointer',
-              fontFamily: "'Cairo', sans-serif",
-              fontSize: '11.5px',
-              fontWeight: 800,
-              outline: 'none',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              WebkitTapHighlightColor: 'transparent',
+              padding: '4px 8px',
+              borderRadius: '10px',
+              fontFamily: "'Cairo', sans-serif"
             }}
           >
-            <Menu size={14} strokeWidth={2.4} />
-            <span>المزيد</span>
+            <Menu size={18} strokeWidth={1.8} />
+            <span style={{ fontSize: '10px', fontWeight: 600 }}>المزيد</span>
           </button>
         </nav>
       )}
