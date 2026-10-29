@@ -851,7 +851,7 @@ const Navigation: React.FC = () => {
             <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'FLOW_SETTINGS' ? 800 : 600 }}>خصائص الطلبات</span>
           </button>
 
-          {/* 3. التقارير والتحاليل */}
+          {/* 3. التحليلات والمقارنة والحوكمة (مدمجة في زر واحد) */}
           <button
             type="button"
             onClick={() => {
@@ -865,9 +865,9 @@ const Navigation: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '2px',
-              background: opsActiveTab === 'ANALYTICS' ? (isDark ? 'rgba(19, 93, 121, 0.2)' : 'rgba(19, 93, 121, 0.1)') : 'transparent',
-              border: opsActiveTab === 'ANALYTICS' ? (isDark ? '1px solid rgba(19, 93, 121, 0.4)' : '1px solid rgba(19, 93, 121, 0.25)') : '1px solid transparent',
-              color: opsActiveTab === 'ANALYTICS' ? '#135d79' : (isDark ? '#94a3b8' : '#64748b'),
+              background: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? (isDark ? 'rgba(19, 93, 121, 0.25)' : 'rgba(19, 93, 121, 0.12)') : 'transparent',
+              border: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? (isDark ? '1px solid rgba(19, 93, 121, 0.45)' : '1px solid rgba(19, 93, 121, 0.25)') : '1px solid transparent',
+              color: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '#135d79' : (isDark ? '#94a3b8' : '#64748b'),
               cursor: 'pointer',
               padding: '4px 10px',
               borderRadius: '10px',
@@ -875,36 +875,8 @@ const Navigation: React.FC = () => {
               transition: 'all 0.18s ease'
             }}
           >
-            <BarChart3 size={18} strokeWidth={opsActiveTab === 'ANALYTICS' ? 2.4 : 1.8} />
-            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'ANALYTICS' ? 800 : 600 }}>التحليلات</span>
-          </button>
-
-          {/* 4. المقارنات */}
-          <button
-            type="button"
-            onClick={() => {
-              setOpsActiveTab('COMPARISON');
-              window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab: 'COMPARISON' } }));
-              if (location.pathname !== '/ops') navigate('/ops');
-            }}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
-              background: opsActiveTab === 'COMPARISON' ? (isDark ? 'rgba(243, 108, 33, 0.18)' : 'rgba(243, 108, 33, 0.1)') : 'transparent',
-              border: opsActiveTab === 'COMPARISON' ? (isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.25)') : '1px solid transparent',
-              color: opsActiveTab === 'COMPARISON' ? '#f36c21' : (isDark ? '#94a3b8' : '#64748b'),
-              cursor: 'pointer',
-              padding: '4px 10px',
-              borderRadius: '10px',
-              fontFamily: "'Cairo', sans-serif",
-              transition: 'all 0.18s ease'
-            }}
-          >
-            <ArrowRightLeft size={18} strokeWidth={opsActiveTab === 'COMPARISON' ? 2.4 : 1.8} />
-            <span style={{ fontSize: '10px', fontWeight: opsActiveTab === 'COMPARISON' ? 800 : 600 }}>المقارنات</span>
+            <BarChart3 size={18} strokeWidth={['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 2.4 : 1.8} />
+            <span style={{ fontSize: '10px', fontWeight: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 800 : 600 }}>التحليلات والحوكمة</span>
           </button>
 
           {/* 5. زر المزيد (القائمة الجانبية) */}

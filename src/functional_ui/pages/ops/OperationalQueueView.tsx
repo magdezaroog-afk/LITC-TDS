@@ -459,6 +459,7 @@ export const OperationalQueueView: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  const [analyticsSubTab, setAnalyticsSubTab] = useState<'OVERVIEW' | 'COMPARISON' | 'GOVERNANCE'>('OVERVIEW');
   const [activeTab, setActiveTab] = useState<'POOL' | 'MY_QUEUE' | 'SUB_TICKETS' | 'ARCHIVE' | 'ALL_TICKETS' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON' | 'ANALYTICS_GOVERNANCE'>('POOL');
 
   useEffect(() => {
@@ -1179,7 +1180,7 @@ export const OperationalQueueView: React.FC = () => {
     }
   }, [activeTab, poolCount, myCount, stats.open, subTicketsCount, managedFlowsCount, isDark]);
 
-  // ═══ OPERATIONAL MODES DEFINITION (مشترك بين شريط الهاتف العلوي والشريط السفلي للحاسوب) ═══
+  // ═══ OPERATIONAL MODES DEFINITION (التحليلات والمقارنة والحوكمة في زر واحد موحد) ═══
   const operationalModes = useMemo(() => [
     {
       id: 'TICKETS',
@@ -1206,38 +1207,21 @@ export const OperationalQueueView: React.FC = () => {
       onClick: () => setActiveTab('FLOW_SETTINGS' as any)
     }] : []),
     {
-      id: 'ANALYTICS',
-      label: 'التحليلات والمؤشرات NACE',
-      shortLabel: 'التحليلات',
-      sublabel: 'الركائز الـ 5 ونماذج المسار',
+      id: 'ANALYTICS_SUITE',
+      label: 'التحليلات والمقارنة وتفويض الحوكمة NACE',
+      shortLabel: 'التحليلات والحوكمة',
+      sublabel: 'مؤشرات الأداء الخمسة، محرك المقارنة، وتفويض الصلاحيات',
       badge: 'NACE',
       icon: BarChart3,
       accentColor: '#135d79',
-      isActive: activeTab === 'ANALYTICS',
-      onClick: () => setActiveTab('ANALYTICS' as any)
-    },
-    {
-      id: 'COMPARISON',
-      label: 'محرك المقارنة والمفاضلة',
-      shortLabel: 'المقارنات',
-      sublabel: 'مفاضلة الكوادر والمباني والمسارات',
-      badge: 'مقارنة',
-      icon: ArrowRightLeft,
-      accentColor: '#f36c21',
-      isActive: activeTab === 'COMPARISON',
-      onClick: () => setActiveTab('COMPARISON' as any)
-    },
-    ...(canManageFlows ? [{
-      id: 'ANALYTICS_GOVERNANCE',
-      label: 'حوكمة وتفويض التحليل',
-      shortLabel: 'حوكمة التحليل',
-      sublabel: 'تفويض الصلاحيات لقادة الفرق',
-      badge: 'RBAC',
-      icon: ShieldCheck,
-      accentColor: '#059669',
-      isActive: activeTab === 'ANALYTICS_GOVERNANCE',
-      onClick: () => setActiveTab('ANALYTICS_GOVERNANCE' as any)
-    }] : [])
+      isActive: ['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab),
+      onClick: () => {
+        if (!['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab)) {
+          setActiveTab('ANALYTICS');
+          setAnalyticsSubTab('OVERVIEW');
+        }
+      }
+    }
   ], [isTicketView, canManageFlows, managedFlowsCount, activeTab, stats.open]);
 
   // --- UI Render ---
@@ -1306,17 +1290,7 @@ export const OperationalQueueView: React.FC = () => {
             }}>
               إدارة واستقبال الطلبات
             </h1>
-            <span style={{
-              fontSize: isMobile ? '10px' : '11px',
-              fontWeight: 800,
-              padding: '2px 7px',
-              borderRadius: '6px',
-              background: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.1)',
-              border: isDark ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(37, 99, 235, 0.25)',
-              color: isDark ? '#93c5fd' : '#1d4ed8'
-            }}>
-              مركز العمليات المباشر
-            </span>
+
           </div>
           <p style={{ margin: 0, fontSize: isMobile ? '11.5px' : '13px', color: isDark ? '#94a3b8' : '#64748b' }}>
             إدارة حوض الطلبات الواردة، مهام الكادر، وحوكمة الأتمتة للمسارات التشغيلية
@@ -1331,29 +1305,7 @@ export const OperationalQueueView: React.FC = () => {
           flexWrap: isMobile ? 'wrap' : 'nowrap',
           justifyContent: isMobile ? 'flex-start' : 'flex-end'
         }}>
-          {/* Live System Indicator */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            fontSize: isMobile ? '10px' : '12px',
-            fontWeight: 700,
-            color: isDark ? '#4ade80' : '#16a34a',
-            background: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(22, 163, 74, 0.08)',
-            border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(22, 163, 74, 0.25)',
-            padding: isMobile ? '4px 8px' : '6px 12px',
-            borderRadius: '9999px',
-            whiteSpace: 'nowrap'
-          }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: '#16a34a',
-              boxShadow: '0 0 8px #16a34a'
-            }} />
-            <span>{isMobile ? 'مباشر' : 'الخدمات التشغيلية: نشطة ومباشرة'}</span>
-          </div>
+
 
           {/* Standalone Internal Ticket Button */}
           <button
@@ -1992,12 +1944,108 @@ export const OperationalQueueView: React.FC = () => {
             {/* ═══ 2. VIEW BODY (ALL VIEWS EMBEDDED SEAMLESSLY INSIDE) ═══ */}
             {activeTab === 'FLOW_SETTINGS' ? (
               <FlowReceptionGovernanceView />
-            ) : activeTab === 'ANALYTICS' ? (
-              <DynamicFormAwareAnalytics initialTab="OVERVIEW" isDark={isDark} isEmbedded={true} />
-            ) : activeTab === 'COMPARISON' ? (
-              <DynamicFormAwareAnalytics initialTab="COMPARISON" isDark={isDark} isEmbedded={true} />
-            ) : activeTab === 'ANALYTICS_GOVERNANCE' ? (
-              <AnalyticsGovernanceView isDark={isDark} />
+            ) : ['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Unified Analytics Suite Sub-Navigation Tabs */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: isDark ? 'rgba(15, 23, 42, 0.7)' : '#ffffff',
+                  padding: '5px 8px',
+                  borderRadius: '14px',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  width: 'fit-content',
+                  flexWrap: 'wrap'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('ANALYTICS'); setAnalyticsSubTab('OVERVIEW'); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: (activeTab === 'ANALYTICS' && analyticsSubTab === 'OVERVIEW')
+                        ? 'linear-gradient(135deg, #135d79 0%, #0d4257 100%)'
+                        : 'transparent',
+                      color: (activeTab === 'ANALYTICS' && analyticsSubTab === 'OVERVIEW') ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: "'Cairo', sans-serif",
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <BarChart3 size={14} />
+                    <span>التحليلات ومؤشرات NACE</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('COMPARISON'); setAnalyticsSubTab('COMPARISON'); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: (activeTab === 'COMPARISON' || (activeTab === 'ANALYTICS' && analyticsSubTab === 'COMPARISON'))
+                        ? 'linear-gradient(135deg, #f36c21 0%, #d45009 100%)'
+                        : 'transparent',
+                      color: (activeTab === 'COMPARISON' || (activeTab === 'ANALYTICS' && analyticsSubTab === 'COMPARISON')) ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: "'Cairo', sans-serif",
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <ArrowRightLeft size={14} />
+                    <span>محرك المقارنة والمفاضلة</span>
+                  </button>
+
+                  {canManageFlows && (
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('ANALYTICS_GOVERNANCE'); setAnalyticsSubTab('GOVERNANCE'); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: (activeTab === 'ANALYTICS_GOVERNANCE' || (activeTab === 'ANALYTICS' && analyticsSubTab === 'GOVERNANCE'))
+                          ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                          : 'transparent',
+                        color: (activeTab === 'ANALYTICS_GOVERNANCE' || (activeTab === 'ANALYTICS' && analyticsSubTab === 'GOVERNANCE')) ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: "'Cairo', sans-serif",
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <ShieldCheck size={14} />
+                      <span>حوكمة وتفويض التحليل (RBAC)</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Sub-view Content */}
+                {activeTab === 'ANALYTICS_GOVERNANCE' || analyticsSubTab === 'GOVERNANCE' ? (
+                  <AnalyticsGovernanceView isDark={isDark} />
+                ) : activeTab === 'COMPARISON' || analyticsSubTab === 'COMPARISON' ? (
+                  <DynamicFormAwareAnalytics initialTab="COMPARISON" isDark={isDark} isEmbedded={true} />
+                ) : (
+                  <DynamicFormAwareAnalytics initialTab="OVERVIEW" isDark={isDark} isEmbedded={true} />
+                )}
+              </div>
             ) : (
               /* Tickets List Rendered in RAIL, GRID, or LIST */
               <div style={{ minHeight: '520px', flex: 1, display: 'flex', flexDirection: 'column' }}>
