@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OpsAPI } from '../../../services/ops.api';
 import { useAuth } from '../../../engine/auth/AuthContext';
@@ -472,13 +472,29 @@ export const OperationalQueueView: React.FC = () => {
   const [canManageFlows, setCanManageFlows] = useState<boolean>(false);
 
   // View Mode: Horizontal Rail vs. Enterprise Structured List (7 rows per page)
+  const [mobileCardsCols, setMobileCardsCols] = useState<1 | 2>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('nexus_ops_mobile_cols');
+      if (saved === '2') return 2;
+    }
+    return 1;
+  });
+
+  const handleToggleMobileCols = (cols: 1 | 2) => {
+    setMobileCardsCols(cols);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('nexus_ops_mobile_cols', String(cols));
+    }
+  };
+
   const [ticketLayoutMode, setTicketLayoutMode] = useState<'RAIL' | 'LIST'>(() => {
     if (typeof window !== 'undefined') {
+      if (window.innerWidth < 768) return 'LIST';
       const saved = localStorage.getItem('nexus_ops_ticket_layout_mode');
       if (saved === 'LIST') return 'LIST';
       return 'RAIL';
     }
-    return 'RAIL';
+    return 'LIST';
   });
 
   const handleToggleLayout = (mode: 'RAIL' | 'LIST') => {
@@ -617,6 +633,7 @@ export const OperationalQueueView: React.FC = () => {
   const [loadingTicketDetails, setLoadingTicketDetails] = useState<boolean>(false);
   const [activeDrawerTab, setActiveDrawerTab] = useState<'DETAILS' | 'HISTORY'>('DETAILS');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [hoveredDockItem, setHoveredDockItem] = useState<string | null>(null);
 
   // Action Modal State
   const [actionModal, setActionModal] = useState<{
@@ -1148,11 +1165,74 @@ export const OperationalQueueView: React.FC = () => {
     }
   }, [activeTab, poolCount, myCount, stats.open, subTicketsCount, managedFlowsCount, isDark]);
 
+  // ═══ OPERATIONAL MODES DEFINITION (مشترك بين شريط الهاتف العلوي والشريط السفلي للحاسوب) ═══
+  const operationalModes = useMemo(() => [
+    {
+      id: 'TICKETS',
+      label: 'إدارة واستقبال الطلبات',
+      shortLabel: 'الطلبات',
+      sublabel: 'أحواض العمل والمهام التشغيلية',
+      count: stats.open,
+      icon: Inbox,
+      accentColor: '#0284c7',
+      isActive: isTicketView,
+      onClick: () => {
+        if (!isTicketView) setActiveTab('POOL');
+      }
+    },
+    ...(canManageFlows ? [{
+      id: 'FLOW_SETTINGS',
+      label: 'خصائص استقبال الطلبات',
+      shortLabel: 'خصائص الاستقبال',
+      sublabel: 'حوكمة وأتمتة مسارات الاستقبال',
+      count: managedFlowsCount,
+      icon: Sliders,
+      accentColor: '#d97706',
+      isActive: activeTab === 'FLOW_SETTINGS',
+      onClick: () => setActiveTab('FLOW_SETTINGS' as any)
+    }] : []),
+    {
+      id: 'ANALYTICS',
+      label: 'التحليلات والمؤشرات NACE',
+      shortLabel: 'التحليلات',
+      sublabel: 'الركائز الـ 5 ونماذج المسار',
+      badge: 'NACE',
+      icon: BarChart3,
+      accentColor: '#135d79',
+      isActive: activeTab === 'ANALYTICS',
+      onClick: () => setActiveTab('ANALYTICS' as any)
+    },
+    {
+      id: 'COMPARISON',
+      label: 'محرك المقارنة والمفاضلة',
+      shortLabel: 'المقارنات',
+      sublabel: 'مفاضلة الكوادر والمباني والمسارات',
+      badge: 'مقارنة',
+      icon: ArrowRightLeft,
+      accentColor: '#f36c21',
+      isActive: activeTab === 'COMPARISON',
+      onClick: () => setActiveTab('COMPARISON' as any)
+    },
+    ...(canManageFlows ? [{
+      id: 'ANALYTICS_GOVERNANCE',
+      label: 'حوكمة وتفويض التحليل',
+      shortLabel: 'حوكمة التحليل',
+      sublabel: 'تفويض الصلاحيات لقادة الفرق',
+      badge: 'RBAC',
+      icon: ShieldCheck,
+      accentColor: '#059669',
+      isActive: activeTab === 'ANALYTICS_GOVERNANCE',
+      onClick: () => setActiveTab('ANALYTICS_GOVERNANCE' as any)
+    }] : [])
+  ], [isTicketView, canManageFlows, managedFlowsCount, activeTab, stats.open]);
+
   // --- UI Render ---
   return (
     <div style={{
       ...styles.container,
-      padding: isMobile ? '12px 10px 84px 10px' : '28px 32px',
+      padding: isMobile ? '10px 10px 40px 10px' : '28px 32px 90px 32px',
+      overflowX: 'hidden',
+      maxWidth: '100%',
       background: isDark
         ? 'radial-gradient(ellipse at 80% 0%, #172554 0%, #0b1120 70%, #050811 100%)'
         : 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -1229,19 +1309,27 @@ export const OperationalQueueView: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '6px' : '10px',
+          width: isMobile ? '100%' : 'auto',
+          flexWrap: isMobile ? 'wrap' : 'nowrap',
+          justifyContent: isMobile ? 'flex-start' : 'flex-end'
+        }}>
           {/* Live System Indicator */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            fontSize: isMobile ? '11px' : '12px',
+            gap: '5px',
+            fontSize: isMobile ? '10px' : '12px',
             fontWeight: 700,
             color: isDark ? '#4ade80' : '#16a34a',
             background: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(22, 163, 74, 0.08)',
             border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(22, 163, 74, 0.25)',
-            padding: isMobile ? '4px 10px' : '6px 12px',
+            padding: isMobile ? '4px 8px' : '6px 12px',
             borderRadius: '9999px',
+            whiteSpace: 'nowrap'
           }}>
             <span style={{
               width: '6px',
@@ -1250,8 +1338,66 @@ export const OperationalQueueView: React.FC = () => {
               backgroundColor: '#16a34a',
               boxShadow: '0 0 8px #16a34a'
             }} />
-            <span>{isMobile ? 'نشطة ومباشرة' : 'الخدمات التشغيلية: نشطة ومباشرة'}</span>
+            <span>{isMobile ? 'مباشر' : 'الخدمات التشغيلية: نشطة ومباشرة'}</span>
           </div>
+
+          {/* Standalone Internal Ticket Button */}
+          <button
+            onClick={() => setIsStandaloneInternalModalOpen(true)}
+            title="إنشاء طلب داخلي أو مهمة مستقلة بنطاق هرمي"
+            style={{
+              padding: isMobile ? "5px 10px" : "8px 16px",
+              borderRadius: "10px",
+              border: "1px solid rgba(243, 108, 33, 0.4)",
+              background: isDark ? "rgba(243, 108, 33, 0.15)" : "#fff7ed",
+              color: "#f36c21",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "4px",
+              fontSize: isMobile ? "11px" : "13px",
+              fontWeight: 700,
+              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.03)",
+              transition: "all 0.2s ease",
+              whiteSpace: "nowrap",
+              flex: isMobile ? "1 1 auto" : "none"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#f36c21"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(243, 108, 33, 0.4)"; e.currentTarget.style.transform = "none"; }}
+          >
+            <PlusCircle size={13} />
+            <span>{isMobile ? 'طلب داخلي' : 'طلب داخلي مستقل'}</span>
+          </button>
+
+          {/* Unlinked Assets Ledger Button */}
+          <button
+            onClick={() => setIsUnlinkedLedgerModalOpen(true)}
+            title="السجل الرقابي للطلبات غير المرتبطة بأصل محدد"
+            style={{
+              padding: isMobile ? "5px 10px" : "8px 16px",
+              borderRadius: "10px",
+              border: isDark ? "1px solid rgba(19, 93, 121, 0.5)" : "1px solid #135d79",
+              background: isDark ? "rgba(19, 93, 121, 0.2)" : "#f0f9ff",
+              color: isDark ? "#38bdf8" : "#0369a1",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "4px",
+              fontSize: isMobile ? "11px" : "13px",
+              fontWeight: 700,
+              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.03)",
+              transition: "all 0.2s ease",
+              whiteSpace: "nowrap",
+              flex: isMobile ? "1 1 auto" : "none"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#38bdf8"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = isDark ? "rgba(19, 93, 121, 0.5)" : "#135d79"; e.currentTarget.style.transform = "none"; }}
+          >
+            <Layers size={13} />
+            <span>{isMobile ? 'سجل الأصول' : 'السجل الرقابي للأصول'}</span>
+          </button>
 
           {/* Unified Refresh Button */}
           {activeTab !== 'FLOW_SETTINGS' && (
@@ -1261,229 +1407,137 @@ export const OperationalQueueView: React.FC = () => {
               style={{ 
                 background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#ffffff',
                 border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0',
-                padding: isMobile ? '6px 12px' : '8px 16px',
+                padding: isMobile ? '5px 10px' : '8px 16px',
                 borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                fontSize: isMobile ? '12px' : '13px',
+                justifyContent: 'center',
+                gap: '5px',
+                fontSize: isMobile ? '11px' : '13px',
                 fontWeight: 700,
                 color: isDark ? '#f1f5f9' : '#334155',
                 boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.03)',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                flexShrink: 0
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = isDark ? '#38bdf8' : '#cbd5e1'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0'; e.currentTarget.style.transform = 'none'; }}
             >
-              <RefreshCw size={14} color={isDark ? '#38bdf8' : '#475569'} className={loading ? 'animate-spin' : ''} />
-              <span>{isMobile ? 'تحديث' : 'تحديث البيانات'}</span>
+              <RefreshCw size={13} color={isDark ? '#38bdf8' : '#475569'} className={loading ? 'animate-spin' : ''} />
+              <span>{isMobile ? '' : 'تحديث البيانات'}</span>
             </button>
           )}
         </div>
       </div>
 
+      {/* ── 📱 MOBILE TOP OPERATIONAL MODES STRIP (مثل لوحة تحكم الإدارة العليا) ── */}
+      {isMobile && (
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            background: isDark ? 'rgba(11, 17, 32, 0.94)' : 'rgba(248, 250, 252, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.9)',
+            padding: '8px 4px',
+            marginBottom: '12px',
+            width: '100%',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            direction: 'rtl',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px', padding: '0 4px', width: 'max-content' }}>
+            {operationalModes.map((item) => {
+              const isSelected = item.isActive;
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={item.onClick}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '12px',
+                    border: isSelected ? `1.5px solid ${item.accentColor}` : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                    background: isSelected
+                      ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
+                      : (isDark ? 'rgba(30, 41, 59, 0.7)' : '#ffffff'),
+                    color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
+                    fontSize: '12px',
+                    fontWeight: isSelected ? 800 : 700,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    boxShadow: isSelected ? `0 3px 12px ${item.accentColor}40` : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
+                    transition: 'all 0.18s ease'
+                  }}
+                >
+                  <IconComponent size={15} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
+                  <span>{item.shortLabel || item.label}</span>
+                  {item.count !== undefined && item.count > 0 && (
+                    <span style={{
+                      background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
+                      color: isSelected ? '#ffffff' : item.accentColor,
+                      fontSize: '10px',
+                      fontWeight: 900,
+                      padding: '1px 6px',
+                      borderRadius: '9999px',
+                      lineHeight: 1
+                    }}>
+                      {item.count}
+                    </span>
+                  )}
+                  {item.badge && (
+                    <span style={{
+                      background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
+                      color: isSelected ? '#ffffff' : item.accentColor,
+                      fontSize: '9.5px',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '6px'
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ═══ 2. MAIN 2-COLUMN WORKSPACE (VERTICAL RAIL ON RIGHT + MAIN CANVAS ON LEFT) ═══ */}
-      <div className="enterprise-adaptive-workspace" style={{ direction: 'rtl' }}>
+      <div className="enterprise-adaptive-workspace" style={{ display: "flex", flexDirection: "column", width: "100%", direction: "rtl", gap: "20px" }}>
 
         {/* ── RIGHT COLUMN: VERTICAL OPERATIONAL RAIL (يمين الشاشة) ── */}
-        <aside className="enterprise-operational-rail" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          position: 'sticky',
-          top: '96px',
-          maxHeight: 'calc(100vh - 120px)',
-          overflowY: 'auto',
-          paddingBottom: '24px',
-          scrollbarWidth: 'none'
-        }}>
-          {/* Quick KPI Summary Tile */}
-          <div style={{
-            background: isDark ? 'rgba(15, 23, 42, 0.85)' : '#ffffff',
-            backdropFilter: 'blur(16px)',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '14px',
-            boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.3)' : '0 4px 16px rgba(15, 23, 42, 0.04)'
-          }}>
-            <div style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#f1f5f9' : '#64748b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Activity size={14} color="#38bdf8" />
-              <span>مؤشرات أداء القسم</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', textAlign: 'center' }}>
-              <div style={{
-                background: isDark ? 'rgba(2, 132, 199, 0.15)' : '#eff6ff',
-                padding: '8px 2px',
-                borderRadius: '8px',
-                border: isDark ? '1px solid rgba(2, 132, 199, 0.3)' : '1px solid #dbeafe'
-              }}>
-                <div style={{ fontSize: '10px', color: isDark ? '#38bdf8' : '#1e40af', fontWeight: 700 }}>المفتوحة</div>
-                <div style={{ fontSize: '16px', color: isDark ? '#7dd3fc' : '#1d4ed8', fontWeight: 900 }}>{stats.open}</div>
-              </div>
-              <div style={{
-                background: stats.breached > 0
-                  ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2')
-                  : (isDark ? 'rgba(30, 41, 59, 0.5)' : '#f8fafc'),
-                padding: '8px 2px',
-                borderRadius: '8px',
-                border: stats.breached > 0
-                  ? (isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #fee2e2')
-                  : (isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0')
-              }}>
-                <div style={{ fontSize: '10px', color: stats.breached > 0 ? (isDark ? '#fca5a5' : '#b91c1c') : (isDark ? '#94a3b8' : '#64748b'), fontWeight: 700 }}>متأخرة</div>
-                <div style={{ fontSize: '16px', color: stats.breached > 0 ? (isDark ? '#ef4444' : '#dc2626') : (isDark ? '#94a3b8' : '#64748b'), fontWeight: 900 }}>{stats.breached}</div>
-              </div>
-              <div style={{
-                background: isDark ? 'rgba(16, 185, 129, 0.15)' : '#f0fdf4',
-                padding: '8px 2px',
-                borderRadius: '8px',
-                border: isDark ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #dcfce7'
-              }}>
-                <div style={{ fontSize: '10px', color: isDark ? '#6ee7b7' : '#15803d', fontWeight: 700 }}>مكتملة</div>
-                <div style={{ fontSize: '16px', color: isDark ? '#34d399' : '#16a34a', fontWeight: 900 }}>{stats.completed}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Rail Section Title */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '2px 4px 6px',
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-          }}>
-            <span style={{
-              fontSize: '12px',
-              fontWeight: 700,
-              color: isDark ? '#cbd5e1' : '#1e293b',
-              fontFamily: "'Cairo', sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}>
-              <Filter size={13} color={isDark ? "#60a5fa" : "#1e3a52"} />
-              <span>أحواض العمل والمهام</span>
-            </span>
-            <span style={{
-              fontSize: '10.5px',
-              color: '#64748b',
-              fontFamily: "'Cairo', sans-serif",
-            }}>
-              تصفية سريعة
-            </span>
-          </div>
-
-          {/* Touch-Scrollable Tabs Rail (Stacks vertically on desktop, swipes horizontally on mobile) */}
-          <div className="mobile-tabs-rail" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* 1. الطلبات الواردة (تجمع كافة أحواض العمل والمهام التشغيلية الأربعة) */}
-            <OpsQueueTile
-              label="الطلبات الواردة"
-              value={stats.open}
-              sublabel="أحواض العمل والمهام التشغيلية"
-              icon={Inbox}
-              accentColor="#0284c7"
-              isSelected={isTicketView}
-              onClick={() => {
-                if (!isTicketView) setActiveTab('POOL');
-              }}
-              isDark={isDark}
-            />
-
-          {/* 5. خصائص استقبال الطلبات */}
-          {canManageFlows && (
-            <OpsQueueTile
-              label="خصائص استقبال الطلبات"
-              value={managedFlowsCount}
-              sublabel="حوكمة وأتمتة مسارات الاستقبال"
-              icon={Sliders}
-              accentColor="#d97706"
-              isSelected={activeTab === 'FLOW_SETTINGS'}
-              onClick={() => setActiveTab('FLOW_SETTINGS')}
-              isDark={isDark}
-            />
-          )}
-
-          {/* Rail Section Title: التحليلات والمقارنة المؤسسية */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 4px 6px',
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-            marginTop: '4px'
-          }}>
-            <span style={{
-              fontSize: '12px',
-              fontWeight: 700,
-              color: isDark ? '#cbd5e1' : '#1e293b',
-              fontFamily: "'Cairo', sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}>
-              <BarChart3 size={13} color={isDark ? "#f36c21" : "#135d79"} />
-              <span>التحليلات والمقارنة</span>
-            </span>
-            <span style={{
-              fontSize: '10px',
-              fontWeight: 800,
-              color: '#f36c21',
-              backgroundColor: 'rgba(243, 108, 33, 0.12)',
-              padding: '1px 6px',
-              borderRadius: '9999px',
-              fontFamily: "'Cairo', sans-serif",
-            }}>
-              NACE
-            </span>
-          </div>
-
-          {/* 6. التحليلات التكيفية للمسار */}
-          <OpsQueueTile
-            label="التحليلات التكيفية للمسار"
-            value="NACE"
-            sublabel="الركائز الـ 5 ونماذج المسار"
-            icon={BarChart3}
-            accentColor="#135d79"
-            isSelected={activeTab === 'ANALYTICS'}
-            onClick={() => setActiveTab('ANALYTICS')}
-            isDark={isDark}
-          />
-
-          {/* 7. محرك المقارنة متعدد الأبعاد */}
-          <OpsQueueTile
-            label="محرك المقارنة والمفاضلة"
-            value="N-Entity"
-            sublabel="مفاضلة الكوادر والمباني والمسارات"
-            icon={ArrowRightLeft}
-            accentColor="#f36c21"
-            isSelected={activeTab === 'COMPARISON'}
-            onClick={() => setActiveTab('COMPARISON')}
-            isDark={isDark}
-          />
-
-          {/* 8. تفويض صلاحيات التحليل (للمدراء وقادة المسارات) */}
-          {canManageFlows && (
-            <OpsQueueTile
-              label="حوكمة وتفويض التحليل"
-              value="RBAC"
-              sublabel="تفويض الصلاحيات لقادة الفرق"
-              icon={ShieldCheck}
-              accentColor="#059669"
-              isSelected={activeTab === 'ANALYTICS_GOVERNANCE'}
-              onClick={() => setActiveTab('ANALYTICS_GOVERNANCE')}
-              isDark={isDark}
-            />
-          )}
-          </div>
-        </aside>
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
-        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
           {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات الخمسة المنظمة) ═══ */}
           {isTicketView && (
-            <div className="operational-top-queues-bar">
+            <div 
+              className="operational-top-queues-bar"
+              style={{
+                display: isMobile ? 'flex' : 'grid',
+                flexDirection: isMobile ? 'row' : undefined,
+                overflowX: isMobile ? 'auto' : undefined,
+                WebkitOverflowScrolling: 'touch',
+                gap: isMobile ? '8px' : '12px',
+                paddingBottom: isMobile ? '6px' : '0',
+                scrollbarWidth: 'none',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
+            >
               {[
                 {
                   id: 'POOL',
@@ -1543,9 +1597,9 @@ export const OperationalQueueView: React.FC = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      gap: '8px',
-                      padding: '12px 14px',
-                      borderRadius: '16px',
+                      gap: isMobile ? '4px' : '8px',
+                      padding: isMobile ? '8px 10px' : '12px 14px',
+                      borderRadius: isMobile ? '12px' : '16px',
                       cursor: 'pointer',
                       textAlign: 'right',
                       fontFamily: "'Cairo', sans-serif",
@@ -1648,6 +1702,7 @@ export const OperationalQueueView: React.FC = () => {
                         {q.label}
                       </div>
                       <div style={{
+                        display: isMobile ? 'none' : 'block',
                         fontSize: '10px',
                         fontWeight: 500,
                         color: isSelected ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#64748b' : '#94a3b8'),
@@ -1677,7 +1732,8 @@ export const OperationalQueueView: React.FC = () => {
               })}
             </div>
           )}
-          <div 
+
+          <div
             className="unified-operations-canvas-card"
             style={{
               background: isDark ? 'rgba(15, 23, 42, 0.78)' : 'rgba(255, 255, 255, 0.88)',
@@ -1800,7 +1856,7 @@ export const OperationalQueueView: React.FC = () => {
                       }}
                     >
                       <SlidersHorizontal size={13} />
-                      <span>{isMobile ? 'شريط كروت' : 'شريط أفقي'}</span>
+                      <span>{isMobile ? 'عرض البطاقات' : 'شريط أفقي'}</span>
                     </button>
 
                     <button
@@ -1833,8 +1889,36 @@ export const OperationalQueueView: React.FC = () => {
                       }}
                     >
                       <List size={13} />
-                      <span>{isMobile ? 'قائمة منظمة' : 'قائمة منظمة (7 صفوف)'}</span>
+                      <span>{isMobile ? 'عرض القائمة' : 'قائمة منظمة (7 صفوف)'}</span>
                     </button>
+
+                    {isMobile && ticketLayoutMode === 'RAIL' && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleMobileCols(mobileCardsCols === 1 ? 2 : 1)}
+                        title={mobileCardsCols === 1 ? 'التبديل إلى صفين' : 'التبديل إلى صف واحد'}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          padding: '6px 10px',
+                          borderRadius: '7px',
+                          border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          background: isDark ? 'rgba(30, 41, 59, 0.85)' : '#f8fafc',
+                          color: isDark ? '#38bdf8' : '#0284c7',
+                          transition: 'all 0.18s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <LayoutGrid size={13} />
+                        <span>{mobileCardsCols === 1 ? 'صفين (2)' : 'صف واحد (1)'}</span>
+                      </button>
+                    )}
                   </div>
 
                   <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : '180px', maxWidth: isMobile ? '100%' : '320px' }}>
@@ -1887,53 +1971,6 @@ export const OperationalQueueView: React.FC = () => {
                     <span>تحديث</span>
                   </button>
 
-                  {/* Standalone Internal Ticket Button */}
-                  <button
-                    onClick={() => setIsStandaloneInternalModalOpen(true)}
-                    title="إنشاء طلب داخلي أو مهمة مستقلة بنطاق هرمي"
-                    style={{
-                      padding: '9px 14px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(243, 108, 33, 0.4)',
-                      background: isDark ? 'rgba(243, 108, 33, 0.15)' : '#fff7ed',
-                      color: '#f36c21',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '12.5px',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    <PlusCircle size={14} />
-                    <span>طلب داخلي مستقل</span>
-                  </button>
-
-                  {/* Unlinked Assets Ledger Button */}
-                  <button
-                    onClick={() => setIsUnlinkedLedgerModalOpen(true)}
-                    title="السجل الرقابي للطلبات غير المرتبطة بأصل محدد"
-                    style={{
-                      padding: '9px 14px',
-                      borderRadius: '10px',
-                      border: isDark ? '1px solid rgba(19, 93, 121, 0.5)' : '1px solid #135d79',
-                      background: isDark ? 'rgba(19, 93, 121, 0.2)' : '#f0f9ff',
-                      color: isDark ? '#38bdf8' : '#0369a1',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '12.5px',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    <Layers size={14} />
-                    <span>السجل الرقابي للأصول</span>
-                  </button>
                 </div>
               )}
             </div>
@@ -2392,6 +2429,7 @@ export const OperationalQueueView: React.FC = () => {
                   return (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       {ticketLayoutMode === 'RAIL' ? (
+                        !isMobile ? (
                         /* ── 1. HORIZONTAL CAROUSEL / RAIL VIEW (Multi-row expandable track on desktop, touch rail on mobile) ── */
                         <div className="ops-tickets-rail-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
                           {/* Right Arrow Button (RTL) - Desktop Only */}
@@ -2605,6 +2643,188 @@ export const OperationalQueueView: React.FC = () => {
                             </div>
                           )}
                         </div>
+                        ) : (
+                          /* ── 1.B: MOBILE CINEMA CARDS GRID (الهاتف: عرض البطاقات السينمائية 1 أو 2 صفوف) ── */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '2px 4px',
+                              fontSize: '11px',
+                              color: isDark ? '#94a3b8' : '#64748b'
+                            }}>
+                              <span>إجمالي {filteredTickets.length} تذكرة • نمط البطاقات السينمائية</span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleMobileCols(mobileCardsCols === 1 ? 2 : 1)}
+                                style={{
+                                  background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
+                                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
+                                  borderRadius: '6px',
+                                  padding: '3px 8px',
+                                  color: isDark ? '#38bdf8' : '#0284c7',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <LayoutGrid size={12} />
+                                <span>{mobileCardsCols === 1 ? 'عرض صفين (2)' : 'عرض صف واحد (1)'}</span>
+                              </button>
+                            </div>
+
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: mobileCardsCols === 2 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+                                gap: mobileCardsCols === 2 ? '8px' : '12px'
+                              }}
+                            >
+                              <AnimatePresence mode="wait">
+                                {filteredTickets.map((ticket, i) => {
+                                  const reqPriority = ticket.requesterPriority || ticket.priority;
+                                  const bizPriority = ticket.businessPriority || ticket.priority;
+                                  const lamp = getLampStyle(reqPriority);
+                                  const isUnassigned = ticket.isUnassigned !== false && !ticket.assignedTo;
+                                  const ticketCode = ticket.code || `REQ-${String(ticket.id).padStart(4, '0')}`;
+                                  const accentColor = (bizPriority === 'CRITICAL' || bizPriority === 'URGENT')
+                                    ? '#ef4444'
+                                    : bizPriority === 'HIGH'
+                                    ? '#ea580c'
+                                    : isUnassigned
+                                    ? '#0284c7'
+                                    : '#4f46e5';
+
+                                  const timeStr = new Date(ticket.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+                                  const timeAgoStr = formatTimeAgo(ticket.createdAt);
+                                  const isTwoCol = mobileCardsCols === 2;
+
+                                  return (
+                                    <motion.div
+                                      key={ticket.id}
+                                      initial={{ opacity: 0, y: 6 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ delay: Math.min(i * 0.015, 0.12) }}
+                                      style={{ minWidth: 0 }}
+                                    >
+                                      <CinemaTicketFrame
+                                        accentColor={accentColor}
+                                        isSelected={inspectTicket?.id === ticket.id}
+                                        alwaysGlow={bizPriority === 'CRITICAL' || bizPriority === 'URGENT'}
+                                        cornerCutout={isTwoCol ? 5 : 7}
+                                        notchRadius={isTwoCol ? 2.5 : 3.5}
+                                        numNotches={isTwoCol ? 1 : 2}
+                                        dashIndent={isTwoCol ? 6 : 10}
+                                        contentPadding={isTwoCol ? '8px 10px' : '12px 14px'}
+                                        customFill={isDark ? 'rgba(15, 23, 42, 0.92)' : '#ffffff'}
+                                        onClick={() => setInspectTicket(ticket)}
+                                        style={{
+                                          width: '100%',
+                                          minHeight: isTwoCol ? '180px' : '205px',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          justifyContent: 'space-between',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        <div>
+                                          {/* Card Top: Code + Status */}
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '6px' }}>
+                                            <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                              <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
+                                              <div
+                                                style={{
+                                                  width: '6px',
+                                                  height: '6px',
+                                                  borderRadius: '50%',
+                                                  backgroundColor: lamp.color,
+                                                  boxShadow: `0 0 5px ${lamp.color}`,
+                                                  flexShrink: 0
+                                                }}
+                                                title={`أولوية صاحب الطلب: ${lamp.label}`}
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* Subject / Title */}
+                                          <h3 style={{
+                                            margin: '0 0 4px 0',
+                                            fontSize: isTwoCol ? '11.5px' : '13px',
+                                            fontWeight: 800,
+                                            color: isDark ? '#ffffff' : '#0f172a',
+                                            fontFamily: "'Tajawal', sans-serif",
+                                            lineHeight: 1.35,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden'
+                                          }}>
+                                            {ticket.subject || ticket.title}
+                                          </h3>
+
+                                          {/* Flow / Category */}
+                                          <div style={{
+                                            fontSize: isTwoCol ? '9.5px' : '10.5px',
+                                            color: isDark ? '#94a3b8' : '#64748b',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '3px',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            marginBottom: '4px'
+                                          }}>
+                                            <Layers size={10} color="#6366f1" />
+                                            <span style={{ fontWeight: 600 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
+                                          </div>
+
+                                          {/* Requester name */}
+                                          <div style={{
+                                            fontSize: isTwoCol ? '9.5px' : '10.5px',
+                                            color: isDark ? '#cbd5e1' : '#334155',
+                                            fontWeight: 700,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap'
+                                          }}>
+                                            <User size={10} color="#6366f1" />
+                                            <span>{ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}</span>
+                                          </div>
+                                        </div>
+
+                                        {/* Card Bottom: Time */}
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          paddingTop: '6px',
+                                          borderTop: isDark ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
+                                          marginTop: '6px',
+                                          fontSize: isTwoCol ? '9.5px' : '10.5px'
+                                        }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: isDark ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
+                                            <Clock size={10} color="#64748b" />
+                                            <span>{timeAgoStr}</span>
+                                          </div>
+                                          <span style={{ color: '#94a3b8', fontVariantNumeric: 'tabular-nums', fontSize: '9px' }}>{timeStr}</span>
+                                        </div>
+                                      </CinemaTicketFrame>
+                                    </motion.div>
+                                  );
+                                })}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        )
                       ) : (
                         /* ── 2. ENTERPRISE STRUCTURED LIST (معيار الـ 7 صفوف المنظم مع الترقيم وأزرار التصفح) ── */
                         (() => {
@@ -2881,8 +3101,8 @@ export const OperationalQueueView: React.FC = () => {
                                   </div>
                                 </div>
                               ) : (
-                                /* ── 2.B: MOBILE CARDS VIEW (تحويل تلقائي لبطاقات مدمجة فاخرة للهاتف) ── */
-                                <div className="mobile-cards-view" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                /* ── 2.B: MOBILE COMPACT LIST VIEW (قائمة مدمجة فائقة التنظيم للهاتف ~52px) ── */
+                                <div className="mobile-compact-list-view" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                   <AnimatePresence mode="wait">
                                     {pageTickets.map((ticket, i) => {
                                       const reqPriority = ticket.requesterPriority || ticket.priority;
@@ -2905,97 +3125,83 @@ export const OperationalQueueView: React.FC = () => {
                                       return (
                                         <motion.div
                                           key={ticket.id}
-                                          initial={{ opacity: 0, y: 8 }}
+                                          initial={{ opacity: 0, y: 6 }}
                                           animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0 }}
-                                          transition={{ delay: Math.min(i * 0.02, 0.15) }}
+                                          transition={{ delay: Math.min(i * 0.015, 0.12) }}
                                           onClick={() => setInspectTicket(ticket)}
                                           style={{
                                             background: inspectTicket?.id === ticket.id
-                                              ? (isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)')
-                                              : (isDark ? 'rgba(15, 23, 42, 0.75)' : '#ffffff'),
-                                            backdropFilter: 'blur(14px)',
+                                              ? (isDark ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.08)')
+                                              : (isDark ? 'rgba(15, 23, 42, 0.72)' : '#ffffff'),
+                                            backdropFilter: 'blur(12px)',
                                             border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
                                             borderRight: `4px solid ${accentColor}`,
-                                            borderRadius: '14px',
-                                            padding: '12px 14px',
+                                            borderRadius: '12px',
+                                            padding: '9px 12px',
                                             cursor: 'pointer',
                                             display: 'flex',
-                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
                                             gap: '8px',
-                                            boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.03)',
+                                            boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.18)' : '0 1px 4px rgba(0,0,0,0.03)',
                                             transition: 'all 0.15s ease'
                                           }}
                                         >
-                                          {/* Row 1: Code + Status + Priority */}
-                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <TicketCodeBadge code={ticketCode} color={accentColor} compact />
-                                              <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                              <span style={{
-                                                ...styles.priorityBadge(bizPriority),
-                                                fontSize: '9.5px',
-                                                padding: '2px 6px',
-                                                borderRadius: '5px',
-                                                fontFamily: "'Cairo', sans-serif",
-                                              }}>
-                                                {formatPriorityText(bizPriority)}
-                                              </span>
-                                              <span
-                                                style={{
-                                                  width: '6px',
-                                                  height: '6px',
-                                                  borderRadius: '50%',
-                                                  backgroundColor: lamp.color,
-                                                  boxShadow: `0 0 5px ${lamp.color}`,
-                                                  flexShrink: 0,
-                                                }}
-                                                title={`طالب: ${lamp.label}`}
-                                              />
-                                            </div>
+                                          {/* Right: Code + Lamp */}
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                            <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                            <div
+                                              style={{
+                                                width: '6px',
+                                                height: '6px',
+                                                borderRadius: '50%',
+                                                backgroundColor: lamp.color,
+                                                boxShadow: `0 0 5px ${lamp.color}`,
+                                                flexShrink: 0
+                                              }}
+                                              title={`أولوية طالب: ${lamp.label}`}
+                                            />
                                           </div>
 
-                                          {/* Row 2: Title & Flow */}
-                                          <div>
+                                          {/* Center: Title & Requester */}
+                                          <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{
-                                              fontSize: '13px',
+                                              fontSize: '12px',
                                               fontWeight: 800,
                                               color: isDark ? '#ffffff' : '#0f172a',
                                               fontFamily: "'Cairo', sans-serif",
-                                              lineHeight: 1.4,
-                                              marginBottom: '3px'
+                                              whiteSpace: 'nowrap',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis'
                                             }}>
                                               {ticket.subject || ticket.title}
                                             </div>
-                                            <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                              <Layers size={11} color="#6366f1" />
+                                            <div style={{
+                                              fontSize: '10px',
+                                              color: isDark ? '#94a3b8' : '#64748b',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              whiteSpace: 'nowrap',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis'
+                                            }}>
+                                              <span style={{ fontWeight: 600, color: isDark ? '#cbd5e1' : '#334155' }}>
+                                                {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
+                                              </span>
+                                              <span>•</span>
                                               <span>{ticket.flowDefinitionName || 'مسار عام'}</span>
                                             </div>
                                           </div>
 
-                                          {/* Row 3: Requester & Target Dept + Assignee */}
-                                          <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            fontSize: '11px',
-                                            color: isDark ? '#94a3b8' : '#64748b',
-                                            paddingTop: '6px',
-                                            borderTop: isDark ? '1px dashed rgba(255, 255, 255, 0.06)' : '1px dashed #f1f5f9'
-                                          }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
-                                              <User size={11} color="#6366f1" />
-                                              <span style={{ fontWeight: 700, color: isDark ? '#cbd5e1' : '#334155' }}>
-                                                {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
-                                              </span>
-                                            </div>
-
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontVariantNumeric: 'tabular-nums', fontSize: '10.5px' }}>
-                                              <Clock size={11} color="#64748b" />
-                                              <span>{timeAgoStr}</span>
-                                            </div>
+                                          {/* Left: Status Pill + Time + Chevron */}
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                            <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
+                                            <span style={{ fontSize: '9.5px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                                              {timeAgoStr}
+                                            </span>
+                                            <ChevronLeft size={13} color="#94a3b8" />
                                           </div>
                                         </motion.div>
                                       );
@@ -5173,6 +5379,195 @@ export const OperationalQueueView: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+
+      {/* ── 🚀 Floating Operational Sidebar Dock (macOS-inspired Circular Dock - Desktop Only) ── */}
+      {!isMobile && (
+        <nav
+          style={{
+            position: 'fixed',
+            bottom: '22px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            padding: '10px 20px',
+            background: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.88)',
+            backdropFilter: 'blur(36px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(36px) saturate(200%)',
+            borderRadius: '32px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: isDark 
+              ? '0 16px 45px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12)' 
+              : '0 16px 45px rgba(15, 23, 42, 0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+            zIndex: 8000,
+            direction: 'rtl'
+          }}
+        >
+          {operationalModes.map((item) => {
+          const isSelected = item.isActive;
+          const isHovered = hoveredDockItem === item.id;
+          const IconComponent = item.icon;
+
+          return (
+            <div
+              key={item.id}
+              style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              onMouseEnter={() => setHoveredDockItem(item.id)}
+              onMouseLeave={() => setHoveredDockItem(null)}
+            >
+              {/* Floating Tooltip with Label & Details on Hover (Desktop Only) */}
+              {!isMobile && isHovered && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '68px',
+                    background: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.92)',
+                    color: '#ffffff',
+                    padding: '6px 14px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    zIndex: 8100,
+                    fontFamily: "'Tajawal', 'Cairo', sans-serif"
+                  }}
+                >
+                  <span>{item.label}</span>
+                  {item.count !== undefined && item.count > 0 && (
+                    <span style={{
+                      background: item.accentColor,
+                      color: '#fff',
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      padding: '1px 7px',
+                      borderRadius: '9999px'
+                    }}>
+                      {item.count}
+                    </span>
+                  )}
+                  {item.badge && (
+                    <span style={{
+                      background: 'rgba(255,255,255,0.15)',
+                      color: '#f8fafc',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '6px'
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                  {/* Tooltip bottom arrow */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      borderWidth: '5px',
+                      borderStyle: 'solid',
+                      borderColor: `${isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.92)'} transparent transparent transparent`,
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Circular Dock Button */}
+              <button
+                type="button"
+                onClick={item.onClick}
+                style={{
+                  position: 'relative',
+                  width: isMobile ? '44px' : '54px',
+                  height: isMobile ? '44px' : '54px',
+                  borderRadius: '50%',
+                  border: isSelected
+                    ? `2px solid ${item.accentColor}`
+                    : isHovered
+                    ? `1.5px solid ${item.accentColor}`
+                    : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)'),
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isSelected
+                    ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
+                    : isHovered
+                    ? (isDark ? `${item.accentColor}25` : `${item.accentColor}18`)
+                    : (isDark ? 'rgba(30, 41, 59, 0.6)' : 'rgba(241, 245, 249, 0.9)'),
+                  color: isSelected ? '#ffffff' : isHovered ? item.accentColor : (isDark ? '#cbd5e1' : '#475569'),
+                  transition: 'all 0.28s cubic-bezier(0.28, 0.11, 0.32, 1)',
+                  transform: isSelected
+                    ? (isMobile ? 'translateY(-4px) scale(1.12)' : 'translateY(-7px) scale(1.18)')
+                    : isHovered
+                    ? (isMobile ? 'none' : 'translateY(-5px) scale(1.15)')
+                    : 'translateY(0) scale(1)',
+                  boxShadow: isSelected
+                    ? `0 10px 26px ${item.accentColor}55`
+                    : isHovered
+                    ? `0 6px 18px ${item.accentColor}30`
+                    : 'none',
+                  outline: 'none',
+                }}
+              >
+                <IconComponent size={isMobile ? 19 : 22} strokeWidth={isSelected ? 2.5 : 2} />
+
+                {/* Top-Corner Count Badge or Tag */}
+                {item.count !== undefined && item.count > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-2px',
+                      left: '-2px',
+                      minWidth: '18px',
+                      height: '18px',
+                      padding: '0 4px',
+                      borderRadius: '9999px',
+                      background: isSelected ? '#ffffff' : item.accentColor,
+                      color: isSelected ? item.accentColor : '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 900,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                      border: isDark ? '1.5px solid #0f172a' : '1.5px solid #ffffff',
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1
+                    }}
+                  >
+                    {item.count}
+                  </span>
+                )}
+
+                {/* Active Indicator Dot under the circular icon */}
+                {isSelected && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '-7px',
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: item.accentColor,
+                      boxShadow: `0 0 6px ${item.accentColor}`,
+                    }}
+                  />
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </nav>
+      )}
 
       {/* Link Asset Modal */}
       {isLinkAssetModalOpen && linkAssetTicket && (

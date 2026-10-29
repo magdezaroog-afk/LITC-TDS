@@ -82,4 +82,19 @@ export class UECPController {
       next(err);
     }
   }
+
+  /**
+   * حذف نظام خارجي مسجل
+   */
+  async deleteSystem(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await prisma.externalSystemRegistry.delete({
+        where: { id }
+      });
+      res.json({ success: true, message: 'تم حذف النظام الخارجي بنجاح' });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

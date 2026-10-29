@@ -423,6 +423,42 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
   };
 
   // ─── Layouts Handlers ─────────────────────────────────────────────────────
+  
+  // ─── Delete Satellite ─────────────────────────────────────────────────────
+  const handleDeleteSatellite = async (satelliteId: string, satelliteName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (satelliteId === 'asset_inventory') {
+      alert('لا يمكن حذف منظومة جرد الأصول الأساسية، يمكن فقط تعطيلها.');
+      return;
+    }
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف منظومة "${satelliteName}" نهائياً من سجل المنظومات وقاعدة البيانات؟`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
+      const res = await fetch(`/api/v1/satellites/${satelliteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSaveSuccessMsg(`تم حذف المنظومة "${satelliteName}" بنجاح.`);
+        const updated = satellites.filter(s => s.id !== satelliteId);
+        setSatellites(updated);
+        if (selectedSatelliteId === satelliteId) {
+          setSelectedSatelliteId(updated[0]?.id || '');
+        }
+      } else {
+        setSaveErrorMsg(data.error || 'فشل حذف المنظومة.');
+      }
+    } catch (err: any) {
+      setSaveErrorMsg(err.message || 'خطأ في الاتصال بالخادم.');
+    }
+  };
+
   const handleDeleteInterface = async (id: string) => {
     const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
     await fetch(`/api/v1/layouts/${id}`, {
@@ -680,6 +716,31 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Delete Satellite Button */}
+                    {currentSatellite.id !== 'asset_inventory' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSatellite(currentSatellite.id, currentSatellite.name)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: 10,
+                          border: '1px solid #fca5a5',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6
+                        }}
+                        title="حذف هذه المنظومة نهائياً"
+                      >
+                        <Trash2 size={14} />
+                        حذف المنظومة
+                      </button>
+                    )}
+
                     {/* Ping Button */}
                     <button
                       onClick={() => handlePingSatellite(currentSatellite)}
@@ -966,7 +1027,32 @@ export function UILayoutEngineTab({ onNavigateToTab }: { onNavigateToTab?: (tabI
                 </div>
 
                 {/* Final Sticky Save Action Bar */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 14, borderTop: '1px solid #f1f5f9', paddingTop: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, borderTop: '1px solid #f1f5f9', paddingTop: 18 }}>
+                  <div>
+                    {currentSatellite.id !== 'asset_inventory' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSatellite(currentSatellite.id, currentSatellite.name)}
+                        style={{
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5',
+                          borderRadius: 12,
+                          padding: '12px 20px',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Trash2 size={16} />
+                        حذف هذه المنظومة نهائياً
+                      </button>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={handleSaveCurrentSatellite}

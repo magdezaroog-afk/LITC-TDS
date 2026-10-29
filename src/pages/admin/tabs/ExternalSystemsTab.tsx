@@ -46,6 +46,29 @@ export const ExternalSystemsTab: React.FC = () => {
     fetchSystems();
   }, []);
 
+  
+  const handleDeleteSystem = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`هل أنت متأكد من رغبتك في حذف النظام "${name}" نهائياً؟`)) return;
+    try {
+      const res = await fetch(`/api/v1/admin/uecp/systems/${id}`, {
+        method: 'DELETE',
+        headers: { 
+          'x-user-id': '1',
+          'x-role-id': '1'
+        }
+      });
+      if (res.ok) {
+        fetchSystems();
+      } else {
+        const d = await res.json();
+        alert(d.error || 'فشل حذف النظام');
+      }
+    } catch (err: any) {
+      alert(err.message || 'خطأ في الاتصال بالخادم');
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manifestUrl.trim()) return;
@@ -143,7 +166,27 @@ export const ExternalSystemsTab: React.FC = () => {
                         <div style={{ fontSize: '12px', color: '#6E6E73', marginTop: '2px' }}>{new Date(sys.createdAt).toLocaleDateString('ar-LY')}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteSystem(sys.id, sys.systemName, e)}
+                        style={{
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5',
+                          borderRadius: '8px',
+                          padding: '4px 10px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="حذف هذا النظام"
+                      >
+                        🗑️ حذف
+                      </button>
                       <span style={{ fontSize: '12px', fontWeight: '600', color: '#8B5CF6', background: '#F3E8FF', padding: '4px 10px', borderRadius: '8px' }}>
                         {expandedId === sys.id ? t('admin.external_systems.hide_details', 'إخفاء التفاصيل') : t('admin.external_systems.show_details', 'عرض التفاصيل')}
                       </span>

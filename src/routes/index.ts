@@ -62,6 +62,7 @@ router.get('/tickets/:id/form-data', authMiddleware, requireRole([1, 2, 22]), (r
 // =========================================================================
 router.get('/admin/uecp/systems', authMiddleware, (req, res, next) => uecpController.getSystems(req, res, next));
 router.post('/admin/uecp/register', authMiddleware, (req, res, next) => uecpController.registerSystem(req, res, next));
+router.delete('/admin/uecp/systems/:id', authMiddleware, requireRole([1, 22]), (req, res, next) => uecpController.deleteSystem(req, res, next));
 
 // =========================================================================
 // 2. Ticket Engine & Dynamic Execution

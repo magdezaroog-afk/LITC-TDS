@@ -608,14 +608,20 @@ html, body {
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x !important;
     scrollbar-width: none !important;
-    padding-bottom: 6px !important;
+    padding: 2px 2px 8px 2px !important;
+    gap: 8px !important;
+    scroll-snap-type: x mandatory;
   }
   .operational-top-queues-bar::-webkit-scrollbar {
     display: none !important;
   }
   .operational-top-queues-bar > button {
-    min-width: 210px !important;
-    flex: 1 0 auto !important;
+    min-width: 140px !important;
+    max-width: 175px !important;
+    padding: 9px 10px !important;
+    flex: 0 0 auto !important;
+    scroll-snap-align: start;
+    border-radius: 12px !important;
   }
 }
 

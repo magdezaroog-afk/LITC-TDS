@@ -2846,7 +2846,8 @@ export function InlineRequestCreator({ onCancel, onSuccess }: InlineRequestCreat
   const [highlightPulse, setHighlightPulse] = useState(false);
   const [isDispenserOpen, setIsDispenserOpen] = useState(false);
 
-  const isAssetRoute = useMemo(() => {
+  const isAssetRoute = false;
+  const _disabled_isAssetRoute = useMemo(() => {
     if (!selectedFlow) return false;
     const title = (selectedFlow.title || '').toLowerCase();
     const id = (selectedFlow.id || '').toLowerCase();

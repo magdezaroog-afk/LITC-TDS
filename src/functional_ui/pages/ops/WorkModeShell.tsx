@@ -612,7 +612,134 @@ export const WorkModeShell: React.FC = () => {
       {/* =========================================================================
           2. MAIN CONTENT VIEWPORT (App Switcher)
           ========================================================================= */}
-      <main style={{ flex: 1, minWidth: 0, position: 'relative', overflowY: 'auto', height: '100%', paddingBottom: isMobile ? '72px' : '0' }}>
+      <main style={{ flex: 1, minWidth: 0, position: 'relative', overflowY: 'auto', height: '100%', paddingBottom: '0' }}>
+
+        {/* ── 📱 Mobile Satellite Systems App Switcher (شريط التبديل العلوي الأنيق بين المنظومات) ── */}
+        {isMobile && (
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 1000,
+              background: 'rgba(11, 17, 32, 0.94)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              direction: 'rtl'
+            }}
+          >
+            {/* Segmented Switcher */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              padding: '3px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              flex: 1,
+              overflowX: 'auto',
+              scrollbarWidth: 'none'
+            }}>
+              {/* Operations Tab */}
+              <button
+                type="button"
+                onClick={() => setActiveAppId('OPERATIONS')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  background: activeAppId === 'OPERATIONS'
+                    ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                    : 'transparent',
+                  color: activeAppId === 'OPERATIONS' ? '#ffffff' : '#94a3b8',
+                  fontSize: '11.5px',
+                  fontWeight: activeAppId === 'OPERATIONS' ? 800 : 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: activeAppId === 'OPERATIONS' ? '0 2px 8px rgba(2, 132, 199, 0.4)' : 'none',
+                  transition: 'all 0.18s ease'
+                }}
+              >
+                <Layers size={14} />
+                <span>العمليات التشغيلية</span>
+              </button>
+
+              {/* Satellites Tabs */}
+              {satellites.filter(s => s.hasAccess || isPrivilegedAdmin).map(s => {
+                const isActive = activeAppId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveAppId(s.id);
+                      setIsIframeLoading(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '9px',
+                      border: 'none',
+                      background: isActive
+                        ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                        : 'transparent',
+                      color: isActive ? '#ffffff' : '#94a3b8',
+                      fontSize: '11.5px',
+                      fontWeight: isActive ? 800 : 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      position: 'relative',
+                      boxShadow: isActive ? '0 2px 8px rgba(249, 115, 22, 0.4)' : 'none',
+                      transition: 'all 0.18s ease'
+                    }}
+                  >
+                    {s.id === 'asset_inventory' ? <Laptop size={14} /> : <Server size={14} />}
+                    <span>{s.id === 'asset_inventory' ? 'جرد الأصول' : s.name}</span>
+                    <span style={{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: s.isOnline ? '#10b981' : '#f59e0b',
+                      boxShadow: `0 0 5px ${s.isOnline ? '#10b981' : '#f59e0b'}`
+                    }} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Exit to Portal Hub */}
+            <button
+              onClick={() => navigate('/hub')}
+              title="الرجوع إلى البوابة العامة"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              <Home size={15} />
+            </button>
+          </div>
+        )}
         
         {/* ==========================================================
             VIEW 1: OPERATIONAL QUEUE (Full Native Ticket Flow System)
@@ -1146,153 +1273,6 @@ export const WorkModeShell: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
-
-      {/* =========================================================================
-          4. MOBILE FLOATING THUMB DOCK (شريط الإرساء السفلي لمنطقة الإبهام على الهاتف)
-          ========================================================================= */}
-      {isMobile && (
-        <nav
-          className="mobile-ops-bottom-dock"
-          style={{
-            position: 'fixed',
-            bottom: '10px',
-            left: '12px',
-            right: '12px',
-            height: '56px',
-            borderRadius: '18px',
-            background: 'rgba(11, 17, 32, 0.94)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 16px rgba(45, 212, 191, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-around',
-            padding: '0 8px',
-            zIndex: 9999,
-            direction: 'rtl'
-          }}
-        >
-          {/* 1. حوض التذاكر (Ops) */}
-          <button
-            onClick={() => setActiveAppId('OPERATIONS')}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              background: activeAppId === 'OPERATIONS' ? 'rgba(45, 212, 191, 0.16)' : 'transparent',
-              border: activeAppId === 'OPERATIONS' ? '1px solid rgba(45, 212, 191, 0.35)' : '1px solid transparent',
-              borderRadius: '12px',
-              padding: '6px 14px',
-              color: activeAppId === 'OPERATIONS' ? '#2dd4bf' : '#94a3b8',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Layers size={18} />
-            <span style={{ fontSize: '10.5px', fontWeight: 800 }}>حوض التذاكر</span>
-          </button>
-
-          {/* 2. المنظومات المساندة (جرد الأصول والمنظومات المسجلة) */}
-          {satellites.filter(s => s.hasAccess || isPrivilegedAdmin).map(s => {
-            const isActive = activeAppId === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setActiveAppId(s.id);
-                  setIsIframeLoading(true);
-                }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '3px',
-                  background: isActive ? 'rgba(249, 115, 22, 0.18)' : 'transparent',
-                  border: isActive ? '1px solid rgba(249, 115, 22, 0.4)' : '1px solid transparent',
-                  borderRadius: '12px',
-                  padding: '6px 14px',
-                  color: isActive ? '#fb923c' : '#94a3b8',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  position: 'relative'
-                }}
-              >
-                {s.id === 'asset_inventory' ? <Laptop size={18} /> : <Server size={18} />}
-                <span style={{ fontSize: '10.5px', fontWeight: 800 }}>
-                  {s.id === 'asset_inventory' ? 'جرد الأصول' : s.name}
-                </span>
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '5px',
-                    left: '8px',
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: s.isOnline ? '#10b981' : '#f59e0b',
-                    boxShadow: `0 0 6px ${s.isOnline ? '#10b981' : '#f59e0b'}`
-                  }}
-                />
-              </button>
-            );
-          })}
-
-          {/* 3. إضافة منظومة جديدة (للآدمن فقط) */}
-          {isPrivilegedAdmin && (
-            <button
-              onClick={() => {
-                setIsAddMode(true);
-                setEditingSatellite(null);
-                setNewSysForm({ id: '', name: '', targetUrl: '', category: 'COLLEAGUE_SERVICE', description: '' });
-                setPingState({ isPinging: false, result: null });
-                setIsConfigModalOpen(true);
-              }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '3px',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '6px 10px',
-                color: '#64748b',
-                cursor: 'pointer'
-              }}
-              title="ربط منظومة مساندة"
-            >
-              <Plus size={18} />
-              <span style={{ fontSize: '10px', fontWeight: 700 }}>ربط منظومة</span>
-            </button>
-          )}
-
-          {/* 4. البوابة العامة */}
-          <button
-            onClick={() => navigate('/hub')}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '6px 12px',
-              color: '#94a3b8',
-              cursor: 'pointer'
-            }}
-          >
-            <Home size={18} />
-            <span style={{ fontSize: '10.5px', fontWeight: 700 }}>البوابة العامة</span>
-          </button>
-        </nav>
       )}
 
     </div>
