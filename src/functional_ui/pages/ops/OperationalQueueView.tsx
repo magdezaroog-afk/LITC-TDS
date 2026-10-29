@@ -1909,7 +1909,7 @@ export const OperationalQueueView: React.FC = () => {
                     {isMobile && ticketLayoutMode === 'RAIL' && (
                       <button
                         type="button"
-                        onClick={() => handleToggleMobileCols(mobileCardsCols === 1 ? 2 : 1)}
+                        onClick={() => handleSetRailRows(r => r === 1 ? 2 : 1)}
                         title={mobileCardsCols === 1 ? 'التبديل إلى صفين' : 'التبديل إلى صف واحد'}
                         style={{
                           display: 'flex',
@@ -1930,7 +1930,7 @@ export const OperationalQueueView: React.FC = () => {
                         }}
                       >
                         <LayoutGrid size={13} />
-                        <span>{mobileCardsCols === 1 ? 'صفين (2)' : 'صف واحد (1)'}</span>
+                        <span>{railVisibleRows === 1 ? 'صفين (2)' : 'صف واحد (1)'}</span>
                       </button>
                     )}
                   </div>
@@ -2247,7 +2247,7 @@ export const OperationalQueueView: React.FC = () => {
                           style={{
                             width: '100%',
                             height: '100%',
-                            minHeight: '235px',
+                            minHeight: isMobile ? '205px' : '235px',
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
@@ -2443,8 +2443,7 @@ export const OperationalQueueView: React.FC = () => {
                   return (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       {ticketLayoutMode === 'RAIL' ? (
-                        !isMobile ? (
-                        /* ── 1. HORIZONTAL CAROUSEL / RAIL VIEW (Multi-row expandable track on desktop, touch rail on mobile) ── */
+                        /* ── 1. HORIZONTAL CAROUSEL / RAIL VIEW (Multi-row expandable track on desktop & mobile) ── */
                         <div className="ops-tickets-rail-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
                           {/* Right Arrow Button (RTL) - Desktop Only */}
                           {!isMobile && (
@@ -2496,21 +2495,19 @@ export const OperationalQueueView: React.FC = () => {
                                 backgroundColor: '#0284c7',
                                 boxShadow: '0 0 6px #0284c7'
                               }} />
-                              <span>{isMobile ? 'اسحب التذاكر أفقياً للتنقل • انقر للفحص' : 'شريط التذاكر المباشر • مرر بالأسهم أو اسحب بالماوس • انقر على أي تذكرة لفحصها'}</span>
+                              <span>{isMobile ? 'مرر أفقياً لتصفح البطاقات • استخدم الحافة السفلية لتمديد الصفوف' : 'شريط التذاكر المباشر • مرر بالأسهم أو اسحب بالماوس • انقر على أي تذكرة لفحصها'}</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              {!isMobile && (
-                                <span style={{
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  color: isDark ? '#38bdf8' : '#0284c7',
-                                  background: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)',
-                                  padding: '1px 8px',
-                                  borderRadius: '6px',
-                                }}>
-                                  {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
-                                </span>
-                              )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{
+                                fontSize: '10.5px',
+                                fontWeight: 800,
+                                color: isDark ? '#38bdf8' : '#0284c7',
+                                background: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.08)',
+                                padding: '1px 8px',
+                                borderRadius: '6px',
+                              }}>
+                                {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
+                              </span>
                               <span style={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b' }}>
                                 معروض {filteredTickets.length} تذكرة
                               </span>
@@ -2528,12 +2525,12 @@ export const OperationalQueueView: React.FC = () => {
                             onMouseLeave={handleRailMouseUpOrLeave}
                             style={{
                               display: 'grid',
-                              gridTemplateRows: isMobile ? '1fr' : `repeat(${railVisibleRows}, minmax(215px, 1fr))`,
+                              gridTemplateRows: `repeat(${railVisibleRows}, minmax(${isMobile ? '205px' : '215px'}, 1fr))`,
                               gridAutoFlow: 'column',
-                              gridAutoColumns: isMobile ? 'min(295px, 84vw)' : '315px',
-                              columnGap: isMobile ? '12px' : '16px',
-                              rowGap: '14px',
-                              minHeight: isMobile ? 'auto' : `${railVisibleRows * 225 + 35}px`,
+                              gridAutoColumns: isMobile ? 'min(295px, 82vw)' : '315px',
+                              columnGap: isMobile ? '10px' : '16px',
+                              rowGap: isMobile ? '10px' : '14px',
+                              minHeight: `${railVisibleRows * (isMobile ? 215 : 225) + 30}px`,
                               transition: 'min-height 0.2s ease',
                               position: 'relative',
                             }}
@@ -2543,302 +2540,119 @@ export const OperationalQueueView: React.FC = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* ═══ مقبض السحب الرأسي للتحكم بعدد الصفوف (على سطح المكتب فقط) ═══ */}
-                          {!isMobile && (
-                            <div
+                          {/* ═══ مقبض السحب الرأسي لتمديد أو تقليص عدد الصفوف (للهاتف والحاسوب) ═══ */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              padding: isMobile ? '6px 14px' : '6px 12px',
+                              borderRadius: '9999px',
+                              backgroundColor: isDraggingHandle
+                                ? (isDark ? '#1e293b' : '#e2e8f0')
+                                : (isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(241, 245, 249, 0.95)'),
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(19, 93, 121, 0.2)',
+                              boxShadow: isDraggingHandle ? '0 0 16px rgba(2, 132, 199, 0.4)' : '0 2px 10px rgba(0,0,0,0.08)',
+                              transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+                              userSelect: 'none',
+                              margin: '6px auto 4px auto',
+                              width: 'fit-content',
+                              touchAction: 'none'
+                            }}
+                          >
+                            {/* زر تقليل الصفوف (-) */}
+                            <button
+                              type="button"
+                              onClick={() => handleSetRailRows(r => Math.max(1, r - 1))}
+                              disabled={railVisibleRows <= 1}
+                              title="تقليل عدد صفوف البطاقات (الحد الأدنى: 1 صف)"
                               style={{
+                                width: isMobile ? '24px' : '20px',
+                                height: isMobile ? '24px' : '20px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                backgroundColor: railVisibleRows <= 1 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.15)' : '#ffffff'),
+                                color: railVisibleRows <= 1 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
+                                cursor: railVisibleRows <= 1 ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '8px',
-                                padding: '6px 12px',
-                                borderRadius: '9999px',
-                                backgroundColor: isDraggingHandle
-                                  ? (isDark ? '#1e293b' : '#e2e8f0')
-                                  : (isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(241, 245, 249, 0.95)'),
-                                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(19, 93, 121, 0.15)',
-                                boxShadow: isDraggingHandle ? '0 0 14px rgba(2, 132, 199, 0.35)' : '0 2px 8px rgba(0,0,0,0.06)',
-                                transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
-                                userSelect: 'none',
-                                margin: '4px auto 0 auto',
-                                width: 'fit-content',
+                                padding: 0,
+                                fontSize: '11px',
+                                fontWeight: 900,
+                                boxShadow: railVisibleRows <= 1 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
                               }}
                             >
-                              {/* زر تقليل الصفوف (-) */}
-                              <button
-                                type="button"
-                                onClick={() => handleSetRailRows(r => Math.max(1, r - 1))}
-                                disabled={railVisibleRows <= 1}
-                                title="تقليل عدد صفوف البطاقات (الحد الأدنى: 1 صف)"
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: 'none',
-                                  backgroundColor: railVisibleRows <= 1 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
-                                  color: railVisibleRows <= 1 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
-                                  cursor: railVisibleRows <= 1 ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: 0,
-                                  fontSize: '11px',
-                                  fontWeight: 900,
-                                  boxShadow: railVisibleRows <= 1 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
-                                }}
-                              >
-                                <Minus size={12} strokeWidth={2.8} />
-                              </button>
+                              <Minus size={13} strokeWidth={2.8} />
+                            </button>
 
-                              {/* مقبض السحب بالماوس أو اللمس (Drag Bar) */}
-                              <div
-                                onPointerDown={handlePointerDownResize}
-                                onPointerMove={handlePointerMoveResize}
-                                onPointerUp={handlePointerUpResize}
-                                onPointerCancel={handlePointerUpResize}
-                                title="امسكه واسحب لأسفل لزيادة صفوف البطاقات أو لأعلى للتقليل (من 1 إلى 7 صفوف)"
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  cursor: 'ns-resize',
-                                  touchAction: 'none',
-                                  padding: '2px 6px',
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    width: '38px',
-                                    height: '4.5px',
-                                    borderRadius: '9999px',
-                                    backgroundColor: isDraggingHandle
-                                      ? '#0284c7'
-                                      : (isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(19, 93, 121, 0.35)'),
-                                    transition: 'background-color 0.15s ease',
-                                  }}
-                                />
-                                <span style={{
-                                  fontSize: '10px',
-                                  fontWeight: 800,
-                                  color: isDark ? '#cbd5e1' : '#475569',
-                                  fontFamily: "'Cairo', sans-serif",
-                                  fontVariantNumeric: 'tabular-nums',
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
-                                </span>
-                              </div>
-
-                              {/* زر زيادة الصفوف (+) */}
-                              <button
-                                type="button"
-                                onClick={() => handleSetRailRows(r => Math.min(7, r + 1))}
-                                disabled={railVisibleRows >= 7}
-                                title="زيادة عدد صفوف البطاقات (الحد الأقصى: 7 صفوف)"
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: 'none',
-                                  backgroundColor: railVisibleRows >= 7 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#ffffff'),
-                                  color: railVisibleRows >= 7 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
-                                  cursor: railVisibleRows >= 7 ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: 0,
-                                  fontSize: '11px',
-                                  fontWeight: 900,
-                                  boxShadow: railVisibleRows >= 7 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
-                                }}
-                              >
-                                <Plus size={12} strokeWidth={2.8} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        ) : (
-                          /* ── 1.B: MOBILE CINEMA CARDS GRID (الهاتف: عرض البطاقات السينمائية 1 أو 2 صفوف) ── */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '2px 4px',
-                              fontSize: '11px',
-                              color: isDark ? '#94a3b8' : '#64748b'
-                            }}>
-                              <span>إجمالي {filteredTickets.length} تذكرة • نمط البطاقات السينمائية</span>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleMobileCols(mobileCardsCols === 1 ? 2 : 1)}
-                                style={{
-                                  background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-                                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
-                                  borderRadius: '6px',
-                                  padding: '3px 8px',
-                                  color: isDark ? '#38bdf8' : '#0284c7',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                <LayoutGrid size={12} />
-                                <span>{mobileCardsCols === 1 ? 'عرض صفين (2)' : 'عرض صف واحد (1)'}</span>
-                              </button>
-                            </div>
-
+                            {/* مقبض السحب باللمس أو الماوس (Drag Bar) */}
                             <div
+                              onPointerDown={handlePointerDownResize}
+                              onPointerMove={handlePointerMoveResize}
+                              onPointerUp={handlePointerUpResize}
+                              onPointerCancel={handlePointerUpResize}
+                              title="اسحب لأسفل لتمديد عدد الصفوف أو لأعلى للتقليل (من 1 إلى 7 صفوف)"
                               style={{
-                                display: 'grid',
-                                gridTemplateColumns: mobileCardsCols === 2 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
-                                gap: mobileCardsCols === 2 ? '8px' : '12px'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'ns-resize',
+                                touchAction: 'none',
+                                padding: '4px 8px',
                               }}
                             >
-                              <AnimatePresence mode="wait">
-                                {filteredTickets.map((ticket, i) => {
-                                  const reqPriority = ticket.requesterPriority || ticket.priority;
-                                  const bizPriority = ticket.businessPriority || ticket.priority;
-                                  const lamp = getLampStyle(reqPriority);
-                                  const isUnassigned = ticket.isUnassigned !== false && !ticket.assignedTo;
-                                  const ticketCode = ticket.code || `REQ-${String(ticket.id).padStart(4, '0')}`;
-                                  const accentColor = (bizPriority === 'CRITICAL' || bizPriority === 'URGENT')
-                                    ? '#ef4444'
-                                    : bizPriority === 'HIGH'
-                                    ? '#ea580c'
-                                    : isUnassigned
+                              <div
+                                style={{
+                                  width: isMobile ? '48px' : '38px',
+                                  height: '5px',
+                                  borderRadius: '9999px',
+                                  backgroundColor: isDraggingHandle
                                     ? '#0284c7'
-                                    : '#4f46e5';
-
-                                  const timeStr = new Date(ticket.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
-                                  const timeAgoStr = formatTimeAgo(ticket.createdAt);
-                                  const isTwoCol = mobileCardsCols === 2;
-
-                                  return (
-                                    <motion.div
-                                      key={ticket.id}
-                                      initial={{ opacity: 0, y: 6 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0 }}
-                                      transition={{ delay: Math.min(i * 0.015, 0.12) }}
-                                      style={{ minWidth: 0 }}
-                                    >
-                                      <CinemaTicketFrame
-                                        accentColor={accentColor}
-                                        isSelected={inspectTicket?.id === ticket.id}
-                                        alwaysGlow={bizPriority === 'CRITICAL' || bizPriority === 'URGENT'}
-                                        cornerCutout={isTwoCol ? 5 : 7}
-                                        notchRadius={isTwoCol ? 2.5 : 3.5}
-                                        numNotches={isTwoCol ? 1 : 2}
-                                        dashIndent={isTwoCol ? 6 : 10}
-                                        contentPadding={isTwoCol ? '8px 10px' : '12px 14px'}
-                                        customFill={isDark ? 'rgba(15, 23, 42, 0.92)' : '#ffffff'}
-                                        onClick={() => setInspectTicket(ticket)}
-                                        style={{
-                                          width: '100%',
-                                          minHeight: isTwoCol ? '180px' : '205px',
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                          justifyContent: 'space-between',
-                                          cursor: 'pointer'
-                                        }}
-                                      >
-                                        <div>
-                                          {/* Card Top: Code + Status */}
-                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '6px' }}>
-                                            <TicketCodeBadge code={ticketCode} color={accentColor} compact />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                              <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
-                                              <div
-                                                style={{
-                                                  width: '6px',
-                                                  height: '6px',
-                                                  borderRadius: '50%',
-                                                  backgroundColor: lamp.color,
-                                                  boxShadow: `0 0 5px ${lamp.color}`,
-                                                  flexShrink: 0
-                                                }}
-                                                title={`أولوية صاحب الطلب: ${lamp.label}`}
-                                              />
-                                            </div>
-                                          </div>
-
-                                          {/* Subject / Title */}
-                                          <h3 style={{
-                                            margin: '0 0 4px 0',
-                                            fontSize: isTwoCol ? '11.5px' : '13px',
-                                            fontWeight: 800,
-                                            color: isDark ? '#ffffff' : '#0f172a',
-                                            fontFamily: "'Tajawal', sans-serif",
-                                            lineHeight: 1.35,
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden'
-                                          }}>
-                                            {ticket.subject || ticket.title}
-                                          </h3>
-
-                                          {/* Flow / Category */}
-                                          <div style={{
-                                            fontSize: isTwoCol ? '9.5px' : '10.5px',
-                                            color: isDark ? '#94a3b8' : '#64748b',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '3px',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            marginBottom: '4px'
-                                          }}>
-                                            <Layers size={10} color="#6366f1" />
-                                            <span style={{ fontWeight: 600 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
-                                          </div>
-
-                                          {/* Requester name */}
-                                          <div style={{
-                                            fontSize: isTwoCol ? '9.5px' : '10.5px',
-                                            color: isDark ? '#cbd5e1' : '#334155',
-                                            fontWeight: 700,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap'
-                                          }}>
-                                            <User size={10} color="#6366f1" />
-                                            <span>{ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}</span>
-                                          </div>
-                                        </div>
-
-                                        {/* Card Bottom: Time */}
-                                        <div style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'space-between',
-                                          paddingTop: '6px',
-                                          borderTop: isDark ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
-                                          marginTop: '6px',
-                                          fontSize: isTwoCol ? '9.5px' : '10.5px'
-                                        }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: isDark ? '#cbd5e1' : '#475569', fontWeight: 600 }}>
-                                            <Clock size={10} color="#64748b" />
-                                            <span>{timeAgoStr}</span>
-                                          </div>
-                                          <span style={{ color: '#94a3b8', fontVariantNumeric: 'tabular-nums', fontSize: '9px' }}>{timeStr}</span>
-                                        </div>
-                                      </CinemaTicketFrame>
-                                    </motion.div>
-                                  );
-                                })}
-                              </AnimatePresence>
+                                    : (isDark ? 'rgba(56, 189, 248, 0.6)' : 'rgba(19, 93, 121, 0.5)'),
+                                  transition: 'background-color 0.15s ease',
+                                }}
+                              />
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                color: isDark ? '#cbd5e1' : '#334155',
+                                fontFamily: "'Cairo', sans-serif",
+                                fontVariantNumeric: 'tabular-nums',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {railVisibleRows} {railVisibleRows === 1 ? 'صف' : railVisibleRows === 2 ? 'صفان' : 'صفوف'}
+                              </span>
                             </div>
+
+                            {/* زر زيادة الصفوف (+) */}
+                            <button
+                              type="button"
+                              onClick={() => handleSetRailRows(r => Math.min(7, r + 1))}
+                              disabled={railVisibleRows >= 7}
+                              title="زيادة عدد صفوف البطاقات (الحد الأقصى: 7 صفوف)"
+                              style={{
+                                width: isMobile ? '24px' : '20px',
+                                height: isMobile ? '24px' : '20px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                backgroundColor: railVisibleRows >= 7 ? 'transparent' : (isDark ? 'rgba(255, 255, 255, 0.15)' : '#ffffff'),
+                                color: railVisibleRows >= 7 ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#f8fafc' : '#0f172a'),
+                                cursor: railVisibleRows >= 7 ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0,
+                                fontSize: '11px',
+                                fontWeight: 900,
+                                boxShadow: railVisibleRows >= 7 ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+                              }}
+                            >
+                              <Plus size={13} strokeWidth={2.8} />
+                            </button>
                           </div>
-                        )
+                        </div>
                       ) : (
                         /* ── 2. ENTERPRISE STRUCTURED LIST (معيار الـ 7 صفوف المنظم مع الترقيم وأزرار التصفح) ── */
                         (() => {
