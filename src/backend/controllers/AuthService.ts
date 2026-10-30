@@ -143,4 +143,112 @@ export class AuthService {
 
     return { token, user: sanitizedUser };
   }
+
+  // ─── Microsoft Entra ID JIT Login & Session Provisioning ──────────────────
+  static async handleMicrosoftLogin(claims: { email: string; oid?: string; name?: string }, sourceIp: string) {
+    const rawEmail = (claims.email || '').toLowerCase().trim();
+    if (!rawEmail || !rawEmail.includes('@')) {
+      throw new Error('لم يتم استلام بريد إلكتروني صالح من حساب مايكروسوفت.');
+    }
+
+    const oid = claims.oid || null;
+    const name = claims.name || rawEmail.split('@')[0];
+
+    // Find existing user in database by entraObjectId or email
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(oid ? [{ entraObjectId: oid }] : []),
+          { email: rawEmail }
+        ]
+      },
+      include: {
+        role: { select: { id: true, name: true } },
+        department: { select: { id: true, name: true } }
+      }
+    });
+
+    // JIT Provisioning if user does not exist in local database
+    if (!user) {
+      let endUserRole = await prisma.role.findFirst({
+        where: { name: { in: ['END_USER', 'Employee', 'EMPLOYEE', 'موظف'] } }
+      });
+      if (!endUserRole) {
+        endUserRole = await prisma.role.findFirst({ orderBy: { id: 'desc' } });
+      }
+      if (!endUserRole) {
+        throw new Error('تعذر العثور على دور وظيفي افتراضي للموظف الجديد.');
+      }
+
+      const baseUsername = rawEmail.split('@')[0];
+      let username = baseUsername;
+      const userWithSameUsername = await prisma.user.findUnique({ where: { username } });
+      if (userWithSameUsername) {
+        username = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+
+      const created = await prisma.user.create({
+        data: {
+          username,
+          email: rawEmail,
+          fullName: name,
+          jobTitle: 'موظف مؤسسي',
+          entraObjectId: oid,
+          tenantDomain: rawEmail.split('@')[1],
+          ssoProvider: 'Microsoft_SSO',
+          ssoRole: 'EMPLOYEE',
+          roleId: endUserRole.id,
+          password: null,
+          isActive: true,
+          isFrozen: false,
+          syncStatus: 'synced',
+          lastSyncedAt: new Date()
+        },
+        include: {
+          role: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } }
+        }
+      });
+      user = created;
+
+      SIEMLogger.logEvent('MICROSOFT_SSO_JIT_REGISTERED', 'INFO', sourceIp, { userId: user.id, email: user.email }, user.id);
+    } else {
+      // User exists: verify security freeze status
+      if (user.isFrozen || !user.isActive) {
+        SIEMLogger.logEvent('LOGIN_BLOCKED_FROZEN_SSO', 'CRITICAL', sourceIp, { userId: user.id, email: user.email }, user.id);
+        throw new Error('تم تجميد هذا الحساب من قبل إدارة الأمن السيبراني. يرجى مراجعة مسؤول النظام.');
+      }
+
+      // Update telemetry
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          entraObjectId: oid || user.entraObjectId,
+          tenantDomain: rawEmail.split('@')[1],
+          lastSyncedAt: new Date(),
+          ssoProvider: 'Microsoft_SSO'
+        }
+      });
+    }
+
+    SIEMLogger.logEvent('LOGIN_SUCCESS_MICROSOFT_SSO', 'INFO', sourceIp, { userId: user.id, email: user.email }, user.id);
+
+    const token = jwt.sign(
+      { id: user.id, roleId: user.roleId, email: user.email },
+      JWT_SECRET as string,
+      { expiresIn: '8h' }
+    );
+
+    const sanitizedUser = {
+      id: user.id,
+      email: user.email!,
+      fullName: user.fullName || user.username,
+      username: user.username,
+      mfaEnabled: user.mfaEnabled,
+      role: user.role || null,
+      department: user.department || null
+    };
+
+    return { token, user: sanitizedUser };
+  }
 }

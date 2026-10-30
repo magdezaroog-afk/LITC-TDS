@@ -13,6 +13,7 @@ import { AnalyticsController } from '../backend/controllers/AnalyticsController'
 import { OperationalAdminController } from '../backend/controllers/OperationalAdminController';
 import { getBranding, updateBranding } from '../backend/controllers/BrandingController';
 import { SatelliteGatewayController } from '../backend/controllers/SatelliteGatewayController';
+import { IdentityController } from '../backend/controllers/IdentityController';
 const router = Router();
 const flowController = new FlowController();
 const uecpController = new UECPController();
@@ -28,6 +29,17 @@ router.get('/auth/me', authMiddleware, (req, res, next) => authController.me(req
 router.get('/auth/setup-2fa', authMiddleware, (req, res, next) => authController.setup2FA(req, res, next));
 router.post('/auth/enable-2fa', authMiddleware, (req, res, next) => authController.enable2FA(req, res, next));
 router.post('/auth/impersonate', authMiddleware, requireRole([1, 22]), (req, res, next) => authController.impersonate(req, res, next));
+router.get('/auth/microsoft', (req, res, next) => authController.microsoftAuth(req, res, next));
+router.get('/auth/microsoft/callback', (req, res, next) => authController.microsoftCallback(req, res, next));
+
+// =========================================================================
+// 0.8. Microsoft Entra ID Federation & Identity Hub (Super Admin)
+// =========================================================================
+router.get('/identity/config', authMiddleware, requireRole([1, 22]), (req, res) => IdentityController.getConfig(req, res));
+router.post('/identity/config', authMiddleware, requireRole([1, 22]), (req, res) => IdentityController.saveConfig(req, res));
+router.post('/identity/test-connection', authMiddleware, requireRole([1, 22]), (req, res) => IdentityController.testConnection(req, res));
+router.post('/identity/sync', authMiddleware, requireRole([1, 22]), (req, res) => IdentityController.syncUsers(req, res));
+router.patch('/identity/users/:id', authMiddleware, requireRole([1, 22]), (req, res) => IdentityController.patchUser(req, res));
 
 // =========================================================================
 // 0.5. Forti-SOC Security & Telemetry (Super Admin)

@@ -1212,7 +1212,8 @@ export class OrganizationController {
         if (empRole) updates.role = { connect: { id: empRole.id } };
       }
 
-      // Update user's department & role
+      // Update user's department & role and mark as overridden to protect local assignment
+      updates.syncStatus = 'overridden';
       const updatedUser = await prisma.user.update({
         where: { id: uid },
         data: updates,
@@ -1269,7 +1270,7 @@ export class OrganizationController {
         await prisma.userTeam.deleteMany({ where: { userId: uid } });
         await prisma.user.update({
           where: { id: uid },
-          data: { department: { disconnect: true }, role: { connect: { id: fallbackRoleId } } }
+          data: { department: { disconnect: true }, role: { connect: { id: fallbackRoleId } }, syncStatus: 'synced' }
         });
         Logger.info(`[OrganizationController] User ${uid} unassigned with fallback roleId ${fallbackRoleId}`);
         res.json({ success: true, message: 'تمت إعادة المستخدم إلى حوض الانتظار' });

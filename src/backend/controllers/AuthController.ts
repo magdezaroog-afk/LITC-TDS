@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthService } from './AuthService';
+import { EntraSyncService } from '../services/EntraSyncService';
 import { SIEMLogger } from '../security/SIEMLogger';
 import { redisManager } from '../infrastructure/RedisClient';
 import { prisma } from '../../db/client';
@@ -194,6 +195,95 @@ export class AuthController {
       res.json({ success: true, message: '2FA enabled successfully' });
     } catch (error) {
       next(error);
+    }
+  }
+
+  // ─── Microsoft Entra ID SSO ───────────────────────────────────────────────
+  async microsoftAuth(req: Request, res: Response, next: NextFunction) {
+    try {
+      const host = req.get('host');
+      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const redirectUri = `${protocol}://${host}/api/v1/auth/microsoft/callback`;
+
+      const authUrl = await EntraSyncService.getAuthCodeUrl(redirectUri);
+      res.redirect(authUrl);
+    } catch (error: any) {
+      console.error('[Microsoft SSO Error]:', error);
+      res.redirect(`/login?error=${encodeURIComponent(error.message || 'فشل الاتصال بخدمة Microsoft SSO')}`);
+    }
+  }
+
+  async microsoftCallback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { code, error, error_description } = req.query;
+      const sourceIp = req.ip || req.socket.remoteAddress || 'UNKNOWN';
+
+      if (error) {
+        const errorMsg = (error_description as string) || (error as string) || 'تم إلغاء عملية الدخول عبر مايكروسوفت';
+        return res.redirect(`/login?error=${encodeURIComponent(errorMsg)}`);
+      }
+
+      if (!code || typeof code !== 'string') {
+        return res.redirect('/login?error=Invalid_Auth_Code');
+      }
+
+      const host = req.get('host');
+      const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const redirectUri = `${protocol}://${host}/api/v1/auth/microsoft/callback`;
+
+      const tokenResponse = await EntraSyncService.acquireTokenByCode(code, redirectUri);
+      const claims: any = tokenResponse?.idTokenClaims || {};
+      const email = claims.email || claims.preferred_username || claims.upn || tokenResponse?.account?.username;
+      const oid = claims.oid || claims.sub || tokenResponse?.account?.homeAccountId?.split('.')[0];
+      const name = claims.name || tokenResponse?.account?.name;
+
+      const result = await AuthService.handleMicrosoftLogin({ email, oid, name }, sourceIp);
+
+      // Set HttpOnly Secure Cookie
+      res.cookie('litc_session', result.token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'strict',
+        maxAge: 8 * 60 * 60 * 1000 // 8 hours
+      });
+
+      // Deliver token and redirect to application
+      const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>جاري تحضير الجلسة...</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; }
+    .loader { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.15); border-top-color: #f36c21; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <div style="font-size: 16px; font-weight: 700;">تم التحقق من هوية مايكروسوفت بنجاح • جاري توجيهك...</div>
+  </div>
+  <script>
+    try {
+      localStorage.setItem('litc_token', '${result.token}');
+      localStorage.setItem('token', '${result.token}');
+      sessionStorage.setItem('litc_token', '${result.token}');
+      sessionStorage.setItem('token', '${result.token}');
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.href = '/';
+  </script>
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error: any) {
+      console.error('[Microsoft Callback Error]:', error);
+      res.redirect(`/login?error=${encodeURIComponent(error.message || 'فشلت المصادقة عبر مايكروسوفت')}`);
     }
   }
 }

@@ -290,5 +290,60 @@ export const AdminAPI = {
       localStorage.removeItem('litc_token');
       return handleResponse(res);
     }),
+
+  // ─── Identity & Microsoft Entra ID Sync ──────────────────────────────────
+  getIdentityConfig: () =>
+    fetch(`${BASE_URL}/identity/config`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+
+  saveIdentityConfig: (data: {
+    tenantId: string;
+    clientId: string;
+    clientSecret?: string;
+    redirectUri?: string;
+    autoSyncEnabled?: boolean;
+    syncIntervalMinutes?: number;
+  }) =>
+    fetch(`${BASE_URL}/identity/config`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+
+  testIdentityConnection: (data?: {
+    tenantId?: string;
+    clientId?: string;
+    clientSecret?: string;
+  }) =>
+    fetch(`${BASE_URL}/identity/test-connection`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data || {})
+    }).then(handleResponse),
+
+  syncEntraUsers: () =>
+    fetch(`${BASE_URL}/identity/sync`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include'
+    }).then(handleResponse),
+
+  patchIdentityUser: (userId: number | string, data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    jobTitle?: string;
+    departmentId?: number | null;
+    managerId?: number | null;
+    isActive?: boolean;
+    roleId?: number;
+  }) =>
+    fetch(`${BASE_URL}/identity/users/${userId}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data)
+    }).then(handleResponse),
 };
 

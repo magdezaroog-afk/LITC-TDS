@@ -20,6 +20,7 @@
     "security:audit": "powershell -ExecutionPolicy Bypass -File ./security-tools/run_devsecops_scan.ps1 -Mode fast-scan"
   },
   "dependencies": {
+    "@azure/msal-node": "^7.1.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@prisma/client": "^5.14.0",
     "@splinetool/react-spline": "^4.1.0",

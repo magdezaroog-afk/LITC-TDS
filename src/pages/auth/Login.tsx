@@ -718,6 +718,60 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
+        {/* ── Corporate SSO Divider ── */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          margin: '22px 0 16px',
+          gap: '12px',
+        }}>
+          <div style={{ flex: 1, height: '1px', background: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0' }} />
+          <span style={{ fontSize: '11px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>أو عبر الهوية الموحدة</span>
+          <div style={{ flex: 1, height: '1px', background: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0' }} />
+        </div>
+
+        {/* ── Official Microsoft 365 / Entra ID SSO Button ── */}
+        <a
+          href="/api/v1/auth/microsoft"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '11px',
+            width: '100%',
+            padding: '12px 18px',
+            borderRadius: '12px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #cbd5e1',
+            background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#0f172a',
+            fontSize: '13px',
+            fontWeight: 700,
+            textDecoration: 'none',
+            boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#0078d4';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = isDark ? '0 4px 14px rgba(0, 120, 212, 0.35)' : '0 4px 14px rgba(0, 120, 212, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.14)' : '#cbd5e1';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.04)';
+          }}
+        >
+          {/* Microsoft 4-Square SVG */}
+          <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+            <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+            <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+          </svg>
+          <span>تسجيل الدخول بحساب الشركة (Microsoft 365)</span>
+        </a>
+
         {/* 4. Enterprise Security Footer */}
         <div
           style={{

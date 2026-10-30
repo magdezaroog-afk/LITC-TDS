@@ -17,6 +17,7 @@ import { OrgNode, initialOrgTree } from './tabs/orgStructureTypes';
 import { AdminAPI } from '../../services/admin.api';
 import { RoleSimulatorTab } from './tabs/RoleSimulatorTab';
 import { InternalRequestsGovernanceTab } from './tabs/InternalRequestsGovernanceTab';
+import { IdentityHubTab } from './tabs/IdentityHubTab';
 
 /* ─────────────────────────────────────────────────────────────
    Apple-Inspired Design System Tokens
@@ -139,11 +140,11 @@ export const AdminDashboardShell: React.FC = () => {
   }, []);
 
   // Auto-saving from Shell is removed to prevent React Strict Mode and localStorage from overwriting the DB.
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'>(() => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'identityHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'>(() => {
     try {
       const p = new URLSearchParams(window.location.search);
       const tabParam = p.get('tab') as any;
-      if (tabParam && ['overview', 'analytics', 'ui', 'operations', 'security', 'policies', 'routing', 'uecpHub', 'institutional', 'admins', 'simulator', 'internalRequests'].includes(tabParam)) {
+      if (tabParam && ['overview', 'analytics', 'ui', 'operations', 'security', 'policies', 'routing', 'uecpHub', 'identityHub', 'institutional', 'admins', 'simulator', 'internalRequests'].includes(tabParam)) {
         return tabParam;
       }
     } catch {}
@@ -200,10 +201,10 @@ export const AdminDashboardShell: React.FC = () => {
     );
   }
 
-  const TAB_KEYS: Array<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'> = [
+  const TAB_KEYS: Array<'overview' | 'analytics' | 'ui' | 'operations' | 'security' | 'policies' | 'routing' | 'uecpHub' | 'identityHub' | 'institutional' | 'admins' | 'simulator' | 'internalRequests'> = [
     'overview', 'analytics',
     'ui', 'operations', 'security', 'policies', 'routing'
-  , 'uecpHub', 'institutional', 'admins', 'simulator', 'internalRequests'];
+  , 'uecpHub', 'identityHub', 'institutional', 'admins', 'simulator', 'internalRequests'];
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
@@ -369,6 +370,7 @@ export const AdminDashboardShell: React.FC = () => {
             {activeTab === 'policies' && <NotificationPolicyConsole />}
             {activeTab === 'routing' && <TicketRoutingTab />}
             {activeTab === 'uecpHub' && <ExternalSystemsTab />}
+            {activeTab === 'identityHub' && <IdentityHubTab />}
             {activeTab === 'institutional' && <InstitutionalStructureTab orgTree={orgTree} setOrgTree={setOrgTree} />}
             {activeTab === 'admins' && <SystemAdminsTab />}
             {activeTab === 'simulator' && <RoleSimulatorTab />}
