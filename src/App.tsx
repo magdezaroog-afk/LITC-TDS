@@ -773,7 +773,7 @@ const Navigation: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           3. EXECUTIVE BOTTOM NAVIGATION BAR (شريط العمليات والمهام السفلي لمنطقة الإبهام)
           ══════════════════════════════════════════════════════════ */}
-      {isMobileScreen && (
+      {isMobileScreen && !isOpsActive && (
         <nav
           style={{
             position: 'fixed',

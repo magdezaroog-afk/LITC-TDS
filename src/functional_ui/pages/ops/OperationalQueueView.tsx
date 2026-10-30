@@ -447,7 +447,11 @@ function OpsQueueTile({
   );
 }
 
-export const OperationalQueueView: React.FC = () => {
+interface OperationalQueueViewProps {
+  hideInternalDock?: boolean;
+}
+
+export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hideInternalDock = false }) => {
   const { user } = useAuth();
   const isMobile = useMobileViewport(768);
 
@@ -514,6 +518,12 @@ export const OperationalQueueView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [managedFlowsCount, setManagedFlowsCount] = useState<number>(0);
   const [canManageFlows, setCanManageFlows] = useState<boolean>(false);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('nexus_ops_stats_changed', { 
+      detail: { openCount: stats.open, poolCount, myCount, archiveCount } 
+    }));
+  }, [stats.open, poolCount, myCount, archiveCount]);
 
   // View Mode: Horizontal Rail vs. Enterprise Structured List (7 rows per page)
   const [mobileCardsCols, setMobileCardsCols] = useState<1 | 2>(() => {
@@ -5509,7 +5519,7 @@ export const OperationalQueueView: React.FC = () => {
 
 
       {/* ── 🚀 Floating Operational Sidebar Dock (macOS-inspired Circular Dock - Desktop Only) ── */}
-      {!isMobile && (
+      {!isMobile && !hideInternalDock && (
         <nav
           style={{
             position: 'fixed',

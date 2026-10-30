@@ -13,3 +13,4 @@ For ANY request involving UI, frontend, screens, mobile views, tabs, menus, butt
 - Kinetic Menus: Radial trigonometry (`Math.cos / Math.sin`) and Framer Motion `layoutId` morphing islands.
 - Strict Anti-Slop: Ban default AI purple/blue gradients and neon cyan/magenta glows.
 - 100% CSS Logical Properties and Arabic RTL (+15% font scale, 1.6-1.8 line-height).
+

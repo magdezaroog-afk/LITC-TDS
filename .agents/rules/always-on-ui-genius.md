@@ -16,3 +16,4 @@ For ANY request involving UI, frontend, screens, mobile views, tabs, menus, butt
    - 100% CSS Logical Properties (Arabic RTL first, line-height 1.6-1.8, 10-15% font scaling).
    - Micro-interactions on all interactive elements (Hover, Active, Focus-Visible, Disabled, Loading).
 4. **Autonomous Execution:** The Project Director only needs to imagine and describe the desired outcome; you execute the full frontend engineering, component sourcing, package installation, and kinetic polish automatically.
+

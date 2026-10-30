@@ -4,30 +4,27 @@ import { useMobileViewport } from '../../../mobile/hooks/useMobileViewport';
 import { OperationalQueueView } from './OperationalQueueView';
 import { 
   Layers, 
-  HardDrive, 
   ExternalLink, 
   RefreshCw, 
-  ShieldCheck, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  ChevronRight, 
-  ChevronLeft,
-  Server,
-  Sparkles,
-  Home,
-  Sliders,
-  Laptop,
-  Plus,
-  Globe,
-  Settings,
-  Activity,
-  Wifi,
-  WifiOff,
-  Info,
-  Lock,
-  X,
-  Trash2
+  Server, 
+  Sparkles, 
+  Home, 
+  Sliders, 
+  Laptop, 
+  Plus, 
+  Settings, 
+  Activity, 
+  X, 
+  Trash2,
+  Inbox,
+  BarChart3,
+  ArrowRight,
+  CheckCircle2,
+  SlidersHorizontal,
+  Compass,
+  ArrowLeft,
+  ChevronUp,
+  Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -50,10 +47,16 @@ export const WorkModeShell: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useMobileViewport(768);
 
-  // Active App ID: 'OPERATIONS' or a Satellite System ID (e.g., 'asset_inventory')
+  // Active App ID: 'OPERATIONS' (حوض الطلبات والعمليات) or a Satellite System ID (e.g., 'asset_inventory')
   const [activeAppId, setActiveAppId] = useState<string>('OPERATIONS');
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
   
+  // Kinetic Launcher / Start Menu State (يفتح من زر القائمة السفلي)
+  const [isLauncherOpen, setIsLauncherOpen] = useState<boolean>(false);
+  
+  // Ops Queue Sub-Tab Synchronization ('POOL' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON')
+  const [opsActiveTab, setOpsActiveTab] = useState<'POOL' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON'>('POOL');
+  const [liveStats, setLiveStats] = useState<{ openCount: number; poolCount: number }>({ openCount: 0, poolCount: 0 });
+
   // Satellite Registry State
   const [satellites, setSatellites] = useState<SatelliteSystem[]>([]);
   const [isLoadingSatellites, setIsLoadingSatellites] = useState<boolean>(true);
@@ -77,18 +80,38 @@ export const WorkModeShell: React.FC = () => {
 
   const isPrivilegedAdmin = ['super_admin', 'system_director', 'co_admin'].includes(user?.role || '');
 
+  // ── Sync with Operational Queue Events ──
+  useEffect(() => {
+    const handleTabChanged = (e: any) => {
+      if (e.detail?.tab) setOpsActiveTab(e.detail.tab);
+    };
+    const handleStatsChanged = (e: any) => {
+      if (e.detail) {
+        setLiveStats({
+          openCount: e.detail.openCount || 0,
+          poolCount: e.detail.poolCount || 0
+        });
+      }
+    };
+
+    window.addEventListener('nexus_ops_tab_changed', handleTabChanged);
+    window.addEventListener('nexus_ops_stats_changed', handleStatsChanged);
+
+    return () => {
+      window.removeEventListener('nexus_ops_tab_changed', handleTabChanged);
+      window.removeEventListener('nexus_ops_stats_changed', handleStatsChanged);
+    };
+  }, []);
+
   /**
    * دالة اشتقاق الرابط الفعلي لمنظومة جرد الأصول والمنظومات المساندة
    * تضمن فتح المنظومة عبر البوابة العكسية الموحدة (Single-Origin Reverse Proxy Gateway)
-   * لضمان الوصول الفوري من المنزل أو الشبكة المحلية دون الحاجة لفتح منافذ إضافية
    */
   const resolveSatelliteUrl = (rawTargetUrl: string, clientAdaptedUrl?: string, satelliteId?: string): string => {
-    // 1. منظومة جرد الأصول: البوابة العكسية الموحدة (تعمل تحت نفس الدومين والمنفذ دائماً للعمل من المنزل والشبكة)
     if (satelliteId === 'asset_inventory' || rawTargetUrl.includes('localhost:3000') || rawTargetUrl.includes(':3000')) {
       return `/satellites/proxy/asset_inventory/`;
     }
 
-    // 2. منظومات الزملاء المساندة: استخدام الرابط المتكيف شبكياً
     if (clientAdaptedUrl && !clientAdaptedUrl.includes('localhost') && !clientAdaptedUrl.includes('127.0.0.1')) {
       return clientAdaptedUrl;
     }
@@ -128,7 +151,6 @@ export const WorkModeShell: React.FC = () => {
           setSatellites(data.satellites);
         }
       } else {
-        // Fallback default if API unavailable
         setupFallbackSatellites();
       }
     } catch (err) {
@@ -153,9 +175,9 @@ export const WorkModeShell: React.FC = () => {
         targetUrl: 'http://localhost:3000',
         clientAdaptedUrl: resolvedInventoryUrl,
         isActive: true,
-        hasAccess: true, // Will be filtered by role check
+        hasAccess: true,
         isOnline: true,
-        latencyMs: 15,
+        latencyMs: 14,
         description: 'إدارة وتتبع الأجهزة والمعدات التقنية والأصول التشغيلية لشركة LITC (743+ جهاز مسجل).'
       }
     ]);
@@ -163,7 +185,7 @@ export const WorkModeShell: React.FC = () => {
 
   useEffect(() => {
     fetchSatellites();
-    const interval = setInterval(fetchSatellites, 25000); // Poll health every 25 seconds
+    const interval = setInterval(fetchSatellites, 25000);
     return () => clearInterval(interval);
   }, []);
 
@@ -172,17 +194,22 @@ export const WorkModeShell: React.FC = () => {
     setIframeKey(prev => prev + 1);
   };
 
+  const handleSwitchTab = (tab: 'POOL' | 'FLOW_SETTINGS' | 'ANALYTICS') => {
+    setOpsActiveTab(tab);
+    window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab } }));
+  };
+
   // Find currently active satellite
   const activeSatellite = satellites.find(s => s.id === activeAppId);
   const activeComputedUrl = activeSatellite 
     ? resolveSatelliteUrl(activeSatellite.targetUrl, activeSatellite.clientAdaptedUrl, activeSatellite.id) 
     : '';
 
-  // Ping Test Handler for modal
+  // Ping Colleague Host in Realtime
   const handlePingHost = async (targetUrl: string) => {
     setPingState({ isPinging: true, result: null });
+    const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
     try {
-      const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
       const res = await fetch('/api/v1/satellites/ping', {
         method: 'POST',
         headers: {
@@ -193,12 +220,12 @@ export const WorkModeShell: React.FC = () => {
       });
       const data = await res.json();
       setPingState({ isPinging: false, result: data });
-    } catch (e: any) {
-      setPingState({ isPinging: false, result: { success: false, error: e.message } });
+    } catch {
+      setPingState({ isPinging: false, result: { isOnline: false, error: 'Connection Failed' } });
     }
   };
 
-  // Save Satellite Config (Update or Register New Colleague System)
+  // Save Satellite Config
   const handleSaveSatellite = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalFeedback(null);
@@ -206,7 +233,6 @@ export const WorkModeShell: React.FC = () => {
 
     try {
       if (isAddMode) {
-        // Register Colleague System
         const res = await fetch('/api/v1/satellites/register', {
           method: 'POST',
           headers: {
@@ -227,7 +253,6 @@ export const WorkModeShell: React.FC = () => {
           setModalFeedback({ type: 'error', message: data.error || 'فشل تسجيل المنظومة.' });
         }
       } else if (editingSatellite) {
-        // Update Existing Satellite
         const res = await fetch(`/api/v1/satellites/${editingSatellite.id}/config`, {
           method: 'PUT',
           headers: {
@@ -258,9 +283,9 @@ export const WorkModeShell: React.FC = () => {
     }
   };
 
-  // Delete Satellite (Admins)
+  // Delete Satellite
   const handleDeleteSatellite = async (id: string) => {
-    if (!window.confirm('هل أنت متأكد من رغبتك في إزالة هذه المنظومة من شريط المنظومات المركزية؟')) return;
+    if (!window.confirm('هل أنت متأكد من رغبتك في إزالة هذه المنظومة؟')) return;
     try {
       const token = localStorage.getItem('nexus_token') || sessionStorage.getItem('nexus_token');
       const res = await fetch(`/api/v1/satellites/${id}`, {
@@ -279,11 +304,11 @@ export const WorkModeShell: React.FC = () => {
 
   return (
     <div 
-      className="nexus-workspace-shell"
+      className="nexus-workmode-root"
       style={{
         display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        height: isMobile ? 'calc(100vh - 54px)' : 'calc(100vh - 74px)',
+        flexDirection: 'column',
+        height: isMobile ? 'calc(100vh - 54px)' : 'calc(100vh - 68px)',
         width: '100%',
         maxWidth: '100%',
         background: '#070b14',
@@ -295,464 +320,18 @@ export const WorkModeShell: React.FC = () => {
       }}
     >
       {/* =========================================================================
-          1. INTEGRATED ORBITAL SATELLITE DOCK (Right-Docked Ultra-Sleek Rail - Desktop)
+          1. MAIN APPLICATION CANVAS (Full-Bleed 100% Screen Freedom)
           ========================================================================= */}
-      {!isMobile && (
-        <aside
-          style={{
-            width: isSidebarExpanded ? '230px' : '68px',
-          background: 'rgba(11, 17, 32, 0.96)',
-          backdropFilter: 'blur(20px)',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '16px 8px',
-          transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          zIndex: 40,
-          flexShrink: 0,
-          boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.35)',
-          height: '100%'
-        }}
-      >
-        {/* Rail Header / Toggle */}
-        <div 
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: isSidebarExpanded ? 'space-between' : 'center',
-            width: '100%',
-            marginBottom: '20px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
-          }}
-        >
-          <div 
-            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            title="شريط المنظومات والعمليات التشغيلية (انقر للتوسيع)"
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              cursor: 'pointer' 
-            }}
-          >
-            <div 
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '11px',
-                background: 'linear-gradient(135deg, #0d9488, #0f766e)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 3px 12px rgba(13, 148, 136, 0.35)',
-                flexShrink: 0
-              }}
-            >
-              <Sparkles size={18} color="#ffffff" />
-            </div>
-
-            {isSidebarExpanded && (
-              <motion.div 
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}
-              >
-                <div style={{ fontSize: '14px', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.2px' }}>
-                  NEXUS <span style={{ color: '#2dd4bf' }}>OPS</span>
-                </div>
-                <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 500 }}>
-                  المنظومات والعمليات
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {isSidebarExpanded && (
-            <button
-              onClick={() => setIsSidebarExpanded(false)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: 'none',
-                borderRadius: '6px',
-                width: '26px',
-                height: '26px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#94a3b8',
-                cursor: 'pointer'
-              }}
-            >
-              <ChevronRight size={15} />
-            </button>
-          )}
-        </div>
-
-        {/* =========================================================================
-            SATELLITE ICONS DOCK (Primary Apps & Microservices)
-            ========================================================================= */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', alignItems: 'center' }}>
-          
-          {/* 1. Core App: مركز العمليات وحوض التذاكر */}
-          <button
-            onClick={() => setActiveAppId('OPERATIONS')}
-            title="مركز العمليات والطلبات (حوض التذاكر والتحليلات)"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              width: '100%',
-              padding: isSidebarExpanded ? '10px 12px' : '10px 0',
-              borderRadius: '12px',
-              border: activeAppId === 'OPERATIONS' 
-                ? '1px solid rgba(45, 212, 191, 0.35)' 
-                : '1px solid transparent',
-              background: activeAppId === 'OPERATIONS'
-                ? 'linear-gradient(135deg, rgba(13, 148, 136, 0.28), rgba(15, 118, 110, 0.16))'
-                : 'rgba(255, 255, 255, 0.02)',
-              color: activeAppId === 'OPERATIONS' ? '#2dd4bf' : '#94a3b8',
-              cursor: 'pointer',
-              justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-              position: 'relative',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          >
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Layers size={21} color={activeAppId === 'OPERATIONS' ? '#2dd4bf' : '#94a3b8'} />
-              {activeAppId === 'OPERATIONS' && (
-                <span 
-                  style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    left: '-3px',
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    background: '#2dd4bf',
-                    boxShadow: '0 0 8px #2dd4bf'
-                  }} 
-                />
-              )}
-            </div>
-
-            {isSidebarExpanded && (
-              <div style={{ textAlign: 'right', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: activeAppId === 'OPERATIONS' ? '#f8fafc' : '#cbd5e1' }}>
-                  حوض التذاكر
-                </div>
-                <div style={{ fontSize: '10px', color: '#64748b' }}>
-                  العمليات والطلبات
-                </div>
-              </div>
-            )}
-          </button>
-
-          {/* 2. Registered Satellite Microservices (Filtered by User Access) */}
-          {satellites.map((satellite) => {
-            // Check permission: visible only if user has access or is privileged admin
-            if (!satellite.hasAccess && !isPrivilegedAdmin) {
-              return null; // Invisible to unauthorized users!
-            }
-
-            const isActive = activeAppId === satellite.id;
-            const isOnline = satellite.isOnline;
-
-            return (
-              <button
-                key={satellite.id}
-                onClick={() => {
-                  setActiveAppId(satellite.id);
-                  setIsIframeLoading(true);
-                }}
-                title={`${satellite.name} • ${isOnline ? 'متصل بنجاح' : 'جاري التحقق / غير متاح'}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  width: '100%',
-                  padding: isSidebarExpanded ? '10px 12px' : '10px 0',
-                  borderRadius: '12px',
-                  border: isActive 
-                    ? '1px solid rgba(249, 115, 22, 0.45)' 
-                    : '1px solid transparent',
-                  background: isActive
-                    ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(194, 65, 12, 0.15))'
-                    : 'rgba(255, 255, 255, 0.02)',
-                  color: isActive ? '#fb923c' : '#94a3b8',
-                  cursor: 'pointer',
-                  justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-                  position: 'relative',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-              >
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {satellite.id === 'asset_inventory' ? (
-                    <Laptop size={21} color={isActive ? '#fb923c' : '#94a3b8'} />
-                  ) : (
-                    <Server size={21} color={isActive ? '#38bdf8' : '#94a3b8'} />
-                  )}
-
-                  {/* Dynamic Status Pulse Bulb */}
-                  <span 
-                    style={{
-                      position: 'absolute',
-                      top: '-3px',
-                      left: '-3px',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: isOnline ? '#10b981' : '#f59e0b',
-                      boxShadow: `0 0 8px ${isOnline ? '#10b981' : '#f59e0b'}`
-                    }} 
-                  />
-                </div>
-
-                {isSidebarExpanded && (
-                  <div style={{ textAlign: 'right', overflow: 'hidden', whiteSpace: 'nowrap', flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: isActive ? '#f8fafc' : '#cbd5e1' }}>
-                      {satellite.id === 'asset_inventory' ? 'جرد الأصول' : satellite.name}
-                    </div>
-                    <div style={{ fontSize: '10px', color: isOnline ? '#34d399' : '#fbbf24' }}>
-                      {isOnline ? 'متصل بالشبكة' : 'في انتظار الاتصال'}
-                    </div>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-
-          {/* 3. Add Colleague System Button (Admins & Project Director Only) */}
-          {isPrivilegedAdmin && (
-            <button
-              onClick={() => {
-                setIsAddMode(true);
-                setEditingSatellite(null);
-                setNewSysForm({
-                  id: '',
-                  name: '',
-                  targetUrl: '',
-                  category: 'COLLEAGUE_SERVICE',
-                  description: ''
-                });
-                setPingState({ isPinging: false, result: null });
-                setIsConfigModalOpen(true);
-              }}
-              title="إضافة وربط منظومة مساندة جديدة من أحد الزملاء"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                width: '100%',
-                padding: isSidebarExpanded ? '9px 12px' : '9px 0',
-                borderRadius: '12px',
-                border: '1px dashed rgba(255, 255, 255, 0.15)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                color: '#64748b',
-                cursor: 'pointer',
-                justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-                transition: 'all 0.2s ease',
-                marginTop: '4px'
-              }}
-            >
-              <Plus size={18} />
-              {isSidebarExpanded && (
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>
-                  ربط منظومة زميل
-                </span>
-              )}
-            </button>
-          )}
-
-        </div>
-
-        {/* Separator */}
-        <div style={{ flex: 1 }} />
-
-        {/* Bottom Operational Navigation & Portal Quick Link */}
-        <div 
-          style={{
-            width: '100%',
-            paddingTop: '12px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            alignItems: 'center'
-          }}
-        >
-          {/* Quick Exit to Portal Hub */}
-          <button
-            onClick={() => navigate('/hub')}
-            title="الرجوع إلى البوابة العامة (Portal Hub)"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: isSidebarExpanded ? '8px 12px' : '8px',
-              borderRadius: '9px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-              fontSize: '12px',
-              fontWeight: 600,
-              width: '100%'
-            }}
-          >
-            <Home size={17} />
-            {isSidebarExpanded && <span>البوابة العامة</span>}
-          </button>
-        </div>
-      </aside>
-      )}
-
-      {/* =========================================================================
-          2. MAIN CONTENT VIEWPORT (App Switcher)
-          ========================================================================= */}
-      <main style={{ flex: 1, minWidth: 0, position: 'relative', overflowY: 'auto', height: '100%', paddingBottom: '0' }}>
-
-        {/* ── 📱 Mobile Satellite Systems App Switcher (شريط التبديل العلوي الأنيق بين المنظومات) ── */}
-        {isMobile && (
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 1000,
-              background: 'rgba(11, 17, 32, 0.94)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: '8px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              direction: 'rtl'
-            }}
-          >
-            {/* Segmented Switcher */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              padding: '3px',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              flex: 1,
-              overflowX: 'auto',
-              scrollbarWidth: 'none'
-            }}>
-              {/* Operations Tab */}
-              <button
-                type="button"
-                onClick={() => setActiveAppId('OPERATIONS')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '9px',
-                  border: 'none',
-                  background: activeAppId === 'OPERATIONS'
-                    ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
-                    : 'transparent',
-                  color: activeAppId === 'OPERATIONS' ? '#ffffff' : '#94a3b8',
-                  fontSize: '11.5px',
-                  fontWeight: activeAppId === 'OPERATIONS' ? 800 : 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  boxShadow: activeAppId === 'OPERATIONS' ? '0 2px 8px rgba(2, 132, 199, 0.4)' : 'none',
-                  transition: 'all 0.18s ease'
-                }}
-              >
-                <Layers size={14} />
-                <span>العمليات التشغيلية</span>
-              </button>
-
-              {/* Satellites Tabs */}
-              {satellites.filter(s => s.hasAccess || isPrivilegedAdmin).map(s => {
-                const isActive = activeAppId === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveAppId(s.id);
-                      setIsIframeLoading(true);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      borderRadius: '9px',
-                      border: 'none',
-                      background: isActive
-                        ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
-                        : 'transparent',
-                      color: isActive ? '#ffffff' : '#94a3b8',
-                      fontSize: '11.5px',
-                      fontWeight: isActive ? 800 : 600,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      position: 'relative',
-                      boxShadow: isActive ? '0 2px 8px rgba(249, 115, 22, 0.4)' : 'none',
-                      transition: 'all 0.18s ease'
-                    }}
-                  >
-                    {s.id === 'asset_inventory' ? <Laptop size={14} /> : <Server size={14} />}
-                    <span>{s.id === 'asset_inventory' ? 'جرد الأصول' : s.name}</span>
-                    <span style={{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: s.isOnline ? '#10b981' : '#f59e0b',
-                      boxShadow: `0 0 5px ${s.isOnline ? '#10b981' : '#f59e0b'}`
-                    }} />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Quick Exit to Portal Hub */}
-            <button
-              onClick={() => navigate('/hub')}
-              title="الرجوع إلى البوابة العامة"
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: '#94a3b8',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0
-              }}
-            >
-              <Home size={15} />
-            </button>
-          </div>
-        )}
+      <main style={{ flex: 1, minWidth: 0, position: 'relative', overflowY: 'auto', height: '100%', paddingBottom: isMobile ? '68px' : '84px' }}>
         
-        {/* ==========================================================
-            VIEW 1: OPERATIONAL QUEUE (Full Native Ticket Flow System)
-            ========================================================== */}
+        {/* VIEW 1: حوض الطلبات والعمليات المؤسسية */}
         {activeAppId === 'OPERATIONS' && (
           <div className="operational-shell" style={{ height: '100%', overflowY: 'auto' }}>
-            <OperationalQueueView />
+            <OperationalQueueView hideInternalDock={true} />
           </div>
         )}
 
-        {/* ==========================================================
-            VIEW 2: SATELLITE EMBEDDED SYSTEM (Inventory or Colleague Microservice)
-            ========================================================== */}
+        {/* VIEW 2: المنظومة المصاحبة (Satellite Embedded Microservice) */}
         {activeAppId !== 'OPERATIONS' && activeSatellite && (
           <div 
             style={{ 
@@ -763,28 +342,28 @@ export const WorkModeShell: React.FC = () => {
               animation: 'fadeIn 0.2s ease-out'
             }}
           >
-            {/* Top Sleek Satellite Command Bar */}
+            {/* Top Sleek Command Strip for Satellite */}
             <div 
               style={{
-                padding: isMobile ? '10px 14px' : '12px 24px',
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94))',
+                padding: isMobile ? '8px 12px' : '10px 20px',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95))',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
-                gap: '12px',
-                backdropFilter: 'blur(16px)',
+                gap: '8px',
+                backdropFilter: 'blur(20px)',
                 zIndex: 10
               }}
             >
-              {/* System Title & Live Meta */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Title & Live Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div 
                   style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
                     background: activeSatellite.id === 'asset_inventory' 
                       ? 'linear-gradient(135deg, #f97316, #ea580c)'
                       : 'linear-gradient(135deg, #0284c7, #0369a1)',
@@ -792,106 +371,80 @@ export const WorkModeShell: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#ffffff',
-                    boxShadow: '0 3px 12px rgba(0, 0, 0, 0.25)'
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)'
                   }}
                 >
-                  {activeSatellite.id === 'asset_inventory' ? <Laptop size={20} /> : <Server size={20} />}
+                  {activeSatellite.id === 'asset_inventory' ? <Laptop size={17} /> : <Server size={17} />}
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                    <h2 style={{ fontSize: '14.5px', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
                       {activeSatellite.name}
                     </h2>
                     
-                    {/* Live Health Badge */}
                     <span 
                       style={{
                         background: activeSatellite.isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
                         color: activeSatellite.isOnline ? '#34d399' : '#fbbf24',
                         border: `1px solid ${activeSatellite.isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-                        padding: '1px 8px',
-                        borderRadius: '16px',
-                        fontSize: '11px',
+                        padding: '1px 7px',
+                        borderRadius: '999px',
+                        fontSize: '10.5px',
                         fontWeight: 700,
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px'
                       }}
                     >
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: activeSatellite.isOnline ? '#10b981' : '#f59e0b' }} />
-                      {activeSatellite.isOnline ? 'خادم متصل ونشط' : 'بانتظار الاستجابة'}
-                    </span>
-
-                    {/* Network URL Tag */}
-                    <span 
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        color: '#94a3b8',
-                        padding: '2px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontFamily: 'monospace',
-                        direction: 'ltr'
-                      }}
-                    >
-                      {activeComputedUrl}
+                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: activeSatellite.isOnline ? '#10b981' : '#f59e0b' }} />
+                      {activeSatellite.isOnline ? 'خادم نشط' : 'بانتظار الاستجابة'}
                     </span>
                   </div>
-
-                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {activeSatellite.description}
-                  </p>
                 </div>
               </div>
 
               {/* Action Toolbar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isPrivilegedAdmin && (
-                  <button
-                    onClick={() => {
-                      setIsAddMode(false);
-                      setEditingSatellite(activeSatellite);
-                      setIsConfigModalOpen(true);
-                    }}
-                    title="تعديل عنوان السيرفر والمنفذ والصلاحيات"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 12px',
-                      borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#cbd5e1',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Settings size={14} />
-                    <span>ضبط المنظومة</span>
-                  </button>
-                )}
-
                 <button
-                  onClick={handleRefreshIframe}
-                  title="إعادة تحميل واجهة المنظومة"
+                  type="button"
+                  onClick={() => setActiveAppId('OPERATIONS')}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 12px',
+                    gap: '5px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(2, 132, 199, 0.18)',
+                    border: '1px solid rgba(2, 132, 199, 0.35)',
+                    color: '#38bdf8',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <ArrowRight size={13} />
+                  <span>العودة لحوض الطلبات</span>
+                </button>
+
+                <button
+                  onClick={handleRefreshIframe}
+                  title="إعادة تحميل المنظومة"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '6px 10px',
                     borderRadius: '8px',
                     background: 'rgba(255, 255, 255, 0.05)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#e2e8f0',
-                    fontSize: '12.5px',
+                    fontSize: '11.5px',
                     fontWeight: 600,
                     cursor: 'pointer'
                   }}
                 >
-                  <RefreshCw size={13} />
+                  <RefreshCw size={13} className={isIframeLoading ? 'animate-spin' : ''} />
                   <span>تحديث</span>
                 </button>
 
@@ -902,29 +455,27 @@ export const WorkModeShell: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 14px',
+                    gap: '5px',
+                    padding: '6px 12px',
                     borderRadius: '8px',
                     background: 'linear-gradient(135deg, #0d9488, #0f766e)',
                     border: 'none',
                     color: '#ffffff',
-                    fontSize: '12.5px',
+                    fontSize: '11.5px',
                     fontWeight: 700,
                     textDecoration: 'none',
                     boxShadow: '0 2px 8px rgba(13, 148, 136, 0.25)',
                     cursor: 'pointer'
                   }}
                 >
-                  <ExternalLink size={13} />
-                  <span>فتح مستقل</span>
+                  <ExternalLink size={12} />
+                  <span>نافذة مستقلة</span>
                 </a>
               </div>
             </div>
 
-            {/* Embedded Viewport / Diagnostic Guard Container */}
-            <div style={{ flex: 1, position: 'relative', width: '100%', height: 'calc(100% - 63px)', overflow: 'hidden' }}>
-              
-              {/* Spinner while loading */}
+            {/* Micro-Frontend Iframe */}
+            <div style={{ flex: 1, position: 'relative', width: '100%', height: 'calc(100% - 50px)', overflow: 'hidden' }}>
               {isIframeLoading && (
                 <div 
                   style={{
@@ -940,17 +491,16 @@ export const WorkModeShell: React.FC = () => {
                     color: '#94a3b8'
                   }}
                 >
-                  <Loader2 size={34} color="#fb923c" className="animate-spin" />
-                  <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f8fafc' }}>
+                  <RefreshCw size={30} color="#f97316" className="animate-spin" />
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc' }}>
                     جاري تحميل {activeSatellite.name}...
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', direction: 'ltr' }}>
+                  <div style={{ fontSize: '11.5px', color: '#64748b', direction: 'ltr' }}>
                     {activeComputedUrl}
                   </div>
                 </div>
               )}
 
-              {/* The Sandbox Embedded Micro-Frontend */}
               <iframe
                 key={iframeKey}
                 ref={iframeRef}
@@ -965,7 +515,7 @@ export const WorkModeShell: React.FC = () => {
                   border: 'none',
                   background: '#ffffff',
                   opacity: isIframeLoading ? 0 : 1,
-                  transition: 'opacity 0.25s ease'
+                  transition: 'opacity 0.2s ease'
                 }}
               />
             </div>
@@ -975,16 +525,643 @@ export const WorkModeShell: React.FC = () => {
       </main>
 
       {/* =========================================================================
-          3. SATELLITE CONFIGURATION & COLLEAGUE SYSTEM REGISTRATION MODAL
+          2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
+          ========================================================================= */}
+      <nav
+        style={{
+          position: 'fixed',
+          bottom: isMobile ? 0 : '18px',
+          left: isMobile ? 0 : '50%',
+          right: isMobile ? 0 : 'auto',
+          transform: isMobile ? 'none' : 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isMobile ? 'space-around' : 'center',
+          gap: isMobile ? '4px' : '10px',
+          padding: isMobile ? '6px 10px calc(6px + env(safe-area-inset-bottom, 0px))' : '8px 18px',
+          background: 'rgba(11, 20, 31, 0.88)',
+          backdropFilter: 'blur(32px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+          borderRadius: isMobile ? '0' : '26px',
+          borderTop: isMobile ? '1px solid rgba(255, 255, 255, 0.12)' : 'none',
+          border: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.14)',
+          boxShadow: '0 12px 35px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+          zIndex: 9000,
+          direction: 'rtl',
+          maxWidth: isMobile ? '100%' : 'fit-content'
+        }}
+      >
+        {/* ── 🚀 MASTER LAUNCHER BUTTON (زر القائمة السفلي الذكي للمنظومات والطلبات) ── */}
+        <button
+          type="button"
+          onClick={() => setIsLauncherOpen(prev => !prev)}
+          title="قائمة المنظومات ومراكز العمل (انقر للتبديل)"
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '4px' : '8px',
+            padding: isMobile ? '6px 12px' : '7px 16px',
+            borderRadius: '16px',
+            border: isLauncherOpen ? '1.5px solid #f36c21' : '1px solid rgba(243, 108, 33, 0.35)',
+            background: isLauncherOpen 
+              ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' 
+              : 'rgba(243, 108, 33, 0.15)',
+            color: isLauncherOpen ? '#ffffff' : '#fb923c',
+            cursor: 'pointer',
+            fontWeight: 800,
+            fontSize: isMobile ? '11px' : '12.5px',
+            boxShadow: isLauncherOpen ? '0 4px 16px rgba(243, 108, 33, 0.45)' : 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            flexShrink: 0
+          }}
+        >
+          <div style={{
+            width: '20px',
+            height: '20px',
+            borderRadius: '6px',
+            background: isLauncherOpen ? 'rgba(255,255,255,0.2)' : '#f36c21',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ffffff'
+          }}>
+            <Layers size={12} strokeWidth={2.5} />
+          </div>
+          <span>المنظومات والطلبات</span>
+          <ChevronUp size={14} style={{ transform: isLauncherOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+
+        {/* ── حالة 1: أزرار حوض الطلبات والتقارير (تظهر فقط عند عرض مركز الطلبات) ── */}
+        <AnimatePresence mode="wait">
+          {activeAppId === 'OPERATIONS' && (
+            <motion.div
+              key="operations-buttons"
+              initial={{ opacity: 0, scale: 0.92, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 4 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}
+            >
+              {/* زر 1: مركز الطلبات والعمليات (مع عداد حي) */}
+              <button
+                type="button"
+                onClick={() => handleSwitchTab('POOL')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isMobile ? '6px 10px' : '7px 14px',
+                  borderRadius: '14px',
+                  border: opsActiveTab === 'POOL' ? '1.5px solid #0284c7' : '1px solid rgba(255, 255, 255, 0.08)',
+                  background: opsActiveTab === 'POOL' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(255, 255, 255, 0.04)',
+                  color: opsActiveTab === 'POOL' ? '#ffffff' : '#cbd5e1',
+                  cursor: 'pointer',
+                  fontWeight: opsActiveTab === 'POOL' ? 800 : 600,
+                  fontSize: isMobile ? '11px' : '12px',
+                  boxShadow: opsActiveTab === 'POOL' ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Inbox size={15} />
+                <span>مركز الطلبات</span>
+                {liveStats.openCount > 0 && (
+                  <span style={{
+                    background: opsActiveTab === 'POOL' ? '#ffffff' : '#0284c7',
+                    color: opsActiveTab === 'POOL' ? '#0369a1' : '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    padding: '1px 6px',
+                    borderRadius: '999px'
+                  }}>
+                    {liveStats.openCount}
+                  </span>
+                )}
+              </button>
+
+              {/* زر 2: خصائص واستقبال الطلبات */}
+              <button
+                type="button"
+                onClick={() => handleSwitchTab('FLOW_SETTINGS')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isMobile ? '6px 10px' : '7px 14px',
+                  borderRadius: '14px',
+                  border: opsActiveTab === 'FLOW_SETTINGS' ? '1.5px solid #d97706' : '1px solid rgba(255, 255, 255, 0.08)',
+                  background: opsActiveTab === 'FLOW_SETTINGS' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(255, 255, 255, 0.04)',
+                  color: opsActiveTab === 'FLOW_SETTINGS' ? '#ffffff' : '#cbd5e1',
+                  cursor: 'pointer',
+                  fontWeight: opsActiveTab === 'FLOW_SETTINGS' ? 800 : 600,
+                  fontSize: isMobile ? '11px' : '12px',
+                  boxShadow: opsActiveTab === 'FLOW_SETTINGS' ? '0 4px 14px rgba(217, 119, 6, 0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Sliders size={15} />
+                <span>خصائص واستقبال الطلبات</span>
+              </button>
+
+              {/* زر 3: التحليلات والمقارنة والحوكمة */}
+              <button
+                type="button"
+                onClick={() => handleSwitchTab('ANALYTICS')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isMobile ? '6px 10px' : '7px 14px',
+                  borderRadius: '14px',
+                  border: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '1.5px solid #135d79' : '1px solid rgba(255, 255, 255, 0.08)',
+                  background: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' : 'rgba(255, 255, 255, 0.04)',
+                  color: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '#ffffff' : '#cbd5e1',
+                  cursor: 'pointer',
+                  fontWeight: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 800 : 600,
+                  fontSize: isMobile ? '11px' : '12px',
+                  boxShadow: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '0 4px 14px rgba(19, 93, 121, 0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <BarChart3 size={15} />
+                <span>التحليلات والتقارير</span>
+              </button>
+            </motion.div>
+          )}
+
+          {/* ── حالة 2: كبسولة المنظومة المصاحبة (تختفي أزرار التذاكر تماماً وتظهر هذه فقط) ── */}
+          {activeAppId !== 'OPERATIONS' && activeSatellite && (
+            <motion.div
+              key="satellite-controls"
+              initial={{ opacity: 0, scale: 0.92, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 4 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}
+            >
+              {/* شارة المنظومة الحالية */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                color: '#e2e8f0'
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: activeSatellite.isOnline ? '#10b981' : '#f59e0b' }} />
+                <span>{activeSatellite.name}</span>
+              </div>
+
+              {/* زر سريع للرجوع لمركز الطلبات */}
+              <button
+                type="button"
+                onClick={() => setActiveAppId('OPERATIONS')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 12px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)'
+                }}
+              >
+                <ArrowRight size={13} />
+                <span>العودة لمركز الطلبات</span>
+              </button>
+
+              {/* زر التحديث السريع */}
+              <button
+                type="button"
+                onClick={handleRefreshIframe}
+                title="تحديث نافذة المنظومة"
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#f8fafc',
+                  cursor: 'pointer'
+                }}
+              >
+                <RefreshCw size={13} className={isIframeLoading ? 'animate-spin' : ''} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* =========================================================================
+          3. KINETIC LAUNCHER DRAWER & APP SWITCHER (قائمة المنظومات وحوض التذاكر)
+          ========================================================================= */}
+      <AnimatePresence>
+        {isLauncherOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99998,
+              background: 'rgba(7, 11, 20, 0.72)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              display: 'flex',
+              alignItems: isMobile ? 'flex-end' : 'center',
+              justifyContent: 'center',
+              padding: isMobile ? 0 : '20px'
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsLauncherOpen(false);
+            }}
+          >
+            <motion.div
+              initial={isMobile ? { y: '100%' } : { scale: 0.94, opacity: 0, y: 15 }}
+              animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1, y: 0 }}
+              exit={isMobile ? { y: '100%' } : { scale: 0.94, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+              style={{
+                width: '100%',
+                maxWidth: isMobile ? '100%' : '680px',
+                maxHeight: isMobile ? '86vh' : '82vh',
+                background: 'rgba(15, 23, 42, 0.96)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderBottom: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: isMobile ? '24px 24px 0 0' : '28px',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Drawer Top Drag Handle (Mobile) */}
+              {isMobile && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+                  <div style={{ width: '42px', height: '4px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                </div>
+              )}
+
+              {/* Launcher Header */}
+              <div style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'rgba(255, 255, 255, 0.02)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 16px rgba(243, 108, 33, 0.35)'
+                  }}>
+                    <Layers size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800, color: '#f8fafc' }}>
+                      بوابة العمليات والمنظومات الموحدة
+                    </h3>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                      التبديل الفوري بين مركز الطلبات والمنظومات المصاحبة
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsLauncherOpen(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Launcher Body Content */}
+              <div style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* ── SECTION 1: FLAGSHIP CORE (مركز الطلبات والعمليات المؤسسية) ── */}
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Compass size={14} color="#38bdf8" />
+                    <span>المنظومة المركزية الرئيسية</span>
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      setActiveAppId('OPERATIONS');
+                      setIsLauncherOpen(false);
+                    }}
+                    style={{
+                      position: 'relative',
+                      padding: '18px 20px',
+                      borderRadius: '18px',
+                      background: activeAppId === 'OPERATIONS'
+                        ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.22) 0%, rgba(3, 105, 161, 0.12) 100%)'
+                        : 'rgba(255, 255, 255, 0.03)',
+                      border: activeAppId === 'OPERATIONS'
+                        ? '2px solid #0284c7'
+                        : '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '16px',
+                      boxShadow: activeAppId === 'OPERATIONS' ? '0 8px 24px rgba(2, 132, 199, 0.25)' : 'none',
+                      transition: 'all 0.22s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff',
+                        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.35)',
+                        flexShrink: 0
+                      }}>
+                        <Inbox size={22} />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
+                            مركز الطلبات والعمليات المؤسسية
+                          </h4>
+                          <span style={{
+                            fontSize: '10.5px',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: '#0284c7',
+                            color: '#ffffff'
+                          }}>
+                            النظام المعتمد
+                          </span>
+                        </div>
+                        <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#94a3b8' }}>
+                          حوض الطلبات المركزي، مسارات التوجيه، وإدارة التدفقات التشغيلية والحوكمة
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {liveStats.openCount > 0 && (
+                        <div style={{ textAlign: 'center', padding: '0 10px' }}>
+                          <div style={{ fontSize: '16px', fontWeight: 900, color: '#38bdf8' }}>{liveStats.openCount}</div>
+                          <div style={{ fontSize: '10px', color: '#64748b' }}>طلب وارد</div>
+                        </div>
+                      )}
+                      <div style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: activeAppId === 'OPERATIONS' ? '#0284c7' : 'rgba(255,255,255,0.06)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {activeAppId === 'OPERATIONS' ? <CheckCircle2 size={16} /> : <ArrowLeft size={14} />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── SECTION 2: SATELLITE SYSTEMS (المنظومات المصاحبة والمساندة) ── */}
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Cpu size={14} color="#f97316" />
+                      <span>المنظومات المصاحبة والمساندة ({satellites.length})</span>
+                    </div>
+
+                    {isPrivilegedAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddMode(true);
+                          setEditingSatellite(null);
+                          setNewSysForm({
+                            id: '',
+                            name: '',
+                            targetUrl: '',
+                            category: 'COLLEAGUE_SERVICE',
+                            description: ''
+                          });
+                          setIsConfigModalOpen(true);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#f97316',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Plus size={13} />
+                        <span>ربط منظومة جديدة</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                    {satellites.map(sat => {
+                      const isCurrent = activeAppId === sat.id;
+                      return (
+                        <div
+                          key={sat.id}
+                          onClick={() => {
+                            setActiveAppId(sat.id);
+                            setIsIframeLoading(true);
+                            setIsLauncherOpen(false);
+                          }}
+                          style={{
+                            padding: '16px',
+                            borderRadius: '16px',
+                            background: isCurrent 
+                              ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%)' 
+                              : 'rgba(255, 255, 255, 0.03)',
+                            border: isCurrent ? '1.5px solid #f97316' : '1px solid rgba(255, 255, 255, 0.08)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: isCurrent ? '0 6px 20px rgba(249, 115, 22, 0.2)' : 'none'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                background: sat.id === 'asset_inventory' 
+                                  ? 'linear-gradient(135deg, #f97316, #ea580c)' 
+                                  : 'linear-gradient(135deg, #0284c7, #0369a1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff'
+                              }}>
+                                {sat.id === 'asset_inventory' ? <Laptop size={18} /> : <Server size={18} />}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                                  {sat.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                                  {sat.id === 'asset_inventory' ? 'بوابة مدمجة عبر البروكسي الموحد' : sat.category}
+                                </div>
+                              </div>
+                            </div>
+
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: '6px',
+                              background: sat.isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: sat.isOnline ? '#34d399' : '#fbbf24',
+                              border: `1px solid ${sat.isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                            }}>
+                              {sat.isOnline ? 'نشط' : 'استجابة'}
+                            </span>
+                          </div>
+
+                          <p style={{ margin: 0, fontSize: '11.5px', color: '#64748b', lineHeight: '1.4' }}>
+                            {sat.description}
+                          </p>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                            {isPrivilegedAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingSatellite(sat);
+                                  setIsAddMode(false);
+                                  setIsConfigModalOpen(true);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#94a3b8',
+                                  cursor: 'pointer',
+                                  padding: '4px'
+                                }}
+                              >
+                                <Settings size={14} />
+                              </button>
+                            )}
+                            <div style={{
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              color: isCurrent ? '#f97316' : '#38bdf8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <span>{isCurrent ? 'معروض حالياً' : 'تشغيل المنظومة'}</span>
+                              <ArrowLeft size={13} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Launcher Footer */}
+              <div style={{
+                padding: '14px 24px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '11.5px',
+                color: '#64748b'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={13} color="#f36c21" />
+                  <span>NEXUS Unified Operations Architecture • 2026</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/hub')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Home size={13} />
+                  <span>الرجوع للبوابة العامة</span>
+                </button>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* =========================================================================
+          4. SATELLITE CONFIGURATION & REGISTRATION MODAL
           ========================================================================= */}
       {isConfigModalOpen && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(8px)',
+            zIndex: 99999,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -996,14 +1173,13 @@ export const WorkModeShell: React.FC = () => {
         >
           <div
             style={{
-              width: '540px',
+              width: '520px',
               maxWidth: '96vw',
               background: '#0f172a',
               border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '18px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
-              overflow: 'hidden',
-              animation: 'scaleUp 0.2s ease-out'
+              borderRadius: '20px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
+              overflow: 'hidden'
             }}
           >
             {/* Modal Header */}
@@ -1018,8 +1194,8 @@ export const WorkModeShell: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Server size={20} color="#38bdf8" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#f8fafc' }}>
+                <Server size={18} color="#38bdf8" />
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
                   {isAddMode ? 'ربط وتسجيل منظومة مساندة جديدة (زميل)' : `ضبط إعدادات ${editingSatellite?.name}`}
                 </h3>
               </div>
@@ -1033,11 +1209,11 @@ export const WorkModeShell: React.FC = () => {
                   padding: '4px'
                 }}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* Modal Body / Form */}
+            {/* Modal Form */}
             <form onSubmit={handleSaveSatellite} style={{ padding: '20px 22px' }}>
               {modalFeedback && (
                 <div
@@ -1045,11 +1221,11 @@ export const WorkModeShell: React.FC = () => {
                     padding: '10px 14px',
                     borderRadius: '8px',
                     marginBottom: '16px',
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     fontWeight: 600,
                     background: modalFeedback.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: modalFeedback.type === 'success' ? '#34d399' : '#f87171',
-                    border: `1px solid ${modalFeedback.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                    color: modalFeedback.type === 'success' ? '#34d399' : '#fca5a5',
+                    border: `1px solid ${modalFeedback.type === 'success' ? '#10b981' : '#ef4444'}`
                   }}
                 >
                   {modalFeedback.message}
@@ -1060,13 +1236,13 @@ export const WorkModeShell: React.FC = () => {
                 {isAddMode && (
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                      المعرف البرمجي الفريد (System ID - بالإنجليزية)
+                      المعرّف التقني للمنظومة (ID)
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: hrms_system, archive_system"
+                      placeholder="e.g. oracle_hr أو sap_finance"
                       value={newSysForm.id}
-                      onChange={(e) => setNewSysForm({ ...newSysForm, id: e.target.value })}
+                      onChange={(e) => setNewSysForm({ ...newSysForm, id: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                       required
                       style={{
                         width: '100%',
@@ -1076,8 +1252,8 @@ export const WorkModeShell: React.FC = () => {
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         color: '#f8fafc',
                         fontSize: '13px',
-                        direction: 'ltr',
-                        outline: 'none'
+                        outline: 'none',
+                        fontFamily: 'monospace'
                       }}
                     />
                   </div>
@@ -1085,11 +1261,11 @@ export const WorkModeShell: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                    اسم المنظومة المعروض في الشريط
+                    اسم المنظومة المعروض
                   </label>
                   <input
                     type="text"
-                    placeholder="مثال: منظومة إدارة الكوادر والموارد البشرية"
+                    placeholder="مثال: منظومة الشؤون الإدارية أو المشتريات"
                     value={isAddMode ? newSysForm.name : (editingSatellite?.name || '')}
                     onChange={(e) => {
                       if (isAddMode) setNewSysForm({ ...newSysForm, name: e.target.value });
@@ -1112,7 +1288,7 @@ export const WorkModeShell: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1' }}>
-                      عنوان السيرفر والمنفذ (Target URL أو IP جهاز الزميل)
+                      عنوان السيرفر (Target URL أو IP جهاز الزميل)
                     </label>
                     <button
                       type="button"
@@ -1122,7 +1298,7 @@ export const WorkModeShell: React.FC = () => {
                         background: 'transparent',
                         border: 'none',
                         color: '#38bdf8',
-                        fontSize: '11.5px',
+                        fontSize: '11px',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -1130,13 +1306,13 @@ export const WorkModeShell: React.FC = () => {
                         gap: '4px'
                       }}
                     >
-                      {pingState.isPinging ? <Loader2 size={12} className="animate-spin" /> : <Activity size={12} />}
-                      <span>اختبار الاتصال المباشر (Ping)</span>
+                      <Activity size={12} />
+                      <span>{pingState.isPinging ? 'جاري الفحص...' : 'فحص الاتصال (Ping)'}</span>
                     </button>
                   </div>
                   <input
                     type="text"
-                    placeholder="مثال: http://192.168.1.85:4000 أو http://localhost:3000"
+                    placeholder="http://192.168.1.50:4000 أو http://localhost:3000"
                     value={isAddMode ? newSysForm.targetUrl : (editingSatellite?.targetUrl || '')}
                     onChange={(e) => {
                       if (isAddMode) setNewSysForm({ ...newSysForm, targetUrl: e.target.value });
@@ -1164,13 +1340,10 @@ export const WorkModeShell: React.FC = () => {
                       }}
                     >
                       {pingState.result.isOnline 
-                        ? `✓ الجهاز مستجيب ومتصل بنجاح (${pingState.result.latencyMs}ms)`
+                        ? `✓ الجهاز متصل ومستجيب (${pingState.result.latencyMs}ms)`
                         : `✗ تعذر الوصول للجهاز: ${pingState.result.error || 'Timeout'}`}
                     </div>
                   )}
-                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                    * إذا كانت المنظومة على جهاز زميل، أدخل عنوان الـ IP والمنفذ الخاص بجهازه في الشبكة.
-                  </div>
                 </div>
 
                 <div>
@@ -1179,7 +1352,7 @@ export const WorkModeShell: React.FC = () => {
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="وصف طبيعة المنظومة واختصاصها..."
+                    placeholder="وصف اختصاص المنظومة وطبيعة عملها..."
                     value={isAddMode ? newSysForm.description : (editingSatellite?.description || '')}
                     onChange={(e) => {
                       if (isAddMode) setNewSysForm({ ...newSysForm, description: e.target.value });
@@ -1206,8 +1379,8 @@ export const WorkModeShell: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginTop: '22px',
-                  paddingTop: '16px',
+                  marginTop: '20px',
+                  paddingTop: '14px',
                   borderTop: '1px solid rgba(255, 255, 255, 0.08)'
                 }}
               >
@@ -1218,18 +1391,18 @@ export const WorkModeShell: React.FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
+                      gap: '5px',
+                      padding: '7px 12px',
                       borderRadius: '8px',
                       background: 'rgba(239, 68, 68, 0.15)',
                       border: '1px solid rgba(239, 68, 68, 0.3)',
                       color: '#f87171',
-                      fontSize: '12.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer'
                     }}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                     <span>حذف</span>
                   </button>
                 ) : <div />}
@@ -1239,12 +1412,12 @@ export const WorkModeShell: React.FC = () => {
                     type="button"
                     onClick={() => setIsConfigModalOpen(false)}
                     style={{
-                      padding: '8px 16px',
+                      padding: '7px 14px',
                       borderRadius: '8px',
                       background: 'rgba(255, 255, 255, 0.06)',
                       border: 'none',
                       color: '#cbd5e1',
-                      fontSize: '12.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer'
                     }}
@@ -1255,18 +1428,18 @@ export const WorkModeShell: React.FC = () => {
                   <button
                     type="submit"
                     style={{
-                      padding: '8px 20px',
+                      padding: '7px 18px',
                       borderRadius: '8px',
                       background: 'linear-gradient(135deg, #0d9488, #0f766e)',
                       border: 'none',
                       color: '#ffffff',
-                      fontSize: '12.5px',
+                      fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      boxShadow: '0 2px 10px rgba(13, 148, 136, 0.3)'
+                      boxShadow: '0 2px 8px rgba(13, 148, 136, 0.3)'
                     }}
                   >
-                    {isAddMode ? 'اعتماد وتسجيل المنظومة' : 'حفظ التعديلات'}
+                    {isAddMode ? 'اعتماد وتسجيل' : 'حفظ التعديلات'}
                   </button>
                 </div>
               </div>
@@ -1278,3 +1451,4 @@ export const WorkModeShell: React.FC = () => {
     </div>
   );
 };
+export default WorkModeShell;
