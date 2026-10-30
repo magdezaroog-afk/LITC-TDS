@@ -22,19 +22,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [neonColor, setNeonColorState] = useState('#00a3ff');
 
   useEffect(() => {
-    const savedMode = localStorage.getItem('litc_theme_mode') as 'dark' | 'light';
+    const savedMode = (localStorage.getItem('litc_theme_mode') || localStorage.getItem('litc_theme')) as 'dark' | 'light';
     const savedColor = localStorage.getItem('litc_neon_color');
     if (savedMode) setMode(savedMode);
     if (savedColor) setNeonColorState(savedColor);
   }, []);
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(mode);
+      document.documentElement.setAttribute('data-theme', mode);
+      document.documentElement.style.colorScheme = mode;
+      localStorage.setItem('litc_theme_mode', mode);
+      localStorage.setItem('litc_theme', mode);
+    }
+  }, [mode]);
+
   const toggleMode = () => {
-    setMode(prev => {
-      const newMode = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('litc_theme_mode', newMode);
-      // Optional: Update document body class or style here if needed globally
-      return newMode;
-    });
+    setMode(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const setNeonColor = (color: string) => {
@@ -49,8 +55,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     colors: {
       ...defaultTheme.colors,
       primary: neonColor,
-      background: mode === 'dark' ? '#0a0a0f' : '#f0f0f5',
-      text: mode === 'dark' ? '#ffffff' : '#111111'
+      background: mode === 'dark' ? '#0c0e12' : '#f6f8fb',
+      text: mode === 'dark' ? '#f8fafc' : '#0f172a'
     }
   };
 

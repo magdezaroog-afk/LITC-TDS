@@ -1298,10 +1298,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
       overflowX: 'hidden',
       maxWidth: '100%',
       background: isDark
-        ? 'radial-gradient(ellipse at 80% 0%, #172554 0%, #0b1120 70%, #050811 100%)'
-        : 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
-      color: isDark ? '#ffffff' : '#0f172a',
-      transition: 'background 0.3s ease, color 0.3s ease',
+        ? 'radial-gradient(circle at 50% 0%, #161920 0%, #0c0e12 60%, #07080a 100%)'
+        : 'radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f5f7fa 50%, #eaedf3 100%)',
+      color: isDark ? '#f8fafc' : '#0f172a',
+      transition: 'background 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s ease',
     }}>
       {/* Toast Notification */}
       <AnimatePresence>
@@ -1470,10 +1470,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
             position: 'sticky',
             top: 0,
             zIndex: 100,
-            background: isDark ? 'rgba(11, 17, 32, 0.94)' : 'rgba(248, 250, 252, 0.96)',
+            background: isDark ? 'rgba(14, 17, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.9)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
             padding: '8px 4px',
             marginBottom: '12px',
             width: '100%',
@@ -1639,19 +1639,19 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                       background: isSelected
                         ? (isDark
-                            ? `linear-gradient(135deg, ${q.accentColor}26 0%, rgba(15, 23, 42, 0.95) 100%)`
+                            ? `linear-gradient(135deg, ${q.accentColor}26 0%, rgba(20, 24, 32, 0.95) 100%)`
                             : `linear-gradient(135deg, #ffffff 0%, ${q.accentColor}12 100%)`)
-                        : (isDark ? 'rgba(15, 23, 42, 0.72)' : '#ffffff'),
+                        : (isDark ? 'rgba(19, 23, 30, 0.72)' : 'rgba(255, 255, 255, 0.88)'),
                       backdropFilter: 'blur(20px)',
                       WebkitBackdropFilter: 'blur(20px)',
                       border: isSelected
                         ? `1.5px solid ${q.accentColor}`
-                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
                       boxShadow: isSelected
                         ? (isDark
                             ? `0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px ${q.accentColor}25`
                             : `0 8px 20px -4px rgba(0, 0, 0, 0.08), 0 0 12px ${q.accentColor}20`)
-                        : (isDark ? '0 4px 14px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.03)'),
+                        : (isDark ? '0 4px 14px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15, 23, 42, 0.04)'),
                       transform: isSelected ? 'translateY(-1.5px)' : 'none',
                     }}
                     onMouseEnter={(e) => {
@@ -1768,13 +1768,13 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
           <div
             className="unified-operations-canvas-card"
             style={{
-              background: isDark ? 'rgba(15, 23, 42, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+              background: isDark ? 'rgba(18, 21, 28, 0.78)' : 'rgba(255, 255, 255, 0.94)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(226, 232, 240, 0.85)',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.07)',
               borderRadius: isMobile ? '16px' : '20px',
               padding: isMobile ? '14px 10px' : '24px 28px',
-              boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.4)' : '0 4px 24px -2px rgba(15, 23, 42, 0.05)',
+              boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.45)' : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03)',
               minHeight: isMobile ? 'auto' : '780px',
               boxSizing: 'border-box',
               display: 'flex',
@@ -3630,7 +3630,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                 gap: '6px',
                 padding: '8px 24px',
                 borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #f1f5f9',
-                background: isDark ? '#0b1120' : '#f8fafc'
+                background: isDark ? '#0f1218' : '#f8fafc'
               }}>
                 <button
                   type="button"
@@ -4275,7 +4275,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         <div style={{
                           padding: '14px 16px',
                           borderRadius: '12px',
-                          background: isDark ? '#0b1120' : '#f8fafc',
+                          background: isDark ? '#0f1218' : '#f8fafc',
                           border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                           lineHeight: 1.7,
                           color: isDark ? '#cbd5e1' : '#334155',
@@ -4372,7 +4372,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                   style={{
                                     padding: '9px 12px',
                                     borderRadius: '10px',
-                                    background: isDark ? '#0b1120' : '#f8fafc',
+                                    background: isDark ? '#0f1218' : '#f8fafc',
                                     border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #f1f5f9',
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -4472,7 +4472,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                       justifyContent: 'space-between',
                                       padding: '9px 12px',
                                       borderRadius: '10px',
-                                      background: isDark ? '#0b1120' : '#f8fafc',
+                                      background: isDark ? '#0f1218' : '#f8fafc',
                                       border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                                       gap: '12px'
                                     }}
@@ -4600,7 +4600,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       {Array.isArray(inspectTicketDetails?.subTickets) && inspectTicketDetails.subTickets.length > 0 ? (
                         <>
                           <div style={{
-                            background: isDark ? '#0b1120' : '#f8fafc',
+                            background: isDark ? '#0f1218' : '#f8fafc',
                             borderRadius: '10px',
                             padding: '8px 12px',
                             display: 'flex',
@@ -4627,7 +4627,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                               <div key={st.id} style={{
                                 padding: '10px 12px',
                                 borderRadius: '10px',
-                                background: isDark ? '#0b1120' : '#f8fafc',
+                                background: isDark ? '#0f1218' : '#f8fafc',
                                 border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -4712,7 +4712,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
               <div style={{
                 padding: isMobile ? '12px 14px' : '14px 24px',
                 borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
-                background: isDark ? '#0b1120' : '#f8fafc',
+                background: isDark ? '#0f1218' : '#f8fafc',
                 display: 'flex',
                 gap: '10px',
                 alignItems: 'center',

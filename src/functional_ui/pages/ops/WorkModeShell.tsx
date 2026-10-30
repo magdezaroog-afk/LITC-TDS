@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../engine/auth/AuthContext';
+import { useThemeEngine } from '../../../engine/ui-loader/ThemeProvider';
 import { useMobileViewport } from '../../../mobile/hooks/useMobileViewport';
 import { OperationalQueueView } from './OperationalQueueView';
 import { 
@@ -46,6 +47,8 @@ export const WorkModeShell: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useMobileViewport(768);
+  const { mode } = useThemeEngine();
+  const isDark = mode === 'dark';
 
   // Active App ID: 'OPERATIONS' (حوض الطلبات والعمليات) or a Satellite System ID (e.g., 'asset_inventory')
   const [activeAppId, setActiveAppId] = useState<string>('OPERATIONS');
@@ -311,8 +314,10 @@ export const WorkModeShell: React.FC = () => {
         height: isMobile ? 'calc(100vh - 54px)' : 'calc(100vh - 68px)',
         width: '100%',
         maxWidth: '100%',
-        background: '#070b14',
-        color: '#f8fafc',
+        background: isDark
+          ? 'radial-gradient(circle at 50% 0%, #161920 0%, #0c0e12 60%, #07080a 100%)'
+          : 'radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f5f7fa 50%, #eaedf3 100%)',
+        color: isDark ? '#f8fafc' : '#0f172a',
         direction: 'rtl',
         fontFamily: "'Cairo', 'Tajawal', sans-serif",
         overflow: 'hidden',
@@ -338,7 +343,7 @@ export const WorkModeShell: React.FC = () => {
               display: 'flex', 
               flexDirection: 'column', 
               height: '100%', 
-              background: '#090e1a',
+              background: isDark ? '#0c0e13' : '#f8fafc',
               animation: 'fadeIn 0.2s ease-out'
             }}
           >
@@ -346,8 +351,10 @@ export const WorkModeShell: React.FC = () => {
             <div 
               style={{
                 padding: isMobile ? '8px 12px' : '10px 20px',
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95))',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(18, 22, 29, 0.98), rgba(24, 28, 38, 0.95))'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.95))',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -485,14 +492,14 @@ export const WorkModeShell: React.FC = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: '#070b14',
+                    background: isDark ? '#0c0e13' : '#ffffff',
                     zIndex: 5,
                     gap: '12px',
-                    color: '#94a3b8'
+                    color: isDark ? '#94a3b8' : '#64748b'
                   }}
                 >
                   <RefreshCw size={30} color="#f97316" className="animate-spin" />
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a' }}>
                     جاري تحميل {activeSatellite.name}...
                   </div>
                   <div style={{ fontSize: '11.5px', color: '#64748b', direction: 'ltr' }}>
@@ -539,13 +546,15 @@ export const WorkModeShell: React.FC = () => {
           justifyContent: isMobile ? 'space-around' : 'center',
           gap: isMobile ? '4px' : '10px',
           padding: isMobile ? '6px 10px calc(6px + env(safe-area-inset-bottom, 0px))' : '8px 18px',
-          background: 'rgba(11, 20, 31, 0.88)',
+          background: isDark ? 'rgba(14, 17, 23, 0.88)' : 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(32px) saturate(200%)',
           WebkitBackdropFilter: 'blur(32px) saturate(200%)',
           borderRadius: isMobile ? '0' : '26px',
-          borderTop: isMobile ? '1px solid rgba(255, 255, 255, 0.12)' : 'none',
-          border: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.14)',
-          boxShadow: '0 12px 35px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+          borderTop: isMobile ? (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)') : 'none',
+          border: isMobile ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'),
+          boxShadow: isDark 
+            ? '0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
+            : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
           maxWidth: isMobile ? '100%' : 'fit-content'
@@ -563,11 +572,11 @@ export const WorkModeShell: React.FC = () => {
             gap: isMobile ? '4px' : '8px',
             padding: isMobile ? '6px 12px' : '7px 16px',
             borderRadius: '16px',
-            border: isLauncherOpen ? '1.5px solid #f36c21' : '1px solid rgba(243, 108, 33, 0.35)',
+            border: isLauncherOpen ? '1.5px solid #f36c21' : (isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.3)'),
             background: isLauncherOpen 
               ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' 
-              : 'rgba(243, 108, 33, 0.15)',
-            color: isLauncherOpen ? '#ffffff' : '#fb923c',
+              : (isDark ? 'rgba(243, 108, 33, 0.15)' : 'rgba(243, 108, 33, 0.12)'),
+            color: isLauncherOpen ? '#ffffff' : (isDark ? '#fb923c' : '#ea580c'),
             cursor: 'pointer',
             fontWeight: 800,
             fontSize: isMobile ? '11px' : '12.5px',
@@ -613,9 +622,11 @@ export const WorkModeShell: React.FC = () => {
                   gap: '6px',
                   padding: isMobile ? '6px 10px' : '7px 14px',
                   borderRadius: '14px',
-                  border: opsActiveTab === 'POOL' ? '1.5px solid #0284c7' : '1px solid rgba(255, 255, 255, 0.08)',
-                  background: opsActiveTab === 'POOL' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(255, 255, 255, 0.04)',
-                  color: opsActiveTab === 'POOL' ? '#ffffff' : '#cbd5e1',
+                  border: opsActiveTab === 'POOL' ? '1.5px solid #0284c7' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                  background: opsActiveTab === 'POOL' 
+                    ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
+                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
+                  color: opsActiveTab === 'POOL' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
                   cursor: 'pointer',
                   fontWeight: opsActiveTab === 'POOL' ? 800 : 600,
                   fontSize: isMobile ? '11px' : '12px',
@@ -640,32 +651,7 @@ export const WorkModeShell: React.FC = () => {
                 )}
               </button>
 
-              {/* زر 2: خصائص واستقبال الطلبات */}
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('FLOW_SETTINGS')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: isMobile ? '6px 10px' : '7px 14px',
-                  borderRadius: '14px',
-                  border: opsActiveTab === 'FLOW_SETTINGS' ? '1.5px solid #d97706' : '1px solid rgba(255, 255, 255, 0.08)',
-                  background: opsActiveTab === 'FLOW_SETTINGS' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(255, 255, 255, 0.04)',
-                  color: opsActiveTab === 'FLOW_SETTINGS' ? '#ffffff' : '#cbd5e1',
-                  cursor: 'pointer',
-                  fontWeight: opsActiveTab === 'FLOW_SETTINGS' ? 800 : 600,
-                  fontSize: isMobile ? '11px' : '12px',
-                  boxShadow: opsActiveTab === 'FLOW_SETTINGS' ? '0 4px 14px rgba(217, 119, 6, 0.35)' : 'none',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <Sliders size={15} />
-                <span>خصائص واستقبال الطلبات</span>
-              </button>
-
-              {/* زر 3: التحليلات والمقارنة والحوكمة */}
+              {/* زر 2: التحليلات والمقارنة والحوكمة */}
               <button
                 type="button"
                 onClick={() => handleSwitchTab('ANALYTICS')}
@@ -675,9 +661,11 @@ export const WorkModeShell: React.FC = () => {
                   gap: '6px',
                   padding: isMobile ? '6px 10px' : '7px 14px',
                   borderRadius: '14px',
-                  border: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '1.5px solid #135d79' : '1px solid rgba(255, 255, 255, 0.08)',
-                  background: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' : 'rgba(255, 255, 255, 0.04)',
-                  color: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '#ffffff' : '#cbd5e1',
+                  border: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '1.5px solid #135d79' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                  background: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) 
+                    ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' 
+                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
+                  color: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
                   cursor: 'pointer',
                   fontWeight: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 800 : 600,
                   fontSize: isMobile ? '11px' : '12px',
@@ -770,7 +758,7 @@ export const WorkModeShell: React.FC = () => {
               position: 'fixed',
               inset: 0,
               zIndex: 99998,
-              background: 'rgba(7, 11, 20, 0.72)',
+              background: isDark ? 'rgba(7, 9, 12, 0.75)' : 'rgba(15, 23, 42, 0.35)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
               display: 'flex',
@@ -791,11 +779,13 @@ export const WorkModeShell: React.FC = () => {
                 width: '100%',
                 maxWidth: isMobile ? '100%' : '680px',
                 maxHeight: isMobile ? '86vh' : '82vh',
-                background: 'rgba(15, 23, 42, 0.96)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderBottom: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.12)',
+                background: isDark ? 'rgba(16, 19, 26, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
+                borderBottom: isMobile ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'),
                 borderRadius: isMobile ? '24px 24px 0 0' : '28px',
-                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                boxShadow: isDark 
+                  ? '0 25px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.15)' 
+                  : '0 25px 60px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'
@@ -804,18 +794,18 @@ export const WorkModeShell: React.FC = () => {
               {/* Drawer Top Drag Handle (Mobile) */}
               {isMobile && (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
-                  <div style={{ width: '42px', height: '4px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                  <div style={{ width: '42px', height: '4px', borderRadius: '999px', background: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(15, 23, 42, 0.15)' }} />
                 </div>
               )}
 
               {/* Launcher Header */}
               <div style={{
                 padding: '18px 24px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.06)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'rgba(255, 255, 255, 0.02)'
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.015)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
@@ -832,10 +822,10 @@ export const WorkModeShell: React.FC = () => {
                     <Layers size={20} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800, color: '#f8fafc' }}>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                       بوابة العمليات والمنظومات الموحدة
                     </h3>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }}>
                       التبديل الفوري بين مركز الطلبات والمنظومات المصاحبة
                     </span>
                   </div>
@@ -848,9 +838,9 @@ export const WorkModeShell: React.FC = () => {
                     width: '32px',
                     height: '32px',
                     borderRadius: '10px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#94a3b8',
+                    background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
+                    color: isDark ? '#94a3b8' : '#64748b',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -881,11 +871,11 @@ export const WorkModeShell: React.FC = () => {
                       padding: '18px 20px',
                       borderRadius: '18px',
                       background: activeAppId === 'OPERATIONS'
-                        ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.22) 0%, rgba(3, 105, 161, 0.12) 100%)'
-                        : 'rgba(255, 255, 255, 0.03)',
+                        ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.22) 0%, rgba(3, 105, 161, 0.12) 100%)' : 'linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(3, 105, 161, 0.05) 100%)')
+                        : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)'),
                       border: activeAppId === 'OPERATIONS'
                         ? '2px solid #0284c7'
-                        : '1px solid rgba(255, 255, 255, 0.08)',
+                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -913,7 +903,7 @@ export const WorkModeShell: React.FC = () => {
 
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                             مركز الطلبات والعمليات المؤسسية
                           </h4>
                           <span style={{
@@ -927,7 +917,7 @@ export const WorkModeShell: React.FC = () => {
                             النظام المعتمد
                           </span>
                         </div>
-                        <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#94a3b8' }}>
+                        <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: isDark ? '#94a3b8' : '#64748b' }}>
                           حوض الطلبات المركزي، مسارات التوجيه، وإدارة التدفقات التشغيلية والحوكمة
                         </p>
                       </div>
@@ -936,16 +926,16 @@ export const WorkModeShell: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {liveStats.openCount > 0 && (
                         <div style={{ textAlign: 'center', padding: '0 10px' }}>
-                          <div style={{ fontSize: '16px', fontWeight: 900, color: '#38bdf8' }}>{liveStats.openCount}</div>
-                          <div style={{ fontSize: '10px', color: '#64748b' }}>طلب وارد</div>
+                          <div style={{ fontSize: '16px', fontWeight: 900, color: isDark ? '#38bdf8' : '#0284c7' }}>{liveStats.openCount}</div>
+                          <div style={{ fontSize: '10px', color: isDark ? '#64748b' : '#94a3b8' }}>طلب وارد</div>
                         </div>
                       )}
                       <div style={{
                         width: '28px',
                         height: '28px',
                         borderRadius: '50%',
-                        background: activeAppId === 'OPERATIONS' ? '#0284c7' : 'rgba(255,255,255,0.06)',
-                        color: '#ffffff',
+                        background: activeAppId === 'OPERATIONS' ? '#0284c7' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15, 23, 42, 0.06)'),
+                        color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#64748b'),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -1012,9 +1002,9 @@ export const WorkModeShell: React.FC = () => {
                             padding: '16px',
                             borderRadius: '16px',
                             background: isCurrent 
-                              ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%)' 
-                              : 'rgba(255, 255, 255, 0.03)',
-                            border: isCurrent ? '1.5px solid #f97316' : '1px solid rgba(255, 255, 255, 0.08)',
+                              ? (isDark ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%)' : 'linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(234, 88, 12, 0.05) 100%)')
+                              : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)'),
+                            border: isCurrent ? '1.5px solid #f97316' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
@@ -1041,10 +1031,10 @@ export const WorkModeShell: React.FC = () => {
                                 {sat.id === 'asset_inventory' ? <Laptop size={18} /> : <Server size={18} />}
                               </div>
                               <div>
-                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                                   {sat.name}
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                                <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '2px' }}>
                                   {sat.id === 'asset_inventory' ? 'بوابة مدمجة عبر البروكسي الموحد' : sat.category}
                                 </div>
                               </div>
@@ -1111,13 +1101,13 @@ export const WorkModeShell: React.FC = () => {
               {/* Launcher Footer */}
               <div style={{
                 padding: '14px 24px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                background: 'rgba(255, 255, 255, 0.02)',
+                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.06)',
+                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.015)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 fontSize: '11.5px',
-                color: '#64748b'
+                color: isDark ? '#94a3b8' : '#64748b'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Sparkles size={13} color="#f36c21" />
@@ -1172,11 +1162,12 @@ export const WorkModeShell: React.FC = () => {
             style={{
               width: '520px',
               maxWidth: '96vw',
-              background: '#0f172a',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: isDark ? '#11141c' : '#ffffff',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.1)',
               borderRadius: '20px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
-              overflow: 'hidden'
+              boxShadow: isDark ? '0 25px 60px rgba(0, 0, 0, 0.65)' : '0 25px 60px rgba(15, 23, 42, 0.15)',
+              overflow: 'hidden',
+              color: isDark ? '#f8fafc' : '#0f172a'
             }}
           >
             {/* Modal Header */}
