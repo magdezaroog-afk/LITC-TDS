@@ -1,0 +1,11 @@
+# NEXUS TDS Global Autonomous Rules (.cursorrules)
+
+MANDATORY GLOBAL RULE: For ANY request involving UI, frontend, screens, mobile views, tabs, menus, buttons, styling, or layout changes—even if phrased casually or briefly by the user—you MUST automatically load and strictly execute all laws in `.agent/skills/adaptive-ui-genius/SKILL.md` (and `.agents/skills/adaptive-ui-genius/SKILL.md`), scout `INSPIRATION_LEDGER.md`, and pass `ANTI_SLOP_AUDITOR.md` silently before writing code, without waiting for the user to mention the skill name.
+
+Key Pillars:
+- Multi-School Synthesis (shadcn/ui + Kitchn UI + Aceternity UI + 21st.dev + Uiverse.io + Vaul + Spline).
+- Mobile Thumb-Zone (< 768px): Sticky Bottom Action Bar, swipeable Vaul drawers, and table-to-card auto-transformation.
+- Anti-Crowding Tab Engine: Single-line horizontal momentum strip with edge fading masks.
+- Kinetic Menus: Radial trigonometry (`Math.cos / Math.sin`) and Framer Motion `layoutId` morphing islands.
+- Strict Anti-Slop: Ban default AI purple/blue gradients and neon cyan/magenta glows.
+- 100% CSS Logical Properties and Arabic RTL (+15% font scale, 1.6-1.8 line-height).
