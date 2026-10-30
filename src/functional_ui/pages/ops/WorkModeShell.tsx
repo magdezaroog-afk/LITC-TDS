@@ -592,9 +592,9 @@ export const WorkModeShell: React.FC = () => {
           <ChevronUp size={14} style={{ transform: isLauncherOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
         </button>
 
-        {/* ── حالة 1: أزرار حوض الطلبات والتقارير (تظهر فقط عند عرض مركز الطلبات) ── */}
+        {/* ── حالة 1 & 2: التبديل الحركي بين أزرار الطلبات وكبسولة المنظومة المصاحبة ── */}
         <AnimatePresence mode="wait">
-          {activeAppId === 'OPERATIONS' && (
+          {activeAppId === 'OPERATIONS' ? (
             <motion.div
               key="operations-buttons"
               initial={{ opacity: 0, scale: 0.92, y: 4 }}
@@ -690,10 +690,7 @@ export const WorkModeShell: React.FC = () => {
                 <span>التحليلات والتقارير</span>
               </button>
             </motion.div>
-          )}
-
-          {/* ── حالة 2: كبسولة المنظومة المصاحبة (تختفي أزرار التذاكر تماماً وتظهر هذه فقط) ── */}
-          {activeAppId !== 'OPERATIONS' && activeSatellite && (
+          ) : activeSatellite ? (
             <motion.div
               key="satellite-controls"
               initial={{ opacity: 0, scale: 0.92, y: 4 }}
@@ -759,7 +756,8 @@ export const WorkModeShell: React.FC = () => {
                 <RefreshCw size={13} className={isIframeLoading ? 'animate-spin' : ''} />
               </button>
             </motion.div>
-          )}
+          ) : null}
+        </AnimatePresence>
         </AnimatePresence>
       </nav>
 
