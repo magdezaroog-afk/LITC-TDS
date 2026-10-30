@@ -61,14 +61,49 @@ export const AdminAPI = {
       credentials: 'include'
     }).then(handleResponse),
 
-  getSIEMLogs: () =>
-    fetch(`${BASE_URL}/admin/soc/siem-logs`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+  getSIEMLogs: (params?: { severity?: string; search?: string; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.severity) q.set('severity', params.severity);
+    if (params?.search) q.set('search', params.search);
+    if (params?.limit) q.set('limit', String(params.limit));
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return fetch(`${BASE_URL}/admin/soc/siem-logs${qs}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
+  },
 
-  getActiveSessions: () =>
-    fetch(`${BASE_URL}/admin/soc/sessions`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse),
+  getAuditLogs: (params?: { entity?: string; search?: string; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.entity) q.set('entity', params.entity);
+    if (params?.search) q.set('search', params.search);
+    if (params?.limit) q.set('limit', String(params.limit));
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return fetch(`${BASE_URL}/admin/soc/audit-logs${qs}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
+  },
 
-  kickUserSession: (userId: number | string) =>
+  getActiveSessions: (params?: { status?: string; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.search) q.set('search', params.search);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return fetch(`${BASE_URL}/admin/soc/sessions${qs}`, { headers: getHeaders(), credentials: 'include' }).then(handleResponse);
+  },
+
+  kickUserSession: (userId: number | string, reason?: string) =>
     fetch(`${BASE_URL}/admin/soc/sessions/${userId}/kick`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ reason })
+    }).then(handleResponse),
+
+  unfreezeUserSession: (userId: number | string) =>
+    fetch(`${BASE_URL}/admin/soc/sessions/${userId}/unfreeze`, {
+      method: 'POST',
+      headers: getHeaders(),
+      credentials: 'include'
+    }).then(handleResponse),
+
+  terminateUserSession: (userId: number | string) =>
+    fetch(`${BASE_URL}/admin/soc/sessions/${userId}/terminate-session`, {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include'

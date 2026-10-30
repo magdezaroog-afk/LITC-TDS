@@ -39,8 +39,11 @@ router.get('/admin/soc/waf-rules', authMiddleware, requireRole([1, 22]), (req, r
 router.post('/admin/soc/waf-rules', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.createWAFRule(req, res));
 router.delete('/admin/soc/waf-rules/:id', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.deleteWAFRule(req, res));
 router.get('/admin/soc/siem-logs', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.getSIEMLogs(req, res));
+router.get('/admin/soc/audit-logs', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.getAuditLogs(req, res));
 router.get('/admin/soc/sessions', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.getActiveSessions(req, res));
 router.post('/admin/soc/sessions/:userId/kick', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.kickUser(req, res));
+router.post('/admin/soc/sessions/:userId/unfreeze', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.unfreezeUser(req, res));
+router.post('/admin/soc/sessions/:userId/terminate-session', authMiddleware, requireRole([1, 22]), (req, res, next) => SecurityController.terminateSession(req, res));
 
 // =========================================================================
 // 1. Dynamic UI & Flow Engine (LEPC Phase 1)
