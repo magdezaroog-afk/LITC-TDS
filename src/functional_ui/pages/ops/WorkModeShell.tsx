@@ -758,7 +758,6 @@ export const WorkModeShell: React.FC = () => {
             </motion.div>
           ) : null}
         </AnimatePresence>
-        </AnimatePresence>
       </nav>
 
       {/* =========================================================================
