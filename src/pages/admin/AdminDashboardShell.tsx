@@ -21,7 +21,6 @@ import { RoleSimulatorTab } from './tabs/RoleSimulatorTab';
 import { InternalRequestsGovernanceTab } from './tabs/InternalRequestsGovernanceTab';
 import { IdentityHubTab } from './tabs/IdentityHubTab';
 import {
-  Grid,
   Layers,
   X,
   ChevronUp,
@@ -178,7 +177,6 @@ export const AdminDashboardShell: React.FC = () => {
 
   const [analyticsSubView, setAnalyticsSubView] = useState<'analytics' | 'governance'>('analytics');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const mobileTabsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { injectStyles(); }, []);
@@ -233,11 +231,9 @@ export const AdminDashboardShell: React.FC = () => {
 
   const handleTabSwitch = (tabId: typeof activeTab) => {
     if (tabId === activeTab) {
-      setIsMobileDrawerOpen(false);
       return;
     }
     setIsTransitioning(true);
-    setIsMobileDrawerOpen(false);
     setTimeout(() => {
       setActiveTab(tabId);
       setIsTransitioning(false);
@@ -472,40 +468,6 @@ export const AdminDashboardShell: React.FC = () => {
             boxSizing: 'border-box'
           }}
         >
-          {/* Quick Drawer Button (أقسام الإدارة) */}
-          <button
-            type="button"
-            onClick={() => setIsMobileDrawerOpen(prev => !prev)}
-            title="الأقسام الإدارية الشاملة"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
-              padding: '6px 10px',
-              borderRadius: '12px',
-              border: isMobileDrawerOpen 
-                ? '1.5px solid #f36c21' 
-                : (isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.3)'),
-              background: isMobileDrawerOpen 
-                ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' 
-                : (isDark ? 'rgba(243, 108, 33, 0.14)' : 'rgba(243, 108, 33, 0.1)'),
-              color: isMobileDrawerOpen ? '#ffffff' : (isDark ? '#fb923c' : '#ea580c'),
-              cursor: 'pointer',
-              flexShrink: 0,
-              height: '46px',
-              transition: 'all 0.2s ease',
-              boxShadow: isMobileDrawerOpen ? '0 3px 12px rgba(243, 108, 33, 0.35)' : 'none'
-            }}
-          >
-            <Grid size={16} strokeWidth={2.4} />
-            <span style={{ fontSize: '9.5px', fontWeight: 800, whiteSpace: 'nowrap' }}>الأقسام</span>
-          </button>
-
-          {/* Separator Line */}
-          <div style={{ width: '1px', height: '28px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', flexShrink: 0 }} />
-
           {/* Horizontal Momentum Scrollable Tabs Strip with edge fading */}
           <div
             ref={mobileTabsScrollRef}
@@ -516,7 +478,7 @@ export const AdminDashboardShell: React.FC = () => {
               overflowX: 'auto',
               scrollbarWidth: 'none',
               WebkitOverflowScrolling: 'touch',
-              flex: 1,
+              width: '100%',
               padding: '2px 4px',
               maskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)',
               WebkitMaskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)'
@@ -561,195 +523,6 @@ export const AdminDashboardShell: React.FC = () => {
           </div>
         </nav>
       )}
-
-      {/* ── 📱 3. MOBILE CATEGORIZED ADMIN LAUNCHER DRAWER (لوحة الأقسام الشاملة) ── */}
-      <AnimatePresence>
-        {isMobileDrawerOpen && isMobile && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99998,
-              background: isDark ? 'rgba(7, 9, 12, 0.75)' : 'rgba(15, 23, 42, 0.38)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              direction: 'rtl'
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setIsMobileDrawerOpen(false);
-            }}
-          >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-              style={{
-                width: '100%',
-                maxHeight: '84vh',
-                background: isDark ? 'rgba(16, 20, 28, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
-                borderRadius: '24px 24px 0 0',
-                boxShadow: '0 -12px 50px rgba(0, 0, 0, 0.35)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Drag Handle */}
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
-                <div style={{ width: '42px', height: '4px', borderRadius: '999px', background: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(15, 23, 42, 0.15)' }} />
-              </div>
-
-              {/* Drawer Header */}
-              <div style={{
-                padding: '14px 20px',
-                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.015)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff'
-                  }}>
-                    <Layers size={18} />
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                      أقسام إدارة وحوكمة النظام
-                    </h3>
-                    <span style={{ fontSize: '11.5px', color: isDark ? '#94a3b8' : '#64748b' }}>
-                      اختر القسم المطلوب للانتقال الفوري
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsMobileDrawerOpen(false)}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '10px',
-                    background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-                    color: isDark ? '#94a3b8' : '#64748b',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Drawer Content (Categorized Cards Grid) */}
-              <div style={{ padding: '16px 18px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {[
-                  {
-                    title: 'العمليات والتحكم المركزي',
-                    color: '#007AFF',
-                    tabs: ['overview', 'analytics', 'operations'] as const
-                  },
-                  {
-                    title: 'الأنظمة والواجهات والتكامل',
-                    color: '#135d79',
-                    tabs: ['ui', 'routing', 'uecpHub', 'internalRequests'] as const
-                  },
-                  {
-                    title: 'الأمان وحوكمة الهوية',
-                    color: '#FF3B30',
-                    tabs: ['security', 'identityHub', 'admins'] as const
-                  },
-                  {
-                    title: 'البيئة المؤسسية والتجربة',
-                    color: '#8B5CF6',
-                    tabs: ['institutional', 'policies', 'simulator'] as const
-                  }
-                ].map((cat, catIdx) => (
-                  <div key={catIdx}>
-                    <div style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: '4px', height: '12px', borderRadius: '2px', background: cat.color }} />
-                      <span>{cat.title}</span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
-                      {cat.tabs.map((tabId) => {
-                        const cfg = APPLE.tabs[tabId];
-                        const isCurrent = activeTab === tabId;
-                        return (
-                          <div
-                            key={tabId}
-                            onClick={() => handleTabSwitch(tabId)}
-                            style={{
-                              padding: '12px',
-                              borderRadius: '14px',
-                              background: isCurrent
-                                ? (isDark ? `${cfg.color}25` : `${cfg.color}15`)
-                                : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'),
-                              border: isCurrent
-                                ? `1.5px solid ${cfg.color}`
-                                : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid rgba(0, 0, 0, 0.06)'),
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              transition: 'all 0.18s ease'
-                            }}
-                          >
-                            <div style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '10px',
-                              background: isCurrent ? cfg.color : (isDark ? 'rgba(255,255,255,0.06)' : `${cfg.color}12`),
-                              color: isCurrent ? '#ffffff' : cfg.color,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '15px',
-                              flexShrink: 0
-                            }}>
-                              {cfg.icon}
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{
-                                fontSize: '12.5px',
-                                fontWeight: 800,
-                                color: isCurrent ? cfg.color : (isDark ? '#f8fafc' : '#0f172a'),
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}>
-                                {cfg.label}
-                              </div>
-                              <div style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {cfg.sublabel}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

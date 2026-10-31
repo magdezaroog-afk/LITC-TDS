@@ -53,8 +53,18 @@ export const WorkModeShell: React.FC = () => {
   // Active App ID: 'OPERATIONS' (حوض الطلبات والعمليات) or a Satellite System ID (e.g., 'asset_inventory')
   const [activeAppId, setActiveAppId] = useState<string>('OPERATIONS');
   
-  // Kinetic Launcher / Start Menu State (يفتح من زر القائمة السفلي)
-  const [isLauncherOpen, setIsLauncherOpen] = useState<boolean>(false);
+  // Ops Horizontal Momentum Scroll Ref
+  const opsTabsScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active tab into view in momentum strip
+  useEffect(() => {
+    if (opsTabsScrollRef.current) {
+      const activeEl = opsTabsScrollRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeAppId]);
   
   // Ops Queue Sub-Tab Synchronization ('POOL' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON')
   const [opsActiveTab, setOpsActiveTab] = useState<'POOL' | 'FLOW_SETTINGS' | 'ANALYTICS' | 'COMPARISON'>('POOL');
@@ -541,12 +551,13 @@ export const WorkModeShell: React.FC = () => {
           left: isMobile ? 0 : '50%',
           right: isMobile ? 0 : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
+          height: isMobile ? '58px' : 'auto',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: isMobile ? 'space-around' : 'center',
-          gap: isMobile ? '4px' : '10px',
-          padding: isMobile ? '6px 10px calc(6px + env(safe-area-inset-bottom, 0px))' : '8px 18px',
-          background: isDark ? 'rgba(14, 17, 23, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? '6px' : '10px',
+          padding: isMobile ? '0 8px calc(env(safe-area-inset-bottom, 0px) + 2px)' : '8px 18px',
+          background: isDark ? 'rgba(12, 16, 23, 0.95)' : 'rgba(255, 255, 255, 0.96)',
           backdropFilter: 'blur(32px) saturate(200%)',
           WebkitBackdropFilter: 'blur(32px) saturate(200%)',
           borderRadius: isMobile ? '0' : '26px',
@@ -557,589 +568,165 @@ export const WorkModeShell: React.FC = () => {
             : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
-          maxWidth: isMobile ? '100%' : 'fit-content'
+          width: isMobile ? '100%' : 'auto',
+          maxWidth: isMobile ? '100%' : 'fit-content',
+          boxSizing: 'border-box'
         }}
       >
-        {/* ── 🚀 MASTER LAUNCHER BUTTON (زر القائمة السفلي الذكي للمنظومات والطلبات) ── */}
-        <button
-          type="button"
-          onClick={() => setIsLauncherOpen(prev => !prev)}
-          title="قائمة المنظومات ومراكز العمل (انقر للتبديل)"
+        {/* Horizontal Momentum Scrollable Tabs Strip with edge fading */}
+        <div
+          ref={opsTabsScrollRef}
           style={{
-            position: 'relative',
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '4px' : '8px',
-            padding: isMobile ? '6px 12px' : '7px 16px',
-            borderRadius: '16px',
-            border: isLauncherOpen ? '1.5px solid #f36c21' : (isDark ? '1px solid rgba(243, 108, 33, 0.35)' : '1px solid rgba(243, 108, 33, 0.3)'),
-            background: isLauncherOpen 
-              ? 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)' 
-              : (isDark ? 'rgba(243, 108, 33, 0.15)' : 'rgba(243, 108, 33, 0.12)'),
-            color: isLauncherOpen ? '#ffffff' : (isDark ? '#fb923c' : '#ea580c'),
-            cursor: 'pointer',
-            fontWeight: 800,
-            fontSize: isMobile ? '11px' : '12.5px',
-            boxShadow: isLauncherOpen ? '0 4px 16px rgba(243, 108, 33, 0.45)' : 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-            flexShrink: 0
+            gap: isMobile ? '6px' : '8px',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
+            width: '100%',
+            padding: '2px 4px',
+            maskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)'
           }}
         >
-          <div style={{
-            width: '20px',
-            height: '20px',
-            borderRadius: '6px',
-            background: isLauncherOpen ? 'rgba(255,255,255,0.2)' : '#f36c21',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff'
-          }}>
-            <Layers size={12} strokeWidth={2.5} />
-          </div>
-          <span>المنظومات والطلبات</span>
-          <ChevronUp size={14} style={{ transform: isLauncherOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
-
-        {/* ── حالة 1 & 2: التبديل الحركي بين أزرار الطلبات وكبسولة المنظومة المصاحبة ── */}
-        <AnimatePresence mode="wait">
-          {activeAppId === 'OPERATIONS' ? (
-            <motion.div
-              key="operations-buttons"
-              initial={{ opacity: 0, scale: 0.92, y: 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.88, y: 4 }}
-              transition={{ duration: 0.2 }}
-              style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}
-            >
-              {/* زر 1: مركز الطلبات والعمليات (مع عداد حي) */}
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('POOL')}
+          {/* ── 📥 تبويب 1: حوض التذاكر والعمليات المؤسسية ── */}
+          <button
+            type="button"
+            data-active={activeAppId === 'OPERATIONS' ? 'true' : 'false'}
+            onClick={() => setActiveAppId('OPERATIONS')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: isMobile ? '6px 14px' : '8px 18px',
+              borderRadius: '14px',
+              border: activeAppId === 'OPERATIONS'
+                ? '1.5px solid #0284c7'
+                : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+              background: activeAppId === 'OPERATIONS'
+                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
+              color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+              cursor: 'pointer',
+              fontWeight: activeAppId === 'OPERATIONS' ? 800 : 600,
+              fontSize: isMobile ? '11.5px' : '12.5px',
+              boxShadow: activeAppId === 'OPERATIONS' ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              height: isMobile ? '38px' : '40px'
+            }}
+          >
+            <Inbox size={15} strokeWidth={2.4} />
+            <span>حوض التذاكر</span>
+            {liveStats.openCount > 0 && (
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: isMobile ? '6px 10px' : '7px 14px',
-                  borderRadius: '14px',
-                  border: opsActiveTab === 'POOL' ? '1.5px solid #0284c7' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                  background: opsActiveTab === 'POOL' 
-                    ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
-                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
-                  color: opsActiveTab === 'POOL' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
-                  cursor: 'pointer',
-                  fontWeight: opsActiveTab === 'POOL' ? 800 : 600,
-                  fontSize: isMobile ? '11px' : '12px',
-                  boxShadow: opsActiveTab === 'POOL' ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <Inbox size={15} />
-                <span>مركز الطلبات</span>
-                {liveStats.openCount > 0 && (
-                  <span style={{
-                    background: opsActiveTab === 'POOL' ? '#ffffff' : '#0284c7',
-                    color: opsActiveTab === 'POOL' ? '#0369a1' : '#ffffff',
-                    fontSize: '10px',
-                    fontWeight: 900,
-                    padding: '1px 6px',
-                    borderRadius: '999px'
-                  }}>
-                    {liveStats.openCount}
-                  </span>
-                )}
-              </button>
-
-              {/* زر 2: التحليلات والمقارنة والحوكمة */}
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('ANALYTICS')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: isMobile ? '6px 10px' : '7px 14px',
-                  borderRadius: '14px',
-                  border: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '1.5px solid #135d79' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                  background: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) 
-                    ? 'linear-gradient(135deg, #135d79 0%, #1a7597 100%)' 
-                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
-                  color: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
-                  cursor: 'pointer',
-                  fontWeight: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? 800 : 600,
-                  fontSize: isMobile ? '11px' : '12px',
-                  boxShadow: ['ANALYTICS', 'COMPARISON'].includes(opsActiveTab) ? '0 4px 14px rgba(19, 93, 121, 0.35)' : 'none',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <BarChart3 size={15} />
-                <span>التحليلات والتقارير</span>
-              </button>
-            </motion.div>
-          ) : activeSatellite ? (
-            <motion.div
-              key="satellite-controls"
-              initial={{ opacity: 0, scale: 0.92, y: 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.88, y: 4 }}
-              transition={{ duration: 0.2 }}
-              style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}
-            >
-              {/* شارة المنظومة الحالية */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '5px 12px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                fontSize: '11.5px',
-                fontWeight: 700,
-                color: '#e2e8f0'
-              }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: activeSatellite.isOnline ? '#10b981' : '#f59e0b' }} />
-                <span>{activeSatellite.name}</span>
-              </div>
-
-              {/* زر سريع للرجوع لمركز الطلبات */}
-              <button
-                type="button"
-                onClick={() => setActiveAppId('OPERATIONS')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '6px 12px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  border: 'none',
+                  background: activeAppId === 'OPERATIONS' ? 'rgba(255, 255, 255, 0.25)' : '#0284c7',
                   color: '#ffffff',
-                  fontSize: '11.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)'
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  padding: '1px 6px',
+                  borderRadius: '999px'
                 }}
               >
-                <ArrowRight size={13} />
-                <span>العودة لمركز الطلبات</span>
-              </button>
+                {liveStats.openCount}
+              </span>
+            )}
+          </button>
 
-              {/* زر التحديث السريع */}
+          {/* ── 💻 تبويبات 2..N: منظومة جرد الأصول وكافة الأنظمة المصاحبة المضافة ── */}
+          {satellites.map((sys) => {
+            const isCurrent = activeAppId === sys.id;
+            const isInventory = sys.id === 'asset_inventory';
+            const label = isInventory ? 'جرد الأصول' : sys.name;
+            const themeColor = isInventory ? '#f36c21' : '#10b981';
+
+            return (
               <button
+                key={sys.id}
                 type="button"
-                onClick={handleRefreshIframe}
-                title="تحديث نافذة المنظومة"
+                data-active={isCurrent ? 'true' : 'false'}
+                onClick={() => setActiveAppId(sys.id)}
+                title={sys.description || sys.name}
                 style={{
-                  padding: '6px 10px',
-                  borderRadius: '10px',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: '#f8fafc',
-                  cursor: 'pointer'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isMobile ? '6px 14px' : '8px 18px',
+                  borderRadius: '14px',
+                  border: isCurrent
+                    ? `1.5px solid ${themeColor}`
+                    : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                  background: isCurrent
+                    ? `linear-gradient(135deg, ${themeColor} 0%, ${isInventory ? '#ea580c' : '#059669'} 100%)`
+                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
+                  color: isCurrent ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                  cursor: 'pointer',
+                  fontWeight: isCurrent ? 800 : 600,
+                  fontSize: isMobile ? '11.5px' : '12.5px',
+                  boxShadow: isCurrent ? `0 4px 14px ${themeColor}40` : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  height: isMobile ? '38px' : '40px'
                 }}
               >
-                <RefreshCw size={13} className={isIframeLoading ? 'animate-spin' : ''} />
+                {isInventory ? <Laptop size={15} strokeWidth={2.4} /> : <Server size={15} strokeWidth={2.4} />}
+                <span>{label}</span>
+                {/* Status Indicator Dot */}
+                <span
+                  title={sys.isOnline ? 'المنظومة متصلة ونشطة' : 'في انتظار الاتصال'}
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: sys.isOnline ? '#10b981' : '#f59e0b',
+                    boxShadow: sys.isOnline ? '0 0 6px #10b981' : 'none',
+                    flexShrink: 0
+                  }}
+                />
               </button>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+            );
+          })}
+
+          {/* ── ➕ زر إضافة منظومة جديدة (للمسؤولين) ── */}
+          {isPrivilegedAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddMode(true);
+                setEditingSatellite(null);
+                setIsConfigModalOpen(true);
+              }}
+              title="إضافة وربط منظومة مساندة جديدة"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: isMobile ? '6px 12px' : '8px 14px',
+                borderRadius: '12px',
+                border: isDark ? '1px dashed rgba(255, 255, 255, 0.2)' : '1px dashed rgba(15, 23, 42, 0.2)',
+                background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)',
+                color: isDark ? '#94a3b8' : '#64748b',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                height: isMobile ? '38px' : '40px',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Plus size={14} />
+              <span>منظومة جديدة</span>
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* =========================================================================
-          3. KINETIC LAUNCHER DRAWER & APP SWITCHER (قائمة المنظومات وحوض التذاكر)
-          ========================================================================= */}
-      <AnimatePresence>
-        {isLauncherOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99998,
-              background: isDark ? 'rgba(7, 9, 12, 0.75)' : 'rgba(15, 23, 42, 0.35)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex',
-              alignItems: isMobile ? 'flex-end' : 'center',
-              justifyContent: 'center',
-              padding: isMobile ? 0 : '20px'
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setIsLauncherOpen(false);
-            }}
-          >
-            <motion.div
-              initial={isMobile ? { y: '100%' } : { scale: 0.94, opacity: 0, y: 15 }}
-              animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1, y: 0 }}
-              exit={isMobile ? { y: '100%' } : { scale: 0.94, opacity: 0, y: 15 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-              style={{
-                width: '100%',
-                maxWidth: isMobile ? '100%' : '680px',
-                maxHeight: isMobile ? '86vh' : '82vh',
-                background: isDark ? 'rgba(16, 19, 26, 0.96)' : 'rgba(255, 255, 255, 0.98)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
-                borderBottom: isMobile ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                borderRadius: isMobile ? '24px 24px 0 0' : '28px',
-                boxShadow: isDark 
-                  ? '0 25px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.15)' 
-                  : '0 25px 60px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Drawer Top Drag Handle (Mobile) */}
-              {isMobile && (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
-                  <div style={{ width: '42px', height: '4px', borderRadius: '999px', background: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(15, 23, 42, 0.15)' }} />
-                </div>
-              )}
-
-              {/* Launcher Header */}
-              <div style={{
-                padding: '18px 24px',
-                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.015)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    boxShadow: '0 4px 16px rgba(243, 108, 33, 0.35)'
-                  }}>
-                    <Layers size={20} />
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                      بوابة العمليات والمنظومات الموحدة
-                    </h3>
-                    <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }}>
-                      التبديل الفوري بين مركز الطلبات والمنظومات المصاحبة
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsLauncherOpen(false)}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '10px',
-                    background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
-                    color: isDark ? '#94a3b8' : '#64748b',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Launcher Body Content */}
-              <div style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
-                {/* ── SECTION 1: FLAGSHIP CORE (مركز الطلبات والعمليات المؤسسية) ── */}
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Compass size={14} color="#38bdf8" />
-                    <span>المنظومة المركزية الرئيسية</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      setActiveAppId('OPERATIONS');
-                      setIsLauncherOpen(false);
-                    }}
-                    style={{
-                      position: 'relative',
-                      padding: '18px 20px',
-                      borderRadius: '18px',
-                      background: activeAppId === 'OPERATIONS'
-                        ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.22) 0%, rgba(3, 105, 161, 0.12) 100%)' : 'linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(3, 105, 161, 0.05) 100%)')
-                        : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)'),
-                      border: activeAppId === 'OPERATIONS'
-                        ? '2px solid #0284c7'
-                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '16px',
-                      boxShadow: activeAppId === 'OPERATIONS' ? '0 8px 24px rgba(2, 132, 199, 0.25)' : 'none',
-                      transition: 'all 0.22s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <div style={{
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '14px',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#ffffff',
-                        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.35)',
-                        flexShrink: 0
-                      }}>
-                        <Inbox size={22} />
-                      </div>
-
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                            مركز الطلبات والعمليات المؤسسية
-                          </h4>
-                          <span style={{
-                            fontSize: '10.5px',
-                            fontWeight: 800,
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            background: '#0284c7',
-                            color: '#ffffff'
-                          }}>
-                            النظام المعتمد
-                          </span>
-                        </div>
-                        <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: isDark ? '#94a3b8' : '#64748b' }}>
-                          حوض الطلبات المركزي، مسارات التوجيه، وإدارة التدفقات التشغيلية والحوكمة
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {liveStats.openCount > 0 && (
-                        <div style={{ textAlign: 'center', padding: '0 10px' }}>
-                          <div style={{ fontSize: '16px', fontWeight: 900, color: isDark ? '#38bdf8' : '#0284c7' }}>{liveStats.openCount}</div>
-                          <div style={{ fontSize: '10px', color: isDark ? '#64748b' : '#94a3b8' }}>طلب وارد</div>
-                        </div>
-                      )}
-                      <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        background: activeAppId === 'OPERATIONS' ? '#0284c7' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15, 23, 42, 0.06)'),
-                        color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#64748b'),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        {activeAppId === 'OPERATIONS' ? <CheckCircle2 size={16} /> : <ArrowLeft size={14} />}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── SECTION 2: SATELLITE SYSTEMS (المنظومات المصاحبة والمساندة) ── */}
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Cpu size={14} color="#f97316" />
-                      <span>المنظومات المصاحبة والمساندة ({satellites.length})</span>
-                    </div>
-
-                    {isPrivilegedAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddMode(true);
-                          setEditingSatellite(null);
-                          setNewSysForm({
-                            id: '',
-                            name: '',
-                            targetUrl: '',
-                            category: 'COLLEAGUE_SERVICE',
-                            description: ''
-                          });
-                          setIsConfigModalOpen(true);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#f97316',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Plus size={13} />
-                        <span>ربط منظومة جديدة</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-                    {satellites.map(sat => {
-                      const isCurrent = activeAppId === sat.id;
-                      return (
-                        <div
-                          key={sat.id}
-                          onClick={() => {
-                            setActiveAppId(sat.id);
-                            setIsIframeLoading(true);
-                            setIsLauncherOpen(false);
-                          }}
-                          style={{
-                            padding: '16px',
-                            borderRadius: '16px',
-                            background: isCurrent 
-                              ? (isDark ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%)' : 'linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(234, 88, 12, 0.05) 100%)')
-                              : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)'),
-                            border: isCurrent ? '1.5px solid #f97316' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            gap: '12px',
-                            transition: 'all 0.2s ease',
-                            boxShadow: isCurrent ? '0 6px 20px rgba(249, 115, 22, 0.2)' : 'none'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <div style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '10px',
-                                background: sat.id === 'asset_inventory' 
-                                  ? 'linear-gradient(135deg, #f97316, #ea580c)' 
-                                  : 'linear-gradient(135deg, #0284c7, #0369a1)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff'
-                              }}>
-                                {sat.id === 'asset_inventory' ? <Laptop size={18} /> : <Server size={18} />}
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
-                                  {sat.name}
-                                </div>
-                                <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '2px' }}>
-                                  {sat.id === 'asset_inventory' ? 'بوابة مدمجة عبر البروكسي الموحد' : sat.category}
-                                </div>
-                              </div>
-                            </div>
-
-                            <span style={{
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              background: sat.isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                              color: sat.isOnline ? '#34d399' : '#fbbf24',
-                              border: `1px solid ${sat.isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                            }}>
-                              {sat.isOnline ? 'نشط' : 'استجابة'}
-                            </span>
-                          </div>
-
-                          <p style={{ margin: 0, fontSize: '11.5px', color: '#64748b', lineHeight: '1.4' }}>
-                            {sat.description}
-                          </p>
-
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
-                            {isPrivilegedAdmin && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingSatellite(sat);
-                                  setIsAddMode(false);
-                                  setIsConfigModalOpen(true);
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#94a3b8',
-                                  cursor: 'pointer',
-                                  padding: '4px'
-                                }}
-                              >
-                                <Settings size={14} />
-                              </button>
-                            )}
-                            <div style={{
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              color: isCurrent ? '#f97316' : '#38bdf8',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              <span>{isCurrent ? 'معروض حالياً' : 'تشغيل المنظومة'}</span>
-                              <ArrowLeft size={13} />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Launcher Footer */}
-              <div style={{
-                padding: '14px 24px',
-                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.06)',
-                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.015)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '11.5px',
-                color: isDark ? '#94a3b8' : '#64748b'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={13} color="#f36c21" />
-                  <span>NEXUS Unified Operations Architecture • 2026</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/hub')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '11.5px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <Home size={13} />
-                  <span>الرجوع للبوابة العامة</span>
-                </button>
-              </div>
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* =========================================================================
-          4. SATELLITE CONFIGURATION & REGISTRATION MODAL
+          3. SATELLITE CONFIGURATION & REGISTRATION MODAL
           ========================================================================= */}
       {isConfigModalOpen && (
         <div
