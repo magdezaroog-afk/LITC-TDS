@@ -820,6 +820,43 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
       .catch(err => console.error('Failed to check managed flows:', err));
   }, [user]);
 
+  // ── Leadership & RBAC Governance for Standalone Requests ──
+  const isLeaderOrDirector = useMemo(() => {
+    const role = (user?.role || '').toUpperCase();
+    const roleName = ((user as any)?.role?.name || '').toUpperCase();
+    const elevatedRoles = [
+      'SUPER_ADMIN',
+      'SYSTEM_ADMIN',
+      'SYSTEM_DIRECTOR',
+      'TECH_DIRECTOR',
+      'DEPT_HEAD',
+      'DEPARTMENT_HEAD',
+      'TEAM_LEADER',
+      'TEAM_LEAD',
+      'CO_ADMIN',
+      'DIRECTOR',
+      'MANAGER'
+    ];
+    return (
+      elevatedRoles.includes(role) ||
+      elevatedRoles.includes(roleName) ||
+      (user as any)?.roleId === 1 ||
+      (user as any)?.roleId === 22 ||
+      (user as any)?.isLeader === true ||
+      (user as any)?.isManager === true
+    );
+  }, [user]);
+
+  const canCreateStandaloneTicket = useMemo(() => {
+    return Boolean(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (!isLeaderOrDirector && (standaloneSubTab === 'INBOUND' || standaloneSubTab === 'DEPT_OUTBOUND')) {
+      setStandaloneSubTab('MY_ASSIGNED');
+    }
+  }, [isLeaderOrDirector, standaloneSubTab]);
+
   // --- Fetch Data ---
   const fetchData = useCallback(async () => {
     if (activeTab === 'FLOW_SETTINGS') return;
@@ -1129,7 +1166,9 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   };
 
   // ── Unified View Configurations & Standards ──
-  const isTicketView = ['POOL', 'MY_QUEUE', 'OUTBOUND', 'SUB_TICKETS', 'ARCHIVE'].includes(activeTab);
+  const isGeneralTicketsView = ['POOL', 'MY_QUEUE', 'OUTBOUND', 'ARCHIVE'].includes(activeTab);
+  const isStandaloneView = activeTab === 'SUB_TICKETS';
+  const isTicketView = isGeneralTicketsView || isStandaloneView;
 
   const activeViewConfig = React.useMemo(() => {
     switch (activeTab) {
@@ -1246,19 +1285,48 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     }
   }, [activeTab, poolCount, myCount, stats.open, subTicketsCount, managedFlowsCount, isDark]);
 
-  // ═══ OPERATIONAL MODES DEFINITION (التحليلات والمقارنة والحوكمة في زر واحد موحد) ═══
+  // ═══ OPERATIONAL MODES DEFINITION (التذاكر العامة، الطلبات المستقلة، المؤشرات، وخصائص الاستقبال) ═══
   const operationalModes = useMemo(() => [
     {
-      id: 'TICKETS',
-      label: 'إدارة واستقبال الطلبات',
-      shortLabel: 'الطلبات',
+      id: 'GENERAL_TICKETS',
+      label: 'التذاكر العامة وعمليات الحوض',
+      shortLabel: 'التذاكر العامة',
       sublabel: 'أحواض العمل والمهام التشغيلية',
       count: stats.open,
       icon: Inbox,
       accentColor: '#0284c7',
-      isActive: isTicketView,
+      isActive: isGeneralTicketsView,
       onClick: () => {
-        if (!isTicketView) setActiveTab('POOL');
+        if (!isGeneralTicketsView) setActiveTab('POOL');
+      }
+    },
+    {
+      id: 'STANDALONE_REQUESTS',
+      label: 'الطلبات والمهام المستقلة بين الإدارات',
+      shortLabel: 'الطلبات المستقلة',
+      sublabel: 'التنسيق البيني وسجل الأصول المرتبط',
+      count: subTicketsCount,
+      icon: ArrowRightLeft,
+      accentColor: '#7e22ce',
+      isActive: isStandaloneView,
+      onClick: () => {
+        setActiveTab('SUB_TICKETS');
+      }
+    },
+    {
+      id: 'ANALYTICS_SUITE',
+      label: 'مؤشرات الأداء والمقارنة والحوكمة NACE',
+      shortLabel: 'المؤشرات',
+      sublabel: 'التحليلات الإحصائية، محرك المقارنة، وتفويض الحوكمة',
+      badge: 'NACE',
+      icon: BarChart3,
+      accentColor: '#135d79',
+      isActive: ['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab),
+      onClick: () => {
+        if (!['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab)) {
+          setActiveTab('ANALYTICS');
+          setAnalyticsSubTab('OVERVIEW');
+        }
       }
     },
     ...(canManageFlows ? [{
@@ -1271,24 +1339,8 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
       accentColor: '#d97706',
       isActive: activeTab === 'FLOW_SETTINGS',
       onClick: () => setActiveTab('FLOW_SETTINGS' as any)
-    }] : []),
-    {
-      id: 'ANALYTICS_SUITE',
-      label: 'التحليلات والمقارنة وتفويض الحوكمة NACE',
-      shortLabel: 'التحليلات والحوكمة',
-      sublabel: 'مؤشرات الأداء الخمسة، محرك المقارنة، وتفويض الصلاحيات',
-      badge: 'NACE',
-      icon: BarChart3,
-      accentColor: '#135d79',
-      isActive: ['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab),
-      onClick: () => {
-        if (!['ANALYTICS', 'COMPARISON', 'ANALYTICS_GOVERNANCE'].includes(activeTab)) {
-          setActiveTab('ANALYTICS');
-          setAnalyticsSubTab('OVERVIEW');
-        }
-      }
-    }
-  ], [isTicketView, canManageFlows, managedFlowsCount, activeTab, stats.open]);
+    }] : [])
+  ], [isGeneralTicketsView, isStandaloneView, canManageFlows, managedFlowsCount, activeTab, stats.open, subTicketsCount]);
 
   // --- UI Render ---
   return (
@@ -1367,70 +1419,8 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? '6px' : '10px',
-          width: isMobile ? '100%' : 'auto',
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
           justifyContent: isMobile ? 'flex-start' : 'flex-end'
         }}>
-
-
-          {/* Standalone Internal Ticket Button */}
-          <button
-            onClick={() => setIsStandaloneInternalModalOpen(true)}
-            title="إنشاء طلب داخلي أو مهمة مستقلة بنطاق هرمي"
-            style={{
-              padding: isMobile ? "5px 10px" : "8px 16px",
-              borderRadius: "10px",
-              border: "1px solid rgba(243, 108, 33, 0.4)",
-              background: isDark ? "rgba(243, 108, 33, 0.15)" : "#fff7ed",
-              color: "#f36c21",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "4px",
-              fontSize: isMobile ? "11px" : "13px",
-              fontWeight: 700,
-              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.03)",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-              flex: isMobile ? "1 1 auto" : "none"
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#f36c21"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(243, 108, 33, 0.4)"; e.currentTarget.style.transform = "none"; }}
-          >
-            <PlusCircle size={13} />
-            <span>{isMobile ? 'طلب داخلي' : 'طلب داخلي مستقل'}</span>
-          </button>
-
-          {/* Unlinked Assets Ledger Button */}
-          <button
-            onClick={() => setIsUnlinkedLedgerModalOpen(true)}
-            title="السجل الرقابي للطلبات غير المرتبطة بأصل محدد"
-            style={{
-              padding: isMobile ? "5px 10px" : "8px 16px",
-              borderRadius: "10px",
-              border: isDark ? "1px solid rgba(19, 93, 121, 0.5)" : "1px solid #135d79",
-              background: isDark ? "rgba(19, 93, 121, 0.2)" : "#f0f9ff",
-              color: isDark ? "#38bdf8" : "#0369a1",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "4px",
-              fontSize: isMobile ? "11px" : "13px",
-              fontWeight: 700,
-              boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 6px rgba(0,0,0,0.03)",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-              flex: isMobile ? "1 1 auto" : "none"
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#38bdf8"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = isDark ? "rgba(19, 93, 121, 0.5)" : "#135d79"; e.currentTarget.style.transform = "none"; }}
-          >
-            <Layers size={13} />
-            <span>{isMobile ? 'سجل الأصول' : 'السجل الرقابي للأصول'}</span>
-          </button>
-
           {/* Unified Refresh Button */}
           {activeTab !== 'FLOW_SETTINGS' && (
             <button 
@@ -1463,89 +1453,98 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
         </div>
       </div>
 
-      {/* ── 📱 MOBILE TOP OPERATIONAL MODES STRIP (مثل لوحة تحكم الإدارة العليا) ── */}
-      {isMobile && (
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            background: isDark ? 'rgba(14, 17, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
-            padding: '8px 4px',
-            marginBottom: '12px',
-            width: '100%',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            direction: 'rtl',
-            boxSizing: 'border-box'
-          }}
-        >
-          <div style={{ display: 'flex', gap: '8px', padding: '0 4px', width: 'max-content' }}>
-            {operationalModes.map((item) => {
-              const isSelected = item.isActive;
-              const IconComponent = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={item.onClick}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '12px',
-                    border: isSelected ? `1.5px solid ${item.accentColor}` : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
-                    background: isSelected
-                      ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
-                      : (isDark ? 'rgba(30, 41, 59, 0.7)' : '#ffffff'),
-                    color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
-                    fontSize: '12px',
-                    fontWeight: isSelected ? 800 : 700,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    boxShadow: isSelected ? `0 3px 12px ${item.accentColor}40` : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
-                    transition: 'all 0.18s ease'
-                  }}
-                >
-                  <IconComponent size={15} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
-                  <span>{item.shortLabel || item.label}</span>
-                  {item.count !== undefined && item.count > 0 && (
-                    <span style={{
-                      background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
-                      color: isSelected ? '#ffffff' : item.accentColor,
-                      fontSize: '10px',
-                      fontWeight: 900,
-                      padding: '1px 6px',
-                      borderRadius: '9999px',
-                      lineHeight: 1
-                    }}>
-                      {item.count}
-                    </span>
-                  )}
-                  {item.badge && (
-                    <span style={{
-                      background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
-                      color: isSelected ? '#ffffff' : item.accentColor,
-                      fontSize: '9.5px',
-                      fontWeight: 800,
-                      padding: '1px 6px',
-                      borderRadius: '6px'
-                    }}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      {/* ── 🌟 UNIVERSAL TOP OPERATIONAL MODES STRIP (الشريط التشغيلي الموحد في أعلى الواجهة) ── */}
+      <div
+        className="nexus-universal-top-ops-strip"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          background: isDark ? 'rgba(12, 16, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
+          padding: isMobile ? '8px 4px' : '10px 8px',
+          marginBottom: isMobile ? '12px' : '18px',
+          width: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          direction: 'rtl',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{
+          display: 'flex',
+          gap: isMobile ? '8px' : '12px',
+          padding: '0 4px',
+          width: 'max-content',
+          alignItems: 'center'
+        }}>
+          {operationalModes.map((item) => {
+            const isSelected = item.isActive;
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onClick}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: isMobile ? '8px 14px' : '10px 18px',
+                  borderRadius: '14px',
+                  border: isSelected
+                    ? `1.5px solid ${item.accentColor}`
+                    : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                  background: isSelected
+                    ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
+                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                  color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
+                  fontSize: isMobile ? '12px' : '13px',
+                  fontWeight: isSelected ? 800 : 700,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                  boxShadow: isSelected
+                    ? `0 4px 16px ${item.accentColor}40`
+                    : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
+                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              >
+                <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
+                <span>{item.shortLabel || item.label}</span>
+                {item.count !== undefined && item.count > 0 && (
+                  <span style={{
+                    background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
+                    color: isSelected ? '#ffffff' : item.accentColor,
+                    fontSize: '10.5px',
+                    fontWeight: 900,
+                    padding: '2px 7px',
+                    borderRadius: '9999px',
+                    lineHeight: 1
+                  }}>
+                    {item.count}
+                  </span>
+                )}
+                {item.badge && (
+                  <span style={{
+                    background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
+                    color: isSelected ? '#ffffff' : item.accentColor,
+                    fontSize: '9.5px',
+                    fontWeight: 800,
+                    padding: '1px 6px',
+                    borderRadius: '6px'
+                  }}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* ═══ 2. MAIN 2-COLUMN WORKSPACE (VERTICAL RAIL ON RIGHT + MAIN CANVAS ON LEFT) ═══ */}
       <div className="enterprise-adaptive-workspace" style={{ display: "flex", flexDirection: "column", width: "100%", direction: "rtl", gap: "20px" }}>
@@ -1554,12 +1553,13 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات الخمسة المنظمة) ═══ */}
-          {isTicketView && (
+          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات العامة الأربعة) ═══ */}
+          {isGeneralTicketsView && (
             <div 
               className="operational-top-queues-bar"
               style={{
                 display: isMobile ? 'flex' : 'grid',
+                gridTemplateColumns: isMobile ? undefined : 'repeat(4, minmax(0, 1fr))',
                 flexDirection: isMobile ? 'row' : undefined,
                 overflowX: isMobile ? 'auto' : undefined,
                 WebkitOverflowScrolling: 'touch',
@@ -1597,15 +1597,6 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                   sublabel: 'المعاملات الصادرة لمتابعتها',
                   icon: Send,
                   accentColor: '#0ea5e9',
-                },
-                {
-                  id: 'SUB_TICKETS',
-                  label: 'الطلبات الداخلية والمستقلة',
-                  count: subTicketsCount,
-                  badge: 'بينية ومستقلة',
-                  sublabel: 'التنسيق البيني بين الإدارات',
-                  icon: ArrowRightLeft,
-                  accentColor: '#7e22ce',
                 },
                 {
                   id: 'ARCHIVE',
@@ -1762,6 +1753,237 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* ═══ STANDALONE REQUESTS DEDICATED COMMAND HUB (مركز التحكم بالطلبات المستقلة والتنسيق البيني) ═══ */}
+          {isStandaloneView && (
+            <div
+              className="standalone-requests-command-hub"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: isMobile ? '12px' : '16px 20px',
+                borderRadius: isMobile ? '14px' : '18px',
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(126, 34, 206, 0.16) 0%, rgba(20, 24, 33, 0.88) 100%)'
+                  : 'linear-gradient(135deg, rgba(126, 34, 206, 0.08) 0%, rgba(255, 255, 255, 0.96) 100%)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: isDark ? '1px solid rgba(126, 34, 206, 0.35)' : '1px solid rgba(126, 34, 206, 0.22)',
+                boxShadow: isDark
+                  ? '0 8px 28px rgba(0, 0, 0, 0.35), 0 0 20px rgba(126, 34, 206, 0.15)'
+                  : '0 4px 20px -4px rgba(126, 34, 206, 0.12), 0 1px 3px rgba(0,0,0,0.04)',
+                boxSizing: 'border-box',
+                width: '100%',
+                transition: 'all 0.22s ease'
+              }}
+            >
+              {/* Upper Section: Title + Badges + Action Buttons */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                {/* Title & Info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '11px',
+                    background: 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 2px 10px rgba(126, 34, 206, 0.35)',
+                    flexShrink: 0
+                  }}>
+                    <ArrowRightLeft size={18} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '14px' : '15px',
+                        fontWeight: 800,
+                        color: isDark ? '#ffffff' : '#0f172a',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}>
+                        منظومة الطلبات المستقلة والتنسيق البيني
+                      </h3>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        background: isLeaderOrDirector ? 'rgba(217, 119, 6, 0.16)' : 'rgba(126, 34, 206, 0.14)',
+                        color: isLeaderOrDirector ? '#f59e0b' : '#a855f7',
+                        border: isLeaderOrDirector ? '1px solid rgba(217, 119, 6, 0.3)' : '1px solid rgba(126, 34, 206, 0.25)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        {isLeaderOrDirector ? (
+                          <>
+                            <Crown size={11} strokeWidth={2.5} />
+                            <span>صلاحيات إشرافية (عرض شامل للقسم والإدارة)</span>
+                          </>
+                        ) : (
+                          <>
+                            <User size={11} strokeWidth={2.5} />
+                            <span>النطاق التشغيلي الفردي (مهامك الخاصة)</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <p style={{
+                      margin: '2px 0 0 0',
+                      fontSize: isMobile ? '11px' : '12px',
+                      color: isDark ? '#94a3b8' : '#64748b'
+                    }}>
+                      التنسيق المباشر بين الإدارات والأقسام وسجلات العهد والأصول المرتبطة
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons (سجل الأصول والعهد + إنشاء طلب مستقل) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: isMobile ? '100%' : 'auto',
+                  justifyContent: isMobile ? 'space-between' : 'flex-end',
+                  flexWrap: 'wrap'
+                }}>
+                  {/* زر سجل الأصول والعهد */}
+                  <button
+                    type="button"
+                    onClick={() => setIsUnlinkedLedgerModalOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: isMobile ? '7px 12px' : '8px 14px',
+                      borderRadius: '10px',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                      background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                      color: isDark ? '#e2e8f0' : '#334155',
+                      fontSize: isMobile ? '11px' : '12px',
+                      fontWeight: 700,
+                      fontFamily: "'Cairo', sans-serif",
+                      cursor: 'pointer',
+                      transition: 'all 0.18s ease',
+                      flex: isMobile ? '1' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#7e22ce';
+                      e.currentTarget.style.color = '#7e22ce';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1';
+                      e.currentTarget.style.color = isDark ? '#e2e8f0' : '#334155';
+                    }}
+                  >
+                    <Layers size={14} strokeWidth={2.2} />
+                    <span>سجل الأصول والعهد</span>
+                  </button>
+
+                  {/* زر إنشاء طلب مستقل */}
+                  <button
+                    type="button"
+                    onClick={() => setIsStandaloneInternalModalOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: isMobile ? '7px 14px' : '8px 16px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)',
+                      color: '#ffffff',
+                      fontSize: isMobile ? '11.5px' : '12.5px',
+                      fontWeight: 800,
+                      fontFamily: "'Cairo', sans-serif",
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 12px rgba(126, 34, 206, 0.35)',
+                      transition: 'all 0.18s ease',
+                      flex: isMobile ? '1.3' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 5px 16px rgba(126, 34, 206, 0.45)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(126, 34, 206, 0.35)';
+                    }}
+                  >
+                    <Plus size={15} strokeWidth={2.6} />
+                    <span>+ إنشاء طلب مستقل</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Subtabs Selector (التبويبات الفرعية المحكومة بالصلاحيات) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                paddingTop: '8px',
+                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(126, 34, 206, 0.1)'
+              }}>
+                {[
+                  { id: 'MY_ASSIGNED', label: '👤 المسندة إليّ', desc: 'المهام والتكليفات الموجهة إليك' },
+                  { id: 'MY_OUTBOUND', label: '📤 الصادرة مني', desc: 'الطلبات المستقلة التي أنشأتها' },
+                  ...(isLeaderOrDirector ? [
+                    { id: 'INBOUND', label: '📥 الواردة للقسم / فريقي', desc: 'كافة المعاملات المستقلة الواردة لقسمك' },
+                    { id: 'DEPT_OUTBOUND', label: '🏢 كافة صادرة الإدارة', desc: 'جميع المعاملات الصادرة من منتسبي القسم' }
+                  ] : [])
+                ].map((sub) => {
+                  const isCurrent = standaloneSubTab === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setStandaloneSubTab(sub.id as any)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: isMobile ? '6px 12px' : '7px 14px',
+                        borderRadius: '10px',
+                        border: isCurrent
+                          ? '1.5px solid #9333ea'
+                          : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0'),
+                        background: isCurrent
+                          ? (isDark ? 'rgba(126, 34, 206, 0.35)' : 'rgba(126, 34, 206, 0.12)')
+                          : (isDark ? 'rgba(15, 23, 42, 0.4)' : '#ffffff'),
+                        color: isCurrent
+                          ? (isDark ? '#f3e8ff' : '#7e22ce')
+                          : (isDark ? '#94a3b8' : '#64748b'),
+                        fontSize: isMobile ? '11px' : '12px',
+                        fontWeight: isCurrent ? 800 : 600,
+                        fontFamily: "'Cairo', sans-serif",
+                        whiteSpace: 'nowrap',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        flexShrink: 0
+                      }}
+                    >
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -2255,156 +2477,6 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                   </div>
                 )}
 
-                {/* ═══ Dedicated Sub-navbar for Standalone Internal Requests (الطلبات المستقلة بين الإدارات) ═══ */}
-                {activeTab === 'SUB_TICKETS' && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    padding: isMobile ? '10px 12px' : '12px 16px',
-                    marginBottom: '16px',
-                    background: isDark ? 'rgba(30, 41, 59, 0.65)' : '#ffffff',
-                    borderRadius: '16px',
-                    border: isDark ? '1px solid rgba(126, 34, 206, 0.3)' : '1px solid #e9d5ff',
-                    boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(126, 34, 206, 0.05)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '4px 10px',
-                        borderRadius: '8px',
-                        background: 'rgba(126, 34, 206, 0.12)',
-                        color: '#7e22ce',
-                        fontSize: '12px',
-                        fontWeight: 800
-                      }}>
-                        <ArrowRightLeft size={14} />
-                        <span>الطلبات المستقلة:</span>
-                      </div>
-
-                      <div style={{
-                        display: 'inline-flex',
-                        background: isDark ? 'rgba(15, 23, 42, 0.7)' : '#f1f5f9',
-                        borderRadius: '12px',
-                        padding: '3px',
-                        gap: '3px',
-                        flexWrap: 'wrap'
-                      }}>
-                        <button
-                          type="button"
-                          onClick={() => setStandaloneSubTab('MY_ASSIGNED')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '9px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: standaloneSubTab === 'MY_ASSIGNED' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: standaloneSubTab === 'MY_ASSIGNED'
-                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
-                              : 'transparent',
-                            color: standaloneSubTab === 'MY_ASSIGNED' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: standaloneSubTab === 'MY_ASSIGNED' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          👤 المسندة إليّ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStandaloneSubTab('INBOUND')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '9px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: standaloneSubTab === 'INBOUND' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: standaloneSubTab === 'INBOUND'
-                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
-                              : 'transparent',
-                            color: standaloneSubTab === 'INBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: standaloneSubTab === 'INBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          📥 الواردة لقسمي / إدارتي
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStandaloneSubTab('MY_OUTBOUND')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '9px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: standaloneSubTab === 'MY_OUTBOUND' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: standaloneSubTab === 'MY_OUTBOUND'
-                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
-                              : 'transparent',
-                            color: standaloneSubTab === 'MY_OUTBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: standaloneSubTab === 'MY_OUTBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          📤 الصادرة مني
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStandaloneSubTab('DEPT_OUTBOUND')}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '9px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '11.5px',
-                            fontWeight: standaloneSubTab === 'DEPT_OUTBOUND' ? 800 : 600,
-                            fontFamily: "'Cairo', sans-serif",
-                            background: standaloneSubTab === 'DEPT_OUTBOUND'
-                              ? 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)'
-                              : 'transparent',
-                            color: standaloneSubTab === 'DEPT_OUTBOUND' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                            boxShadow: standaloneSubTab === 'DEPT_OUTBOUND' ? '0 2px 8px rgba(126, 34, 206, 0.35)' : 'none',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          🏢 كافة الصادرة من الإدارة
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsStandaloneInternalModalOpen(true)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #7e22ce 0%, #9333ea 100%)',
-                        color: '#ffffff',
-                        fontSize: '12.5px',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        boxShadow: '0 3px 12px rgba(126, 34, 206, 0.3)',
-                        transition: 'all 0.18s ease'
-                      }}
-                    >
-                      <Plus size={15} strokeWidth={2.5} />
-                      <span>فتح طلب داخلي مستقل بين الإدارات</span>
-                    </button>
-                  </div>
-                )}
                 {loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', color: '#94a3b8', gap: '14px', flex: 1 }}>
                     <RefreshCw size={28} className="animate-spin" color="#2563eb" />
