@@ -495,6 +495,15 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   const [subTasksPopoverTicket, setSubTasksPopoverTicket] = useState<Ticket | null>(null);
   const [standaloneSubTab, setStandaloneSubTab] = useState<'MY_ASSIGNED' | 'INBOUND' | 'MY_OUTBOUND' | 'DEPT_OUTBOUND'>('MY_ASSIGNED');
 
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedDeptFilter !== 'ALL') count++;
+    if (selectedFlowFilter !== 'ALL') count++;
+    if (selectedBuildingFilter !== 'ALL') count++;
+    if (selectedStatusFilter !== 'ALL') count++;
+    return count;
+  }, [selectedDeptFilter, selectedFlowFilter, selectedBuildingFilter, selectedStatusFilter]);
+
   useEffect(() => {
     const handler = (e: any) => {
       if (e.detail?.tab) {
@@ -2003,229 +2012,68 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
               transition: 'all 0.25s ease'
             }}
           >
-            {/* ═══ 1. UNIFIED VIEW TITLE & ACTION HEADER STRIP ═══ */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: isMobile ? '12px' : '16px',
-              paddingBottom: isMobile ? '12px' : '18px',
-              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9'
-            }}>
-              {/* Identity (Icon + Title + Badge + Subtitle) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
-                <div style={{
-                  width: isMobile ? '38px' : '44px',
-                  height: isMobile ? '38px' : '44px',
-                  borderRadius: '12px',
-                  background: activeViewConfig.iconBg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  boxShadow: `0 4px 14px ${activeViewConfig.glowColor}`,
-                  flexShrink: 0
-                }}>
-                  <activeViewConfig.icon size={isMobile ? 18 : 22} />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <h2 style={{
-                      margin: 0,
-                      fontSize: isMobile ? '16px' : '18px',
-                      fontWeight: 800,
-                      color: isDark ? '#ffffff' : '#0f172a',
-                      fontFamily: "'Cairo', sans-serif"
-                    }}>
-                      {activeViewConfig.title}
-                    </h2>
-                    <span style={{
-                      fontSize: isMobile ? '10px' : '11px',
-                      fontWeight: 800,
-                      color: activeViewConfig.badgeColor,
-                      backgroundColor: activeViewConfig.badgeBg,
-                      border: `1px solid ${activeViewConfig.badgeColor}33`,
-                      padding: '2px 8px',
-                      borderRadius: '9999px',
-                      fontFamily: "'Cairo', sans-serif"
-                    }}>
-                      {activeViewConfig.badgeText}
-                    </span>
-                  </div>
-                  <p style={{
-                    margin: '3px 0 0 0',
-                    fontSize: isMobile ? '11px' : '12.5px',
-                    color: isDark ? '#94a3b8' : '#64748b'
+            {/* ═══ 1. UNIFIED VIEW TITLE & ACTION HEADER STRIP (للوجهات الإدارية والتحليلية فقط) ═══ */}
+            {!isTicketView && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: isMobile ? '12px' : '16px',
+                paddingBottom: isMobile ? '12px' : '18px',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #f1f5f9'
+              }}>
+                {/* Identity (Icon + Title + Badge + Subtitle) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
+                  <div style={{
+                    width: isMobile ? '38px' : '44px',
+                    height: isMobile ? '38px' : '44px',
+                    borderRadius: '12px',
+                    background: activeViewConfig.iconBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: `0 4px 14px ${activeViewConfig.glowColor}`,
+                    flexShrink: 0
                   }}>
-                    {activeViewConfig.subtitle}
-                  </p>
+                    <activeViewConfig.icon size={isMobile ? 18 : 22} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h2 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        fontWeight: 800,
+                        color: isDark ? '#ffffff' : '#0f172a',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}>
+                        {activeViewConfig.title}
+                      </h2>
+                      <span style={{
+                        fontSize: isMobile ? '10px' : '11px',
+                        fontWeight: 800,
+                        color: activeViewConfig.badgeColor,
+                        backgroundColor: activeViewConfig.badgeBg,
+                        border: `1px solid ${activeViewConfig.badgeColor}33`,
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}>
+                        {activeViewConfig.badgeText}
+                      </span>
+                    </div>
+                    <p style={{
+                      margin: '3px 0 0 0',
+                      fontSize: isMobile ? '11px' : '12.5px',
+                      color: isDark ? '#94a3b8' : '#64748b'
+                    }}>
+                      {activeViewConfig.subtitle}
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              {/* View-Specific Contextual Search / Refresh / Layout Controls for Tickets */}
-              {isTicketView && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
-                  {/* View Mode Switcher: Rail (~7 cards) vs. Grid vs. Table/List */}
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    background: isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '2.5px',
-                    gap: '2px',
-                    width: isMobile ? '100%' : 'auto',
-                    justifyContent: isMobile ? 'space-between' : 'flex-start'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleLayout('RAIL')}
-                      title="شريط الكروت الأفقي (تذاكر مريحة قابلة للتمرير مع إمكانية تمديد الصفوف لأسفل)"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flex: isMobile ? 1 : 'none',
-                        gap: '5px',
-                        padding: isMobile ? '6px 8px' : '6px 12px',
-                        borderRadius: '7px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: isMobile ? '11px' : '11.5px',
-                        fontWeight: ticketLayoutMode === 'RAIL' ? 800 : 600,
-                        fontFamily: "'Cairo', sans-serif",
-                        background: ticketLayoutMode === 'RAIL'
-                          ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
-                          : 'transparent',
-                        color: ticketLayoutMode === 'RAIL'
-                          ? '#ffffff'
-                          : (isDark ? '#94a3b8' : '#64748b'),
-                        boxShadow: ticketLayoutMode === 'RAIL'
-                          ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
-                          : 'none',
-                        transition: 'all 0.18s ease',
-                      }}
-                    >
-                      <SlidersHorizontal size={13} />
-                      <span>{isMobile ? 'عرض البطاقات' : 'شريط أفقي'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleLayout('LIST')}
-                      title="عرض القائمة المنظمة (7 صفوف لكل صفحة مع ترقيم وتصفح)"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flex: isMobile ? 1 : 'none',
-                        gap: '5px',
-                        padding: isMobile ? '6px 8px' : '6px 12px',
-                        borderRadius: '7px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: isMobile ? '11px' : '11.5px',
-                        fontWeight: ticketLayoutMode === 'LIST' ? 800 : 600,
-                        fontFamily: "'Cairo', sans-serif",
-                        background: ticketLayoutMode === 'LIST'
-                          ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
-                          : 'transparent',
-                        color: ticketLayoutMode === 'LIST'
-                          ? '#ffffff'
-                          : (isDark ? '#94a3b8' : '#64748b'),
-                        boxShadow: ticketLayoutMode === 'LIST'
-                          ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
-                          : 'none',
-                        transition: 'all 0.18s ease',
-                      }}
-                    >
-                      <List size={13} />
-                      <span>{isMobile ? 'عرض القائمة' : 'قائمة منظمة (7 صفوف)'}</span>
-                    </button>
-
-                    {isMobile && ticketLayoutMode === 'RAIL' && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetRailRows(r => r === 1 ? 2 : 1)}
-                        title={mobileCardsCols === 1 ? 'التبديل إلى صفين' : 'التبديل إلى صف واحد'}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                          padding: '6px 10px',
-                          borderRadius: '7px',
-                          border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
-                          cursor: 'pointer',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          fontFamily: "'Cairo', sans-serif",
-                          background: isDark ? 'rgba(30, 41, 59, 0.85)' : '#f8fafc',
-                          color: isDark ? '#38bdf8' : '#0284c7',
-                          transition: 'all 0.18s ease',
-                          flexShrink: 0
-                        }}
-                      >
-                        <LayoutGrid size={13} />
-                        <span>{railVisibleRows === 1 ? 'صفين (2)' : 'صف واحد (1)'}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : '180px', maxWidth: isMobile ? '100%' : '320px' }}>
-                    <Search size={15} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input 
-                      type="text" 
-                      placeholder="ابحث برقم الطلب، الموضوع، أو اسم المُرسل..." 
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '9px 36px 9px 12px',
-                        borderRadius: '10px',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                        background: isDark ? 'rgba(30, 41, 59, 0.6)' : '#ffffff',
-                        fontSize: '13px',
-                        color: isDark ? '#ffffff' : '#0f172a',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    {search && (
-                      <button
-                        onClick={() => setSearch('')}
-                        style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={fetchData}
-                    disabled={loading}
-                    title="تحديث البيانات الفورية"
-                    style={{
-                      padding: '9px 14px',
-                      borderRadius: '10px',
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #e2e8f0',
-                      background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                      color: isDark ? '#f8fafc' : '#334155',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '12.5px',
-                      fontWeight: 700
-                    }}
-                  >
-                    <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-                    <span>تحديث</span>
-                  </button>
-
-                </div>
-              )}
-            </div>
+            )}
 
             {/* ═══ 2. VIEW BODY (ALL VIEWS EMBEDDED SEAMLESSLY INSIDE) ═══ */}
             {activeTab === 'FLOW_SETTINGS' ? (
@@ -2335,143 +2183,426 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
             ) : (
               /* Tickets List Rendered in RAIL, GRID, or LIST */
               <div style={{ minHeight: '520px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* ═══ Universal Operational Filter Engine (شريط الفلاتر المؤسسي الموحد) ═══ */}
+                {/* ═══ Universal Operational Command & Filter Suite (شريط التحكم والفلترة فائق الانسيابية) ═══ */}
                 {isTicketView && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: isMobile ? '6px' : '10px',
-                    flexWrap: 'wrap',
-                    padding: isMobile ? '8px 10px' : '10px 14px',
-                    borderRadius: '14px',
-                    background: isDark ? 'rgba(30, 41, 59, 0.45)' : '#ffffff',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
-                    marginBottom: '12px',
-                    fontSize: '12px',
-                    fontFamily: "'Cairo', sans-serif"
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 800 }}>
-                      <Filter size={13} color="#0ea5e9" />
-                      <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>تصفية سريعة:</span>
+                  <div
+                    className="nexus-integrated-ops-toolbar"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: isMobile ? '10px' : '12px',
+                      padding: isMobile ? '12px' : '14px 18px',
+                      borderRadius: isMobile ? '14px' : '16px',
+                      background: isDark ? 'rgba(24, 29, 41, 0.65)' : '#ffffff',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.07)',
+                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15, 23, 42, 0.03)',
+                      marginBottom: '16px'
+                    }}
+                  >
+                    {/* ── ROW 1: SEARCH + LAYOUT SWITCHER + REFRESH ── */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: isMobile ? '8px' : '12px',
+                      flexWrap: isMobile ? 'wrap' : 'nowrap',
+                      width: '100%'
+                    }}>
+                      {/* Search Bar */}
+                      <div style={{
+                        position: 'relative',
+                        flex: 1,
+                        minWidth: isMobile ? '100%' : '260px'
+                      }}>
+                        <Search
+                          size={15}
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: isDark ? '#94a3b8' : '#64748b',
+                            pointerEvents: 'none'
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="ابحث برقم المعاملة، الموضوع، أو اسم صاحب الطلب..."
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: isMobile ? '8px 36px 8px 12px' : '9px 38px 9px 12px',
+                            borderRadius: '10px',
+                            border: search
+                              ? '1.5px solid #0284c7'
+                              : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                            background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
+                            fontSize: isMobile ? '12px' : '13px',
+                            fontFamily: "'Cairo', sans-serif",
+                            color: isDark ? '#ffffff' : '#0f172a',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            transition: 'all 0.18s ease'
+                          }}
+                        />
+                        {search && (
+                          <button
+                            type="button"
+                            onClick={() => setSearch('')}
+                            style={{
+                              position: 'absolute',
+                              left: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#94a3b8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '2px'
+                            }}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right Controls Group: Layout Toggle + Refresh Button */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: isMobile ? '100%' : 'auto',
+                        justifyContent: isMobile ? 'space-between' : 'flex-end',
+                        flexShrink: 0
+                      }}>
+                        {/* View Mode Switcher (Rail vs List) */}
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          background: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f1f5f9',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1',
+                          borderRadius: '10px',
+                          padding: '2.5px',
+                          gap: '2px',
+                          flex: isMobile ? 1 : 'none'
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLayout('RAIL')}
+                            title="عرض الكروت الأفقي"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flex: isMobile ? 1 : 'none',
+                              gap: '5px',
+                              padding: isMobile ? '6px 8px' : '6px 12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: isMobile ? '11px' : '11.5px',
+                              fontWeight: ticketLayoutMode === 'RAIL' ? 800 : 600,
+                              fontFamily: "'Cairo', sans-serif",
+                              background: ticketLayoutMode === 'RAIL'
+                                ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                                : 'transparent',
+                              color: ticketLayoutMode === 'RAIL'
+                                ? (isDark ? '#ffffff' : '#0284c7')
+                                : (isDark ? '#94a3b8' : '#64748b'),
+                              boxShadow: ticketLayoutMode === 'RAIL'
+                                ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
+                                : 'none',
+                              transition: 'all 0.18s ease'
+                            }}
+                          >
+                            <SlidersHorizontal size={13} />
+                            <span>{isMobile ? 'كروت' : 'شريط الكروت'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLayout('LIST')}
+                            title="عرض القائمة المنظمة"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flex: isMobile ? 1 : 'none',
+                              gap: '5px',
+                              padding: isMobile ? '6px 8px' : '6px 12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: isMobile ? '11px' : '11.5px',
+                              fontWeight: ticketLayoutMode === 'LIST' ? 800 : 600,
+                              fontFamily: "'Cairo', sans-serif",
+                              background: ticketLayoutMode === 'LIST'
+                                ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
+                                : 'transparent',
+                              color: ticketLayoutMode === 'LIST'
+                                ? (isDark ? '#ffffff' : '#0284c7')
+                                : (isDark ? '#94a3b8' : '#64748b'),
+                              boxShadow: ticketLayoutMode === 'LIST'
+                                ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
+                                : 'none',
+                              transition: 'all 0.18s ease'
+                            }}
+                          >
+                            <List size={13} />
+                            <span>{isMobile ? 'قائمة' : 'قائمة منظمة'}</span>
+                          </button>
+
+                          {isMobile && ticketLayoutMode === 'RAIL' && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetRailRows(r => r === 1 ? 2 : 1)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                fontFamily: "'Cairo', sans-serif",
+                                background: 'transparent',
+                                color: isDark ? '#38bdf8' : '#0284c7'
+                              }}
+                            >
+                              <LayoutGrid size={13} />
+                              <span>{railVisibleRows === 1 ? 'صفين' : 'صف'}</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Refresh Button */}
+                        <button
+                          type="button"
+                          onClick={fetchData}
+                          disabled={loading}
+                          title="تحديث البيانات الفورية"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: isMobile ? '7px 12px' : '8px 14px',
+                            borderRadius: '10px',
+                            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                            background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                            color: isDark ? '#e2e8f0' : '#334155',
+                            cursor: 'pointer',
+                            fontSize: isMobile ? '11px' : '12px',
+                            fontWeight: 700,
+                            fontFamily: "'Cairo', sans-serif",
+                            transition: 'all 0.18s ease',
+                            flexShrink: 0
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#0284c7';
+                            e.currentTarget.style.color = '#0284c7';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1';
+                            e.currentTarget.style.color = isDark ? '#e2e8f0' : '#334155';
+                          }}
+                        >
+                          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                          <span>تحديث</span>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* 1. فلتر الإدارة */}
-                    <select
-                      value={selectedDeptFilter}
-                      onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: '8px',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                        background: isDark ? '#1e293b' : '#f8fafc',
-                        color: isDark ? '#f8fafc' : '#0f172a',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="ALL">🏢 كافة الإدارات</option>
-                      {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
+                    {/* ── ROW 2: ERGONOMIC SMART FILTERS (الإدارة | الموقع | المسار | الحالة) ── */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: isMobile ? '6px' : '8px',
+                      flexWrap: 'wrap',
+                      paddingTop: isMobile ? '6px' : '8px',
+                      borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(15, 23, 42, 0.06)',
+                      fontSize: '12px'
+                    }}>
+                      {/* Filter Label & Indicator */}
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        color: isDark ? '#94a3b8' : '#64748b',
+                        fontWeight: 800,
+                        fontSize: '11px',
+                        marginInlineEnd: '4px'
+                      }}>
+                        <Filter size={13} color="#0ea5e9" />
+                        <span>تصفية مخصصة:</span>
+                      </div>
 
-                    {/* 2. فلتر المشكلة / المسار */}
-                    <select
-                      value={selectedFlowFilter}
-                      onChange={(e) => setSelectedFlowFilter(e.target.value)}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: '8px',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                        background: isDark ? '#1e293b' : '#f8fafc',
-                        color: isDark ? '#f8fafc' : '#0f172a',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="ALL">🎯 كافة المسارات والمشاكل</option>
-                      {flowsList.map(f => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))}
-                    </select>
-
-                    {/* 3. فلتر المبنى / الموقع */}
-                    <select
-                      value={selectedBuildingFilter}
-                      onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: '8px',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                        background: isDark ? '#1e293b' : '#f8fafc',
-                        color: isDark ? '#f8fafc' : '#0f172a',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="ALL">📍 كافة المباني والمواقع</option>
-                      {buildings.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-
-                    {/* 4. فلتر الحالة */}
-                    <select
-                      value={selectedStatusFilter}
-                      onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: '8px',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                        background: isDark ? '#1e293b' : '#f8fafc',
-                        color: isDark ? '#f8fafc' : '#0f172a',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="ALL">🔄 كل الحالات</option>
-                      <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
-                      <option value="PENDING">⏳ قيد الانتظار</option>
-                      <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
-                      <option value="CLOSED">✅ المغلقة والمكتملة</option>
-                    </select>
-
-                    {/* زر تصفير الفلاتر النشطة */}
-                    {(selectedDeptFilter !== 'ALL' || selectedFlowFilter !== 'ALL' || selectedBuildingFilter !== 'ALL' || selectedStatusFilter !== 'ALL') && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDeptFilter('ALL');
-                          setSelectedFlowFilter('ALL');
-                          setSelectedBuildingFilter('ALL');
-                          setSelectedStatusFilter('ALL');
-                        }}
+                      {/* 1. الإدارة المختصة */}
+                      <select
+                        value={selectedDeptFilter}
+                        onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '4px 9px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
-                          color: isDark ? '#f87171' : '#dc2626',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
+                          padding: '6px 10px',
+                          borderRadius: '9px',
+                          border: selectedDeptFilter !== 'ALL'
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                          background: selectedDeptFilter !== 'ALL'
+                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
+                            : (isDark ? '#1e293b' : '#f8fafc'),
+                          color: selectedDeptFilter !== 'ALL'
+                            ? (isDark ? '#38bdf8' : '#0369a1')
+                            : (isDark ? '#f8fafc' : '#0f172a'),
+                          fontSize: '11.5px',
+                          fontWeight: selectedDeptFilter !== 'ALL' ? 700 : 600,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
                         }}
                       >
-                        <X size={11} />
-                        <span>إلغاء التصفية</span>
-                      </button>
-                    )}
+                        <option value="ALL">🏢 كافة الإدارات</option>
+                        {departments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+
+                      {/* 2. المبنى / الموقع الجغرافي */}
+                      <select
+                        value={selectedBuildingFilter}
+                        onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '9px',
+                          border: selectedBuildingFilter !== 'ALL'
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                          background: selectedBuildingFilter !== 'ALL'
+                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
+                            : (isDark ? '#1e293b' : '#f8fafc'),
+                          color: selectedBuildingFilter !== 'ALL'
+                            ? (isDark ? '#38bdf8' : '#0369a1')
+                            : (isDark ? '#f8fafc' : '#0f172a'),
+                          fontSize: '11.5px',
+                          fontWeight: selectedBuildingFilter !== 'ALL' ? 700 : 600,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <option value="ALL">📍 كافة المباني والمواقع</option>
+                        {buildings.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+
+                      {/* 3. نوع المشكلة / المسار */}
+                      <select
+                        value={selectedFlowFilter}
+                        onChange={(e) => setSelectedFlowFilter(e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '9px',
+                          border: selectedFlowFilter !== 'ALL'
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                          background: selectedFlowFilter !== 'ALL'
+                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
+                            : (isDark ? '#1e293b' : '#f8fafc'),
+                          color: selectedFlowFilter !== 'ALL'
+                            ? (isDark ? '#38bdf8' : '#0369a1')
+                            : (isDark ? '#f8fafc' : '#0f172a'),
+                          fontSize: '11.5px',
+                          fontWeight: selectedFlowFilter !== 'ALL' ? 700 : 600,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <option value="ALL">🎯 كافة المسارات والمشاكل</option>
+                        {flowsList.map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                      </select>
+
+                      {/* 4. حالة الطلب التشغيلية */}
+                      <select
+                        value={selectedStatusFilter}
+                        onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '9px',
+                          border: selectedStatusFilter !== 'ALL'
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
+                          background: selectedStatusFilter !== 'ALL'
+                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
+                            : (isDark ? '#1e293b' : '#f8fafc'),
+                          color: selectedStatusFilter !== 'ALL'
+                            ? (isDark ? '#38bdf8' : '#0369a1')
+                            : (isDark ? '#f8fafc' : '#0f172a'),
+                          fontSize: '11.5px',
+                          fontWeight: selectedStatusFilter !== 'ALL' ? 700 : 600,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <option value="ALL">🔄 كل الحالات</option>
+                        <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
+                        <option value="PENDING">⏳ قيد الانتظار</option>
+                        <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
+                        <option value="CLOSED">✅ المغلقة والمكتملة</option>
+                      </select>
+
+                      {/* Reset Filters Button */}
+                      {activeFiltersCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDeptFilter('ALL');
+                            setSelectedFlowFilter('ALL');
+                            setSelectedBuildingFilter('ALL');
+                            setSelectedStatusFilter('ALL');
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '5px 10px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                            color: isDark ? '#f87171' : '#dc2626',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            fontFamily: "'Cairo', sans-serif",
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.3)' : '#fecaca';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
+                          }}
+                        >
+                          <X size={12} strokeWidth={2.5} />
+                          <span>إلغاء التصفية ({activeFiltersCount})</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
