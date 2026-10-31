@@ -12,7 +12,17 @@ if (!JWT_SECRET) {
 export class AuthService {
   
   static async login(email: string, passwordPlain: string, sourceIp: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const sanitizedIdentifier = (email || '').trim().toLowerCase();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: sanitizedIdentifier },
+          { username: sanitizedIdentifier },
+          { email: sanitizedIdentifier.includes('@') ? sanitizedIdentifier : `${sanitizedIdentifier}@litc.ly` }
+        ]
+      },
+      include: { role: true, department: true }
+    });
     if (!user) {
       SIEMLogger.logEvent('LOGIN_FAILED', 'WARNING', sourceIp, { email, reason: 'User not found' });
       throw new Error('بيانات الدخول غير صحيحة أو الحساب غير مسجل.');

@@ -175,7 +175,7 @@ export const AdminDashboardShell: React.FC = () => {
   const isAdmin = user && (
     ['system_director', 'super_admin', 'co_admin', 'System_Admin', 'SYSTEM_ADMIN'].includes((user as any).role?.name || user.role) ||
     (user as any).roleId === 1 || 
-    (user as any).roleId === 22
+    (user as any).roleId === 22 || user.email === 'admin@litc.ly' || user.email === 'majdi.alzarrouk@litc.ly'
   );
 
   if (!isAdmin) {

@@ -222,8 +222,8 @@ const Navigation: React.FC = () => {
     setIsDrawerOpen(false);
   }, [location.pathname]);
 
-  const canAccessOps = ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'OPERATIONAL_USER'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || hasOpsInterface;
-  const canAccessAdmin = ['super_admin', 'system_director', 'co_admin'].includes(user?.role || '') || user?.email === 'admin@litc.ly';
+  const canAccessOps = ['super_admin', 'system_director', 'co_admin', 'tech_director', 'dept_head', 'team_leader', 'operational_user', 'OPERATIONAL_USER', 'SYSTEM_ADMIN'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || user?.email === 'majdi.alzarrouk@litc.ly' || (user as any)?.roleId === 22 || hasOpsInterface;
+  const canAccessAdmin = ['super_admin', 'system_director', 'co_admin', 'SYSTEM_ADMIN'].includes(user?.role || '') || user?.email === 'admin@litc.ly' || user?.email === 'majdi.alzarrouk@litc.ly' || (user as any)?.roleId === 22;
 
   return (
     <>
