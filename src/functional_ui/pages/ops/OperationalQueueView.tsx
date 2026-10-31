@@ -1166,17 +1166,24 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   };
 
   // ── Unified View Configurations & Standards ──
-  const isGeneralTicketsView = ['POOL', 'MY_QUEUE', 'OUTBOUND', 'ARCHIVE'].includes(activeTab);
+  const isGeneralTicketsView = ['POOL', 'MY_QUEUE', 'ARCHIVE'].includes(activeTab);
   const isStandaloneView = activeTab === 'SUB_TICKETS';
   const isTicketView = isGeneralTicketsView || isStandaloneView;
+
+  // Fallback if legacy OUTBOUND tab was active
+  useEffect(() => {
+    if ((activeTab as string) === 'OUTBOUND') {
+      setActiveTab('POOL');
+    }
+  }, [activeTab]);
 
   const activeViewConfig = React.useMemo(() => {
     switch (activeTab) {
       case 'POOL':
         return {
-          title: 'حوض الطلبات الواردة',
+          title: 'حوض التذاكر العام',
           subtitle: 'الطلبات العامة المعلقة بانتظار السحب والإسناد المباشر للفريق (المفتوحة فقط)',
-          badgeText: `${poolCount} معلقة`,
+          badgeText: `${poolCount} متاحة للسحب`,
           badgeColor: '#0284c7',
           badgeBg: 'rgba(2, 132, 199, 0.12)',
           icon: Inbox,
@@ -1185,9 +1192,9 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
         };
       case 'MY_QUEUE':
         return {
-          title: 'بريدي (المهام المسندة إليّ)',
+          title: 'تذاكري المسندة',
           subtitle: 'المعاملات والتذاكر التشغيلية النشطة المسندة إليك مباشرة قيد المتابعة والإنجاز',
-          badgeText: `${myCount} جارية`,
+          badgeText: `${myCount} قيد المعالجة`,
           badgeColor: '#4f46e5',
           badgeBg: 'rgba(79, 70, 229, 0.12)',
           icon: ShieldCheck,
@@ -1218,7 +1225,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
         };
       case 'ARCHIVE':
         return {
-          title: 'أرشيف الطلبات والمعاملات المنجزة',
+          title: 'أرشيف التذاكر',
           subtitle: 'السجل الأرشيفي التوثيقي لكافة التذاكر والمعاملات المقفلة والمحلولة المعتمدة بنجاح',
           badgeText: `${archiveCount} معاملة مغلقة`,
           badgeColor: '#10b981',
@@ -1553,17 +1560,17 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض الطلبات العامة الأربعة) ═══ */}
+          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض التذاكر العامة الثلاثة المنظمة) ═══ */}
           {isGeneralTicketsView && (
             <div 
               className="operational-top-queues-bar"
               style={{
                 display: isMobile ? 'flex' : 'grid',
-                gridTemplateColumns: isMobile ? undefined : 'repeat(4, minmax(0, 1fr))',
+                gridTemplateColumns: isMobile ? undefined : 'repeat(3, minmax(0, 1fr))',
                 flexDirection: isMobile ? 'row' : undefined,
                 overflowX: isMobile ? 'auto' : undefined,
                 WebkitOverflowScrolling: 'touch',
-                gap: isMobile ? '8px' : '12px',
+                gap: isMobile ? '8px' : '14px',
                 paddingBottom: isMobile ? '6px' : '0',
                 scrollbarWidth: 'none',
                 width: '100%',
@@ -1573,37 +1580,28 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
               {[
                 {
                   id: 'POOL',
-                  label: 'حوض الطلبات الواردة',
+                  label: 'حوض التذاكر العام',
                   count: poolCount,
-                  badge: 'معلقة للسحب',
+                  badge: 'متاحة للسحب',
                   sublabel: 'الطلبات العامة بانتظار الإسناد',
                   icon: Inbox,
                   accentColor: '#0284c7',
                 },
                 {
                   id: 'MY_QUEUE',
-                  label: 'بريدي (مسندة إليّ)',
+                  label: 'تذاكري المسندة',
                   count: myCount,
-                  badge: 'مهام جارية',
-                  sublabel: 'المعاملات النشطة قيد إنجازك',
+                  badge: 'قيد المعالجة',
+                  sublabel: 'المهام والمعاملات المباشرة في عهدتك',
                   icon: ShieldCheck,
                   accentColor: '#4f46e5',
                 },
                 {
-                  id: 'OUTBOUND',
-                  label: 'الطلبات الصادرة',
-                  count: outboundCount,
-                  badge: 'معاملات صادرة',
-                  sublabel: 'المعاملات الصادرة لمتابعتها',
-                  icon: Send,
-                  accentColor: '#0ea5e9',
-                },
-                {
                   id: 'ARCHIVE',
-                  label: 'أرشيف الطلبات المنجزة',
+                  label: 'أرشيف التذاكر',
                   count: archiveCount,
-                  badge: 'مغلقة ومحلولة',
-                  sublabel: 'الأرشيف التوثيقي المقفل',
+                  badge: 'مقفلة ومكتملة',
+                  sublabel: 'سجل المعاملات المنجزة والمغلقة',
                   icon: FileCheck,
                   accentColor: '#10b981',
                 },
