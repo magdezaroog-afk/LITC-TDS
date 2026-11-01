@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-11-01T19:19:14.049Z",
+  "description": "نسخة احتياطية كاملة لمود العمل (Work Mode) قبل ترقية الواجهات الحقيقية بموجب توجيهات سعادة مدير المشروع م. مجدي الزروق",
+  "files": [
+    {
+      "fileName": "WorkModeShell.tsx",
+      "sizeBytes": 23754,
+      "sha256": "83171941cf33752c2bb1d4b1ab3fdcf40b98ef686343e99b4e7340d0413eeb4f"
+    },
+    {
+      "fileName": "OperationalQueueView.tsx",
+      "sizeBytes": 333360,
+      "sha256": "557148cd90732e65e8bea09e21492494a0ec5f21e762fd9565d408632783c173"
+    },
+    {
+      "fileName": "FlowReceptionGovernanceView.tsx",
+      "sizeBytes": 134265,
+      "sha256": "e67c9ac82918e4000a4be3d73efca9777069d67cc811a2307d709d44c4da2b2e"
+    },
+    {
+      "fileName": "LinkAssetModal.tsx",
+      "sizeBytes": 15343,
+      "sha256": "2668a1d610d5868a2f2f3552668faed2103e29ae02558b09521cb0304a997db2"
+    },
+    {
+      "fileName": "RegisterAssetModal.tsx",
+      "sizeBytes": 15503,
+      "sha256": "0ce9c77a5e489f8731a1859044b77d6762b139bbae62584d80e2c6a1baf32971"
+    },
+    {
+      "fileName": "StandaloneInternalTicketModal.tsx",
+      "sizeBytes": 13917,
+      "sha256": "b3885e4d468f1eb529a30b440cb0e182c16501d866c0cd871d18a4b8b340598b"
+    },
+    {
+      "fileName": "UnlinkedAssetsLedgerModal.tsx",
+      "sizeBytes": 12156,
+      "sha256": "2f3a8721acc61223c458fe085afc3ed588422d52e097dafcd633083142d50f9f"
+    },
+    {
+      "fileName": "MobileShell.tsx",
+      "sizeBytes": 3281,
+      "sha256": "c4c4b768b3769c55b748ddc59887ee3a7af7863a90f04570f70710673a060a9e"
+    }
+  ]
+}

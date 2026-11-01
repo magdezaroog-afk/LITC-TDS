@@ -2421,6 +2421,169 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       </div>
                     </div>
 
+                    {/* ── TIER 2: MOMENTUM QUICK-FILTER STRIP ── */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      overflowX: 'auto',
+                      scrollbarWidth: 'none',
+                      WebkitOverflowScrolling: 'touch',
+                      width: '100%',
+                      padding: '4px 0',
+                      maskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)',
+                      WebkitMaskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedStatusFilter('ALL');
+                          setSelectedDeptFilter('ALL');
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: (selectedStatusFilter === 'ALL' && selectedDeptFilter === 'ALL')
+                            ? 'linear-gradient(135deg, rgba(19, 93, 121, 0.95), rgba(14, 165, 233, 0.8))'
+                            : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                          border: (selectedStatusFilter === 'ALL' && selectedDeptFilter === 'ALL')
+                            ? '1px solid #38bdf8'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                          color: (selectedStatusFilter === 'ALL' && selectedDeptFilter === 'ALL') ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                          boxShadow: (selectedStatusFilter === 'ALL' && selectedDeptFilter === 'ALL') ? '0 2px 8px rgba(56, 189, 248, 0.3)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <span>الكل</span>
+                        <span style={{ fontSize: '10px', opacity: 0.85 }}>({filteredTickets.length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('ACTIVE')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: selectedStatusFilter === 'ACTIVE'
+                            ? 'linear-gradient(135deg, rgba(243, 108, 33, 0.95), rgba(234, 88, 12, 0.8))'
+                            : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                          border: selectedStatusFilter === 'ACTIVE'
+                            ? '1px solid #fb923c'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                          color: selectedStatusFilter === 'ACTIVE' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                          boxShadow: selectedStatusFilter === 'ACTIVE' ? '0 2px 8px rgba(251, 146, 60, 0.3)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <span>🔥 المفتوحة والنشطة</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('IN_PROGRESS')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: selectedStatusFilter === 'IN_PROGRESS'
+                            ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(3, 105, 161, 0.8))'
+                            : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                          border: selectedStatusFilter === 'IN_PROGRESS'
+                            ? '1px solid #38bdf8'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                          color: selectedStatusFilter === 'IN_PROGRESS' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                          boxShadow: selectedStatusFilter === 'IN_PROGRESS' ? '0 2px 8px rgba(2, 132, 199, 0.3)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <span>⚡ قيد المعالجة الميدانية</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('PENDING')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: selectedStatusFilter === 'PENDING'
+                            ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.8))'
+                            : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                          border: selectedStatusFilter === 'PENDING'
+                            ? '1px solid #f59e0b'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                          color: selectedStatusFilter === 'PENDING' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                          boxShadow: selectedStatusFilter === 'PENDING' ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <span>⏳ قيد الانتظار والاعتماد</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('CLOSED')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          fontFamily: "'Cairo', sans-serif",
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: selectedStatusFilter === 'CLOSED'
+                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.8))'
+                            : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
+                          border: selectedStatusFilter === 'CLOSED'
+                            ? '1px solid #10b981'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0'),
+                          color: selectedStatusFilter === 'CLOSED' ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                          boxShadow: selectedStatusFilter === 'CLOSED' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <span>✅ المكتملة والمغلقة</span>
+                      </button>
+                    </div>
+
                     {/* ── ROW 2: ERGONOMIC SMART FILTERS (الإدارة | الموقع | المسار | الحالة) ── */}
                     <div style={{
                       display: 'flex',

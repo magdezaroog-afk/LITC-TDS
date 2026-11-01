@@ -100,3 +100,108 @@ Never reinvent basic components or suffer from lifeless static boxes. Dynamicall
     `mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)`
 - **The Mobile Drawer Transformation (Vaul Bottom Sheet):**
   - All large dropdown menus, filter panels, and complex multi-select forms on mobile (< 768px) must automatically morph into an interactive bottom sheet anchored to the bottom thumb zone, dismissible by a downward swipe.
+
+---
+
+## 7. The Master Index of Interactive, Living & Animated Backgrounds (المرجع الشامل للخلفيات التفاعلية والمتحركة 2025-2026)
+
+Always consult this classified visual index whenever designing backgrounds to ensure breathtaking artistic depth, 60+ FPS GPU acceleration, and zero visual clutter:
+
+### التصنيف الأول (Category A): محركات الشيدر والسيولة البصرية (GPU Shaders & Fluid Dynamics)
+*الغرض: إضفاء تموجات ضوئية فائقة الانسيابية كالحرير السائل دون استهلاك المعالج.*
+- **React Bits Background Studio** (`https://reactbits.dev/backgrounds`):
+  - *أنماط رائدة:* `Liquid Ether` (سيولة أثيرية عاكسة)، `Aurora` (أورورا قطبية ناعمة)، `Iridescence` (انكسار ألوان قوس قزح اللؤلؤي)، `Dark Veil` (وشاح داكن متحرك).
+- **Stripe Gradient Canvas / GLSL WebGL Shaders** (`https://stripe.com`, `https://github.com/greggman/twgl.js`):
+  - تدرجات شبكية سائلة متعددة المحاور تعمل بحسابات رياضية على بطاقة الرسوميات (Fragment Shaders) لضمان انسيابية 120Hz.
+- **ShaderToy & Aura UI** (`https://shadertoy.com`, `https://aura.build`):
+  - مصفوفات كود GLSL نقية لتوليد أضواء ناعمة، وضبابية حجمية (Volumetric Fog)، وانكسارات كريستالية مائية.
+
+### التصنيف الثاني (Category B): الجسيمات التفاعلية والشبكات النجمية (Interactive Particles & Constellations)
+*الغرض: تفاعل ميكروسكوبي راقٍ يتبع حركة اللمس والمؤشر، كالأجرام والذرات الضوئية.*
+- **tsParticles Engine** (`https://particles.js.org`):
+  - الجيل الأحدث والأسرع عالمياً؛ جسيمات هندسية تنجذب للمس وتتصل بخيوط حريرية دقيقة (Constellation Links) وتتنافر بنعومة فيزيائية.
+- **Magic UI Interactive Particles & Beams** (`https://magicui.design/docs/components/particles`):
+  - جسيمات ضوئية عائمة تتفاعل كالغبار الذهبي في حزم الضوء الطبيعي، خفيفة الوزن ومخصصة لـ React & Tailwind.
+- **Aceternity UI Vortex & Background Beams** (`https://ui.aceternity.com/components/background-beams`):
+  - مسارات ضوئية ليزرية تسبح في مسارات بيضاوية تتبع تدفق البيانات في المنظومة.
+
+### التصنيف الثالث (Category C): الإضاءة الفضائية والأشعة الجوية (Atmospheric Light Rays & Warp)
+*الغرض: خلق إحساس بالفخامة والعمق الهندسي من خلال الإضاءة المحيطية.*
+- **Magic UI Light Rays & Warp Background** (`https://magicui.design/docs/components/light-rays`):
+  - حزم ضوئية علوية منسدلة تحاكي إضاءة الاستوديوهات الملكية، مع انحناء زمكاني خافت (Warp) يوحي بالسرعة والكفاءة.
+- **Aceternity Aurora Background & Lamp Effect** (`https://ui.aceternity.com/components/aurora-background`):
+  - هالات متموجة تمنح البطاقات الزجاجية انعكاساً كريستالياً متغيراً باستمرار دون تشتيت الانتباه.
+
+### التصنيف الرابع (Category D): المصفوفات الهندسية والشبكات المعمارية (Architectural & Retro Grids)
+*الغرض: ترسيخ الهيبة المؤسسية ودقة العمليات وحوكمة البيانات.*
+- **Magic UI Flickering Grid & Retro Grid** (`https://magicui.design/docs/components/flickering-grid`):
+  - مصفوفة مربعات هندسية تتلألأ فيها الخلايا بنبضات عشوائية محسوبة، ترمز للبيانات الحية المتدفقة.
+- **Aceternity Grid & Dot Matrix** (`https://ui.aceternity.com/components/grid-and-dot-backgrounds`):
+  - شبكات نقطية وشبكية تتفاعل خلاياها بالسطوع عند تحريك الفأرة أو لمس الشاشة (Interactive Canvas Grid Cells).
+
+### التصنيف الخامس (Category E): البيئات ثلاثية الأبعاد التفاعلية (Interactive 3D Canvases)
+*الغرض: استعراض مجسمات ثلاثية الأبعاد وعناصر دروع الحماية والأصول.*
+- **Spline 3D** (`https://spline.design`):
+  - تضمين مشاهد WebGL تفاعلية خفيفة الوزن تستجيب لإمالة الهاتف (Gyroscope) وحركة الأصابع.
+- **Three.js & OGL Minimalist Engine** (`https://threejs.org`, `https://github.com/oframe/ogl`):
+  - محركات خفيفة للتعامل مع كرات الطاقة المجوفة والكروم السائل المنعكس.
+
+---
+*دستور هندسي موحد ومحدث لتغذية مهارات التصميم — 2026*
+
+
+---
+
+## 8. Enterprise Kinetic Background Libraries & The Sovereign Anti-Gaming Law (مكتبات الخلفيات المؤسسية الكبرى وقانون الوقار السيادي)
+
+> **قانون الوقار والهيبة المؤسسية (The Enterprise Gravity & Anti-Gaming Law):**
+> منظومة NEXUS TDS والأنظمة المؤسسية الضخمة (Enterprise ERP & Operations) تدير بنية تحتية حيوية، شبكات وطنية، وأصولاً بمليارات الدنانير.
+> **يُمنع منعاً باتاً وبأعلى درجات الحظر:**
+> 1. تحويل الخلفية إلى مظهر "ألعاب فيديو (Gaming/Arcade)" أو "تطبيق أطفال" عبر كرات متصادمة سريعة، أو ألوان نيون فاقعة عشوائية (Lime, Magenta, Cyber Cyan)، أو قصاصات ملونة (Confetti).
+> 2. الحركات المتسارعة والمشتتة التي تسحب تركيز الموظف أو مدير العمليات عن قراءة التذاكر والبيانات.
+> 3. التكدس البصري العشوائي (Visual Over-engineering / Slop).
+> **المعيار المؤسسي السيادي المطلوب (Sovereign Enterprise Standard):**
+> رصانة ملكية هادئة (Quiet Executive Luxury)، انتظام هندسي ورياضي محسوب، سرعات بطيئة جداً ومريحة للأعصاب (< 0.4px/frame)، تدرجات داكنة عميقة (Deep Obsidian / Slate Zinc / Midnight Navy)، وإبراز الهوية الرسمية (Petrol Teal #135d79 & Tangerine #f36c21) بوقار واحترافية.
+
+---
+
+### A) ترسانة المكتبات الخمس المعتمدة وتطويعها المؤسسي (The 5 Elite Libraries)
+
+#### 1. Particles.js / TSParticles (الجسيمات وشبكات العقد النجمية)
+* **الموقع والحزمة:** `https://particles.js.org` | `npm i @tsparticles/react @tsparticles/engine @tsparticles/slim`
+* **التطبيق المؤسسي المعتمد (The Enterprise Nodal Constellation):**
+  - **النمط المسموح:** شبكة عقد بيانات متباعدة (Data Plexus) تتصل بخطوط ليزرية بالغة الدقة (lineWidth: 0.6px - 0.9px) عند اقتراب العقد.
+  - **السرعة المسموحة (Speed Limit):** بطيئة جداً `speed: 0.25 - 0.45` لتحاكي حركة الأجرام السماوية أو تدفق حزم البيانات في شبكة ألياف ضوئية.
+  - **الكثافة (Density Limit):** عدد الجسيمات لا يتجاوز `30 - 45` جسيماً على الشاشات الكبيرة و `18 - 25` على الهواتف لمنع أي تشويش.
+  - **الألوان:** كحلي بترولي شفاف `rgba(19, 93, 121, 0.25)` مع ذرات سيان خافتة ونقاط بيضاء نقية.
+
+#### 2. Vanta.js (الشيدر ثلاثي الأبعاد والتموجات السيادية)
+* **الموقع والحزمة:** `https://www.vantajs.com` | `npm i vanta three`
+* **التأثيرات المؤسسية الكبرى المعتمدة:**
+  - **`VANTA.TOPOLOGY` (الأفضل والأنسب للأنظمة المؤسسية):** خطوط كونتورية طوبوغرافية تحاكي خرائط الشبكات والمساحة الجيولوجية والهندسية، بدون أي إزعاج، بلون أوبسيديان داكن وخطوط بترولية رفيعة.
+  - **`VANTA.NET` (شبكة البيانات النظيفة):** شبكة ثلاثية الأبعاد خفيفة `points: 8.0, maxDistance: 22.0, spacing: 18.0, speed: 0.3`.
+  - **`VANTA.WAVES` (أمواج المحيط الهادئة):** تموجات جيبية ناعمة تحاكي انسياب الحرير أو مياه البحر الهادئة تحت ضوء القمر.
+  - **`VANTA.FOG` (الضباب الحجمي المحيطي):** إضاءة سينمائية محيطية ناعمة جداً تبرز الزجاج الشفاف.
+* **إعدادات الأمان:** دائماً `backgroundColor: 0x02040a` و `color: 0x135d79` و `color2: 0xf36c21` كوهج خافت.
+
+#### 3. Magic UI (المكونات الحركية المعمارية)
+* **الموقع والحزمة:** `https://magicui.design` | المكونات المعتمدة لـ React & Tailwind:
+  - **`Interactive Grid Pattern` / `Retro Grid`:** شبكة هندسية دقيقة منسدلة بأفق منظوري (Perspective Grid) تعكس الدقة المؤسسية وانضباط الحوكمة.
+  - **`Animated Beam`:** مسارات ضوئية ناعمة تسري بين أيقونات وعقد النظام لتمثيل تكامل العمليات والربط بين الإدارات.
+  - **`Border Beam`:** شعاع ليزري دقيق يطوف حول حواف كروت التذاكر الحرجة أو شارات الـ SLA.
+  - **`Flickering Grid`:** شبكة مربعات هندسية داكنة تنبض خلاياها بنسب ضئيلة ومتباعدة لتمثيل الحيوية والأمان الرقمي.
+  - **`Meteors` (الشهب الهادئة):** شهب خافتة نادرة تسبح قطرياً بزاوية 45 درجة لتمنح إحساساً بالعمق الفضائي.
+
+#### 4. Aceternity UI (المحركات السديمية والخلفيات الفخمة)
+* **الموقع والحزمة:** `https://ui.aceternity.com` | المكونات الرائدة:
+  - **`Background Beams`:** حزم ضوئية قطرية أنيقة تنكسر بنعومة خلف الواجهة دون أي تشويش.
+  - **`Background Boxes`:** مصفوفة مكعبات ثلاثية الأبعاد تفاعلية تتوهج بهدوء عند اقتراب الإصبع أو المؤشر.
+  - **`Lamp Effect`:** كشاف ضوئي علوي مسلط بهيبة ملكية على ترويسة الشاشة والبطاقات.
+  - **`Aurora Background`:** تدرجات أثيرية متداخلة بنمط `screen` تحاكي شاشات Apple VisionOS.
+  - **`Vortex`:** مجال دوراني هادئ بمركز منضبط يمثل استقرار المنظومة المركزية.
+
+#### 5. Spline 3D (المجسمات الزجاجية والأيقونات الفضائية)
+* **الموقع والحزمة:** `https://spline.design` | `npm i @splinetool/react-spline @splinetool/runtime`
+* **الاستخدام المؤسسي الصارم:**
+  - **القطع الكريستالية والشعارات ثلاثية الأبعاد:** تحويل شعار المنظومة أو درع الأمان إلى مجسم زجاجي ثلاثي الأبعاد بنمط (Curved Frosted Glass Monolith).
+  - **حوكمة الأداء:** حجم ملف المشهد أقل من `1.2MB`، إضاءة محسوبة مسبقاً (Baked Lighting)، إيقاف التحديث عند خروج العنصر من مجال الرؤية (`IntersectionObserver`)، استجابة انسيابية لحساس الجيروسكوب في الهواتف.
