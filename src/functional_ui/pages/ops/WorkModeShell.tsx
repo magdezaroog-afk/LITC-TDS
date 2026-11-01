@@ -214,7 +214,7 @@ export const WorkModeShell: React.FC = () => {
         width: '100%',
         maxWidth: '100%',
         background: isDark
-          ? 'radial-gradient(circle at 20% 15%, rgba(13, 57, 75, 0.5) 0%, transparent 55%), radial-gradient(circle at 85% 75%, rgba(21, 30, 54, 0.65) 0%, transparent 55%), radial-gradient(circle at 50% 95%, rgba(74, 28, 6, 0.25) 0%, transparent 45%), #060913'
+          ? 'radial-gradient(circle at 50% 0%, #161920 0%, #0c0e12 60%, #07080a 100%)'
           : 'radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f5f7fa 50%, #eaedf3 100%)',
         color: isDark ? '#f8fafc' : '#0f172a',
         direction: 'rtl',
@@ -446,14 +446,14 @@ export const WorkModeShell: React.FC = () => {
           justifyContent: isMobile ? 'flex-start' : 'center',
           gap: isMobile ? '6px' : '10px',
           padding: isMobile ? '0 8px calc(env(safe-area-inset-bottom, 0px) + 2px)' : '8px 18px',
-          background: isDark ? 'rgba(10, 15, 26, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+          background: isDark ? 'rgba(12, 16, 23, 0.95)' : 'rgba(255, 255, 255, 0.96)',
           backdropFilter: 'blur(32px) saturate(200%)',
           WebkitBackdropFilter: 'blur(32px) saturate(200%)',
           borderRadius: isMobile ? '0' : '26px',
           borderTop: isMobile ? (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)') : 'none',
           border: isMobile ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'),
           boxShadow: isDark 
-            ? '0 20px 50px rgba(0, 0, 0, 0.75), 0 0 25px rgba(19, 93, 121, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
+            ? '0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
             : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
