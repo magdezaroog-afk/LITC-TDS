@@ -630,27 +630,27 @@ export const WorkModeShell: React.FC = () => {
         style={{
           position: 'fixed',
           bottom: isMobile ? '10px' : '18px',
-          left: isMobile ? '10px' : '50%',
-          right: isMobile ? '10px' : 'auto',
+          left: isMobile ? '12px' : '50%',
+          right: isMobile ? '12px' : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
           height: isMobile ? '58px' : '62px',
-          width: isMobile ? 'calc(100% - 20px)' : 'auto',
+          width: isMobile ? 'calc(100% - 24px)' : 'auto',
           minWidth: isMobile ? 'auto' : '460px',
-          maxWidth: isMobile ? 'calc(100% - 20px)' : '780px',
+          maxWidth: isMobile ? 'calc(100% - 24px)' : '780px',
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? '8px' : '12px',
           padding: isMobile ? '0 10px' : '0 16px',
           background: isDark
-            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.48) 0%, rgba(7, 11, 22, 0.40) 100%)'
-            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.20) 0%, rgba(240, 245, 252, 0.12) 100%)',
-          backdropFilter: 'blur(28px) saturate(210%)',
-          WebkitBackdropFilter: 'blur(28px) saturate(210%)',
+            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.52) 0%, rgba(7, 11, 22, 0.42) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(240, 245, 252, 0.35) 100%)',
+          backdropFilter: 'blur(30px) saturate(210%)',
+          WebkitBackdropFilter: 'blur(30px) saturate(210%)',
           borderRadius: isMobile ? '24px' : '28px',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.45)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(255, 255, 255, 0.65)',
           boxShadow: isDark 
-            ? '0 20px 45px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.16)' 
-            : '0 14px 40px -8px rgba(15, 23, 42, 0.10), inset 0 1px 2px rgba(255, 255, 255, 0.85), inset 0 -1px 1px rgba(0, 0, 0, 0.03)',
+            ? '0 20px 45px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.16)' 
+            : '0 16px 45px rgba(15, 23, 42, 0.10), inset 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(0, 0, 0, 0.03)',
           zIndex: 9000,
           direction: 'rtl',
           boxSizing: 'border-box'

@@ -489,10 +489,24 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
   // Universal Filter Engine & Standalone Requests States
   const [outboundCount, setOutboundCount] = useState<number>(0);
-  const [selectedDeptFilter, setSelectedDeptFilter] = useState<number | 'ALL'>('ALL');
-  const [selectedFlowFilter, setSelectedFlowFilter] = useState<string | 'ALL'>('ALL');
-  const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<number | 'ALL'>('ALL');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [selectedDeptFilters, setSelectedDeptFilters] = useState<number[]>([]);
+  const [selectedFlowFilters, setSelectedFlowFilters] = useState<string[]>([]);
+  const [selectedBuildingFilters, setSelectedBuildingFilters] = useState<number[]>([]);
+  const [selectedStatusFilters, setSelectedStatusFilters] = useState<string[]>([]);
+
+  const toggleDeptFilter = (id: number) => {
+    setSelectedDeptFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const toggleBuildingFilter = (id: number) => {
+    setSelectedBuildingFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const toggleFlowFilter = (id: string) => {
+    setSelectedFlowFilters(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const toggleStatusFilter = (val: string) => {
+    setSelectedStatusFilters(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+  };
+
   const [buildings, setBuildings] = useState<Array<{ id: number; name: string }>>([]);
   const [flowsList, setFlowsList] = useState<Array<{ id: string; name: string }>>([]);
   const [subTasksPopoverTicket, setSubTasksPopoverTicket] = useState<Ticket | null>(null);
@@ -524,13 +538,13 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (selectedDeptFilter !== 'ALL') count++;
-    if (selectedFlowFilter !== 'ALL') count++;
-    if (selectedBuildingFilter !== 'ALL') count++;
-    if (selectedStatusFilter !== 'ALL') count++;
+    count += selectedDeptFilters.length;
+    count += selectedBuildingFilters.length;
+    count += selectedFlowFilters.length;
+    count += selectedStatusFilters.length;
     if (quickFilter !== 'ALL') count++;
     return count;
-  }, [selectedDeptFilter, selectedFlowFilter, selectedBuildingFilter, selectedStatusFilter, quickFilter]);
+  }, [selectedDeptFilters, selectedBuildingFilters, selectedFlowFilters, selectedStatusFilters, quickFilter]);
 
   const quickCounts = useMemo(() => {
     let critical = 0;
@@ -571,7 +585,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   const [priorityToast, setPriorityToast] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedStatusFilter('ALL');
+    setSelectedStatusFilters([]);
     setQuickFilter('ALL');
   }, [activeTab]);
 
@@ -1099,10 +1113,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     setLoading(true);
     try {
       const filterParams: any = {};
-      if (selectedDeptFilter !== 'ALL') filterParams.departmentId = selectedDeptFilter;
-      if (selectedBuildingFilter !== 'ALL') filterParams.buildingId = selectedBuildingFilter;
-      if (selectedFlowFilter !== 'ALL') filterParams.flowId = selectedFlowFilter;
-      if (selectedStatusFilter !== 'ALL') filterParams.status = selectedStatusFilter;
+      if (selectedDeptFilters.length === 1) filterParams.departmentId = selectedDeptFilters[0];
+      if (selectedBuildingFilters.length === 1) filterParams.buildingId = selectedBuildingFilters[0];
+      if (selectedFlowFilters.length === 1) filterParams.flowId = selectedFlowFilters[0];
+      if (selectedStatusFilters.length === 1) filterParams.status = selectedStatusFilters[0];
       if (search.trim()) filterParams.search = search.trim();
 
       const [statsRes, poolRes, myRes, subRes, archiveRes, targetRes] = await Promise.all([
@@ -1148,7 +1162,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     } finally {
       setLoading(false);
     }
-  }, [activeTab, selectedDeptFilter, selectedBuildingFilter, selectedFlowFilter, selectedStatusFilter, standaloneSubTab, search]);
+  }, [activeTab, selectedDeptFilters, selectedBuildingFilters, selectedFlowFilters, selectedStatusFilters, standaloneSubTab, search]);
 
   useEffect(() => {
     fetchData();
@@ -1590,7 +1604,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     <div style={{
       ...styles.container,
       minHeight: '100%',
-      padding: isMobile ? '10px 10px 80px 10px' : '28px 32px 100px 32px',
+      padding: isMobile ? '8px 8px 85px 8px' : '20px 24px 95px 24px',
       overflowX: 'hidden',
       maxWidth: '100%',
       background: isDark
@@ -2019,14 +2033,14 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
           <div
             className="unified-operations-canvas-card"
             style={{
-              background: isDark ? 'rgba(18, 21, 28, 0.55)' : 'rgba(255, 255, 255, 0.75)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
+              background: isDark ? 'rgba(18, 21, 28, 0.45)' : 'rgba(255, 255, 255, 0.65)',
+              backdropFilter: 'blur(28px)',
+              WebkitBackdropFilter: 'blur(28px)',
               border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.07)',
               borderRadius: isMobile ? '16px' : '20px',
               padding: isMobile ? '14px 10px' : '24px 28px',
               boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.45)' : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03)',
-              minHeight: 'auto',
+              minHeight: isMobile ? 'calc(100vh - 105px)' : 'calc(100vh - 130px)',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
@@ -2399,55 +2413,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         </AnimatePresence>
                       </div>
 
-                      {/* 2. زر الفلاتر المخصص بجانب التبويب */}
-                      <button
-                        type="button"
-                        onClick={() => setIsFiltersExpanded(prev => !prev)}
-                        title="تخصيص الفلاتر المتقدمة"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          height: '42px',
-                          padding: isMobile ? '0 10px' : '0 14px',
-                          borderRadius: '12px',
-                          background: isFiltersExpanded
-                            ? (isDark ? 'rgba(2, 132, 199, 0.22)' : 'rgba(2, 132, 199, 0.12)')
-                            : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)'),
-                          border: isFiltersExpanded
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
-                          color: isFiltersExpanded ? '#38bdf8' : (isDark ? '#cbd5e1' : '#475569'),
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          backdropFilter: 'blur(16px)',
-                          WebkitBackdropFilter: 'blur(16px)',
-                          transition: 'all 0.2s ease',
-                          flexShrink: 0,
-                          fontFamily: "'Cairo', sans-serif"
-                        }}
-                      >
-                        <Filter size={14} strokeWidth={2.2} />
-                        <span>الفلاتر</span>
-                        {activeFiltersCount > 0 && (
-                          <span
-                            style={{
-                              background: 'rgba(14, 165, 233, 0.2)',
-                              color: '#38bdf8',
-                              border: '1px solid rgba(56, 189, 248, 0.4)',
-                              padding: '1px 6px',
-                              borderRadius: '9999px',
-                              fontSize: '10px',
-                              fontWeight: 800
-                            }}
-                          >
-                            {activeFiltersCount}
-                          </span>
-                        )}
-                      </button>
-
-                      {/* 3. شريط البحث المرن بجانب الفلاتر */}
+                      {/* 2. شريط البحث المرن */}
                       <div
                         className="clean-search-box"
                         style={{
@@ -2506,6 +2472,64 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         )}
                       </div>
 
+                      {/* 3. زر الفلاتر المتقدمة (متموضع بأناقة بجانب العرض والتحديث) */}
+                      <button
+                        type="button"
+                        onClick={() => setIsFiltersExpanded(prev => !prev)}
+                        title="تخصيص الفلاتر المتقدمة المتعددة"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '7px',
+                          height: '42px',
+                          minWidth: isMobile ? 'auto' : '108px',
+                          padding: isMobile ? '0 10px' : '0 16px',
+                          borderRadius: '12px',
+                          background: isFiltersExpanded || activeFiltersCount > 0
+                            ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28) 0%, rgba(14, 165, 233, 0.18) 100%)' : 'linear-gradient(135deg, rgba(2, 132, 199, 0.14) 0%, rgba(255, 255, 255, 0.95) 100%)')
+                            : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)'),
+                          border: isFiltersExpanded || activeFiltersCount > 0
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                          color: isFiltersExpanded || activeFiltersCount > 0 ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#cbd5e1' : '#475569'),
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          flexShrink: 0,
+                          fontFamily: "'Cairo', sans-serif",
+                          boxShadow: isFiltersExpanded ? '0 0 16px rgba(2, 132, 199, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.04)'
+                        }}
+                      >
+                        <Filter size={15} strokeWidth={2.4} />
+                        <span>الفلاتر</span>
+                        {activeFiltersCount > 0 && (
+                          <span
+                            style={{
+                              background: '#0284c7',
+                              color: '#ffffff',
+                              padding: '1px 6px',
+                              borderRadius: '9999px',
+                              fontSize: '10.5px',
+                              fontWeight: 900,
+                              fontFamily: 'monospace'
+                            }}
+                          >
+                            {activeFiltersCount}
+                          </span>
+                        )}
+                        <ChevronDown
+                          size={13}
+                          style={{
+                            transform: isFiltersExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            opacity: 0.7
+                          }}
+                        />
+                      </button>
+
                       {/* 4. زر طريقة العرض (كروت / قائمة) */}
                       <button
                         type="button"
@@ -2561,77 +2585,79 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       </button>
                     </div>
 
-                    {/* Tier 2: Momentum Quick-Filter Pills Strip */}
-                    <div
-                      className="quick-filter-strip"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        overflowX: 'auto',
-                        scrollbarWidth: 'none',
-                        width: '100%',
-                        paddingBottom: '2px'
-                      }}
-                    >
-                      {[
-                        { id: 'ALL', label: 'الكل', count: quickCounts.all, isUrgent: false },
-                        { id: 'CRITICAL', label: '🔥 عاجل وفوري', count: quickCounts.critical, isUrgent: true },
-                        { id: 'IN_PROGRESS', label: '⚡ قيد المعالجة', count: quickCounts.inProgress, isUrgent: false },
-                        { id: 'PENDING', label: '⏳ بانتظار الاعتماد', count: quickCounts.pending, isUrgent: false }
-                      ].map(chip => {
-                        const isActive = quickFilter === chip.id;
-                        return (
-                          <button
-                            key={chip.id}
-                            type="button"
-                            onClick={() => setQuickFilter(chip.id as any)}
-                            className={`quick-chip-btn ${isActive ? (chip.isUrgent ? 'priority-urgent active' : 'active') : ''}`}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              height: '32px',
-                              padding: '0 12px',
-                              borderRadius: '9999px',
-                              background: isActive
-                                ? (chip.isUrgent
-                                  ? 'linear-gradient(135deg, rgba(185, 28, 28, 0.8) 0%, rgba(239, 68, 68, 0.6) 100%)'
-                                  : 'linear-gradient(135deg, rgba(19, 93, 121, 0.85) 0%, rgba(14, 165, 233, 0.65) 100%)')
-                                : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
-                              border: isActive
-                                ? (chip.isUrgent ? '1px solid #f87171' : '1px solid #38bdf8')
-                                : (isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid rgba(15, 23, 42, 0.09)'),
-                              color: isActive ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                              transition: 'all 0.2s ease',
-                              flexShrink: 0,
-                              boxShadow: isActive
-                                ? (chip.isUrgent ? '0 2px 10px rgba(239, 68, 68, 0.3)' : '0 2px 10px rgba(56, 189, 248, 0.3)')
-                                : 'none',
-                              fontFamily: "'Cairo', sans-serif"
-                            }}
-                          >
-                            <span>{chip.label}</span>
-                            <span
+                    {/* Tier 2: Momentum Quick-Filter Pills Strip (للحاسوب فقط لحفظ مساحة شاشة الهاتف الثمينة) */}
+                    {!isMobile && (
+                      <div
+                        className="quick-filter-strip"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          overflowX: 'auto',
+                          scrollbarWidth: 'none',
+                          width: '100%',
+                          paddingBottom: '2px'
+                        }}
+                      >
+                        {[
+                          { id: 'ALL', label: 'الكل', count: quickCounts.all, isUrgent: false },
+                          { id: 'CRITICAL', label: '🔥 عاجل وفوري', count: quickCounts.critical, isUrgent: true },
+                          { id: 'IN_PROGRESS', label: '⚡ قيد المعالجة', count: quickCounts.inProgress, isUrgent: false },
+                          { id: 'PENDING', label: '⏳ بانتظار الاعتماد', count: quickCounts.pending, isUrgent: false }
+                        ].map(chip => {
+                          const isActive = quickFilter === chip.id;
+                          return (
+                            <button
+                              key={chip.id}
+                              type="button"
+                              onClick={() => setQuickFilter(chip.id as any)}
+                              className={`quick-chip-btn ${isActive ? (chip.isUrgent ? 'priority-urgent active' : 'active') : ''}`}
                               style={{
-                                background: 'rgba(0, 0, 0, 0.22)',
-                                padding: '1px 6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                height: '32px',
+                                padding: '0 12px',
                                 borderRadius: '9999px',
-                                fontSize: '10px',
-                                fontWeight: 800,
-                                fontFamily: 'monospace'
+                                background: isActive
+                                  ? (chip.isUrgent
+                                    ? 'linear-gradient(135deg, rgba(185, 28, 28, 0.8) 0%, rgba(239, 68, 68, 0.6) 100%)'
+                                    : 'linear-gradient(135deg, rgba(19, 93, 121, 0.85) 0%, rgba(14, 165, 233, 0.65) 100%)')
+                                  : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                                border: isActive
+                                  ? (chip.isUrgent ? '1px solid #f87171' : '1px solid #38bdf8')
+                                  : (isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid rgba(15, 23, 42, 0.09)'),
+                                color: isActive ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.2s ease',
+                                flexShrink: 0,
+                                boxShadow: isActive
+                                  ? (chip.isUrgent ? '0 2px 10px rgba(239, 68, 68, 0.3)' : '0 2px 10px rgba(56, 189, 248, 0.3)')
+                                  : 'none',
+                                fontFamily: "'Cairo', sans-serif"
                               }}
                             >
-                              {chip.count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                              <span>{chip.label}</span>
+                              <span
+                                style={{
+                                  background: 'rgba(0, 0, 0, 0.22)',
+                                  padding: '1px 6px',
+                                  borderRadius: '9999px',
+                                  fontSize: '10px',
+                                  fontWeight: 800,
+                                  fontFamily: 'monospace'
+                                }}
+                              >
+                                {chip.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Tier 3: Active Filters Live Ribbon */}
                     {activeFiltersCount > 0 && (
@@ -2645,85 +2671,101 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                           paddingTop: '2px'
                         }}
                       >
-                        {selectedDeptFilter !== 'ALL' && (
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 8px',
-                              borderRadius: '8px',
-                              background: isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.1)',
-                              border: '1px solid rgba(56, 189, 248, 0.35)',
-                              color: isDark ? '#38bdf8' : '#0284c7',
-                              fontSize: '11px',
-                              fontWeight: 700
-                            }}
-                          >
-                            <span>🏢 {departments.find(d => Number(d.id) === Number(selectedDeptFilter))?.name || 'القسم'}</span>
+                        {selectedBuildingFilters.map(bId => {
+                          const bObj = buildings.find(b => b.id === bId);
+                          return (
                             <span
-                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
-                              onClick={() => setSelectedDeptFilter('ALL')}
+                              key={`b-${bId}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '3px 9px',
+                                borderRadius: '8px',
+                                background: isDark ? 'rgba(244, 63, 94, 0.18)' : 'rgba(244, 63, 94, 0.1)',
+                                border: '1px solid rgba(244, 63, 94, 0.35)',
+                                color: isDark ? '#fb7185' : '#e11d48',
+                                fontSize: '11px',
+                                fontWeight: 700
+                              }}
                             >
-                              ✕
+                              <span>📍 {bObj?.name || `مبنى ${bId}`}</span>
+                              <span
+                                style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                                onClick={() => toggleBuildingFilter(bId)}
+                              >
+                                ✕
+                              </span>
                             </span>
-                          </span>
-                        )}
-                        {selectedBuildingFilter !== 'ALL' && (
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 8px',
-                              borderRadius: '8px',
-                              background: isDark ? 'rgba(244, 63, 94, 0.18)' : 'rgba(244, 63, 94, 0.1)',
-                              border: '1px solid rgba(244, 63, 94, 0.35)',
-                              color: isDark ? '#fb7185' : '#e11d48',
-                              fontSize: '11px',
-                              fontWeight: 700
-                            }}
-                          >
-                            <span>📍 {buildings.find(b => b.id === selectedBuildingFilter)?.name || 'المبنى'}</span>
+                          );
+                        })}
+
+                        {selectedDeptFilters.map(dId => {
+                          const dObj = departments.find(d => Number(d.id) === Number(dId));
+                          return (
                             <span
-                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
-                              onClick={() => setSelectedBuildingFilter('ALL')}
+                              key={`d-${dId}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '3px 9px',
+                                borderRadius: '8px',
+                                background: isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.1)',
+                                border: '1px solid rgba(56, 189, 248, 0.35)',
+                                color: isDark ? '#38bdf8' : '#0284c7',
+                                fontSize: '11px',
+                                fontWeight: 700
+                              }}
                             >
-                              ✕
+                              <span>🏢 {dObj?.name || `إدارة ${dId}`}</span>
+                              <span
+                                style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                                onClick={() => toggleDeptFilter(dId)}
+                              >
+                                ✕
+                              </span>
                             </span>
-                          </span>
-                        )}
-                        {selectedFlowFilter !== 'ALL' && (
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 8px',
-                              borderRadius: '8px',
-                              background: isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(168, 85, 247, 0.1)',
-                              border: '1px solid rgba(168, 85, 247, 0.35)',
-                              color: isDark ? '#c084fc' : '#9333ea',
-                              fontSize: '11px',
-                              fontWeight: 700
-                            }}
-                          >
-                            <span>🔀 {flowsList.find(f => f.id === selectedFlowFilter)?.name || 'المسار'}</span>
+                          );
+                        })}
+
+                        {selectedFlowFilters.map(fId => {
+                          const fObj = flowsList.find(f => f.id === fId);
+                          return (
                             <span
-                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
-                              onClick={() => setSelectedFlowFilter('ALL')}
+                              key={`f-${fId}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '3px 9px',
+                                borderRadius: '8px',
+                                background: isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(168, 85, 247, 0.1)',
+                                border: '1px solid rgba(168, 85, 247, 0.35)',
+                                color: isDark ? '#c084fc' : '#9333ea',
+                                fontSize: '11px',
+                                fontWeight: 700
+                              }}
                             >
-                              ✕
+                              <span>🎯 {fObj?.name || 'مسار'}</span>
+                              <span
+                                style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                                onClick={() => toggleFlowFilter(fId)}
+                              >
+                                ✕
+                              </span>
                             </span>
-                          </span>
-                        )}
-                        {selectedStatusFilter !== 'ALL' && (
+                          );
+                        })}
+
+                        {selectedStatusFilters.map(sId => (
                           <span
+                            key={`s-${sId}`}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '5px',
-                              padding: '3px 8px',
+                              padding: '3px 9px',
                               borderRadius: '8px',
                               background: isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)',
                               border: '1px solid rgba(16, 185, 129, 0.35)',
@@ -2732,15 +2774,16 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                               fontWeight: 700
                             }}
                           >
-                            <span>🔄 {selectedStatusFilter}</span>
+                            <span>🔄 {sId === 'OPEN_UNASSIGNED' ? 'المفتوحة وغير المسندة' : sId === 'IN_PROGRESS' ? 'قيد المعالجة' : sId === 'PENDING' ? 'قيد الانتظار' : sId === 'CLOSED' ? 'المكتملة والمغلقة' : sId}</span>
                             <span
                               style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
-                              onClick={() => setSelectedStatusFilter('ALL')}
+                              onClick={() => toggleStatusFilter(sId)}
                             >
                               ✕
                             </span>
                           </span>
-                        )}
+                        ))}
+
                         {quickFilter !== 'ALL' && (
                           <span
                             style={{
@@ -2765,159 +2808,363 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                             </span>
                           </span>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBuildingFilters([]);
+                            setSelectedDeptFilters([]);
+                            setSelectedFlowFilters([]);
+                            setSelectedStatusFilters([]);
+                            setQuickFilter('ALL');
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            borderRadius: '8px',
+                            background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: isDark ? '#f87171' : '#dc2626',
+                            fontSize: '10.5px',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <span>مسح الكل ({activeFiltersCount})</span>
+                        </button>
                       </div>
                     )}
 
-                    {/* Tier 4: Expandable Advanced Filters Drawer Panel */}
+                    {/* Tier 4: Expandable Advanced Multi-Select Filters Panel (تحديد متعدد شيك وشبه شفاف) */}
                     <AnimatePresence>
                       {isFiltersExpanded && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
+                          transition={{ duration: 0.22 }}
                           style={{
-                            display: 'grid',
-                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
-                            gap: '8px',
-                            padding: '12px',
-                            borderRadius: '12px',
-                            background: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(241, 245, 249, 0.95)',
-                            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '14px',
+                            padding: isMobile ? '12px' : '16px 18px',
+                            borderRadius: '16px',
+                            background: isDark
+                              ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(10, 16, 28, 0.82) 100%)'
+                              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 248, 252, 0.90) 100%)',
+                            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.08)',
+                            boxShadow: isDark ? '0 12px 32px rgba(0, 0, 0, 0.45)' : '0 8px 24px rgba(15, 23, 42, 0.06)',
+                            backdropFilter: 'blur(24px)',
+                            WebkitBackdropFilter: 'blur(24px)',
                             boxSizing: 'border-box',
                             overflow: 'hidden'
                           }}
                         >
-                          {/* 1. الإدارة المختصة */}
-                          <select
-                            value={selectedDeptFilter}
-                            onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '8px',
-                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                              background: isDark ? '#1e293b' : '#ffffff',
-                              color: isDark ? '#f8fafc' : '#0f172a',
-                              fontSize: '11.5px',
-                              fontFamily: "'Cairo', sans-serif"
-                            }}
-                          >
-                            <option value="ALL">🏢 كافة الإدارات</option>
-                            {departments.map(d => (
-                              <option key={d.id} value={d.id}>{d.name}</option>
-                            ))}
-                          </select>
+                          {/* 1. المباني والمواقع (Buildings & Locations) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#fb7185' : '#e11d48', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>📍</span>
+                                <span>المباني والمواقع</span>
+                                {selectedBuildingFilters.length > 0 && (
+                                  <span style={{ fontSize: '10px', background: 'rgba(244, 63, 94, 0.2)', padding: '0 6px', borderRadius: '999px' }}>
+                                    {selectedBuildingFilters.length} محدد
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedBuildingFilters([])}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  fontWeight: selectedBuildingFilters.length === 0 ? 800 : 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  border: selectedBuildingFilters.length === 0 ? '1px solid #f43f5e' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                  background: selectedBuildingFilters.length === 0
+                                    ? (isDark ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.12)')
+                                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                  color: selectedBuildingFilters.length === 0 ? '#fb7185' : (isDark ? '#94a3b8' : '#64748b')
+                                }}
+                              >
+                                كافة المواقع
+                              </button>
+                              {buildings.map(b => {
+                                const isSelected = selectedBuildingFilters.includes(b.id);
+                                return (
+                                  <button
+                                    key={b.id}
+                                    type="button"
+                                    onClick={() => toggleBuildingFilter(b.id)}
+                                    style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      fontSize: '11px',
+                                      fontWeight: isSelected ? 800 : 600,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      border: isSelected ? '1px solid #f43f5e' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                      background: isSelected
+                                        ? (isDark ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.12)')
+                                        : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                      color: isSelected ? '#fb7185' : (isDark ? '#e2e8f0' : '#334155'),
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {isSelected && <span>✓</span>}
+                                    <span>{b.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                          {/* 2. المبنى / الموقع الجغرافي */}
-                          <select
-                            value={selectedBuildingFilter}
-                            onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '8px',
-                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                              background: isDark ? '#1e293b' : '#ffffff',
-                              color: isDark ? '#f8fafc' : '#0f172a',
-                              fontSize: '11.5px',
-                              fontFamily: "'Cairo', sans-serif"
-                            }}
-                          >
-                            <option value="ALL">📍 كافة المباني والمواقع</option>
-                            {buildings.map(b => (
-                              <option key={b.id} value={b.id}>{b.name}</option>
-                            ))}
-                          </select>
+                          {/* 2. الإدارات والأقسام (Departments) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#38bdf8' : '#0284c7', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🏢</span>
+                                <span>الإدارات والأقسام</span>
+                                {selectedDeptFilters.length > 0 && (
+                                  <span style={{ fontSize: '10px', background: 'rgba(2, 132, 199, 0.2)', padding: '0 6px', borderRadius: '999px' }}>
+                                    {selectedDeptFilters.length} محدد
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDeptFilters([])}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  fontWeight: selectedDeptFilters.length === 0 ? 800 : 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  border: selectedDeptFilters.length === 0 ? '1px solid #0284c7' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                  background: selectedDeptFilters.length === 0
+                                    ? (isDark ? 'rgba(2, 132, 199, 0.25)' : 'rgba(2, 132, 199, 0.12)')
+                                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                  color: selectedDeptFilters.length === 0 ? '#38bdf8' : (isDark ? '#94a3b8' : '#64748b')
+                                }}
+                              >
+                                كافة الإدارات
+                              </button>
+                              {departments.map(d => {
+                                const isSelected = selectedDeptFilters.includes(Number(d.id));
+                                return (
+                                  <button
+                                    key={d.id}
+                                    type="button"
+                                    onClick={() => toggleDeptFilter(Number(d.id))}
+                                    style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      fontSize: '11px',
+                                      fontWeight: isSelected ? 800 : 600,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      border: isSelected ? '1px solid #0284c7' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                      background: isSelected
+                                        ? (isDark ? 'rgba(2, 132, 199, 0.25)' : 'rgba(2, 132, 199, 0.12)')
+                                        : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                      color: isSelected ? '#38bdf8' : (isDark ? '#e2e8f0' : '#334155'),
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {isSelected && <span>✓</span>}
+                                    <span>{d.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                          {/* 3. نوع المشكلة / المسار */}
-                          <select
-                            value={selectedFlowFilter}
-                            onChange={(e) => setSelectedFlowFilter(e.target.value)}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '8px',
-                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                              background: isDark ? '#1e293b' : '#ffffff',
-                              color: isDark ? '#f8fafc' : '#0f172a',
-                              fontSize: '11.5px',
-                              fontFamily: "'Cairo', sans-serif"
-                            }}
-                          >
-                            <option value="ALL">🎯 كافة المسارات والمشاكل</option>
-                            {flowsList.map(f => (
-                              <option key={f.id} value={f.id}>{f.name}</option>
-                            ))}
-                          </select>
+                          {/* 3. المسارات والمشاكل (Flows) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#c084fc' : '#9333ea', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🎯</span>
+                                <span>المسارات ونوع المشكلة</span>
+                                {selectedFlowFilters.length > 0 && (
+                                  <span style={{ fontSize: '10px', background: 'rgba(168, 85, 247, 0.2)', padding: '0 6px', borderRadius: '999px' }}>
+                                    {selectedFlowFilters.length} محدد
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFlowFilters([])}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  fontWeight: selectedFlowFilters.length === 0 ? 800 : 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  border: selectedFlowFilters.length === 0 ? '1px solid #9333ea' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                  background: selectedFlowFilters.length === 0
+                                    ? (isDark ? 'rgba(168, 85, 247, 0.25)' : 'rgba(168, 85, 247, 0.12)')
+                                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                  color: selectedFlowFilters.length === 0 ? '#c084fc' : (isDark ? '#94a3b8' : '#64748b')
+                                }}
+                              >
+                                كافة المسارات
+                              </button>
+                              {flowsList.map(f => {
+                                const isSelected = selectedFlowFilters.includes(f.id);
+                                return (
+                                  <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => toggleFlowFilter(f.id)}
+                                    style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      fontSize: '11px',
+                                      fontWeight: isSelected ? 800 : 600,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      border: isSelected ? '1px solid #9333ea' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                      background: isSelected
+                                        ? (isDark ? 'rgba(168, 85, 247, 0.25)' : 'rgba(168, 85, 247, 0.12)')
+                                        : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                      color: isSelected ? '#c084fc' : (isDark ? '#e2e8f0' : '#334155'),
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {isSelected && <span>✓</span>}
+                                    <span>{f.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                          {/* 4. حالة الطلب التشغيلية */}
-                          <select
-                            value={selectedStatusFilter}
-                            onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: '8px',
-                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                              background: isDark ? '#1e293b' : '#ffffff',
-                              color: isDark ? '#f8fafc' : '#0f172a',
-                              fontSize: '11.5px',
-                              fontFamily: "'Cairo', sans-serif"
-                            }}
-                          >
-                            {activeTab === 'MY_QUEUE' ? (
-                              <>
-                                <option value="ALL">📋 كل تذاكري المسندة</option>
-                                <option value="IN_PROGRESS">⚡ أعمل عليها حالياً</option>
-                                <option value="PENDING">⏳ بانتظار إجراء / رد المستفيد</option>
-                                <option value="CRITICAL_SLA">🔥 عاجلة وقريبة من خرق SLA</option>
-                                <option value="CLOSED">✅ المكتملة والمغلقة</option>
-                              </>
-                            ) : activeTab === 'ARCHIVE' ? (
-                              <>
-                                <option value="ALL">📦 كل الأرشيف</option>
-                                <option value="CLOSED">✅ منجزة ومغلقة بنجاح</option>
-                                <option value="CANCELLED">🚫 ملغاة ومرفوضة</option>
-                              </>
-                            ) : (
-                              <>
-                                <option value="ALL">📋 كل تذاكر الحوض</option>
-                                <option value="OPEN_UNASSIGNED">⚡ المفتوحة وغير المسندة (للسحب)</option>
-                                <option value="IN_PROGRESS">🛠️ قيد المعالجة النشطة</option>
-                                <option value="PENDING">⏳ قيد الانتظار والاعتماد</option>
-                                <option value="CLOSED">✅ المغلقة والمكتملة</option>
-                              </>
-                            )}
-                          </select>
+                          {/* 4. حالات التذكرة (Contextual Statuses) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#34d399' : '#059669', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🔄</span>
+                                <span>حالات التذكرة</span>
+                                {selectedStatusFilters.length > 0 && (
+                                  <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.2)', padding: '0 6px', borderRadius: '999px' }}>
+                                    {selectedStatusFilters.length} محدد
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedStatusFilters([])}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontSize: '11px',
+                                  fontWeight: selectedStatusFilters.length === 0 ? 800 : 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  border: selectedStatusFilters.length === 0 ? '1px solid #10b981' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                  background: selectedStatusFilters.length === 0
+                                    ? (isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.12)')
+                                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                  color: selectedStatusFilters.length === 0 ? '#34d399' : (isDark ? '#94a3b8' : '#64748b')
+                                }}
+                              >
+                                كافة الحالات
+                              </button>
+                              {(activeTab === 'MY_QUEUE' ? [
+                                { id: 'IN_PROGRESS', label: '⚡ أعمل عليها حالياً' },
+                                { id: 'PENDING', label: '⏳ بانتظار إجراء / رد' },
+                                { id: 'CRITICAL_SLA', label: '🔥 قريبة من خرق SLA' },
+                                { id: 'CLOSED', label: '✅ المكتملة والمغلقة' }
+                              ] : activeTab === 'ARCHIVE' ? [
+                                { id: 'CLOSED', label: '✅ منجزة ومغلقة بنجاح' },
+                                { id: 'CANCELLED', label: '🚫 ملغاة ومرفوضة' }
+                              ] : [
+                                { id: 'OPEN_UNASSIGNED', label: '⚡ المفتوحة وغير المسندة' },
+                                { id: 'IN_PROGRESS', label: '🛠️ قيد المعالجة' },
+                                { id: 'PENDING', label: '⏳ قيد الانتظار' },
+                                { id: 'CLOSED', label: '✅ المغلقة والمكتملة' }
+                              ]).map(s => {
+                                const isSelected = selectedStatusFilters.includes(s.id);
+                                return (
+                                  <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => toggleStatusFilter(s.id)}
+                                    style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      fontSize: '11px',
+                                      fontWeight: isSelected ? 800 : 600,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      border: isSelected ? '1px solid #10b981' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
+                                      background: isSelected
+                                        ? (isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.12)')
+                                        : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                                      color: isSelected ? '#34d399' : (isDark ? '#e2e8f0' : '#334155'),
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {isSelected && <span>✓</span>}
+                                    <span>{s.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
 
-                          {/* Reset Filters Button */}
+                          {/* Footer Actions */}
                           {activeFiltersCount > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedDeptFilter('ALL');
-                                setSelectedFlowFilter('ALL');
-                                setSelectedBuildingFilter('ALL');
-                                setSelectedStatusFilter('ALL');
-                                setQuickFilter('ALL');
-                              }}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '5px',
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                border: 'none',
-                                background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
-                                color: isDark ? '#f87171' : '#dc2626',
-                                fontSize: '11.5px',
-                                fontWeight: 700,
-                                fontFamily: "'Cairo', sans-serif",
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              <X size={12} strokeWidth={2.5} />
-                              <span>إلغاء التصفية ({activeFiltersCount})</span>
-                            </button>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px', borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBuildingFilters([]);
+                                  setSelectedDeptFilters([]);
+                                  setSelectedFlowFilters([]);
+                                  setSelectedStatusFilters([]);
+                                  setQuickFilter('ALL');
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  padding: '5px 12px',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                                  color: isDark ? '#f87171' : '#dc2626',
+                                  fontSize: '11.5px',
+                                  fontWeight: 800,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <X size={12} strokeWidth={2.5} />
+                                <span>إعادة تعيين كافة الفلاتر</span>
+                              </button>
+                            </div>
                           )}
                         </motion.div>
                       )}
@@ -2961,25 +3208,36 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       (t.code || '').toLowerCase().includes(search.toLowerCase()) ||
                       (t.departmentName || '').toLowerCase().includes(search.toLowerCase())
                     );
-                    const matchesDept = selectedDeptFilter === 'ALL' || t.targetDeptId === selectedDeptFilter || (t.creator as any)?.department?.id === selectedDeptFilter;
-                    const matchesFlow = selectedFlowFilter === 'ALL' || t.flowDefinitionId === selectedFlowFilter;
-                    const matchesBuilding = selectedBuildingFilter === 'ALL' || 
-                      (t as any).creatorBuildingId === selectedBuildingFilter ||
-                      (t as any).buildingId === selectedBuildingFilter ||
-                      (t.creator as any)?.buildingId === selectedBuildingFilter;
+                    const matchesDept = selectedDeptFilters.length === 0 || 
+                      selectedDeptFilters.includes(Number(t.targetDeptId)) || 
+                      selectedDeptFilters.includes(Number((t.creator as any)?.department?.id));
+
+                    const matchesFlow = selectedFlowFilters.length === 0 || 
+                      selectedFlowFilters.includes(t.flowDefinitionId);
+
+                    const matchesBuilding = selectedBuildingFilters.length === 0 || 
+                      selectedBuildingFilters.some(bId => {
+                        const bObj = buildings.find(b => b.id === bId);
+                        return (t as any).creatorBuildingId === bId ||
+                          (t as any).buildingId === bId ||
+                          (t.creator as any)?.buildingId === bId ||
+                          (bObj && t.creatorBuilding && t.creatorBuilding.includes(bObj.name));
+                      });
+
                     const sName = (t.state?.name || t.status || '').toUpperCase();
                     const pName = (t.businessPriority || t.priority || '').toUpperCase();
                     const isUnassigned = !t.assignedTo || t.isUnassigned !== false;
                     const matchesStatus = (() => {
-                      if (selectedStatusFilter === 'ALL') return true;
-                      if (selectedStatusFilter === 'OPEN_UNASSIGNED') return isUnassigned && !['CLOSED', 'RESOLVED', 'CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
-                      if (selectedStatusFilter === 'IN_PROGRESS') return ['IN_PROGRESS', 'PROCESSING', 'ASSIGNED', 'WORKING'].includes(sName);
-                      if (selectedStatusFilter === 'PENDING') return ['PENDING', 'WAITING', 'APPROVAL', 'SUBMITTED', 'PENDING_HANDOVER'].includes(sName);
-                      if (selectedStatusFilter === 'CRITICAL_SLA') return ['CRITICAL', 'URGENT', 'HIGH'].includes(pName) || !!t.slaBreached;
-                      if (selectedStatusFilter === 'CLOSED') return ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName);
-                      if (selectedStatusFilter === 'CANCELLED') return ['CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
-                      if (selectedStatusFilter === 'ACTIVE') return !['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'].includes(sName);
-                      return sName === selectedStatusFilter;
+                      if (selectedStatusFilters.length === 0) return true;
+                      return selectedStatusFilters.some(sFilter => {
+                        if (sFilter === 'OPEN_UNASSIGNED') return isUnassigned && !['CLOSED', 'RESOLVED', 'CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
+                        if (sFilter === 'IN_PROGRESS') return ['IN_PROGRESS', 'PROCESSING', 'ASSIGNED', 'WORKING'].includes(sName);
+                        if (sFilter === 'PENDING') return ['PENDING', 'WAITING', 'APPROVAL', 'SUBMITTED', 'PENDING_HANDOVER'].includes(sName);
+                        if (sFilter === 'CRITICAL_SLA') return ['CRITICAL', 'URGENT', 'HIGH'].includes(pName) || !!t.slaBreached;
+                        if (sFilter === 'CLOSED') return ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName);
+                        if (sFilter === 'CANCELLED') return ['CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
+                        return sName === sFilter;
+                      });
                     })();
                     const matchesQuick = (() => {
                       if (quickFilter === 'ALL') return true;
