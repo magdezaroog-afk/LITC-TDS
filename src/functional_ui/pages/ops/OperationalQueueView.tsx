@@ -89,6 +89,8 @@ interface Ticket {
   };
   creatorBuilding?: string | null;
   creatorBuildingId?: number | null;
+  creatorDepartment?: string | null;
+  slaBreached?: boolean;
   targetDeptId?: number | null;
 }
 
@@ -558,6 +560,200 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     window.dispatchEvent(new CustomEvent('nexus_ops_tab_changed', { detail: { tab: activeTab } }));
   }, [activeTab]);
   const [canManageFlows, setCanManageFlows] = useState<boolean>(false);
+
+  // Priority calibration & route intelligence
+  const canManagePriority = useMemo(() => {
+    if (!user) return false;
+    return ['system_director', 'super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user.role || '');
+  }, [user]);
+
+  const [priorityPopoverTicketId, setPriorityPopoverTicketId] = useState<number | null>(null);
+  const [priorityToast, setPriorityToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedStatusFilter('ALL');
+    setQuickFilter('ALL');
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handlePriorityClickOutside = (e: MouseEvent) => {
+      if (priorityPopoverTicketId !== null) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.priority-popover-container')) {
+          setPriorityPopoverTicketId(null);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handlePriorityClickOutside);
+    return () => document.removeEventListener('mousedown', handlePriorityClickOutside);
+  }, [priorityPopoverTicketId]);
+
+  const distinctRoutes = useMemo(() => {
+    const routesSet = new Set<string>();
+    tickets.forEach(t => {
+      const routeName = t.flowDefinitionName || (t as any).flow?.name;
+      if (routeName) routesSet.add(routeName);
+    });
+    return Array.from(routesSet);
+  }, [tickets]);
+
+  const hasMultipleRoutes = distinctRoutes.length > 1;
+
+  const handleUpdateTicketPriority = async (ticketId: number, newPriority: string) => {
+    try {
+      setTickets(prev => prev.map(t => {
+        if (t.id === ticketId) {
+          return { ...t, priority: newPriority, businessPriority: newPriority };
+        }
+        return t;
+      }));
+      if (inspectTicket && inspectTicket.id === ticketId) {
+        setInspectTicket((prev: any) => prev ? { ...prev, priority: newPriority, businessPriority: newPriority } : null);
+      }
+      setPriorityPopoverTicketId(null);
+      await OpsAPI.updateTicketPriority(ticketId, newPriority);
+      const pLabel = newPriority === 'HIGH' ? 'عاجل' : newPriority === 'MEDIUM' ? 'متوسط' : 'عادي';
+      setPriorityToast(`تم تعديل أولوية المعاملة #${ticketId} إلى "${pLabel}" بنجاح 🎯`);
+      setTimeout(() => setPriorityToast(null), 3000);
+    } catch (err: any) {
+      console.error('Failed to update ticket priority:', err);
+      alert(err?.message || 'تعذر تعديل الأولوية');
+    }
+  };
+
+  const renderPriorityLamp = (ticket: Ticket, compact = false) => {
+    const p = (ticket.businessPriority || ticket.priority || 'NORMAL').toUpperCase();
+    const isHigh = p === 'CRITICAL' || p === 'URGENT' || p === 'HIGH';
+    const isMedium = p === 'MEDIUM';
+    const lampColor = isHigh ? '#ef4444' : isMedium ? '#eab308' : '#10b981';
+    const lampLabel = isHigh ? 'عاجل' : isMedium ? 'متوسط' : 'عادي';
+    const isOpen = priorityPopoverTicketId === ticket.id;
+
+    return (
+      <div className="priority-popover-container" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (canManagePriority) {
+              setPriorityPopoverTicketId(isOpen ? null : ticket.id);
+            }
+          }}
+          title={canManagePriority ? `أولوية المعاملة: ${lampLabel} (انقر كمسؤول لتعديل الأولوية)` : `أولوية المعاملة: ${lampLabel}`}
+          style={{
+            width: compact ? '9px' : '11px',
+            height: compact ? '9px' : '11px',
+            borderRadius: '50%',
+            backgroundColor: lampColor,
+            boxShadow: `0 0 ${compact ? '6px' : '9px'} ${lampColor}, inset 0 1px 1px rgba(255, 255, 255, 0.7)`,
+            border: '1.5px solid rgba(255, 255, 255, 0.4)',
+            cursor: canManagePriority ? 'pointer' : 'default',
+            padding: 0,
+            display: 'inline-block',
+            flexShrink: 0,
+            transition: 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease',
+            outline: 'none',
+            position: 'relative'
+          }}
+          onMouseEnter={(e) => {
+            if (canManagePriority) e.currentTarget.style.transform = 'scale(1.4)';
+          }}
+          onMouseLeave={(e) => {
+            if (canManagePriority) e.currentTarget.style.transform = 'scale(1)';
+          }}
+        />
+
+        {/* Floating Priority Calibration Popover */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 4 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                zIndex: 99999,
+                minWidth: '150px',
+                background: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.1)',
+                borderRadius: '12px',
+                padding: '6px',
+                boxShadow: isDark ? '0 12px 30px rgba(0, 0, 0, 0.6)' : '0 10px 25px rgba(15, 23, 42, 0.12)',
+                direction: 'rtl',
+                textAlign: 'right'
+              }}
+            >
+              <div style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                color: isDark ? '#94a3b8' : '#64748b',
+                padding: '3px 8px 6px',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #f1f5f9',
+                marginBottom: '4px'
+              }}>
+                معايرة الأولوية (صلاحية إشرافية):
+              </div>
+              {[
+                { val: 'HIGH', label: 'عاجل / مرتفع', color: '#ef4444' },
+                { val: 'MEDIUM', label: 'متوسط', color: '#eab308' },
+                { val: 'NORMAL', label: 'عادي / منخفض', color: '#10b981' }
+              ].map(opt => {
+                const isSelected = p === opt.val || (opt.val === 'HIGH' && (p === 'CRITICAL' || p === 'URGENT'));
+                return (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => handleUpdateTicketPriority(ticket.id, opt.val)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '6px 8px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: isSelected 
+                        ? (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)') 
+                        : 'transparent',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: isSelected ? 800 : 600,
+                      color: isDark ? '#f8fafc' : '#0f172a',
+                      transition: 'background 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.05)' : '#f8fafc';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: opt.color,
+                        boxShadow: `0 0 5px ${opt.color}`
+                      }} />
+                      <span>{opt.label}</span>
+                    </div>
+                    {isSelected && <Check size={12} color={opt.color} strokeWidth={2.5} />}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('nexus_ops_stats_changed', { 
@@ -2666,11 +2862,29 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                               fontFamily: "'Cairo', sans-serif"
                             }}
                           >
-                            <option value="ALL">🔄 كل الحالات</option>
-                            <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
-                            <option value="PENDING">⏳ قيد الانتظار</option>
-                            <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
-                            <option value="CLOSED">✅ المغلقة والمكتملة</option>
+                            {activeTab === 'MY_QUEUE' ? (
+                              <>
+                                <option value="ALL">📋 كل تذاكري المسندة</option>
+                                <option value="IN_PROGRESS">⚡ أعمل عليها حالياً</option>
+                                <option value="PENDING">⏳ بانتظار إجراء / رد المستفيد</option>
+                                <option value="CRITICAL_SLA">🔥 عاجلة وقريبة من خرق SLA</option>
+                                <option value="CLOSED">✅ المكتملة والمغلقة</option>
+                              </>
+                            ) : activeTab === 'ARCHIVE' ? (
+                              <>
+                                <option value="ALL">📦 كل الأرشيف</option>
+                                <option value="CLOSED">✅ منجزة ومغلقة بنجاح</option>
+                                <option value="CANCELLED">🚫 ملغاة ومرفوضة</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="ALL">📋 كل تذاكر الحوض</option>
+                                <option value="OPEN_UNASSIGNED">⚡ المفتوحة وغير المسندة (للسحب)</option>
+                                <option value="IN_PROGRESS">🛠️ قيد المعالجة النشطة</option>
+                                <option value="PENDING">⏳ قيد الانتظار والاعتماد</option>
+                                <option value="CLOSED">✅ المغلقة والمكتملة</option>
+                              </>
+                            )}
                           </select>
 
                           {/* Reset Filters Button */}
@@ -2749,13 +2963,24 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                     );
                     const matchesDept = selectedDeptFilter === 'ALL' || t.targetDeptId === selectedDeptFilter || (t.creator as any)?.department?.id === selectedDeptFilter;
                     const matchesFlow = selectedFlowFilter === 'ALL' || t.flowDefinitionId === selectedFlowFilter;
-                    const matchesBuilding = selectedBuildingFilter === 'ALL' || (t as any).creatorBuildingId === selectedBuildingFilter;
+                    const matchesBuilding = selectedBuildingFilter === 'ALL' || 
+                      (t as any).creatorBuildingId === selectedBuildingFilter ||
+                      (t as any).buildingId === selectedBuildingFilter ||
+                      (t.creator as any)?.buildingId === selectedBuildingFilter;
                     const sName = (t.state?.name || t.status || '').toUpperCase();
-                    const matchesStatus = selectedStatusFilter === 'ALL' || (
-                      selectedStatusFilter === 'ACTIVE' ? !['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'].includes(sName) :
-                      selectedStatusFilter === 'CLOSED' ? ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName) :
-                      sName === selectedStatusFilter
-                    );
+                    const pName = (t.businessPriority || t.priority || '').toUpperCase();
+                    const isUnassigned = !t.assignedTo || t.isUnassigned !== false;
+                    const matchesStatus = (() => {
+                      if (selectedStatusFilter === 'ALL') return true;
+                      if (selectedStatusFilter === 'OPEN_UNASSIGNED') return isUnassigned && !['CLOSED', 'RESOLVED', 'CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
+                      if (selectedStatusFilter === 'IN_PROGRESS') return ['IN_PROGRESS', 'PROCESSING', 'ASSIGNED', 'WORKING'].includes(sName);
+                      if (selectedStatusFilter === 'PENDING') return ['PENDING', 'WAITING', 'APPROVAL', 'SUBMITTED', 'PENDING_HANDOVER'].includes(sName);
+                      if (selectedStatusFilter === 'CRITICAL_SLA') return ['CRITICAL', 'URGENT', 'HIGH'].includes(pName) || !!t.slaBreached;
+                      if (selectedStatusFilter === 'CLOSED') return ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName);
+                      if (selectedStatusFilter === 'CANCELLED') return ['CANCELLED', 'CANCELED', 'REJECTED'].includes(sName);
+                      if (selectedStatusFilter === 'ACTIVE') return !['CLOSED', 'RESOLVED', 'COMPLETED', 'CANCELED', 'REJECTED'].includes(sName);
+                      return sName === selectedStatusFilter;
+                    })();
                     const matchesQuick = (() => {
                       if (quickFilter === 'ALL') return true;
                       const p = (t.businessPriority || t.requesterPriority || t.priority || '').toUpperCase();
@@ -2825,7 +3050,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         >
                           {/* Card Content Top & Middle */}
                           <div>
-                            {/* Card Header: Code Badge + Status + Requester Priority Lamp */}
+                            {/* Card Header: Code Badge + Priority Lamp + Status */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                                 <div style={{
@@ -2843,50 +3068,35 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                   <Zap size={12} strokeWidth={2.4} />
                                 </div>
                                 <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                {renderPriorityLamp(ticket)}
                               </div>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
                                 <OpsStatusPill status={ticket.status} stateLabel={ticket.state?.label} isDark={isDark} />
-                                
-                                <div
-                                  style={{
-                                    width: '7px',
-                                    height: '7px',
-                                    borderRadius: '50%',
-                                    backgroundColor: lamp.color,
-                                    boxShadow: `0 0 6px ${lamp.color}`,
-                                    flexShrink: 0,
-                                  }}
-                                  title={`أولوية صاحب الطلب: ${lamp.label}`}
-                                />
                               </div>
                             </div>
 
-                            {/* Business Priority & Service Flow Category */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '7px' }}>
-                              <span style={{
-                                ...styles.priorityBadge(bizPriority),
-                                fontSize: '10px',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                fontFamily: "'Cairo', sans-serif",
-                              }}>
-                                {formatPriorityText(bizPriority)}
-                              </span>
-                              <span style={{
-                                fontSize: '10.5px',
-                                color: isDark ? '#94a3b8' : '#64748b',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                <Layers size={10.5} color="#6366f1" />
-                                <span style={{ fontWeight: 600 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
-                              </span>
-                            </div>
+                            {/* Service Flow Category: ONLY if operator handles multiple routes */}
+                            {hasMultipleRoutes && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '7px' }}>
+                                <span style={{
+                                  fontSize: '10px',
+                                  color: '#6366f1',
+                                  background: isDark ? 'rgba(99, 102, 241, 0.14)' : '#eef2ff',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  <Layers size={9.5} color="#6366f1" />
+                                  <span style={{ fontWeight: 700 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
+                                </span>
+                              </div>
+                            )}
 
                             {/* Ticket Subject/Title */}
                             <h3 style={{
@@ -3272,7 +3482,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                     {/* Table Header Strip (8 الأعمدة الكاملة) */}
                                     <div style={{
                                       display: 'grid',
-                                      gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
+                                      gridTemplateColumns: '135px minmax(240px, 2.5fr) minmax(180px, 2fr) 140px 115px 140px 115px',
                                       padding: '11px 16px',
                                       background: isDark ? 'rgba(30, 41, 59, 0.75)' : '#f8fafc',
                                       borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
@@ -3283,11 +3493,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                       alignItems: 'center',
                                       gap: '12px',
                                     }}>
-                                      <div>الرمز</div>
-                                      <div>المعاملة والمسار</div>
+                                      <div>الرمز والأولوية</div>
+                                      <div>{hasMultipleRoutes ? 'المعاملة والمسار' : 'موضوع المعاملة'}</div>
                                       <div>المُرسل والجهة التابع لها</div>
-                                      <div>الجهة المختصة</div>
-                                      <div>الأولوية</div>
+                                      <div>الموقع والمبنى</div>
                                       <div>الحالة</div>
                                       <div>المسؤول الحالي</div>
                                       <div>التوقيت والمدة</div>
@@ -3324,7 +3533,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                             title="انقر على أي مكان في الصف لعرض التفاصيل وفحص المعاملة"
                                             style={{
                                               display: 'grid',
-                                              gridTemplateColumns: '95px minmax(220px, 2.5fr) minmax(180px, 2fr) 130px 120px 110px 140px 115px',
+                                              gridTemplateColumns: '135px minmax(240px, 2.5fr) minmax(180px, 2fr) 140px 115px 140px 115px',
                                               padding: '12px 16px',
                                               borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #f1f5f9',
                                               borderRight: `3.5px solid ${accentColor}`,
@@ -3348,8 +3557,9 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                             }}
                                           >
                                             {/* 1. الرمز */}
-                                            <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                               <TicketCodeBadge code={ticketCode} color={accentColor} compact />
+                                              {renderPriorityLamp(ticket)}
                                             </div>
 
                                             {/* 2. المعاملة والمسار */}
@@ -3372,9 +3582,11 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                                 marginTop: '2px',
                                                 flexWrap: 'wrap',
                                               }}>
-                                                <span style={{ fontSize: '10.5px', color: '#6366f1', fontWeight: 600 }}>
-                                                  {ticket.flowDefinitionName || 'مسار عام'}
-                                                </span>
+                                                {hasMultipleRoutes && (
+                                                  <span style={{ fontSize: '10px', color: '#6366f1', fontWeight: 700, background: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff', padding: '1px 6px', borderRadius: '4px' }}>
+                                                    {ticket.flowDefinitionName || 'مسار عام'}
+                                                  </span>
+                                                )}
                                                 {ticket.isPendingHandover && (
                                                   <span style={{
                                                     background: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
@@ -3452,42 +3664,32 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                               </div>
                                             </div>
 
-                                            {/* 4. الجهة المختصة */}
+                                            {/* 4. الموقع والمبنى (بيانات ميدانية مفيدة بدلاً من تكرار الإدارة المختصة) */}
                                             <div style={{ minWidth: 0 }}>
                                               <div style={{
                                                 fontSize: '11px',
-                                                fontWeight: 600,
-                                                color: isDark ? '#94a3b8' : '#475569',
+                                                fontWeight: 700,
+                                                color: isDark ? '#38bdf8' : '#0284c7',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
                                                 whiteSpace: 'nowrap',
                                               }}>
-                                                {ticket.departmentName || 'إدارة الخدمات'}
+                                                <Building2 size={12} style={{ flexShrink: 0 }} />
+                                                <span>{ticket.creatorBuilding || 'المقر الرئيسي'}</span>
                                               </div>
-                                            </div>
-
-                                            {/* 5. الأولوية */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <span style={{
-                                                ...styles.priorityBadge(bizPriority),
-                                                fontSize: '10px',
-                                                padding: '2px 7px',
-                                                borderRadius: '5px',
-                                                fontFamily: "'Cairo', sans-serif",
+                                              <div style={{
+                                                fontSize: '9.5px',
+                                                color: isDark ? '#94a3b8' : '#64748b',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                marginTop: '1px',
                                               }}>
-                                                {formatPriorityText(bizPriority)}
-                                              </span>
-                                              <span
-                                                style={{
-                                                  width: '6px',
-                                                  height: '6px',
-                                                  borderRadius: '50%',
-                                                  backgroundColor: lamp.color,
-                                                  boxShadow: `0 0 5px ${lamp.color}`,
-                                                  flexShrink: 0,
-                                                }}
-                                                title={`طالب: ${lamp.label}`}
-                                              />
+                                                {ticket.creatorDepartment ? `إدارة: ${ticket.creatorDepartment}` : 'نطاق الموقع الميداني'}
+                                              </div>
                                             </div>
 
                                             {/* 6. الحالة */}
@@ -3599,20 +3801,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                             transition: 'all 0.15s ease'
                                           }}
                                         >
-                                          {/* Right: Code + Lamp */}
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                          {/* Right: Code + Priority Lamp */}
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                                             <TicketCodeBadge code={ticketCode} color={accentColor} compact />
-                                            <div
-                                              style={{
-                                                width: '6px',
-                                                height: '6px',
-                                                borderRadius: '50%',
-                                                backgroundColor: lamp.color,
-                                                boxShadow: `0 0 5px ${lamp.color}`,
-                                                flexShrink: 0
-                                              }}
-                                              title={`أولوية طالب: ${lamp.label}`}
-                                            />
+                                            {renderPriorityLamp(ticket, true)}
                                           </div>
 
                                           {/* Center: Title & Requester */}
@@ -3769,6 +3961,40 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
 
       </div>
+
+      {/* Floating Priority Toast */}
+      <AnimatePresence>
+        {priorityToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            style={{
+              position: 'fixed',
+              bottom: '86px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 99999,
+              background: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #10b981',
+              borderRadius: '999px',
+              padding: '6px 16px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              color: isDark ? '#ffffff' : '#0f172a',
+              fontSize: '12px',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backdropFilter: 'blur(16px)',
+              direction: 'rtl'
+            }}
+          >
+            <CheckCircle2 size={14} color="#10b981" />
+            <span>{priorityToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Ticket Details Drawer / Modal */}
       <AnimatePresence>

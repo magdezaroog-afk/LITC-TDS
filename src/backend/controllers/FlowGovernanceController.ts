@@ -1022,8 +1022,9 @@ export class FlowGovernanceController {
 
       const flowId = ticket.flowDefinitionId || ticket.routeId;
 
-      // Check permission: Is Admin, or Flow Manager, or has canCalibratePriority
-      const isAdmin = user.roleId === 1 || user.roleId === 22;
+      // Check permission: Is Admin, or Flow Manager, or has canCalibratePriority, or Operational Supervisor
+      const isAdmin = user.roleId === 1 || user.roleId === 22 || user.roleId === 2 || 
+        ['system_director', 'super_admin', 'co_admin', 'tech_director', 'dept_head', 'team_leader'].includes(user.role);
       let isAuthorized = isAdmin;
 
       if (!isAuthorized && flowId) {

@@ -18,7 +18,8 @@ function getHeaders() {
 
 async function handleResponse(res: Response) {
   const json = await res.json();
-  if (!res.ok || !json.success) throw new Error(json.message || json.error || 'خطأ في الطلب');
+  if (Array.isArray(json)) return json;
+  if (!res.ok || (json && json.success === false)) throw new Error(json.message || json.error || 'خطأ في الطلب');
   return json;
 }
 
@@ -167,6 +168,15 @@ export const OpsAPI = {
       headers: getHeaders(),
       credentials: 'include',
       body: JSON.stringify(payload)
+    }).then(handleResponse),
+
+  // تعديل ومعايرة أولوية المعاملة من حوض العمليات
+  updateTicketPriority: (ticketId: number, priority: string, note?: string) =>
+    fetch(`/api/v1/flow-governance/tickets/${ticketId}/calibrate-priority`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ businessPriority: priority, note })
     }).then(handleResponse),
 };
 
