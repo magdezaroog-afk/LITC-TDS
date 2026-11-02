@@ -624,7 +624,7 @@ export const WorkModeShell: React.FC = () => {
       {/* =========================================================================
           2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
           الترتيب المؤسسي: زر الأنظمة على اليمين وشريط الأيقونات على اليسار
-          كبسولة زجاجية فاخرة شبه شفافة ثابتة على الكمبيوتر والهاتف (Fixed Luxury Dock Capsule)
+          كبسولة زجاجية نقية شفافة تكشف ما خلفها بانسيابية (Translucent Frosted Liquid Glass Dock)
           ========================================================================= */}
       <nav
         style={{
@@ -635,20 +635,22 @@ export const WorkModeShell: React.FC = () => {
           transform: isMobile ? 'none' : 'translateX(-50%)',
           height: isMobile ? '58px' : '62px',
           width: isMobile ? 'calc(100% - 20px)' : 'auto',
-          minWidth: isMobile ? 'auto' : '480px',
+          minWidth: isMobile ? 'auto' : '460px',
           maxWidth: isMobile ? 'calc(100% - 20px)' : '780px',
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? '8px' : '12px',
           padding: isMobile ? '0 10px' : '0 16px',
-          background: isDark ? 'rgba(14, 18, 25, 0.82)' : 'rgba(255, 255, 255, 0.72)',
-          backdropFilter: 'blur(36px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(36px) saturate(200%)',
-          borderRadius: isMobile ? '22px' : '28px',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(255, 255, 255, 0.85)',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.48) 0%, rgba(7, 11, 22, 0.40) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.20) 0%, rgba(240, 245, 252, 0.12) 100%)',
+          backdropFilter: 'blur(28px) saturate(210%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(210%)',
+          borderRadius: isMobile ? '24px' : '28px',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.45)',
           boxShadow: isDark 
-            ? '0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
-            : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.95)',
+            ? '0 20px 45px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.16)' 
+            : '0 14px 40px -8px rgba(15, 23, 42, 0.10), inset 0 1px 2px rgba(255, 255, 255, 0.85), inset 0 -1px 1px rgba(0, 0, 0, 0.03)',
           zIndex: 9000,
           direction: 'rtl',
           boxSizing: 'border-box'
@@ -671,10 +673,10 @@ export const WorkModeShell: React.FC = () => {
               borderRadius: '16px',
               border: isSystemsPopoverOpen
                 ? '1.5px solid #0284c7'
-                : (isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.45)'),
               background: isSystemsPopoverOpen
-                ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))' : 'rgba(2, 132, 199, 0.15)')
-                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)'),
+                ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))' : 'rgba(2, 132, 199, 0.18)')
+                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.20)'),
               color: isSystemsPopoverOpen 
                 ? (isDark ? '#38bdf8' : '#0284c7') 
                 : (isDark ? '#e2e8f0' : '#0f172a'),
@@ -683,7 +685,7 @@ export const WorkModeShell: React.FC = () => {
               fontSize: isMobile ? '12px' : '13px',
               boxShadow: isSystemsPopoverOpen 
                 ? '0 0 16px rgba(2, 132, 199, 0.35)' 
-                : (isDark ? 'none' : '0 2px 6px rgba(15, 23, 42, 0.04)'),
+                : (isDark ? 'inset 0 1px 1px rgba(255, 255, 255, 0.15)' : 'inset 0 1px 1px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(15, 23, 42, 0.04)'),
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               whiteSpace: 'nowrap'
             }}
@@ -692,17 +694,14 @@ export const WorkModeShell: React.FC = () => {
             <span>الأنظمة</span>
             <span
               style={{
-                background: isSystemsPopoverOpen 
-                  ? '#0284c7' 
-                  : (isDark ? 'rgba(56, 189, 248, 0.18)' : 'rgba(2, 132, 199, 0.14)'),
-                color: isSystemsPopoverOpen 
-                  ? '#ffffff' 
-                  : (isDark ? '#38bdf8' : '#0284c7'),
+                background: '#f36c21',
+                color: '#ffffff',
                 fontSize: '10px',
                 fontWeight: 900,
                 padding: '1px 6px',
                 borderRadius: '999px',
-                fontFamily: 'monospace'
+                fontFamily: 'monospace',
+                boxShadow: '0 0 8px rgba(243, 108, 33, 0.6)'
               }}
             >
               {satellites.length}
@@ -1115,7 +1114,9 @@ export const WorkModeShell: React.FC = () => {
           style={{
             width: '1px',
             height: '26px',
-            background: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)',
+            background: isDark
+              ? 'linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.22), transparent)'
+              : 'linear-gradient(to bottom, transparent, rgba(15, 23, 42, 0.18), transparent)',
             flexShrink: 0
           }}
         />
@@ -1159,24 +1160,24 @@ export const WorkModeShell: React.FC = () => {
                 borderRadius: '50%',
                 background: activeAppId === 'OPERATIONS'
                   ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(3, 105, 161, 0.85))'
-                  : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.65)'),
+                  : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.20)'),
                 border: activeAppId === 'OPERATIONS'
                   ? '1.5px solid #38bdf8'
-                  : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(255, 255, 255, 0.85)'),
-                color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
+                  : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.45)'),
+                color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#1e293b'),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 boxShadow: activeAppId === 'OPERATIONS'
-                  ? '0 0 16px rgba(56, 189, 248, 0.55)'
-                  : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(15, 23, 42, 0.05)'),
+                  ? '0 0 18px rgba(56, 189, 248, 0.6), inset 0 1px 1px #fff'
+                  : (isDark ? 'inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 3px 8px rgba(0, 0, 0, 0.25)' : 'inset 0 1px 2px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(15, 23, 42, 0.04)'),
                 transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
                 position: 'relative',
                 transformOrigin: 'center center'
               }}
             >
-              <Inbox size={isMobile ? 17 : 19} strokeWidth={2.4} color={activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155')} />
+              <Inbox size={isMobile ? 17 : 19} strokeWidth={2.4} color={activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#1e293b')} />
               {liveStats.openCount > 0 && (
                 <span
                   style={{
@@ -1264,18 +1265,18 @@ export const WorkModeShell: React.FC = () => {
                     borderRadius: '50%',
                     background: isCurrent
                       ? themeGradient
-                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.65)'),
+                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.20)'),
                     border: isCurrent
                       ? `1.5px solid ${themeBorder}`
-                      : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(255, 255, 255, 0.85)'),
-                    color: isCurrent ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
+                      : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.45)'),
+                    color: isCurrent ? '#ffffff' : (isDark ? '#cbd5e1' : '#1e293b'),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
                     boxShadow: isCurrent
-                      ? `0 0 16px ${themeBorder}80`
-                      : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(15, 23, 42, 0.05)'),
+                      ? `0 0 18px ${themeBorder}80, inset 0 1px 1px #fff`
+                      : (isDark ? 'inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 3px 8px rgba(0, 0, 0, 0.25)' : 'inset 0 1px 2px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(15, 23, 42, 0.04)'),
                     transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
                     position: 'relative',
                     transformOrigin: 'center center'
