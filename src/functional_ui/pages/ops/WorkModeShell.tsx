@@ -25,7 +25,14 @@ import {
   Compass,
   ArrowLeft,
   ChevronUp,
-  Cpu
+  Cpu,
+  LayoutGrid,
+  Pin,
+  PinOff,
+  Database,
+  Globe,
+  Shield,
+  Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +48,8 @@ interface SatelliteSystem {
   isOnline: boolean;
   latencyMs?: number;
   description: string;
+  iconType?: string;
+  iconUrl?: string;
 }
 
 export const WorkModeShell: React.FC = () => {
@@ -196,6 +205,164 @@ export const WorkModeShell: React.FC = () => {
     setOpsActiveTab(tab);
     window.dispatchEvent(new CustomEvent('nexus_ops_switch_tab', { detail: { tab } }));
   };
+
+  // ── Pinned Systems State (Persisted in LocalStorage) ──
+  const [pinnedSystemIds, setPinnedSystemIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_pinned_systems');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse pinned systems:', e);
+    }
+    return ['asset_inventory']; // Default pinned system
+  });
+
+  // ── Popover State & Outside Click Detection ──
+  const [isSystemsPopoverOpen, setIsSystemsPopoverOpen] = useState<boolean>(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const popoverBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        isSystemsPopoverOpen &&
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        popoverBtnRef.current &&
+        !popoverBtnRef.current.contains(e.target as Node)
+      ) {
+        setIsSystemsPopoverOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [isSystemsPopoverOpen]);
+
+  // ── Dock Magnification Physics (macOS Zero-Jump Proximity) ──
+  const dockTrackRef = useRef<HTMLDivElement>(null);
+  const [hoveredSysId, setHoveredSysId] = useState<string | null>(null);
+
+  const applyMagnification = (clientX: number) => {
+    const track = dockTrackRef.current;
+    if (!track) return;
+    const buttons = track.querySelectorAll<HTMLButtonElement>('.sys-dock-circle-btn');
+    const maxDist = 75;
+
+    buttons.forEach(btn => {
+      const rect = btn.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const dist = Math.abs(clientX - centerX);
+
+      if (dist < maxDist) {
+        const factor = Math.cos((dist / maxDist) * (Math.PI / 2));
+        const scale = 1.0 + factor * 0.18; // 1.18x proximity breathing
+        btn.style.transform = `scale(${scale.toFixed(3)}) translateY(0)`;
+        btn.style.zIndex = '50';
+      } else {
+        btn.style.transform = 'scale(1) translateY(0)';
+        btn.style.zIndex = '1';
+      }
+    });
+  };
+
+  const resetMagnification = () => {
+    const track = dockTrackRef.current;
+    if (!track) return;
+    const buttons = track.querySelectorAll<HTMLButtonElement>('.sys-dock-circle-btn');
+    buttons.forEach(btn => {
+      btn.style.transform = 'scale(1) translateY(0)';
+      btn.style.zIndex = '1';
+    });
+    setHoveredSysId(null);
+  };
+
+  // ── Toast Notification for Pin/Unpin Feedback ──
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<any>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 2600);
+  };
+
+  const togglePinSystem = (sysId: string) => {
+    setPinnedSystemIds(prev => {
+      const exists = prev.includes(sysId);
+      const updated = exists ? prev.filter(id => id !== sysId) : [...prev, sysId];
+      try {
+        localStorage.setItem('nexus_pinned_systems', JSON.stringify(updated));
+      } catch (e) {}
+      const sys = satellites.find(s => s.id === sysId);
+      const name = sys ? sys.name : sysId;
+      showToast(!exists ? `📌 تم تثبيت "${name}" في شريط المهام` : `✕ تم إخفاء "${name}" من شريط المهام`);
+      return updated;
+    });
+  };
+
+  // ── Admin Provisioning State ──
+  const [isAdminAddOpen, setIsAdminAddOpen] = useState<boolean>(false);
+  const [newSysName, setNewSysName] = useState<string>('');
+  const [newSysUrl, setNewSysUrl] = useState<string>('');
+  const [newSysCategory, setNewSysCategory] = useState<string>('INFRASTRUCTURE');
+  const [newSysIcon, setNewSysIcon] = useState<string>('Server');
+
+  const handleAdminAddSystem = () => {
+    if (!newSysName.trim() || !newSysUrl.trim()) {
+      showToast('⚠️ يرجى إدخال اسم المنظومة ورابطها');
+      return;
+    }
+    const newId = `custom_sys_${Date.now()}`;
+    const newSys: SatelliteSystem = {
+      id: newId,
+      name: newSysName.trim(),
+      category: newSysCategory,
+      targetUrl: newSysUrl.trim(),
+      isActive: true,
+      hasAccess: true,
+      isOnline: true,
+      description: 'منظومة مرتبطة مضافة من قِبل إدارة النظام.',
+      iconType: newSysIcon
+    };
+    setSatellites(prev => [...prev, newSys]);
+    setPinnedSystemIds(prev => {
+      const updated = [...prev, newId];
+      try {
+        localStorage.setItem('nexus_pinned_systems', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setNewSysName('');
+    setNewSysUrl('');
+    setIsAdminAddOpen(false);
+    showToast(`🎉 تم ربط وتثبيت "${newSys.name}" بنجاح!`);
+  };
+
+  // ── Helper to Render System Icon ──
+  const renderSystemIcon = (sys: SatelliteSystem, size = 18) => {
+    if (sys.iconUrl) {
+      return (
+        <img 
+          src={sys.iconUrl} 
+          alt={sys.name} 
+          style={{ width: `${size}px`, height: `${size}px`, objectFit: 'contain', borderRadius: '4px' }} 
+        />
+      );
+    }
+    if (sys.id === 'asset_inventory' || sys.iconType === 'Laptop') return <Laptop size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Activity') return <Activity size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Cpu') return <Cpu size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Database') return <Database size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Globe') return <Globe size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Shield') return <Shield size={size} strokeWidth={2.2} />;
+    if (sys.iconType === 'Smartphone') return <Smartphone size={size} strokeWidth={2.2} />;
+    return <Server size={size} strokeWidth={2.2} />;
+  };
+
+  // Pinned Satellites in the Dock
+  const pinnedSatellites = satellites.filter(s => pinnedSystemIds.includes(s.id));
 
   // Find currently active satellite
   const activeSatellite = satellites.find(s => s.id === activeAppId);
@@ -432,156 +599,746 @@ export const WorkModeShell: React.FC = () => {
 
       {/* =========================================================================
           2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
+          الترتيب المؤسسي: زر الأنظمة على اليمين وشريط الأيقونات على اليسار
           ========================================================================= */}
       <nav
         style={{
           position: 'fixed',
-          bottom: isMobile ? 0 : '18px',
-          left: isMobile ? 0 : '50%',
-          right: isMobile ? 0 : 'auto',
+          bottom: isMobile ? '10px' : '18px',
+          left: isMobile ? '10px' : '50%',
+          right: isMobile ? '10px' : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
-          height: isMobile ? '58px' : 'auto',
+          height: isMobile ? '58px' : '62px',
+          width: isMobile ? 'calc(100% - 20px)' : 'auto',
+          minWidth: isMobile ? 'auto' : '480px',
+          maxWidth: isMobile ? 'calc(100% - 20px)' : '760px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: isMobile ? 'flex-start' : 'center',
-          gap: isMobile ? '6px' : '10px',
-          padding: isMobile ? '0 8px calc(env(safe-area-inset-bottom, 0px) + 2px)' : '8px 18px',
-          background: isDark ? 'rgba(12, 16, 23, 0.95)' : 'rgba(255, 255, 255, 0.96)',
-          backdropFilter: 'blur(32px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-          borderRadius: isMobile ? '0' : '26px',
-          borderTop: isMobile ? (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)') : 'none',
-          border: isMobile ? 'none' : (isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'),
+          gap: isMobile ? '8px' : '12px',
+          padding: isMobile ? '0 10px' : '0 16px',
+          background: isDark ? 'rgba(10, 16, 28, 0.90)' : 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(30px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(30px) saturate(190%)',
+          borderRadius: isMobile ? '22px' : '28px',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 23, 42, 0.1)',
           boxShadow: isDark 
-            ? '0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
-            : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+            ? '0 16px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
+            : '0 16px 40px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
-          width: isMobile ? '100%' : 'auto',
-          maxWidth: isMobile ? '100%' : 'fit-content',
           boxSizing: 'border-box'
         }}
       >
-        {/* Horizontal Momentum Scrollable Tabs Strip with edge fading */}
-        <div
-          ref={opsTabsScrollRef}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? '6px' : '8px',
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            WebkitOverflowScrolling: 'touch',
-            width: '100%',
-            padding: '2px 4px',
-            maskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)',
-            WebkitMaskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)'
-          }}
-        >
-          {/* ── 📥 تبويب 1: حوض التذاكر والعمليات المؤسسية ── */}
+        {/* =========================================================================
+            SEGMENT 1 (RIGHT SIDE): زر الأنظمة المرتبطة والقائمة المدمجة
+            ========================================================================= */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
+            ref={popoverBtnRef}
             type="button"
-            data-active={activeAppId === 'OPERATIONS' ? 'true' : 'false'}
-            onClick={() => setActiveAppId('OPERATIONS')}
+            onClick={() => setIsSystemsPopoverOpen(prev => !prev)}
+            title="إدارة وعرض الأنظمة المرتبطة"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: isMobile ? '6px 14px' : '8px 18px',
-              borderRadius: '14px',
-              border: activeAppId === 'OPERATIONS'
+              padding: isMobile ? '7px 11px' : '8px 14px',
+              borderRadius: '16px',
+              border: isSystemsPopoverOpen
                 ? '1.5px solid #0284c7'
-                : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-              background: activeAppId === 'OPERATIONS'
-                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
-                : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
-              color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.1)'),
+              background: isSystemsPopoverOpen
+                ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))'
+                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)'),
+              color: isSystemsPopoverOpen ? '#38bdf8' : (isDark ? '#e2e8f0' : '#334155'),
               cursor: 'pointer',
-              fontWeight: activeAppId === 'OPERATIONS' ? 800 : 600,
-              fontSize: isMobile ? '11.5px' : '12.5px',
-              boxShadow: activeAppId === 'OPERATIONS' ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
+              fontWeight: 800,
+              fontSize: isMobile ? '12px' : '13px',
+              boxShadow: isSystemsPopoverOpen ? '0 0 16px rgba(2, 132, 199, 0.35)' : 'none',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              height: isMobile ? '38px' : '40px'
+              whiteSpace: 'nowrap'
             }}
           >
-            <Inbox size={15} strokeWidth={2.4} />
-            <span>حوض التذاكر</span>
-            {liveStats.openCount > 0 && (
-              <span
-                style={{
-                  background: activeAppId === 'OPERATIONS' ? 'rgba(255, 255, 255, 0.25)' : '#0284c7',
-                  color: '#ffffff',
-                  fontSize: '10px',
-                  fontWeight: 900,
-                  padding: '1px 6px',
-                  borderRadius: '999px'
-                }}
-              >
-                {liveStats.openCount}
-              </span>
-            )}
+            <LayoutGrid size={isMobile ? 15 : 16} strokeWidth={2.4} />
+            <span>الأنظمة</span>
+            <span
+              style={{
+                background: isSystemsPopoverOpen ? '#0284c7' : 'rgba(56, 189, 248, 0.18)',
+                color: isSystemsPopoverOpen ? '#ffffff' : '#38bdf8',
+                fontSize: '10px',
+                fontWeight: 900,
+                padding: '1px 6px',
+                borderRadius: '999px',
+                fontFamily: 'monospace'
+              }}
+            >
+              {satellites.length}
+            </span>
           </button>
 
-          {/* ── 💻 تبويبات 2..N: منظومة جرد الأصول وكافة الأنظمة المصاحبة المضافة ── */}
-          {satellites.map((sys) => {
-            const isCurrent = activeAppId === sys.id;
-            const isInventory = sys.id === 'asset_inventory';
-            const label = isInventory ? 'جرد الأصول' : sys.name;
-            const themeColor = isInventory ? '#f36c21' : '#10b981';
-
-            return (
-              <button
-                key={sys.id}
-                type="button"
-                data-active={isCurrent ? 'true' : 'false'}
-                onClick={() => setActiveAppId(sys.id)}
-                title={sys.description || sys.name}
+          {/* ── القائمة الجانبية المدمجة (Anchored Systems Popover Menu) ── */}
+          <AnimatePresence>
+            {isSystemsPopoverOpen && (
+              <motion.div
+                ref={popoverRef}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: isMobile ? '6px 14px' : '8px 18px',
-                  borderRadius: '14px',
-                  border: isCurrent
-                    ? `1.5px solid ${themeColor}`
-                    : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                  background: isCurrent
-                    ? `linear-gradient(135deg, ${themeColor} 0%, ${isInventory ? '#ea580c' : '#059669'} 100%)`
-                    : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
-                  color: isCurrent ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
-                  cursor: 'pointer',
-                  fontWeight: isCurrent ? 800 : 600,
-                  fontSize: isMobile ? '11.5px' : '12.5px',
-                  boxShadow: isCurrent ? `0 4px 14px ${themeColor}40` : 'none',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  height: isMobile ? '38px' : '40px'
+                  position: 'absolute',
+                  bottom: 'calc(100% + 12px)',
+                  right: 0,
+                  width: isMobile ? 'calc(100vw - 32px)' : '350px',
+                  maxWidth: '360px',
+                  maxHeight: '48vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: isDark ? 'rgba(10, 16, 28, 0.97)' : 'rgba(255, 255, 255, 0.98)',
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid rgba(15, 23, 42, 0.15)',
+                  borderRadius: '20px',
+                  padding: '14px',
+                  boxShadow: '0 24px 50px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.12)',
+                  backdropFilter: 'blur(30px) saturate(200%)',
+                  WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+                  zIndex: 9999,
+                  direction: 'rtl'
                 }}
               >
-                {isInventory ? <Laptop size={15} strokeWidth={2.4} /> : <Server size={15} strokeWidth={2.4} />}
-                <span>{label}</span>
-                {/* Status Indicator Dot */}
-                <span
-                  title={sys.isOnline ? 'المنظومة متصلة ونشطة' : 'في انتظار الاتصال'}
+                {/* Popover Header */}
+                <div
                   style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: sys.isOnline ? '#10b981' : '#f59e0b',
-                    boxShadow: sys.isOnline ? '0 0 6px #10b981' : 'none',
-                    flexShrink: 0
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingBottom: '10px',
+                    borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
+                    marginBottom: '10px'
                   }}
-                />
-              </button>
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <LayoutGrid size={16} color="#38bdf8" strokeWidth={2.4} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                      الأنظمة المرتبطة بالحساب
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        color: '#38bdf8',
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        fontWeight: 700
+                      }}
+                    >
+                      {pinnedSatellites.length} مثبتة بالشريط
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSystemsPopoverOpen(false)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: isDark ? '#94a3b8' : '#64748b',
+                        cursor: 'pointer',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Popover Systems List (Scrollable - max-height stops mid-screen) */}
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    paddingRight: '2px',
+                    maxHeight: 'calc(48vh - 120px)'
+                  }}
+                >
+                  {satellites.length === 0 ? (
+                    <div style={{ padding: '20px 10px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+                      لا توجد أنظمة مرتبطة حالياً
+                    </div>
+                  ) : (
+                    satellites.map(sys => {
+                      const isPinned = pinnedSystemIds.includes(sys.id);
+                      const isCurrent = activeAppId === sys.id;
+
+                      return (
+                        <div
+                          key={sys.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '8px',
+                            padding: '8px 10px',
+                            borderRadius: '12px',
+                            background: isCurrent
+                              ? (isDark ? 'rgba(243, 108, 33, 0.12)' : 'rgba(243, 108, 33, 0.08)')
+                              : isPinned
+                                ? (isDark ? 'rgba(56, 189, 248, 0.07)' : 'rgba(56, 189, 248, 0.05)')
+                                : (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.02)'),
+                            border: isCurrent
+                              ? '1px solid rgba(243, 108, 33, 0.45)'
+                              : isPinned
+                                ? '1px solid rgba(56, 189, 248, 0.28)'
+                                : (isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(15, 23, 42, 0.06)'),
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {/* System Identity & Open Click */}
+                          <div
+                            onClick={() => {
+                              setActiveAppId(sys.id);
+                              setIsSystemsPopoverOpen(false);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              minWidth: 0,
+                              flex: 1,
+                              cursor: 'pointer'
+                            }}
+                            title="انقر لفتح واستعراض هذه المنظومة"
+                          >
+                            <div
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: isCurrent
+                                  ? 'linear-gradient(135deg, #f97316, #ea580c)'
+                                  : isPinned
+                                    ? 'rgba(56, 189, 248, 0.15)'
+                                    : 'rgba(255, 255, 255, 0.08)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: isCurrent ? '#ffffff' : (isPinned ? '#38bdf8' : '#94a3b8'),
+                                flexShrink: 0
+                              }}
+                            >
+                              {renderSystemIcon(sys, 15)}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div
+                                style={{
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  color: isDark ? '#f1f5f9' : '#0f172a',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}
+                              >
+                                {sys.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '10px',
+                                  color: isPinned ? '#38bdf8' : (isDark ? '#64748b' : '#94a3b8'),
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: '5px',
+                                    height: '5px',
+                                    borderRadius: '50%',
+                                    background: sys.isOnline ? '#10b981' : '#f59e0b'
+                                  }}
+                                />
+                                {isPinned ? 'معروضة بالشريط' : 'مخفية من الشريط'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Direct Pin / Unpin Action Pill */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinSystem(sys.id);
+                            }}
+                            title={isPinned ? 'إخفاء المنظومة من شريط المهام' : 'تثبيت المنظومة في شريط المهام'}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 9px',
+                              borderRadius: '999px',
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              background: isPinned
+                                ? 'rgba(14, 165, 233, 0.2)'
+                                : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
+                              border: isPinned
+                                ? '1px solid rgba(56, 189, 248, 0.45)'
+                                : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                              color: isPinned ? '#38bdf8' : (isDark ? '#94a3b8' : '#64748b'),
+                              flexShrink: 0
+                            }}
+                          >
+                            {isPinned ? (
+                              <>
+                                <Pin size={11} strokeWidth={2.4} />
+                                <span>مثبت بالشريط</span>
+                              </>
+                            ) : (
+                              <>
+                                <PinOff size={11} strokeWidth={2} />
+                                <span>مخفي</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Popover Footer: Admin Provisioning Accordion */}
+                <div
+                  style={{
+                    paddingTop: '8px',
+                    marginTop: '8px',
+                    borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)'
+                  }}
+                >
+                  {!isAdminAddOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsAdminAddOpen(true)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 10px',
+                        borderRadius: '10px',
+                        background: 'transparent',
+                        border: isDark ? '1px dashed rgba(56, 189, 248, 0.35)' : '1px dashed rgba(2, 132, 199, 0.4)',
+                        color: '#38bdf8',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Plus size={13} />
+                      <span>إضافة / ربط منظومة جديدة (المشرف)</span>
+                    </button>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        padding: '8px',
+                        background: isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(241, 245, 249, 0.6)',
+                        borderRadius: '12px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
+                          ربط منظومة تقنية جديدة
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsAdminAddOpen(false)}
+                          style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="اسم المنظومة (مثلاً: منظومة الفواتير)"
+                        value={newSysName}
+                        onChange={(e) => setNewSysName(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                          color: isDark ? '#ffffff' : '#0f172a',
+                          fontSize: '11px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+
+                      <input
+                        type="url"
+                        placeholder="رابط المنظومة (http://...)"
+                        value={newSysUrl}
+                        onChange={(e) => setNewSysUrl(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                          color: isDark ? '#ffffff' : '#0f172a',
+                          fontSize: '11px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+
+                      {/* Icon Choices */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>الأيقونة:</span>
+                        {(['Server', 'Laptop', 'Activity', 'Cpu', 'Database', 'Globe'] as const).map(iconName => (
+                          <button
+                            key={iconName}
+                            type="button"
+                            onClick={() => setNewSysIcon(iconName)}
+                            style={{
+                              padding: '4px',
+                              borderRadius: '6px',
+                              background: newSysIcon === iconName ? '#0284c7' : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)'),
+                              border: 'none',
+                              color: newSysIcon === iconName ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {iconName === 'Server' && <Server size={12} />}
+                            {iconName === 'Laptop' && <Laptop size={12} />}
+                            {iconName === 'Activity' && <Activity size={12} />}
+                            {iconName === 'Cpu' && <Cpu size={12} />}
+                            {iconName === 'Database' && <Database size={12} />}
+                            {iconName === 'Globe' && <Globe size={12} />}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={handleAdminAddSystem}
+                          style={{
+                            flex: 1,
+                            padding: '6px',
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                            border: 'none',
+                            color: '#ffffff',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          تأكيد الربط والتثبيت
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsAdminAddOpen(false)}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
+                            border: 'none',
+                            color: isDark ? '#94a3b8' : '#64748b',
+                            fontSize: '11px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* فاصل ناعم بين زر الأنظمة وشريط الأيقونات */}
+        <div
+          style={{
+            width: '1px',
+            height: '26px',
+            background: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.12)',
+            flexShrink: 0
+          }}
+        />
+
+        {/* =========================================================================
+            SEGMENT 2 (LEFT SIDE): شريط الأيقونات الدائرية المتمددة أفقياً (macOS Fluid Dock)
+            ========================================================================= */}
+        <div
+          ref={dockTrackRef}
+          onMouseMove={(e) => applyMagnification(e.clientX)}
+          onMouseLeave={resetMagnification}
+          onTouchMove={(e) => {
+            if (e.touches.length > 0) applyMagnification(e.touches[0].clientX);
+          }}
+          onTouchEnd={resetMagnification}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '8px' : '12px',
+            overflowX: 'auto',
+            overflowY: 'visible',
+            scrollbarWidth: 'none',
+            padding: '0 4px',
+            height: '100%',
+            position: 'relative'
+          }}
+        >
+          {/* ── الأيقونة السيادية 1: حوض التذاكر والعمليات ── */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              type="button"
+              className="sys-dock-circle-btn"
+              onClick={() => setActiveAppId('OPERATIONS')}
+              onMouseEnter={() => setHoveredSysId('OPERATIONS')}
+              onMouseLeave={() => setHoveredSysId(null)}
+              style={{
+                width: isMobile ? '40px' : '44px',
+                height: isMobile ? '40px' : '44px',
+                borderRadius: '50%',
+                background: activeAppId === 'OPERATIONS'
+                  ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(3, 105, 161, 0.85))'
+                  : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                border: activeAppId === 'OPERATIONS'
+                  ? '1.5px solid #38bdf8'
+                  : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(15, 23, 42, 0.12)'),
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: activeAppId === 'OPERATIONS'
+                  ? '0 0 16px rgba(56, 189, 248, 0.55)'
+                  : '0 4px 12px rgba(0, 0, 0, 0.25)',
+                transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
+                position: 'relative',
+                transformOrigin: 'center center'
+              }}
+            >
+              <Inbox size={isMobile ? 17 : 19} strokeWidth={2.4} color={activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569')} />
+              {liveStats.openCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-3px',
+                    left: '-3px',
+                    background: '#f97316',
+                    color: '#ffffff',
+                    fontSize: '9px',
+                    fontWeight: 900,
+                    padding: '1px 5px',
+                    borderRadius: '999px',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)'
+                  }}
+                >
+                  {liveStats.openCount}
+                </span>
+              )}
+            </button>
+
+            {/* مؤشر النشاط السفلي النظيف */}
+            {activeAppId === 'OPERATIONS' && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: isMobile ? '-4px' : '-5px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '12px',
+                  height: '3px',
+                  background: '#38bdf8',
+                  borderRadius: '999px',
+                  boxShadow: '0 0 8px #38bdf8'
+                }}
+              />
+            )}
+
+            {/* تلميح التسمية عند الوقوف (Tooltip) */}
+            {hoveredSysId === 'OPERATIONS' && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: isMobile ? '50px' : '54px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(10, 16, 28, 0.96)',
+                  border: '1px solid rgba(56, 189, 248, 0.5)',
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
+                  zIndex: 9999
+                }}
+              >
+                حوض التذاكر والعمليات
+              </div>
+            )}
+          </div>
+
+          {/* ── الأيقونات 2..N: المنظومات الحقيقية المثبتة بالشريط ── */}
+          {pinnedSatellites.map(sys => {
+            const isCurrent = activeAppId === sys.id;
+            const isHovered = hoveredSysId === sys.id;
+            const isInventory = sys.id === 'asset_inventory';
+            const themeGradient = isInventory
+              ? 'linear-gradient(135deg, rgba(243, 108, 33, 0.95), rgba(234, 88, 12, 0.85))'
+              : 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.85))';
+            const themeBorder = isInventory ? '#fb923c' : '#34d399';
+
+            return (
+              <div key={sys.id} style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="sys-dock-circle-btn"
+                  onClick={() => setActiveAppId(sys.id)}
+                  onMouseEnter={() => setHoveredSysId(sys.id)}
+                  onMouseLeave={() => setHoveredSysId(null)}
+                  style={{
+                    width: isMobile ? '40px' : '44px',
+                    height: isMobile ? '40px' : '44px',
+                    borderRadius: '50%',
+                    background: isCurrent
+                      ? themeGradient
+                      : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                    border: isCurrent
+                      ? `1.5px solid ${themeBorder}`
+                      : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(15, 23, 42, 0.12)'),
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: isCurrent
+                      ? `0 0 16px ${themeBorder}80`
+                      : '0 4px 12px rgba(0, 0, 0, 0.25)',
+                    transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
+                    position: 'relative',
+                    transformOrigin: 'center center'
+                  }}
+                >
+                  {renderSystemIcon(sys, isMobile ? 17 : 19)}
+
+                  {/* Online / Offline status dot */}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '0px',
+                      right: '0px',
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: sys.isOnline ? '#10b981' : '#f59e0b',
+                      boxShadow: sys.isOnline ? '0 0 6px #10b981' : 'none',
+                      border: '1px solid rgba(0, 0, 0, 0.4)'
+                    }}
+                  />
+                </button>
+
+                {/* مؤشر النشاط السفلي النظيف */}
+                {isCurrent && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: isMobile ? '-4px' : '-5px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '12px',
+                      height: '3px',
+                      background: themeBorder,
+                      borderRadius: '999px',
+                      boxShadow: `0 0 8px ${themeBorder}`
+                    }}
+                  />
+                )}
+
+                {/* تلميح التسمية عند الوقوف (Tooltip) */}
+                {isHovered && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: isMobile ? '50px' : '54px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(10, 16, 28, 0.96)',
+                      border: `1px solid ${themeBorder}`,
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: '#ffffff',
+                      whiteSpace: 'nowrap',
+                      pointerEvents: 'none',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
+                      zIndex: 9999
+                    }}
+                  >
+                    {sys.name}
+                  </div>
+                )}
+              </div>
             );
           })}
-
-
         </div>
       </nav>
+
+      {/* Floating Toast Notification for Pin/Unpin */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            style={{
+              position: 'fixed',
+              bottom: isMobile ? '76px' : '88px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(15, 23, 42, 0.96)',
+              border: '1px solid rgba(56, 189, 248, 0.5)',
+              color: '#ffffff',
+              padding: '6px 16px',
+              borderRadius: '999px',
+              fontSize: '12px',
+              fontWeight: 800,
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(16px)',
+              zIndex: 9999,
+              pointerEvents: 'none',
+              direction: 'rtl'
+            }}
+          >
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
     </div>
