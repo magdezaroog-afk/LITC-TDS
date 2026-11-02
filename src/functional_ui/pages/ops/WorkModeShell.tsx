@@ -56,8 +56,31 @@ export const WorkModeShell: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useMobileViewport(768);
-  const { mode } = useThemeEngine();
-  const isDark = mode === 'dark';
+
+  // ── Adaptive Dark/Light Mode Theme Listener (Reactive sync with documentElement & localStorage) ──
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return (
+        document.documentElement.classList.contains('dark') ||
+        (!document.documentElement.classList.contains('light') && localStorage.getItem('litc_theme') !== 'light')
+      );
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const checkTheme = () => {
+      const dark =
+        document.documentElement.classList.contains('dark') ||
+        (!document.documentElement.classList.contains('light') && localStorage.getItem('litc_theme') !== 'light');
+      setIsDark(dark);
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Active App ID: 'OPERATIONS' (حوض الطلبات والعمليات) or a Satellite System ID (e.g., 'asset_inventory')
   const [activeAppId, setActiveAppId] = useState<string>('OPERATIONS');
@@ -600,6 +623,7 @@ export const WorkModeShell: React.FC = () => {
       {/* =========================================================================
           2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
           الترتيب المؤسسي: زر الأنظمة على اليمين وشريط الأيقونات على اليسار
+          تصميم زجاجي نقي شبه شفاف (Glassmorphism) يتأثر بانسيابية بألوان الخلفية
           ========================================================================= */}
       <nav
         style={{
@@ -616,14 +640,14 @@ export const WorkModeShell: React.FC = () => {
           alignItems: 'center',
           gap: isMobile ? '8px' : '12px',
           padding: isMobile ? '0 10px' : '0 16px',
-          background: isDark ? 'rgba(10, 16, 28, 0.90)' : 'rgba(255, 255, 255, 0.92)',
-          backdropFilter: 'blur(30px) saturate(190%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(190%)',
+          background: isDark ? 'rgba(10, 16, 28, 0.65)' : 'rgba(255, 255, 255, 0.45)',
+          backdropFilter: 'blur(32px) saturate(210%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(210%)',
           borderRadius: isMobile ? '22px' : '28px',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 23, 42, 0.1)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(255, 255, 255, 0.75)',
           boxShadow: isDark 
-            ? '0 16px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
-            : '0 16px 40px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+            ? '0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
+            : '0 16px 36px -8px rgba(15, 23, 42, 0.10), inset 0 1px 2px rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
           boxSizing: 'border-box'
@@ -646,15 +670,19 @@ export const WorkModeShell: React.FC = () => {
               borderRadius: '16px',
               border: isSystemsPopoverOpen
                 ? '1.5px solid #0284c7'
-                : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.1)'),
+                : (isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 23, 42, 0.12)'),
               background: isSystemsPopoverOpen
-                ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))'
-                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)'),
-              color: isSystemsPopoverOpen ? '#38bdf8' : (isDark ? '#e2e8f0' : '#334155'),
+                ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))' : 'rgba(2, 132, 199, 0.15)')
+                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.55)'),
+              color: isSystemsPopoverOpen 
+                ? (isDark ? '#38bdf8' : '#0284c7') 
+                : (isDark ? '#e2e8f0' : '#0f172a'),
               cursor: 'pointer',
               fontWeight: 800,
               fontSize: isMobile ? '12px' : '13px',
-              boxShadow: isSystemsPopoverOpen ? '0 0 16px rgba(2, 132, 199, 0.35)' : 'none',
+              boxShadow: isSystemsPopoverOpen 
+                ? '0 0 16px rgba(2, 132, 199, 0.35)' 
+                : (isDark ? 'none' : '0 2px 6px rgba(15, 23, 42, 0.04)'),
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               whiteSpace: 'nowrap'
             }}
@@ -663,8 +691,12 @@ export const WorkModeShell: React.FC = () => {
             <span>الأنظمة</span>
             <span
               style={{
-                background: isSystemsPopoverOpen ? '#0284c7' : 'rgba(56, 189, 248, 0.18)',
-                color: isSystemsPopoverOpen ? '#ffffff' : '#38bdf8',
+                background: isSystemsPopoverOpen 
+                  ? '#0284c7' 
+                  : (isDark ? 'rgba(56, 189, 248, 0.18)' : 'rgba(2, 132, 199, 0.14)'),
+                color: isSystemsPopoverOpen 
+                  ? '#ffffff' 
+                  : (isDark ? '#38bdf8' : '#0284c7'),
                 fontSize: '10px',
                 fontWeight: 900,
                 padding: '1px 6px',
@@ -694,11 +726,13 @@ export const WorkModeShell: React.FC = () => {
                   maxHeight: '48vh',
                   display: 'flex',
                   flexDirection: 'column',
-                  background: isDark ? 'rgba(10, 16, 28, 0.97)' : 'rgba(255, 255, 255, 0.98)',
-                  border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid rgba(15, 23, 42, 0.15)',
+                  background: isDark ? 'rgba(10, 16, 28, 0.95)' : 'rgba(255, 255, 255, 0.92)',
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid rgba(255, 255, 255, 0.85)',
                   borderRadius: '20px',
                   padding: '14px',
-                  boxShadow: '0 24px 50px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.12)',
+                  boxShadow: isDark 
+                    ? '0 24px 50px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.12)' 
+                    : '0 20px 45px rgba(15, 23, 42, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
                   backdropFilter: 'blur(30px) saturate(200%)',
                   WebkitBackdropFilter: 'blur(30px) saturate(200%)',
                   zIndex: 9999,
@@ -717,7 +751,7 @@ export const WorkModeShell: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <LayoutGrid size={16} color="#38bdf8" strokeWidth={2.4} />
+                    <LayoutGrid size={16} color={isDark ? '#38bdf8' : '#0284c7'} strokeWidth={2.4} />
                     <span style={{ fontSize: '13.5px', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>
                       الأنظمة المرتبطة بالحساب
                     </span>
@@ -726,8 +760,8 @@ export const WorkModeShell: React.FC = () => {
                     <span
                       style={{
                         fontSize: '11px',
-                        color: '#38bdf8',
-                        background: 'rgba(56, 189, 248, 0.15)',
+                        color: isDark ? '#38bdf8' : '#0284c7',
+                        background: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.12)',
                         padding: '2px 8px',
                         borderRadius: '999px',
                         fontWeight: 700
@@ -785,14 +819,14 @@ export const WorkModeShell: React.FC = () => {
                             padding: '8px 10px',
                             borderRadius: '12px',
                             background: isCurrent
-                              ? (isDark ? 'rgba(243, 108, 33, 0.12)' : 'rgba(243, 108, 33, 0.08)')
+                              ? (isDark ? 'rgba(243, 108, 33, 0.12)' : 'rgba(243, 108, 33, 0.1)')
                               : isPinned
-                                ? (isDark ? 'rgba(56, 189, 248, 0.07)' : 'rgba(56, 189, 248, 0.05)')
-                                : (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.02)'),
+                                ? (isDark ? 'rgba(56, 189, 248, 0.07)' : 'rgba(2, 132, 199, 0.07)')
+                                : (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 23, 42, 0.03)'),
                             border: isCurrent
                               ? '1px solid rgba(243, 108, 33, 0.45)'
                               : isPinned
-                                ? '1px solid rgba(56, 189, 248, 0.28)'
+                                ? (isDark ? '1px solid rgba(56, 189, 248, 0.28)' : '1px solid rgba(2, 132, 199, 0.25)')
                                 : (isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(15, 23, 42, 0.06)'),
                             transition: 'all 0.15s ease'
                           }}
@@ -821,12 +855,14 @@ export const WorkModeShell: React.FC = () => {
                                 background: isCurrent
                                   ? 'linear-gradient(135deg, #f97316, #ea580c)'
                                   : isPinned
-                                    ? 'rgba(56, 189, 248, 0.15)'
-                                    : 'rgba(255, 255, 255, 0.08)',
+                                    ? (isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.12)')
+                                    : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.06)'),
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: isCurrent ? '#ffffff' : (isPinned ? '#38bdf8' : '#94a3b8'),
+                                color: isCurrent 
+                                  ? '#ffffff' 
+                                  : (isPinned ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b')),
                                 flexShrink: 0
                               }}
                             >
@@ -848,7 +884,7 @@ export const WorkModeShell: React.FC = () => {
                               <div
                                 style={{
                                   fontSize: '10px',
-                                  color: isPinned ? '#38bdf8' : (isDark ? '#64748b' : '#94a3b8'),
+                                  color: isPinned ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#64748b' : '#94a3b8'),
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '4px'
@@ -886,12 +922,12 @@ export const WorkModeShell: React.FC = () => {
                               cursor: 'pointer',
                               transition: 'all 0.15s ease',
                               background: isPinned
-                                ? 'rgba(14, 165, 233, 0.2)'
+                                ? (isDark ? 'rgba(14, 165, 233, 0.2)' : 'rgba(2, 132, 199, 0.12)')
                                 : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.04)'),
                               border: isPinned
-                                ? '1px solid rgba(56, 189, 248, 0.45)'
+                                ? (isDark ? '1px solid rgba(56, 189, 248, 0.45)' : '1px solid rgba(2, 132, 199, 0.35)')
                                 : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
-                              color: isPinned ? '#38bdf8' : (isDark ? '#94a3b8' : '#64748b'),
+                              color: isPinned ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#94a3b8' : '#64748b'),
                               flexShrink: 0
                             }}
                           >
@@ -931,7 +967,7 @@ export const WorkModeShell: React.FC = () => {
                         borderRadius: '10px',
                         background: 'transparent',
                         border: isDark ? '1px dashed rgba(56, 189, 248, 0.35)' : '1px dashed rgba(2, 132, 199, 0.4)',
-                        color: '#38bdf8',
+                        color: isDark ? '#38bdf8' : '#0284c7',
                         fontSize: '11px',
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -951,7 +987,7 @@ export const WorkModeShell: React.FC = () => {
                         flexDirection: 'column',
                         gap: '8px',
                         padding: '8px',
-                        background: isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(241, 245, 249, 0.6)',
+                        background: isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(241, 245, 249, 0.7)',
                         borderRadius: '12px'
                       }}
                     >
@@ -962,7 +998,7 @@ export const WorkModeShell: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsAdminAddOpen(false)}
-                          style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                          style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', cursor: 'pointer' }}
                         >
                           <X size={12} />
                         </button>
@@ -1006,7 +1042,7 @@ export const WorkModeShell: React.FC = () => {
 
                       {/* Icon Choices */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>الأيقونة:</span>
+                        <span style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b' }}>الأيقونة:</span>
                         {(['Server', 'Laptop', 'Activity', 'Cpu', 'Database', 'Globe'] as const).map(iconName => (
                           <button
                             key={iconName}
@@ -1078,7 +1114,7 @@ export const WorkModeShell: React.FC = () => {
           style={{
             width: '1px',
             height: '26px',
-            background: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.12)',
+            background: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)',
             flexShrink: 0
           }}
         />
@@ -1122,24 +1158,24 @@ export const WorkModeShell: React.FC = () => {
                 borderRadius: '50%',
                 background: activeAppId === 'OPERATIONS'
                   ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(3, 105, 161, 0.85))'
-                  : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                  : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.65)'),
                 border: activeAppId === 'OPERATIONS'
                   ? '1.5px solid #38bdf8'
-                  : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(15, 23, 42, 0.12)'),
-                color: '#ffffff',
+                  : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(255, 255, 255, 0.85)'),
+                color: activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 boxShadow: activeAppId === 'OPERATIONS'
                   ? '0 0 16px rgba(56, 189, 248, 0.55)'
-                  : '0 4px 12px rgba(0, 0, 0, 0.25)',
+                  : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(15, 23, 42, 0.05)'),
                 transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
                 position: 'relative',
                 transformOrigin: 'center center'
               }}
             >
-              <Inbox size={isMobile ? 17 : 19} strokeWidth={2.4} color={activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569')} />
+              <Inbox size={isMobile ? 17 : 19} strokeWidth={2.4} color={activeAppId === 'OPERATIONS' ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155')} />
               {liveStats.openCount > 0 && (
                 <span
                   style={{
@@ -1185,16 +1221,16 @@ export const WorkModeShell: React.FC = () => {
                   bottom: isMobile ? '50px' : '54px',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  background: 'rgba(10, 16, 28, 0.96)',
-                  border: '1px solid rgba(56, 189, 248, 0.5)',
+                  background: isDark ? 'rgba(10, 16, 28, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(15, 23, 42, 0.15)',
                   padding: '3px 10px',
                   borderRadius: '999px',
                   fontSize: '11px',
                   fontWeight: 800,
-                  color: '#ffffff',
+                  color: isDark ? '#ffffff' : '#0f172a',
                   whiteSpace: 'nowrap',
                   pointerEvents: 'none',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
+                  boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.8)' : '0 8px 24px rgba(15, 23, 42, 0.12)',
                   zIndex: 9999
                 }}
               >
@@ -1227,18 +1263,18 @@ export const WorkModeShell: React.FC = () => {
                     borderRadius: '50%',
                     background: isCurrent
                       ? themeGradient
-                      : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.65)'),
                     border: isCurrent
                       ? `1.5px solid ${themeBorder}`
-                      : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(15, 23, 42, 0.12)'),
-                    color: '#ffffff',
+                      : (isDark ? '1.5px solid rgba(255, 255, 255, 0.14)' : '1.5px solid rgba(255, 255, 255, 0.85)'),
+                    color: isCurrent ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
                     boxShadow: isCurrent
                       ? `0 0 16px ${themeBorder}80`
-                      : '0 4px 12px rgba(0, 0, 0, 0.25)',
+                      : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(15, 23, 42, 0.05)'),
                     transition: 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s ease',
                     position: 'relative',
                     transformOrigin: 'center center'
@@ -1287,16 +1323,16 @@ export const WorkModeShell: React.FC = () => {
                       bottom: isMobile ? '50px' : '54px',
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      background: 'rgba(10, 16, 28, 0.96)',
+                      background: isDark ? 'rgba(10, 16, 28, 0.96)' : 'rgba(255, 255, 255, 0.96)',
                       border: `1px solid ${themeBorder}`,
                       padding: '3px 10px',
                       borderRadius: '999px',
                       fontSize: '11px',
                       fontWeight: 800,
-                      color: '#ffffff',
+                      color: isDark ? '#ffffff' : '#0f172a',
                       whiteSpace: 'nowrap',
                       pointerEvents: 'none',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.8)' : '0 8px 24px rgba(15, 23, 42, 0.12)',
                       zIndex: 9999
                     }}
                   >
@@ -1321,14 +1357,14 @@ export const WorkModeShell: React.FC = () => {
               bottom: isMobile ? '76px' : '88px',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: 'rgba(15, 23, 42, 0.96)',
-              border: '1px solid rgba(56, 189, 248, 0.5)',
-              color: '#ffffff',
+              background: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.95)',
+              border: isDark ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(2, 132, 199, 0.45)',
+              color: isDark ? '#ffffff' : '#0f172a',
               padding: '6px 16px',
               borderRadius: '999px',
               fontSize: '12px',
               fontWeight: 800,
-              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.65)',
+              boxShadow: isDark ? '0 8px 25px rgba(0, 0, 0, 0.65)' : '0 8px 25px rgba(15, 23, 42, 0.12)',
               backdropFilter: 'blur(16px)',
               zIndex: 9999,
               pointerEvents: 'none',
