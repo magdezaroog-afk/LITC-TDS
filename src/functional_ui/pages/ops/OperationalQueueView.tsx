@@ -1470,97 +1470,99 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
       </div>
 
       {/* ── 🌟 UNIVERSAL TOP OPERATIONAL MODES STRIP (الشريط التشغيلي الموحد في أعلى الواجهة) ── */}
-      <div
-        className="nexus-universal-top-ops-strip"
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          background: isDark ? 'rgba(12, 16, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
-          padding: isMobile ? '8px 4px' : '10px 8px',
-          marginBottom: isMobile ? '12px' : '18px',
-          width: '100%',
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none',
-          direction: 'rtl',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          gap: isMobile ? '8px' : '12px',
-          padding: '0 4px',
-          width: 'max-content',
-          alignItems: 'center'
-        }}>
-          {operationalModes.map((item) => {
-            const isSelected = item.isActive;
-            const IconComponent = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={item.onClick}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: isMobile ? '8px 14px' : '10px 18px',
-                  borderRadius: '14px',
-                  border: isSelected
-                    ? `1.5px solid ${item.accentColor}`
-                    : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                  background: isSelected
-                    ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
-                    : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
-                  color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
-                  fontSize: isMobile ? '12px' : '13px',
-                  fontWeight: isSelected ? 800 : 700,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  cursor: 'pointer',
-                  boxShadow: isSelected
-                    ? `0 4px 16px ${item.accentColor}40`
-                    : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
-                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-              >
-                <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
-                <span>{item.shortLabel || item.label}</span>
-                {item.count !== undefined && item.count > 0 && (
-                  <span style={{
-                    background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
-                    color: isSelected ? '#ffffff' : item.accentColor,
-                    fontSize: '10.5px',
-                    fontWeight: 900,
-                    padding: '2px 7px',
-                    borderRadius: '9999px',
-                    lineHeight: 1
-                  }}>
-                    {item.count}
-                  </span>
-                )}
-                {item.badge && (
-                  <span style={{
-                    background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
-                    color: isSelected ? '#ffffff' : item.accentColor,
-                    fontSize: '9.5px',
-                    fontWeight: 800,
-                    padding: '1px 6px',
-                    borderRadius: '6px'
-                  }}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {!hideInternalDock && (
+        <div
+          className="nexus-universal-top-ops-strip"
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            background: isDark ? 'rgba(12, 16, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
+            padding: isMobile ? '8px 4px' : '10px 8px',
+            marginBottom: isMobile ? '12px' : '18px',
+            width: '100%',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            direction: 'rtl',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            gap: isMobile ? '8px' : '12px',
+            padding: '0 4px',
+            width: 'max-content',
+            alignItems: 'center'
+          }}>
+            {operationalModes.map((item) => {
+              const isSelected = item.isActive;
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={item.onClick}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: isMobile ? '8px 14px' : '10px 18px',
+                    borderRadius: '14px',
+                    border: isSelected
+                      ? `1.5px solid ${item.accentColor}`
+                      : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                    background: isSelected
+                      ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
+                      : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
+                    color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
+                    fontSize: isMobile ? '12px' : '13px',
+                    fontWeight: isSelected ? 800 : 700,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    boxShadow: isSelected
+                      ? `0 4px 16px ${item.accentColor}40`
+                      : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
+                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                >
+                  <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
+                  <span>{item.shortLabel || item.label}</span>
+                  {item.count !== undefined && item.count > 0 && (
+                    <span style={{
+                      background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
+                      color: isSelected ? '#ffffff' : item.accentColor,
+                      fontSize: '10.5px',
+                      fontWeight: 900,
+                      padding: '2px 7px',
+                      borderRadius: '9999px',
+                      lineHeight: 1
+                    }}>
+                      {item.count}
+                    </span>
+                  )}
+                  {item.badge && (
+                    <span style={{
+                      background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
+                      color: isSelected ? '#ffffff' : item.accentColor,
+                      fontSize: '9.5px',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '6px'
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ═══ 2. MAIN 2-COLUMN WORKSPACE (VERTICAL RAIL ON RIGHT + MAIN CANVAS ON LEFT) ═══ */}
       <div className="enterprise-adaptive-workspace" style={{ display: "flex", flexDirection: "column", width: "100%", direction: "rtl", gap: "20px" }}>

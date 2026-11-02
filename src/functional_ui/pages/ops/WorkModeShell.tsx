@@ -623,38 +623,40 @@ export const WorkModeShell: React.FC = () => {
       {/* =========================================================================
           2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
           الترتيب المؤسسي: زر الأنظمة على اليمين وشريط الأيقونات على اليسار
-          حاوية شفافة 100% بدون أي شريط أو خلفية تحجب أو تشوش (Transparent Floating Islands)
+          كبسولة زجاجية فاخرة شبه شفافة ثابتة على الكمبيوتر والهاتف (Fixed Luxury Dock Capsule)
           ========================================================================= */}
       <nav
         style={{
           position: 'fixed',
-          bottom: isMobile ? '12px' : '20px',
+          bottom: isMobile ? '10px' : '18px',
           left: isMobile ? '10px' : '50%',
           right: isMobile ? '10px' : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
-          height: isMobile ? '56px' : '62px',
+          height: isMobile ? '58px' : '62px',
           width: isMobile ? 'calc(100% - 20px)' : 'auto',
           minWidth: isMobile ? 'auto' : '480px',
-          maxWidth: isMobile ? 'calc(100% - 20px)' : '760px',
+          maxWidth: isMobile ? 'calc(100% - 20px)' : '780px',
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '10px' : '14px',
-          padding: '0 4px',
-          background: 'transparent',
-          backdropFilter: 'none',
-          WebkitBackdropFilter: 'none',
-          border: 'none',
-          boxShadow: 'none',
+          gap: isMobile ? '8px' : '12px',
+          padding: isMobile ? '0 10px' : '0 16px',
+          background: isDark ? 'rgba(14, 18, 25, 0.82)' : 'rgba(255, 255, 255, 0.72)',
+          backdropFilter: 'blur(36px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(36px) saturate(200%)',
+          borderRadius: isMobile ? '22px' : '28px',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(255, 255, 255, 0.85)',
+          boxShadow: isDark 
+            ? '0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
+            : '0 16px 40px rgba(15, 23, 42, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.95)',
           zIndex: 9000,
           direction: 'rtl',
-          boxSizing: 'border-box',
-          pointerEvents: 'none'
+          boxSizing: 'border-box'
         }}
       >
         {/* =========================================================================
             SEGMENT 1 (RIGHT SIDE): زر الأنظمة المرتبطة والقائمة المدمجة
             ========================================================================= */}
-        <div style={{ position: 'relative', flexShrink: 0, pointerEvents: 'auto' }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
             ref={popoverBtnRef}
             type="button"
@@ -671,7 +673,7 @@ export const WorkModeShell: React.FC = () => {
                 : (isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(15, 23, 42, 0.12)'),
               background: isSystemsPopoverOpen
                 ? (isDark ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.28), rgba(3, 105, 161, 0.2))' : 'rgba(2, 132, 199, 0.15)')
-                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.55)'),
+                : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.05)'),
               color: isSystemsPopoverOpen 
                 ? (isDark ? '#38bdf8' : '#0284c7') 
                 : (isDark ? '#e2e8f0' : '#0f172a'),
@@ -1107,6 +1109,16 @@ export const WorkModeShell: React.FC = () => {
           </AnimatePresence>
         </div>
 
+        {/* فاصل ناعم بين زر الأنظمة وشريط الأيقونات */}
+        <div
+          style={{
+            width: '1px',
+            height: '26px',
+            background: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)',
+            flexShrink: 0
+          }}
+        />
+
         {/* =========================================================================
             SEGMENT 2 (LEFT SIDE): شريط الأيقونات الدائرية المتمددة أفقياً (macOS Fluid Dock)
             ========================================================================= */}
@@ -1123,14 +1135,13 @@ export const WorkModeShell: React.FC = () => {
             minWidth: 0,
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '10px' : '14px',
+            gap: isMobile ? '8px' : '12px',
             overflowX: 'auto',
             overflowY: 'visible',
             scrollbarWidth: 'none',
-            padding: '4px 6px',
+            padding: '0 4px',
             height: '100%',
-            position: 'relative',
-            pointerEvents: 'auto'
+            position: 'relative'
           }}
         >
           {/* ── الأيقونة السيادية 1: حوض التذاكر والعمليات ── */}
