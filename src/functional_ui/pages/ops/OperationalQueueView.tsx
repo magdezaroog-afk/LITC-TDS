@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OpsAPI } from '../../../services/ops.api';
 import { useAuth } from '../../../engine/auth/AuthContext';
@@ -19,7 +19,8 @@ import {
   MessageSquare, RotateCcw, FileCheck, XCircle, History,
   ArrowRightLeft, Hourglass, Plus, PlusCircle, GitBranch, ArrowLeft, ExternalLink,
   GitPullRequest, Zap, Sun, Moon, BarChart3, Paperclip, Download, Eye,
-  LayoutGrid, List, SlidersHorizontal, Minus, Laptop, Lock, Unlock, Wrench, Crown
+  LayoutGrid, List, SlidersHorizontal, Minus, Laptop, Lock, Unlock, Wrench, Crown,
+  ChevronDown, Archive, UserCheck
 } from 'lucide-react';
 
 // --- Types ---
@@ -495,6 +496,19 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   const [subTasksPopoverTicket, setSubTasksPopoverTicket] = useState<Ticket | null>(null);
   const [standaloneSubTab, setStandaloneSubTab] = useState<'MY_ASSIGNED' | 'INBOUND' | 'MY_OUTBOUND' | 'DEPT_OUTBOUND'>('MY_ASSIGNED');
   const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(false);
+  const [isQueueDropdownOpen, setIsQueueDropdownOpen] = useState<boolean>(false);
+  const queueDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleQueueClickOutside = (e: MouseEvent) => {
+      if (queueDropdownRef.current && !queueDropdownRef.current.contains(e.target as Node)) {
+        setIsQueueDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleQueueClickOutside);
+    return () => document.removeEventListener('mousedown', handleQueueClickOutside);
+  }, []);
+
   const [quickFilter, setQuickFilter] = useState<'ALL' | 'CRITICAL' | 'IN_PROGRESS' | 'PENDING'>('ALL');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
@@ -1575,87 +1589,6 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-          {/* ═══ 3. THE 3-QUEUE SEGMENTED GLIDE TRACK (الوارد العام • تذاكري المسندة • أرشيف التذاكر) ═══ */}
-          {isGeneralTicketsView && (
-            <div className="queues-track-wrap" style={{ padding: isMobile ? '4px 0 6px 0' : '6px 0 10px 0', width: '100%', boxSizing: 'border-box' }}>
-              <div
-                className="queues-glide-track"
-                style={{
-                  position: 'relative',
-                  background: isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(240, 244, 250, 0.75)',
-                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
-                  borderRadius: '16px',
-                  padding: '4px',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '4px',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.35)' : '0 2px 8px rgba(15, 23, 42, 0.04)',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {[
-                  { id: 'POOL', label: 'الوارد العام', count: poolCount },
-                  { id: 'MY_QUEUE', label: 'تذاكري المسندة', count: myCount },
-                  { id: 'ARCHIVE', label: 'أرشيف التذاكر', count: archiveCount }
-                ].map((q) => {
-                  const isSelected = activeTab === q.id;
-                  return (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => setActiveTab(q.id as any)}
-                      className={`queue-track-btn ${isSelected ? 'active' : ''}`}
-                      style={{
-                        position: 'relative',
-                        zIndex: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: isMobile ? '5px' : '8px',
-                        padding: isMobile ? '8px 4px' : '10px 8px',
-                        borderRadius: '12px',
-                        fontSize: isMobile ? '11.5px' : '13px',
-                        fontWeight: isSelected ? 900 : 700,
-                        cursor: 'pointer',
-                        border: isSelected
-                          ? (isDark ? '1px solid rgba(255, 255, 255, 0.20)' : '1px solid rgba(0, 0, 0, 0.08)')
-                          : '1px solid transparent',
-                        background: isSelected
-                          ? (isDark ? 'linear-gradient(135deg, rgba(28, 42, 68, 0.95), rgba(14, 22, 40, 0.95))' : '#ffffff')
-                          : 'transparent',
-                        color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b'),
-                        boxShadow: isSelected
-                          ? (isDark ? '0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255,255,255,0.2)' : '0 4px 12px rgba(0, 0, 0, 0.08)')
-                          : 'none',
-                        transition: 'all 0.2s cubic-bezier(0.19, 1, 0.22, 1)',
-                        fontFamily: "'Cairo', sans-serif"
-                      }}
-                    >
-                      <span>{q.label}</span>
-                      <span
-                        className="queue-track-count"
-                        style={{
-                          fontSize: '10.5px',
-                          fontWeight: 900,
-                          padding: '1px 7px',
-                          borderRadius: '999px',
-                          background: isSelected ? '#0284c7' : (isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)'),
-                          color: isSelected ? '#ffffff' : 'inherit',
-                          boxShadow: isSelected ? '0 0 8px rgba(2, 132, 199, 0.5)' : 'none',
-                          fontFamily: 'monospace'
-                        }}
-                      >
-                        {q.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* ═══ STANDALONE REQUESTS DEDICATED COMMAND HUB (مركز التحكم بالطلبات المستقلة والتنسيق البيني) ═══ */}
           {isStandaloneView && (
             <div
@@ -2089,21 +2022,241 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       marginBottom: '14px'
                     }}
                   >
-                    {/* Tier 1: Search & Primary Action Row */}
+                    {/* Tier 1: Unified Clean Master Command Row (صف الأوامر الموحد فائق النقاء والتنظيم) */}
                     <div
                       className="command-primary-row"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: isMobile ? '6px' : '8px',
-                        width: '100%'
+                        width: '100%',
+                        flexWrap: isMobile ? 'wrap' : 'nowrap'
                       }}
                     >
-                      {/* Clean Search Box */}
+                      {/* 1. كبسولة الطابور المنسدلة الموحدة (الوارد العام • تذاكري المسندة • أرشيف التذاكر) */}
+                      <div ref={queueDropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsQueueDropdownOpen(prev => !prev)}
+                          title="اختر طابور المعاملات التشغيلية"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            height: '42px',
+                            padding: isMobile ? '0 10px' : '0 14px',
+                            borderRadius: '12px',
+                            background: isDark
+                              ? 'linear-gradient(135deg, rgba(19, 93, 121, 0.45) 0%, rgba(14, 22, 40, 0.85) 100%)'
+                              : 'linear-gradient(135deg, rgba(19, 93, 121, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%)',
+                            border: isQueueDropdownOpen
+                              ? '1.5px solid #0284c7'
+                              : (isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid rgba(19, 93, 121, 0.25)'),
+                            color: isDark ? '#ffffff' : '#0f172a',
+                            fontSize: '12.5px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            backdropFilter: 'blur(16px)',
+                            WebkitBackdropFilter: 'blur(16px)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: isQueueDropdownOpen ? '0 0 16px rgba(2, 132, 199, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.05)',
+                            fontFamily: "'Cairo', sans-serif",
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {activeTab === 'MY_QUEUE' ? (
+                            <UserCheck size={16} color="#10b981" strokeWidth={2.4} />
+                          ) : activeTab === 'ARCHIVE' ? (
+                            <Archive size={16} color="#a855f7" strokeWidth={2.4} />
+                          ) : (
+                            <Inbox size={16} color="#38bdf8" strokeWidth={2.4} />
+                          )}
+
+                          <span>
+                            {activeTab === 'MY_QUEUE' ? 'تذاكري المسندة' : activeTab === 'ARCHIVE' ? 'أرشيف التذاكر' : 'الوارد العام'}
+                          </span>
+
+                          {/* Live Queue Badge */}
+                          <span
+                            style={{
+                              background: activeTab === 'MY_QUEUE'
+                                ? 'rgba(16, 185, 129, 0.22)'
+                                : activeTab === 'ARCHIVE'
+                                ? 'rgba(168, 85, 247, 0.22)'
+                                : 'rgba(56, 189, 248, 0.25)',
+                              color: activeTab === 'MY_QUEUE'
+                                ? '#34d399'
+                                : activeTab === 'ARCHIVE'
+                                ? '#c084fc'
+                                : '#38bdf8',
+                              border: `1px solid ${activeTab === 'MY_QUEUE' ? 'rgba(16, 185, 129, 0.4)' : activeTab === 'ARCHIVE' ? 'rgba(168, 85, 247, 0.4)' : 'rgba(56, 189, 248, 0.4)'}`,
+                              padding: '1px 6px',
+                              borderRadius: '999px',
+                              fontSize: '10.5px',
+                              fontWeight: 900,
+                              fontFamily: 'monospace'
+                            }}
+                          >
+                            {activeTab === 'MY_QUEUE' ? myCount : activeTab === 'ARCHIVE' ? archiveCount : poolCount}
+                          </span>
+
+                          <ChevronDown
+                            size={14}
+                            style={{
+                              transform: isQueueDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.2s ease',
+                              color: isDark ? '#94a3b8' : '#64748b'
+                            }}
+                          />
+                        </button>
+
+                        {/* Floating Simple Dropdown Menu */}
+                        <AnimatePresence>
+                          {isQueueDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                              transition={{ duration: 0.16 }}
+                              style={{
+                                position: 'absolute',
+                                top: 'calc(100% + 6px)',
+                                right: 0,
+                                minWidth: '220px',
+                                background: isDark ? 'rgba(11, 16, 26, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+                                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.1)',
+                                borderRadius: '16px',
+                                padding: '6px',
+                                boxShadow: isDark ? '0 16px 40px rgba(0, 0, 0, 0.65)' : '0 12px 36px rgba(15, 23, 42, 0.14)',
+                                backdropFilter: 'blur(28px)',
+                                WebkitBackdropFilter: 'blur(28px)',
+                                zIndex: 1000,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '3px'
+                              }}
+                            >
+                              {[
+                                { id: 'POOL', label: 'الوارد العام', count: poolCount, icon: Inbox, color: '#0284c7' },
+                                { id: 'MY_QUEUE', label: 'تذاكري المسندة لي', count: myCount, icon: UserCheck, color: '#10b981' },
+                                { id: 'ARCHIVE', label: 'أرشيف التذاكر', count: archiveCount, icon: Archive, color: '#8b5cf6' }
+                              ].map(item => {
+                                const isSelected = activeTab === item.id;
+                                const ItemIcon = item.icon;
+                                return (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveTab(item.id as any);
+                                      setIsQueueDropdownOpen(false);
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: '8px 12px',
+                                      borderRadius: '10px',
+                                      background: isSelected
+                                        ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.1)')
+                                        : 'transparent',
+                                      border: isSelected
+                                        ? (isDark ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(2, 132, 199, 0.25)')
+                                        : '1px solid transparent',
+                                      color: isSelected ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#e2e8f0' : '#1e293b'),
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      textAlign: 'right',
+                                      width: '100%'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <ItemIcon size={16} color={item.color} strokeWidth={isSelected ? 2.5 : 2} />
+                                      <span style={{ fontSize: '12px', fontWeight: isSelected ? 800 : 600, fontFamily: "'Cairo', sans-serif" }}>
+                                        {item.label}
+                                      </span>
+                                    </div>
+                                    <span
+                                      style={{
+                                        background: isSelected ? item.color : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'),
+                                        color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                                        padding: '1px 7px',
+                                        borderRadius: '999px',
+                                        fontSize: '10.5px',
+                                        fontWeight: 800,
+                                        fontFamily: 'monospace'
+                                      }}
+                                    >
+                                      {item.count}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
+                      {/* 2. زر الفلاتر المخصص بجانب التبويب */}
+                      <button
+                        type="button"
+                        onClick={() => setIsFiltersExpanded(prev => !prev)}
+                        title="تخصيص الفلاتر المتقدمة"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '42px',
+                          padding: isMobile ? '0 10px' : '0 14px',
+                          borderRadius: '12px',
+                          background: isFiltersExpanded
+                            ? (isDark ? 'rgba(2, 132, 199, 0.22)' : 'rgba(2, 132, 199, 0.12)')
+                            : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)'),
+                          border: isFiltersExpanded
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                          color: isFiltersExpanded ? '#38bdf8' : (isDark ? '#cbd5e1' : '#475569'),
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s ease',
+                          flexShrink: 0,
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <Filter size={14} strokeWidth={2.2} />
+                        <span>الفلاتر</span>
+                        {activeFiltersCount > 0 && (
+                          <span
+                            style={{
+                              background: 'rgba(14, 165, 233, 0.2)',
+                              color: '#38bdf8',
+                              border: '1px solid rgba(56, 189, 248, 0.4)',
+                              padding: '1px 6px',
+                              borderRadius: '9999px',
+                              fontSize: '10px',
+                              fontWeight: 800
+                            }}
+                          >
+                            {activeFiltersCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* 3. شريط البحث المرن بجانب الفلاتر */}
                       <div
                         className="clean-search-box"
                         style={{
                           flex: 1,
+                          minWidth: isMobile ? '100%' : '180px',
                           position: 'relative',
                           display: 'flex',
                           alignItems: 'center',
@@ -2157,55 +2310,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         )}
                       </div>
 
-                      {/* Dedicated "الفلاتر" Action Pill Button */}
-                      <button
-                        type="button"
-                        onClick={() => setIsFiltersExpanded(prev => !prev)}
-                        title="تخصيص الفلاتر المتقدمة"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          height: '42px',
-                          padding: isMobile ? '0 10px' : '0 14px',
-                          borderRadius: '12px',
-                          background: isFiltersExpanded
-                            ? (isDark ? 'rgba(2, 132, 199, 0.22)' : 'rgba(2, 132, 199, 0.12)')
-                            : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)'),
-                          border: isFiltersExpanded
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
-                          color: isFiltersExpanded ? '#38bdf8' : (isDark ? '#cbd5e1' : '#475569'),
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          backdropFilter: 'blur(16px)',
-                          WebkitBackdropFilter: 'blur(16px)',
-                          transition: 'all 0.2s ease',
-                          flexShrink: 0,
-                          fontFamily: "'Cairo', sans-serif"
-                        }}
-                      >
-                        <Filter size={14} strokeWidth={2.2} />
-                        <span>الفلاتر</span>
-                        {activeFiltersCount > 0 && (
-                          <span
-                            style={{
-                              background: 'rgba(14, 165, 233, 0.2)',
-                              color: '#38bdf8',
-                              border: '1px solid rgba(56, 189, 248, 0.4)',
-                              padding: '1px 6px',
-                              borderRadius: '9999px',
-                              fontSize: '10px',
-                              fontWeight: 800
-                            }}
-                          >
-                            {activeFiltersCount}
-                          </span>
-                        )}
-                      </button>
-
-                      {/* View Mode Toggle Pill Button */}
+                      {/* 4. زر طريقة العرض (كروت / قائمة) */}
                       <button
                         type="button"
                         onClick={() => handleToggleLayout(ticketLayoutMode === 'RAIL' ? 'LIST' : 'RAIL')}
@@ -2234,7 +2339,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         <span>{ticketLayoutMode === 'RAIL' ? 'كروت' : 'قائمة'}</span>
                       </button>
 
-                      {/* Instant Refresh Icon Button */}
+                      {/* 5. زر التحديث اللحظي */}
                       <button
                         type="button"
                         onClick={() => fetchData()}
