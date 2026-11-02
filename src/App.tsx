@@ -202,7 +202,8 @@ const Navigation: React.FC = () => {
   const isEmployeeActive = location.pathname.startsWith('/hub') || 
     location.pathname === '/' || 
     ['/requests', '/challenges', '/directory', '/healthcare', '/profile', '/settings'].some(p => location.pathname.startsWith(p));
-  const isOpsActive = location.pathname.startsWith('/ops');
+  const isOpsActive = location.pathname.startsWith('/ops') || 
+    (location.pathname === '/' && user?.role && !['system_director', 'super_admin', 'co_admin'].includes(user.role));
   const isAdminActive = location.pathname.startsWith('/admin');
 
   // Dynamic mobile viewport detection

@@ -400,7 +400,7 @@ export const WorkModeShell: React.FC = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: isMobile ? 'calc(100vh - 54px)' : 'calc(100vh - 68px)',
+        height: isMobile ? 'calc(100vh - 54px)' : 'calc(100vh - 74px)',
         width: '100%',
         maxWidth: '100%',
         background: isDark
@@ -415,12 +415,13 @@ export const WorkModeShell: React.FC = () => {
     >
       {/* =========================================================================
           1. MAIN APPLICATION CANVAS (Full-Bleed 100% Screen Freedom)
+          المحتوى يتدفق بحرية كاملة لكامل قاع الشاشة بدون أي شريط خلفي أو فراغ مقطوع
           ========================================================================= */}
-      <main style={{ flex: 1, minWidth: 0, position: 'relative', overflowY: 'auto', height: '100%', paddingBottom: isMobile ? '68px' : '84px' }}>
+      <main style={{ flex: 1, minWidth: 0, position: 'relative', height: '100%', width: '100%', overflow: 'hidden' }}>
         
         {/* VIEW 1: حوض الطلبات والعمليات المؤسسية */}
         {activeAppId === 'OPERATIONS' && (
-          <div className="operational-shell" style={{ height: '100%', overflowY: 'auto' }}>
+          <div className="operational-shell" style={{ height: '100%', width: '100%', overflowY: 'auto', position: 'relative' }}>
             <OperationalQueueView hideInternalDock={true} />
           </div>
         )}

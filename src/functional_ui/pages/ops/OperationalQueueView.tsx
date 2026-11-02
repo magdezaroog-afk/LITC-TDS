@@ -1362,7 +1362,8 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   return (
     <div style={{
       ...styles.container,
-      padding: isMobile ? '10px 10px 40px 10px' : '28px 32px 90px 32px',
+      minHeight: '100%',
+      padding: isMobile ? '10px 10px 80px 10px' : '28px 32px 100px 32px',
       overflowX: 'hidden',
       maxWidth: '100%',
       background: isDark
