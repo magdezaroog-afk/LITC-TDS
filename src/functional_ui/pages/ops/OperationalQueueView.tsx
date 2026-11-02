@@ -494,6 +494,17 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   const [flowsList, setFlowsList] = useState<Array<{ id: string; name: string }>>([]);
   const [subTasksPopoverTicket, setSubTasksPopoverTicket] = useState<Ticket | null>(null);
   const [standaloneSubTab, setStandaloneSubTab] = useState<'MY_ASSIGNED' | 'INBOUND' | 'MY_OUTBOUND' | 'DEPT_OUTBOUND'>('MY_ASSIGNED');
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(false);
+  const [quickFilter, setQuickFilter] = useState<'ALL' | 'CRITICAL' | 'IN_PROGRESS' | 'PENDING'>('ALL');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
+  const [poolCount, setPoolCount] = useState<number>(0);
+  const [myCount, setMyCount] = useState<number>(0);
+  const [subTicketsCount, setSubTicketsCount] = useState<number>(0);
+  const [archiveCount, setArchiveCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [managedFlowsCount, setManagedFlowsCount] = useState<number>(0);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -501,8 +512,23 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     if (selectedFlowFilter !== 'ALL') count++;
     if (selectedBuildingFilter !== 'ALL') count++;
     if (selectedStatusFilter !== 'ALL') count++;
+    if (quickFilter !== 'ALL') count++;
     return count;
-  }, [selectedDeptFilter, selectedFlowFilter, selectedBuildingFilter, selectedStatusFilter]);
+  }, [selectedDeptFilter, selectedFlowFilter, selectedBuildingFilter, selectedStatusFilter, quickFilter]);
+
+  const quickCounts = useMemo(() => {
+    let critical = 0;
+    let inProgress = 0;
+    let pending = 0;
+    tickets.forEach(t => {
+      const p = (t.businessPriority || t.requesterPriority || t.priority || '').toUpperCase();
+      const s = (t.state?.name || t.status || '').toUpperCase();
+      if (['CRITICAL', 'URGENT', 'HIGH'].includes(p)) critical++;
+      if (['IN_PROGRESS', 'PROCESSING', 'ASSIGNED', 'WORKING'].includes(s)) inProgress++;
+      if (['PENDING', 'WAITING', 'APPROVAL', 'SUBMITTED', 'OPEN'].includes(s)) pending++;
+    });
+    return { all: tickets.length, critical, inProgress, pending };
+  }, [tickets]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -517,15 +543,6 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('nexus_ops_tab_changed', { detail: { tab: activeTab } }));
   }, [activeTab]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [stats, setStats] = useState<Stats>({ open: 0, breached: 0, completed: 0 });
-  const [poolCount, setPoolCount] = useState<number>(0);
-  const [myCount, setMyCount] = useState<number>(0);
-  const [subTicketsCount, setSubTicketsCount] = useState<number>(0);
-  const [archiveCount, setArchiveCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [managedFlowsCount, setManagedFlowsCount] = useState<number>(0);
   const [canManageFlows, setCanManageFlows] = useState<boolean>(false);
 
   useEffect(() => {
@@ -1301,12 +1318,12 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     }
   }, [activeTab, poolCount, myCount, stats.open, subTicketsCount, managedFlowsCount, isDark]);
 
-  // ═══ OPERATIONAL MODES DEFINITION (التذاكر العامة، الطلبات المستقلة، المؤشرات، وخصائص الاستقبال) ═══
+  // ═══ OPERATIONAL MODES DEFINITION (التذاكر العامة، الطلبات المستقلة، المقارنة والتحليل، وخصائص الاستقبال) ═══
   const operationalModes = useMemo(() => [
     {
       id: 'GENERAL_TICKETS',
       label: 'التذاكر العامة وعمليات الحوض',
-      shortLabel: 'التذاكر العامة',
+      shortLabel: '📥 التذاكر العامة',
       sublabel: 'أحواض العمل والمهام التشغيلية',
       count: stats.open,
       icon: Inbox,
@@ -1319,7 +1336,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     {
       id: 'STANDALONE_REQUESTS',
       label: 'الطلبات والمهام المستقلة بين الإدارات',
-      shortLabel: 'الطلبات المستقلة',
+      shortLabel: '🔄 الطلبات المستقلة',
       sublabel: 'التنسيق البيني وسجل الأصول المرتبط',
       count: subTicketsCount,
       icon: ArrowRightLeft,
@@ -1331,8 +1348,8 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     },
     {
       id: 'ANALYTICS_SUITE',
-      label: 'مؤشرات الأداء والمقارنة والحوكمة NACE',
-      shortLabel: 'المؤشرات',
+      label: 'المقارنة والتحليل والحوكمة',
+      shortLabel: '📊 المقارنة والتحليل',
       sublabel: 'التحليلات الإحصائية، محرك المقارنة، وتفويض الحوكمة',
       badge: 'NACE',
       icon: BarChart3,
@@ -1348,7 +1365,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     ...(canManageFlows ? [{
       id: 'FLOW_SETTINGS',
       label: 'خصائص استقبال الطلبات',
-      shortLabel: 'خصائص الاستقبال',
+      shortLabel: '⚙️ خصائص الاستقبال',
       sublabel: 'حوكمة وأتمتة مسارات الاستقبال',
       count: managedFlowsCount,
       icon: Sliders,
@@ -1470,100 +1487,86 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
         </div>
       </div>
 
-      {/* ── 🌟 UNIVERSAL TOP OPERATIONAL MODES STRIP (الشريط التشغيلي الموحد في أعلى الواجهة) ── */}
-      {!hideInternalDock && (
-        <div
-          className="nexus-universal-top-ops-strip"
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            background: isDark ? 'rgba(12, 16, 23, 0.94)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
-            padding: isMobile ? '8px 4px' : '10px 8px',
-            marginBottom: isMobile ? '12px' : '18px',
-            width: '100%',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            direction: 'rtl',
-            boxSizing: 'border-box'
-          }}
-        >
-          <div style={{
-            display: 'flex',
-            gap: isMobile ? '8px' : '12px',
-            padding: '0 4px',
-            width: 'max-content',
-            alignItems: 'center'
-          }}>
-            {operationalModes.map((item) => {
-              const isSelected = item.isActive;
-              const IconComponent = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={item.onClick}
+      {/* ── 🌟 CONTINUOUS KINETIC MAGNETIC MODES RIBBON (أيقونات الأنماط التشغيلية الموحدة) ── */}
+      <div
+        className="modes-magnetic-strip"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          display: 'flex',
+          gap: isMobile ? '6px' : '8px',
+          padding: isMobile ? '6px 4px 8px 4px' : '8px 4px 10px 4px',
+          background: isDark ? 'rgba(3, 5, 12, 0.65)' : 'rgba(234, 240, 247, 0.70)',
+          backdropFilter: 'blur(28px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+          borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          direction: 'rtl',
+          boxSizing: 'border-box',
+          width: '100%',
+          marginBottom: isMobile ? '10px' : '16px'
+        }}
+      >
+        {operationalModes.map((item) => {
+          const isSelected = item.isActive;
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={item.onClick}
+              className={`mode-magnetic-pill ${isSelected ? 'active' : ''}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: isMobile ? '7px 12px' : '8px 16px',
+                borderRadius: '12px',
+                fontSize: isMobile ? '11.5px' : '12.5px',
+                fontWeight: isSelected ? 800 : 700,
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                flexShrink: 0,
+                border: isSelected
+                  ? '1px solid rgba(28, 161, 204, 0.45)'
+                  : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                background: isSelected
+                  ? 'linear-gradient(135deg, #135d79 0%, #0d3e52 100%)'
+                  : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.6)'),
+                color: isSelected ? '#ffffff' : (isDark ? '#94a3b8' : '#475569'),
+                boxShadow: isSelected
+                  ? '0 4px 18px rgba(19, 93, 121, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
+                  : (isDark ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.04)'),
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                transition: 'all 0.22s cubic-bezier(0.19, 1, 0.22, 1)',
+                fontFamily: "'Cairo', sans-serif"
+              }}
+            >
+              <IconComponent size={15} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#38bdf8' : (isDark ? '#94a3b8' : '#64748b')} />
+              <span>{item.shortLabel || item.label}</span>
+              {item.count !== undefined && item.count > 0 && (
+                <span
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: isMobile ? '8px 14px' : '10px 18px',
-                    borderRadius: '14px',
-                    border: isSelected
-                      ? `1.5px solid ${item.accentColor}`
-                      : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                    background: isSelected
-                      ? `linear-gradient(135deg, ${item.accentColor}, ${item.accentColor}dd)`
-                      : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#ffffff'),
-                    color: isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#334155'),
-                    fontSize: isMobile ? '12px' : '13px',
-                    fontWeight: isSelected ? 800 : 700,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    boxShadow: isSelected
-                      ? `0 4px 16px ${item.accentColor}40`
-                      : (isDark ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)'),
-                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                    background: isSelected ? 'rgba(56, 189, 248, 0.25)' : (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'),
+                    color: isSelected ? '#38bdf8' : 'inherit',
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    padding: '1px 6px',
+                    borderRadius: '999px',
+                    lineHeight: 1,
+                    fontFamily: 'monospace'
                   }}
                 >
-                  <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} color={isSelected ? '#ffffff' : item.accentColor} />
-                  <span>{item.shortLabel || item.label}</span>
-                  {item.count !== undefined && item.count > 0 && (
-                    <span style={{
-                      background: isSelected ? 'rgba(255, 255, 255, 0.28)' : (isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9'),
-                      color: isSelected ? '#ffffff' : item.accentColor,
-                      fontSize: '10.5px',
-                      fontWeight: 900,
-                      padding: '2px 7px',
-                      borderRadius: '9999px',
-                      lineHeight: 1
-                    }}>
-                      {item.count}
-                    </span>
-                  )}
-                  {item.badge && (
-                    <span style={{
-                      background: isSelected ? 'rgba(255, 255, 255, 0.22)' : `${item.accentColor}18`,
-                      color: isSelected ? '#ffffff' : item.accentColor,
-                      fontSize: '9.5px',
-                      fontWeight: 800,
-                      padding: '1px 6px',
-                      borderRadius: '6px'
-                    }}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                  {item.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* ═══ 2. MAIN 2-COLUMN WORKSPACE (VERTICAL RAIL ON RIGHT + MAIN CANVAS ON LEFT) ═══ */}
       <div className="enterprise-adaptive-workspace" style={{ display: "flex", flexDirection: "column", width: "100%", direction: "rtl", gap: "20px" }}>
@@ -1572,197 +1575,84 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
 
         {/* ── LEFT COLUMN: UNIFIED MAIN OPERATIONS CANVAS FRAME (مستطيل العرض الموحد) ── */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-          {/* ═══ TOP OPERATIONAL QUEUES SWITCHER (أحواض التذاكر العامة الثلاثة المنظمة) ═══ */}
+          {/* ═══ 3. THE 3-QUEUE SEGMENTED GLIDE TRACK (الوارد العام • تذاكري المسندة • أرشيف التذاكر) ═══ */}
           {isGeneralTicketsView && (
-            <div 
-              className="operational-top-queues-bar"
-              style={{
-                display: isMobile ? 'flex' : 'grid',
-                gridTemplateColumns: isMobile ? undefined : 'repeat(3, minmax(0, 1fr))',
-                flexDirection: isMobile ? 'row' : undefined,
-                overflowX: isMobile ? 'auto' : undefined,
-                WebkitOverflowScrolling: 'touch',
-                gap: isMobile ? '8px' : '14px',
-                paddingBottom: isMobile ? '6px' : '0',
-                scrollbarWidth: 'none',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}
-            >
-              {[
-                {
-                  id: 'POOL',
-                  label: 'حوض التذاكر العام',
-                  count: poolCount,
-                  badge: 'متاحة للسحب',
-                  sublabel: 'الطلبات العامة بانتظار الإسناد',
-                  icon: Inbox,
-                  accentColor: '#0284c7',
-                },
-                {
-                  id: 'MY_QUEUE',
-                  label: 'تذاكري المسندة',
-                  count: myCount,
-                  badge: 'قيد المعالجة',
-                  sublabel: 'المهام والمعاملات المباشرة في عهدتك',
-                  icon: ShieldCheck,
-                  accentColor: '#4f46e5',
-                },
-                {
-                  id: 'ARCHIVE',
-                  label: 'أرشيف التذاكر',
-                  count: archiveCount,
-                  badge: 'مقفلة ومكتملة',
-                  sublabel: 'سجل المعاملات المنجزة والمغلقة',
-                  icon: FileCheck,
-                  accentColor: '#10b981',
-                },
-              ].map((q) => {
-                const isSelected = activeTab === q.id;
-                const IconComponent = q.icon;
-                return (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => setActiveTab(q.id as any)}
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: isMobile ? '4px' : '8px',
-                      padding: isMobile ? '8px 10px' : '12px 14px',
-                      borderRadius: isMobile ? '12px' : '16px',
-                      cursor: 'pointer',
-                      textAlign: 'right',
-                      fontFamily: "'Cairo', sans-serif",
-                      outline: 'none',
-                      transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                      background: isSelected
-                        ? (isDark
-                            ? `linear-gradient(135deg, ${q.accentColor}26 0%, rgba(20, 24, 32, 0.95) 100%)`
-                            : `linear-gradient(135deg, #ffffff 0%, ${q.accentColor}12 100%)`)
-                        : (isDark ? 'rgba(19, 23, 30, 0.72)' : 'rgba(255, 255, 255, 0.88)'),
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      border: isSelected
-                        ? `1.5px solid ${q.accentColor}`
-                        : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
-                      boxShadow: isSelected
-                        ? (isDark
-                            ? `0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px ${q.accentColor}25`
-                            : `0 8px 20px -4px rgba(0, 0, 0, 0.08), 0 0 12px ${q.accentColor}20`)
-                        : (isDark ? '0 4px 14px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15, 23, 42, 0.04)'),
-                      transform: isSelected ? 'translateY(-1.5px)' : 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = isDark ? `${q.accentColor}80` : `${q.accentColor}60`;
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
-                        e.currentTarget.style.transform = 'none';
-                      }
-                    }}
-                  >
-                    {/* Top Row: Icon + Count/Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '9px',
-                        backgroundColor: isSelected ? `${q.accentColor}22` : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9'),
-                        border: isSelected ? `1px solid ${q.accentColor}40` : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0'),
-                        color: q.accentColor,
+            <div className="queues-track-wrap" style={{ padding: isMobile ? '4px 0 6px 0' : '6px 0 10px 0', width: '100%', boxSizing: 'border-box' }}>
+              <div
+                className="queues-glide-track"
+                style={{
+                  position: 'relative',
+                  background: isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(240, 244, 250, 0.75)',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)',
+                  borderRadius: '16px',
+                  padding: '4px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '4px',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.35)' : '0 2px 8px rgba(15, 23, 42, 0.04)',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {[
+                  { id: 'POOL', label: 'الوارد العام', count: poolCount },
+                  { id: 'MY_QUEUE', label: 'تذاكري المسندة', count: myCount },
+                  { id: 'ARCHIVE', label: 'أرشيف التذاكر', count: archiveCount }
+                ].map((q) => {
+                  const isSelected = activeTab === q.id;
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => setActiveTab(q.id as any)}
+                      className={`queue-track-btn ${isSelected ? 'active' : ''}`}
+                      style={{
+                        position: 'relative',
+                        zIndex: 2,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        flexShrink: 0,
-                        transition: 'all 0.2s ease',
-                      }}>
-                        <IconComponent size={16} strokeWidth={isSelected ? 2.5 : 2} />
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{
-                          fontSize: '18px',
+                        gap: isMobile ? '5px' : '8px',
+                        padding: isMobile ? '8px 4px' : '10px 8px',
+                        borderRadius: '12px',
+                        fontSize: isMobile ? '11.5px' : '13px',
+                        fontWeight: isSelected ? 900 : 700,
+                        cursor: 'pointer',
+                        border: isSelected
+                          ? (isDark ? '1px solid rgba(255, 255, 255, 0.20)' : '1px solid rgba(0, 0, 0, 0.08)')
+                          : '1px solid transparent',
+                        background: isSelected
+                          ? (isDark ? 'linear-gradient(135deg, rgba(28, 42, 68, 0.95), rgba(14, 22, 40, 0.95))' : '#ffffff')
+                          : 'transparent',
+                        color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b'),
+                        boxShadow: isSelected
+                          ? (isDark ? '0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255,255,255,0.2)' : '0 4px 12px rgba(0, 0, 0, 0.08)')
+                          : 'none',
+                        transition: 'all 0.2s cubic-bezier(0.19, 1, 0.22, 1)',
+                        fontFamily: "'Cairo', sans-serif"
+                      }}
+                    >
+                      <span>{q.label}</span>
+                      <span
+                        className="queue-track-count"
+                        style={{
+                          fontSize: '10.5px',
                           fontWeight: 900,
-                          color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#cbd5e1' : '#334155'),
-                          fontFamily: "'Tajawal', sans-serif",
-                          fontVariantNumeric: 'tabular-nums',
-                          lineHeight: 1,
-                        }}>
-                          {q.count}
-                        </span>
-                        <span style={{
-                          fontSize: '9.5px',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '9999px',
-                          color: isSelected ? q.accentColor : '#64748b',
-                          backgroundColor: isSelected ? `${q.accentColor}18` : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9'),
-                          border: isSelected ? `1px solid ${q.accentColor}35` : '1px solid transparent',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                        }}>
-                          {isSelected && (
-                            <span style={{
-                              width: '4px',
-                              height: '4px',
-                              borderRadius: '50%',
-                              backgroundColor: q.accentColor,
-                              boxShadow: `0 0 6px ${q.accentColor}`,
-                            }} />
-                          )}
-                          {q.badge}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Middle: Title */}
-                    <div>
-                      <div style={{
-                        fontSize: '13px',
-                        fontWeight: isSelected ? 800 : 700,
-                        color: isSelected ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#e2e8f0' : '#1e293b'),
-                        lineHeight: 1.3,
-                        marginBottom: '2px',
-                      }}>
-                        {q.label}
-                      </div>
-                      <div style={{
-                        display: isMobile ? 'none' : 'block',
-                        fontSize: '10px',
-                        fontWeight: 500,
-                        color: isSelected ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#64748b' : '#94a3b8'),
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}>
-                        {q.sublabel}
-                      </div>
-                    </div>
-
-                    {/* Bottom Active Glow Line */}
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: '16px',
-                        left: '16px',
-                        height: '2.5px',
-                        borderRadius: '9999px 9999px 0 0',
-                        backgroundColor: q.accentColor,
-                        boxShadow: `0 0 10px ${q.accentColor}`,
-                      }} />
-                    )}
-                  </button>
-                );
-              })}
+                          padding: '1px 7px',
+                          borderRadius: '999px',
+                          background: isSelected ? '#0284c7' : (isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)'),
+                          color: isSelected ? '#ffffff' : 'inherit',
+                          boxShadow: isSelected ? '0 0 8px rgba(2, 132, 199, 0.5)' : 'none',
+                          fontFamily: 'monospace'
+                        }}
+                      >
+                        {q.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -2189,66 +2079,61 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                 {/* ═══ Universal Operational Command & Filter Suite (شريط التحكم والفلترة فائق الانسيابية) ═══ */}
                 {isTicketView && (
                   <div
-                    className="nexus-integrated-ops-toolbar"
+                    className="enterprise-command-suite"
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: isMobile ? '10px' : '12px',
-                      padding: isMobile ? '12px' : '14px 18px',
-                      borderRadius: isMobile ? '14px' : '16px',
-                      background: isDark ? 'rgba(24, 29, 41, 0.65)' : '#ffffff',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.07)',
-                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(15, 23, 42, 0.03)',
-                      marginBottom: '16px'
+                      gap: '10px',
+                      padding: isMobile ? '6px 0' : '8px 0',
+                      width: '100%',
+                      marginBottom: '14px'
                     }}
                   >
-                    {/* ── ROW 1: SEARCH + LAYOUT SWITCHER + REFRESH ── */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: isMobile ? '8px' : '12px',
-                      flexWrap: isMobile ? 'wrap' : 'nowrap',
-                      width: '100%'
-                    }}>
-                      {/* Search Bar */}
-                      <div style={{
-                        position: 'relative',
-                        flex: 1,
-                        minWidth: isMobile ? '100%' : '260px'
-                      }}>
-                        <Search
-                          size={15}
-                          style={{
-                            position: 'absolute',
-                            right: '12px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: isDark ? '#94a3b8' : '#64748b',
-                            pointerEvents: 'none'
-                          }}
-                        />
+                    {/* Tier 1: Search & Primary Action Row */}
+                    <div
+                      className="command-primary-row"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '6px' : '8px',
+                        width: '100%'
+                      }}
+                    >
+                      {/* Clean Search Box */}
+                      <div
+                        className="clean-search-box"
+                        style={{
+                          flex: 1,
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                          border: search ? '1.5px solid #0284c7' : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                          borderRadius: '12px',
+                          padding: '0 12px',
+                          height: '42px',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s ease',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <Search size={16} color={isDark ? '#64748b' : '#94a3b8'} style={{ flexShrink: 0, marginInlineEnd: '8px' }} />
                         <input
                           type="text"
-                          placeholder="ابحث برقم المعاملة، الموضوع، أو اسم صاحب الطلب..."
+                          className="clean-search-input"
+                          placeholder="ابحث برقم المعاملة، الموضوع، أو القسم..."
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           style={{
-                            width: '100%',
-                            padding: isMobile ? '8px 36px 8px 12px' : '9px 38px 9px 12px',
-                            borderRadius: '10px',
-                            border: search
-                              ? '1.5px solid #0284c7'
-                              : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                            background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc',
-                            fontSize: isMobile ? '12px' : '13px',
-                            fontFamily: "'Cairo', sans-serif",
-                            color: isDark ? '#ffffff' : '#0f172a',
+                            flex: 1,
+                            background: 'transparent',
+                            border: 'none',
                             outline: 'none',
-                            boxSizing: 'border-box',
-                            transition: 'all 0.18s ease'
+                            color: isDark ? '#f8fafc' : '#0f172a',
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            fontFamily: "'Cairo', sans-serif"
                           }}
                         />
                         {search && (
@@ -2256,356 +2141,468 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                             type="button"
                             onClick={() => setSearch('')}
                             style={{
-                              position: 'absolute',
-                              left: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
                               background: 'none',
                               border: 'none',
+                              color: isDark ? '#94a3b8' : '#64748b',
                               cursor: 'pointer',
-                              color: '#94a3b8',
+                              fontSize: '14px',
+                              padding: '4px',
                               display: 'flex',
-                              alignItems: 'center',
-                              padding: '2px'
+                              alignItems: 'center'
                             }}
+                            title="مسح البحث"
                           >
-                            <X size={14} />
+                            ✕
                           </button>
                         )}
                       </div>
 
-                      {/* Right Controls Group: Layout Toggle + Refresh Button */}
-                      <div style={{
+                      {/* Dedicated "الفلاتر" Action Pill Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsFiltersExpanded(prev => !prev)}
+                        title="تخصيص الفلاتر المتقدمة"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '42px',
+                          padding: isMobile ? '0 10px' : '0 14px',
+                          borderRadius: '12px',
+                          background: isFiltersExpanded
+                            ? (isDark ? 'rgba(2, 132, 199, 0.22)' : 'rgba(2, 132, 199, 0.12)')
+                            : (isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)'),
+                          border: isFiltersExpanded
+                            ? '1.5px solid #0284c7'
+                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)'),
+                          color: isFiltersExpanded ? '#38bdf8' : (isDark ? '#cbd5e1' : '#475569'),
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s ease',
+                          flexShrink: 0,
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        <Filter size={14} strokeWidth={2.2} />
+                        <span>الفلاتر</span>
+                        {activeFiltersCount > 0 && (
+                          <span
+                            style={{
+                              background: 'rgba(14, 165, 233, 0.2)',
+                              color: '#38bdf8',
+                              border: '1px solid rgba(56, 189, 248, 0.4)',
+                              padding: '1px 6px',
+                              borderRadius: '9999px',
+                              fontSize: '10px',
+                              fontWeight: 800
+                            }}
+                          >
+                            {activeFiltersCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* View Mode Toggle Pill Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLayout(ticketLayoutMode === 'RAIL' ? 'LIST' : 'RAIL')}
+                        title="تبديل نمط العرض (كروت / قائمة)"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '42px',
+                          padding: isMobile ? '0 10px' : '0 14px',
+                          borderRadius: '12px',
+                          background: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)',
+                          color: isDark ? '#cbd5e1' : '#475569',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s ease',
+                          flexShrink: 0,
+                          fontFamily: "'Cairo', sans-serif"
+                        }}
+                      >
+                        {ticketLayoutMode === 'RAIL' ? <LayoutGrid size={14} strokeWidth={2.2} /> : <List size={14} strokeWidth={2.2} />}
+                        <span>{ticketLayoutMode === 'RAIL' ? 'كروت' : 'قائمة'}</span>
+                      </button>
+
+                      {/* Instant Refresh Icon Button */}
+                      <button
+                        type="button"
+                        onClick={() => fetchData()}
+                        title="تحديث لحظي لبيانات الحوض"
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(15, 23, 42, 0.12)',
+                          color: isDark ? '#cbd5e1' : '#475569',
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          transition: 'all 0.2s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        <RefreshCw size={14} strokeWidth={2.2} className={loading ? 'animate-spin' : ''} />
+                      </button>
+                    </div>
+
+                    {/* Tier 2: Momentum Quick-Filter Pills Strip */}
+                    <div
+                      className="quick-filter-strip"
+                      style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        width: isMobile ? '100%' : 'auto',
-                        justifyContent: isMobile ? 'space-between' : 'flex-end',
-                        flexShrink: 0
-                      }}>
-                        {/* View Mode Switcher (Rail vs List) */}
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          background: isDark ? 'rgba(15, 23, 42, 0.8)' : '#f1f5f9',
-                          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #cbd5e1',
-                          borderRadius: '10px',
-                          padding: '2.5px',
-                          gap: '2px',
-                          flex: isMobile ? 1 : 'none'
-                        }}>
+                        overflowX: 'auto',
+                        scrollbarWidth: 'none',
+                        width: '100%',
+                        paddingBottom: '2px'
+                      }}
+                    >
+                      {[
+                        { id: 'ALL', label: 'الكل', count: quickCounts.all, isUrgent: false },
+                        { id: 'CRITICAL', label: '🔥 عاجل وفوري', count: quickCounts.critical, isUrgent: true },
+                        { id: 'IN_PROGRESS', label: '⚡ قيد المعالجة', count: quickCounts.inProgress, isUrgent: false },
+                        { id: 'PENDING', label: '⏳ بانتظار الاعتماد', count: quickCounts.pending, isUrgent: false }
+                      ].map(chip => {
+                        const isActive = quickFilter === chip.id;
+                        return (
                           <button
+                            key={chip.id}
                             type="button"
-                            onClick={() => handleToggleLayout('RAIL')}
-                            title="عرض الكروت الأفقي"
+                            onClick={() => setQuickFilter(chip.id as any)}
+                            className={`quick-chip-btn ${isActive ? (chip.isUrgent ? 'priority-urgent active' : 'active') : ''}`}
                             style={{
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              flex: isMobile ? 1 : 'none',
-                              gap: '5px',
-                              padding: isMobile ? '6px 8px' : '6px 12px',
-                              borderRadius: '8px',
-                              border: 'none',
+                              gap: '6px',
+                              height: '32px',
+                              padding: '0 12px',
+                              borderRadius: '9999px',
+                              background: isActive
+                                ? (chip.isUrgent
+                                  ? 'linear-gradient(135deg, rgba(185, 28, 28, 0.8) 0%, rgba(239, 68, 68, 0.6) 100%)'
+                                  : 'linear-gradient(135deg, rgba(19, 93, 121, 0.85) 0%, rgba(14, 165, 233, 0.65) 100%)')
+                                : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)'),
+                              border: isActive
+                                ? (chip.isUrgent ? '1px solid #f87171' : '1px solid #38bdf8')
+                                : (isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid rgba(15, 23, 42, 0.09)'),
+                              color: isActive ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
+                              fontSize: '11.5px',
+                              fontWeight: 700,
                               cursor: 'pointer',
-                              fontSize: isMobile ? '11px' : '11.5px',
-                              fontWeight: ticketLayoutMode === 'RAIL' ? 800 : 600,
-                              fontFamily: "'Cairo', sans-serif",
-                              background: ticketLayoutMode === 'RAIL'
-                                ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
-                                : 'transparent',
-                              color: ticketLayoutMode === 'RAIL'
-                                ? (isDark ? '#ffffff' : '#0284c7')
-                                : (isDark ? '#94a3b8' : '#64748b'),
-                              boxShadow: ticketLayoutMode === 'RAIL'
-                                ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
+                              whiteSpace: 'nowrap',
+                              transition: 'all 0.2s ease',
+                              flexShrink: 0,
+                              boxShadow: isActive
+                                ? (chip.isUrgent ? '0 2px 10px rgba(239, 68, 68, 0.3)' : '0 2px 10px rgba(56, 189, 248, 0.3)')
                                 : 'none',
-                              transition: 'all 0.18s ease'
+                              fontFamily: "'Cairo', sans-serif"
                             }}
                           >
-                            <SlidersHorizontal size={13} />
-                            <span>{isMobile ? 'كروت' : 'شريط الكروت'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleToggleLayout('LIST')}
-                            title="عرض القائمة المنظمة"
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flex: isMobile ? 1 : 'none',
-                              gap: '5px',
-                              padding: isMobile ? '6px 8px' : '6px 12px',
-                              borderRadius: '8px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: isMobile ? '11px' : '11.5px',
-                              fontWeight: ticketLayoutMode === 'LIST' ? 800 : 600,
-                              fontFamily: "'Cairo', sans-serif",
-                              background: ticketLayoutMode === 'LIST'
-                                ? (isDark ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff')
-                                : 'transparent',
-                              color: ticketLayoutMode === 'LIST'
-                                ? (isDark ? '#ffffff' : '#0284c7')
-                                : (isDark ? '#94a3b8' : '#64748b'),
-                              boxShadow: ticketLayoutMode === 'LIST'
-                                ? (isDark ? '0 2px 8px rgba(2, 132, 199, 0.4)' : '0 2px 6px rgba(0,0,0,0.06)')
-                                : 'none',
-                              transition: 'all 0.18s ease'
-                            }}
-                          >
-                            <List size={13} />
-                            <span>{isMobile ? 'قائمة' : 'قائمة منظمة'}</span>
-                          </button>
-
-                          {isMobile && ticketLayoutMode === 'RAIL' && (
-                            <button
-                              type="button"
-                              onClick={() => handleSetRailRows(r => r === 1 ? 2 : 1)}
+                            <span>{chip.label}</span>
+                            <span
                               style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px',
-                                padding: '6px 8px',
-                                borderRadius: '8px',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                fontFamily: "'Cairo', sans-serif",
-                                background: 'transparent',
-                                color: isDark ? '#38bdf8' : '#0284c7'
+                                background: 'rgba(0, 0, 0, 0.22)',
+                                padding: '1px 6px',
+                                borderRadius: '9999px',
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                fontFamily: 'monospace'
                               }}
                             >
-                              <LayoutGrid size={13} />
-                              <span>{railVisibleRows === 1 ? 'صفين' : 'صف'}</span>
+                              {chip.count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Tier 3: Active Filters Live Ribbon */}
+                    {activeFiltersCount > 0 && (
+                      <div
+                        className="active-filters-ribbon"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          flexWrap: 'wrap',
+                          paddingTop: '2px'
+                        }}
+                      >
+                        {selectedDeptFilter !== 'ALL' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '8px',
+                              background: isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.1)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              color: isDark ? '#38bdf8' : '#0284c7',
+                              fontSize: '11px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <span>🏢 {departments.find(d => Number(d.id) === Number(selectedDeptFilter))?.name || 'القسم'}</span>
+                            <span
+                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                              onClick={() => setSelectedDeptFilter('ALL')}
+                            >
+                              ✕
+                            </span>
+                          </span>
+                        )}
+                        {selectedBuildingFilter !== 'ALL' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '8px',
+                              background: isDark ? 'rgba(244, 63, 94, 0.18)' : 'rgba(244, 63, 94, 0.1)',
+                              border: '1px solid rgba(244, 63, 94, 0.35)',
+                              color: isDark ? '#fb7185' : '#e11d48',
+                              fontSize: '11px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <span>📍 {buildings.find(b => b.id === selectedBuildingFilter)?.name || 'المبنى'}</span>
+                            <span
+                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                              onClick={() => setSelectedBuildingFilter('ALL')}
+                            >
+                              ✕
+                            </span>
+                          </span>
+                        )}
+                        {selectedFlowFilter !== 'ALL' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '8px',
+                              background: isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(168, 85, 247, 0.1)',
+                              border: '1px solid rgba(168, 85, 247, 0.35)',
+                              color: isDark ? '#c084fc' : '#9333ea',
+                              fontSize: '11px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <span>🔀 {flowsList.find(f => f.id === selectedFlowFilter)?.name || 'المسار'}</span>
+                            <span
+                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                              onClick={() => setSelectedFlowFilter('ALL')}
+                            >
+                              ✕
+                            </span>
+                          </span>
+                        )}
+                        {selectedStatusFilter !== 'ALL' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '8px',
+                              background: isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              color: isDark ? '#34d399' : '#059669',
+                              fontSize: '11px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <span>🔄 {selectedStatusFilter}</span>
+                            <span
+                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                              onClick={() => setSelectedStatusFilter('ALL')}
+                            >
+                              ✕
+                            </span>
+                          </span>
+                        )}
+                        {quickFilter !== 'ALL' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '8px',
+                              background: 'rgba(243, 108, 33, 0.18)',
+                              border: '1px solid rgba(243, 108, 33, 0.4)',
+                              color: '#fb923c',
+                              fontSize: '11px',
+                              fontWeight: 700
+                            }}
+                          >
+                            <span>{quickFilter === 'CRITICAL' ? '🔥 عاجل وفوري' : quickFilter === 'IN_PROGRESS' ? '⚡ قيد المعالجة' : '⏳ بانتظار الاعتماد'}</span>
+                            <span
+                              style={{ cursor: 'pointer', fontSize: '11px', padding: '0 2px' }}
+                              onClick={() => setQuickFilter('ALL')}
+                            >
+                              ✕
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tier 4: Expandable Advanced Filters Drawer Panel */}
+                    <AnimatePresence>
+                      {isFiltersExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))',
+                            gap: '8px',
+                            padding: '12px',
+                            borderRadius: '12px',
+                            background: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(241, 245, 249, 0.95)',
+                            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(15, 23, 42, 0.08)',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {/* 1. الإدارة المختصة */}
+                          <select
+                            value={selectedDeptFilter}
+                            onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                              background: isDark ? '#1e293b' : '#ffffff',
+                              color: isDark ? '#f8fafc' : '#0f172a',
+                              fontSize: '11.5px',
+                              fontFamily: "'Cairo', sans-serif"
+                            }}
+                          >
+                            <option value="ALL">🏢 كافة الإدارات</option>
+                            {departments.map(d => (
+                              <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                          </select>
+
+                          {/* 2. المبنى / الموقع الجغرافي */}
+                          <select
+                            value={selectedBuildingFilter}
+                            onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                              background: isDark ? '#1e293b' : '#ffffff',
+                              color: isDark ? '#f8fafc' : '#0f172a',
+                              fontSize: '11.5px',
+                              fontFamily: "'Cairo', sans-serif"
+                            }}
+                          >
+                            <option value="ALL">📍 كافة المباني والمواقع</option>
+                            {buildings.map(b => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+
+                          {/* 3. نوع المشكلة / المسار */}
+                          <select
+                            value={selectedFlowFilter}
+                            onChange={(e) => setSelectedFlowFilter(e.target.value)}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                              background: isDark ? '#1e293b' : '#ffffff',
+                              color: isDark ? '#f8fafc' : '#0f172a',
+                              fontSize: '11.5px',
+                              fontFamily: "'Cairo', sans-serif"
+                            }}
+                          >
+                            <option value="ALL">🎯 كافة المسارات والمشاكل</option>
+                            {flowsList.map(f => (
+                              <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                          </select>
+
+                          {/* 4. حالة الطلب التشغيلية */}
+                          <select
+                            value={selectedStatusFilter}
+                            onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+                              background: isDark ? '#1e293b' : '#ffffff',
+                              color: isDark ? '#f8fafc' : '#0f172a',
+                              fontSize: '11.5px',
+                              fontFamily: "'Cairo', sans-serif"
+                            }}
+                          >
+                            <option value="ALL">🔄 كل الحالات</option>
+                            <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
+                            <option value="PENDING">⏳ قيد الانتظار</option>
+                            <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
+                            <option value="CLOSED">✅ المغلقة والمكتملة</option>
+                          </select>
+
+                          {/* Reset Filters Button */}
+                          {activeFiltersCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDeptFilter('ALL');
+                                setSelectedFlowFilter('ALL');
+                                setSelectedBuildingFilter('ALL');
+                                setSelectedStatusFilter('ALL');
+                                setQuickFilter('ALL');
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                                color: isDark ? '#f87171' : '#dc2626',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                fontFamily: "'Cairo', sans-serif",
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <X size={12} strokeWidth={2.5} />
+                              <span>إلغاء التصفية ({activeFiltersCount})</span>
                             </button>
                           )}
-                        </div>
-
-                        {/* Refresh Button */}
-                        <button
-                          type="button"
-                          onClick={fetchData}
-                          disabled={loading}
-                          title="تحديث البيانات الفورية"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            padding: isMobile ? '7px 12px' : '8px 14px',
-                            borderRadius: '10px',
-                            border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
-                            background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                            color: isDark ? '#e2e8f0' : '#334155',
-                            cursor: 'pointer',
-                            fontSize: isMobile ? '11px' : '12px',
-                            fontWeight: 700,
-                            fontFamily: "'Cairo', sans-serif",
-                            transition: 'all 0.18s ease',
-                            flexShrink: 0
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#0284c7';
-                            e.currentTarget.style.color = '#0284c7';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1';
-                            e.currentTarget.style.color = isDark ? '#e2e8f0' : '#334155';
-                          }}
-                        >
-                          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-                          <span>تحديث</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* ── ROW 2: ERGONOMIC SMART FILTERS (الإدارة | الموقع | المسار | الحالة) ── */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: isMobile ? '6px' : '8px',
-                      flexWrap: 'wrap',
-                      paddingTop: isMobile ? '6px' : '8px',
-                      borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(15, 23, 42, 0.06)',
-                      fontSize: '12px'
-                    }}>
-                      {/* Filter Label & Indicator */}
-                      <div style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        color: isDark ? '#94a3b8' : '#64748b',
-                        fontWeight: 800,
-                        fontSize: '11px',
-                        marginInlineEnd: '4px'
-                      }}>
-                        <Filter size={13} color="#0ea5e9" />
-                        <span>تصفية مخصصة:</span>
-                      </div>
-
-                      {/* 1. الإدارة المختصة */}
-                      <select
-                        value={selectedDeptFilter}
-                        onChange={(e) => setSelectedDeptFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '9px',
-                          border: selectedDeptFilter !== 'ALL'
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                          background: selectedDeptFilter !== 'ALL'
-                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
-                            : (isDark ? '#1e293b' : '#f8fafc'),
-                          color: selectedDeptFilter !== 'ALL'
-                            ? (isDark ? '#38bdf8' : '#0369a1')
-                            : (isDark ? '#f8fafc' : '#0f172a'),
-                          fontSize: '11.5px',
-                          fontWeight: selectedDeptFilter !== 'ALL' ? 700 : 600,
-                          fontFamily: "'Cairo', sans-serif",
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <option value="ALL">🏢 كافة الإدارات</option>
-                        {departments.map(d => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </select>
-
-                      {/* 2. المبنى / الموقع الجغرافي */}
-                      <select
-                        value={selectedBuildingFilter}
-                        onChange={(e) => setSelectedBuildingFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '9px',
-                          border: selectedBuildingFilter !== 'ALL'
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                          background: selectedBuildingFilter !== 'ALL'
-                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
-                            : (isDark ? '#1e293b' : '#f8fafc'),
-                          color: selectedBuildingFilter !== 'ALL'
-                            ? (isDark ? '#38bdf8' : '#0369a1')
-                            : (isDark ? '#f8fafc' : '#0f172a'),
-                          fontSize: '11.5px',
-                          fontWeight: selectedBuildingFilter !== 'ALL' ? 700 : 600,
-                          fontFamily: "'Cairo', sans-serif",
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <option value="ALL">📍 كافة المباني والمواقع</option>
-                        {buildings.map(b => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
-                        ))}
-                      </select>
-
-                      {/* 3. نوع المشكلة / المسار */}
-                      <select
-                        value={selectedFlowFilter}
-                        onChange={(e) => setSelectedFlowFilter(e.target.value)}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '9px',
-                          border: selectedFlowFilter !== 'ALL'
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                          background: selectedFlowFilter !== 'ALL'
-                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
-                            : (isDark ? '#1e293b' : '#f8fafc'),
-                          color: selectedFlowFilter !== 'ALL'
-                            ? (isDark ? '#38bdf8' : '#0369a1')
-                            : (isDark ? '#f8fafc' : '#0f172a'),
-                          fontSize: '11.5px',
-                          fontWeight: selectedFlowFilter !== 'ALL' ? 700 : 600,
-                          fontFamily: "'Cairo', sans-serif",
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <option value="ALL">🎯 كافة المسارات والمشاكل</option>
-                        {flowsList.map(f => (
-                          <option key={f.id} value={f.id}>{f.name}</option>
-                        ))}
-                      </select>
-
-                      {/* 4. حالة الطلب التشغيلية */}
-                      <select
-                        value={selectedStatusFilter}
-                        onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '9px',
-                          border: selectedStatusFilter !== 'ALL'
-                            ? '1.5px solid #0284c7'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1'),
-                          background: selectedStatusFilter !== 'ALL'
-                            ? (isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.08)')
-                            : (isDark ? '#1e293b' : '#f8fafc'),
-                          color: selectedStatusFilter !== 'ALL'
-                            ? (isDark ? '#38bdf8' : '#0369a1')
-                            : (isDark ? '#f8fafc' : '#0f172a'),
-                          fontSize: '11.5px',
-                          fontWeight: selectedStatusFilter !== 'ALL' ? 700 : 600,
-                          fontFamily: "'Cairo', sans-serif",
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <option value="ALL">🔄 كل الحالات</option>
-                        <option value="ACTIVE">⚡ المفتوحة والنشطة فقط</option>
-                        <option value="PENDING">⏳ قيد الانتظار</option>
-                        <option value="IN_PROGRESS">🛠️ قيد المعالجة</option>
-                        <option value="CLOSED">✅ المغلقة والمكتملة</option>
-                      </select>
-
-                      {/* Reset Filters Button */}
-                      {activeFiltersCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDeptFilter('ALL');
-                            setSelectedFlowFilter('ALL');
-                            setSelectedBuildingFilter('ALL');
-                            setSelectedStatusFilter('ALL');
-                          }}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '5px 10px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
-                            color: isDark ? '#f87171' : '#dc2626',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            fontFamily: "'Cairo', sans-serif",
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.3)' : '#fecaca';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
-                          }}
-                        >
-                          <X size={12} strokeWidth={2.5} />
-                          <span>إلغاء التصفية ({activeFiltersCount})</span>
-                        </button>
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
                   </div>
                 )}
 
@@ -2654,7 +2651,15 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                       selectedStatusFilter === 'CLOSED' ? ['CLOSED', 'RESOLVED', 'COMPLETED'].includes(sName) :
                       sName === selectedStatusFilter
                     );
-                    return matchesSearch && matchesDept && matchesFlow && matchesBuilding && matchesStatus;
+                    const matchesQuick = (() => {
+                      if (quickFilter === 'ALL') return true;
+                      const p = (t.businessPriority || t.requesterPriority || t.priority || '').toUpperCase();
+                      if (quickFilter === 'CRITICAL') return ['CRITICAL', 'URGENT', 'HIGH'].includes(p);
+                      if (quickFilter === 'IN_PROGRESS') return ['IN_PROGRESS', 'PROCESSING', 'ASSIGNED', 'WORKING'].includes(sName);
+                      if (quickFilter === 'PENDING') return ['PENDING', 'WAITING', 'APPROVAL', 'SUBMITTED', 'OPEN'].includes(sName);
+                      return true;
+                    })();
+                    return matchesSearch && matchesDept && matchesFlow && matchesBuilding && matchesStatus && matchesQuick;
                   });
 
                                     const renderCinemaCard = (ticket: Ticket, i: number, isRail: boolean = false) => {
