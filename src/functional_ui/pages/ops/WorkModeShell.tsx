@@ -623,40 +623,38 @@ export const WorkModeShell: React.FC = () => {
       {/* =========================================================================
           2. THE CONTEXTUAL SMART TASKBAR (الشريط السفلي التفاعلي الموحد)
           الترتيب المؤسسي: زر الأنظمة على اليمين وشريط الأيقونات على اليسار
-          تصميم زجاجي نقي شبه شفاف (Glassmorphism) يتأثر بانسيابية بألوان الخلفية
+          حاوية شفافة 100% بدون أي شريط أو خلفية تحجب أو تشوش (Transparent Floating Islands)
           ========================================================================= */}
       <nav
         style={{
           position: 'fixed',
-          bottom: isMobile ? '10px' : '18px',
+          bottom: isMobile ? '12px' : '20px',
           left: isMobile ? '10px' : '50%',
           right: isMobile ? '10px' : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
-          height: isMobile ? '58px' : '62px',
+          height: isMobile ? '56px' : '62px',
           width: isMobile ? 'calc(100% - 20px)' : 'auto',
           minWidth: isMobile ? 'auto' : '480px',
           maxWidth: isMobile ? 'calc(100% - 20px)' : '760px',
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '8px' : '12px',
-          padding: isMobile ? '0 10px' : '0 16px',
-          background: isDark ? 'rgba(10, 16, 28, 0.65)' : 'rgba(255, 255, 255, 0.45)',
-          backdropFilter: 'blur(32px) saturate(210%)',
-          WebkitBackdropFilter: 'blur(32px) saturate(210%)',
-          borderRadius: isMobile ? '22px' : '28px',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid rgba(255, 255, 255, 0.75)',
-          boxShadow: isDark 
-            ? '0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)' 
-            : '0 16px 36px -8px rgba(15, 23, 42, 0.10), inset 0 1px 2px rgba(255, 255, 255, 0.95)',
+          gap: isMobile ? '10px' : '14px',
+          padding: '0 4px',
+          background: 'transparent',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
+          border: 'none',
+          boxShadow: 'none',
           zIndex: 9000,
           direction: 'rtl',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          pointerEvents: 'none'
         }}
       >
         {/* =========================================================================
             SEGMENT 1 (RIGHT SIDE): زر الأنظمة المرتبطة والقائمة المدمجة
             ========================================================================= */}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
+        <div style={{ position: 'relative', flexShrink: 0, pointerEvents: 'auto' }}>
           <button
             ref={popoverBtnRef}
             type="button"
@@ -1109,16 +1107,6 @@ export const WorkModeShell: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* فاصل ناعم بين زر الأنظمة وشريط الأيقونات */}
-        <div
-          style={{
-            width: '1px',
-            height: '26px',
-            background: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)',
-            flexShrink: 0
-          }}
-        />
-
         {/* =========================================================================
             SEGMENT 2 (LEFT SIDE): شريط الأيقونات الدائرية المتمددة أفقياً (macOS Fluid Dock)
             ========================================================================= */}
@@ -1135,13 +1123,14 @@ export const WorkModeShell: React.FC = () => {
             minWidth: 0,
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '8px' : '12px',
+            gap: isMobile ? '10px' : '14px',
             overflowX: 'auto',
             overflowY: 'visible',
             scrollbarWidth: 'none',
-            padding: '0 4px',
+            padding: '4px 6px',
             height: '100%',
-            position: 'relative'
+            position: 'relative',
+            pointerEvents: 'auto'
           }}
         >
           {/* ── الأيقونة السيادية 1: حوض التذاكر والعمليات ── */}
