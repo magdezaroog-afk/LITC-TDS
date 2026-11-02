@@ -584,6 +584,72 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
   const [priorityPopoverTicketId, setPriorityPopoverTicketId] = useState<number | null>(null);
   const [priorityToast, setPriorityToast] = useState<string | null>(null);
 
+  // List View In-Place Accordion Expansion Suite
+  const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
+  const [expandedDetailsMap, setExpandedDetailsMap] = useState<Record<number, { details: any; permissions: any; loading: boolean }>>({});
+  const [quickNoteInputs, setQuickNoteInputs] = useState<Record<number, string>>({});
+  const [isSubmittingQuickNote, setIsSubmittingQuickNote] = useState<Record<number, boolean>>({});
+
+  const handleToggleExpand = (ticket: Ticket, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (expandedTicketId === ticket.id) {
+      setExpandedTicketId(null);
+    } else {
+      setExpandedTicketId(ticket.id);
+      if (!expandedDetailsMap[ticket.id]?.details) {
+        setExpandedDetailsMap(prev => ({
+          ...prev,
+          [ticket.id]: { details: null, permissions: null, loading: true }
+        }));
+        OpsAPI.getTicketDetails(ticket.id).then(res => {
+          if (res.success) {
+            setExpandedDetailsMap(prev => ({
+              ...prev,
+              [ticket.id]: { details: res.data, permissions: res.permissions || null, loading: false }
+            }));
+          } else {
+            setExpandedDetailsMap(prev => ({
+              ...prev,
+              [ticket.id]: { details: null, permissions: null, loading: false }
+            }));
+          }
+        }).catch(err => {
+          console.error('Error fetching expanded ticket details:', err);
+          setExpandedDetailsMap(prev => ({
+            ...prev,
+            [ticket.id]: { details: null, permissions: null, loading: false }
+          }));
+        });
+      }
+    }
+  };
+
+  const handleQuickSubmitNote = async (ticketId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const note = (quickNoteInputs[ticketId] || '').trim();
+    if (!note) return;
+    setIsSubmittingQuickNote(prev => ({ ...prev, [ticketId]: true }));
+    try {
+      const res = await OpsAPI.addComment(ticketId, note, true);
+      if (res.success) {
+        setToastMessage('تمت إضافة الملاحظة الفنية الداخلية بنجاح! 💬');
+        setQuickNoteInputs(prev => ({ ...prev, [ticketId]: '' }));
+        const fresh = await OpsAPI.getTicketDetails(ticketId);
+        if (fresh.success) {
+          setExpandedDetailsMap(prev => ({
+            ...prev,
+            [ticketId]: { details: fresh.data, permissions: fresh.permissions || null, loading: false }
+          }));
+        }
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } catch (err: any) {
+      alert(err?.message || 'تعذر إضافة الملاحظة');
+    } finally {
+      setIsSubmittingQuickNote(prev => ({ ...prev, [ticketId]: false }));
+    }
+  };
+
   useEffect(() => {
     setSelectedStatusFilters([]);
     setQuickFilter('ALL');
@@ -766,6 +832,505 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
           )}
         </AnimatePresence>
       </div>
+    );
+  };
+
+  const renderExpandedTicketCard = (ticket: Ticket, isMobileView: boolean = false) => {
+    const detailsState = expandedDetailsMap[ticket.id];
+    const details = detailsState?.details || ticket;
+    const isLoading = detailsState?.loading;
+
+    const bizPriority = (ticket.businessPriority || ticket.priority || 'NORMAL').toUpperCase();
+    const lampColor = (bizPriority === 'CRITICAL' || bizPriority === 'URGENT' || bizPriority === 'HIGH')
+      ? '#ef4444'
+      : bizPriority === 'MEDIUM'
+      ? '#eab308'
+      : '#10b981';
+
+    const isUnassigned = ticket.isUnassigned !== false && !ticket.assignedTo;
+
+    // Metadata & Dynamic Fields Parsing
+    const rawMeta = details?.routingMetadata || ticket.routingMetadata;
+    let resolvedMeta: any = {};
+    if (rawMeta) {
+      resolvedMeta = typeof rawMeta === 'object' ? rawMeta : (() => {
+        try { return JSON.parse(rawMeta); } catch { return {}; }
+      })();
+    }
+    const fieldsData = resolvedMeta.formData || resolvedMeta.dynamicFields || resolvedMeta.fields || {};
+    const ignoredKeys = [
+      'submittedAt', 'targetDepartmentName', 'targetDivisionName', 'targetTeamName',
+      'attachment', 'attachments', 'targetDepartmentId', 'targetDivisionId',
+      'targetTeamId', 'flowDefinitionId', 'internalStatus', 'schemaVersion',
+      '_id', 'id', 'token'
+    ];
+
+    const getCleanFieldLabel = (key: string): string => {
+      const dictionary: Record<string, string> = {
+        taxonomyMain: 'التصنيف الرئيسي',
+        taxonomySub: 'الخدمة / المشكلة الفرعية',
+        building: 'المبنى والموقع',
+        buildingId: 'المبنى',
+        department: 'الإدارة المعنية بالطلب',
+        division: 'القسم المؤسسي',
+        team: 'الفريق / الوحدة',
+        scheduleEngine: 'فترة السريان والجدولة',
+        dateRange: 'الفترة الزمنية المحددة',
+        delegateUser: 'الموظف البديل المكلف',
+        notes: 'الملاحظات الإضافية',
+        reason: 'سبب ومبرر الطلب',
+        applicantPhone: 'رقم هاتف التواصل',
+        applicantEmail: 'البريد الإلكتروني',
+        urgencyLevel: 'درجة الاستعجال',
+        impactLevel: 'مستوى الأثر',
+        equipmentType: 'نوع الجهاز / المعدة',
+        serialNumber: 'الرقم التسلسلي',
+        locationDetails: 'تفاصيل الموقع والمكتب'
+      };
+      if (dictionary[key]) return dictionary[key];
+      let clean = key
+        .replace(/^(dyn_|custom_|opt_input_|opt_|fld_|form_|sys_)/i, '')
+        .replace(/_/g, ' ')
+        .trim();
+      clean = clean.replace(/([a-z])([A-Z])/g, '$1 $2');
+      return clean.charAt(0).toUpperCase() + clean.slice(1);
+    };
+
+    const formatFieldValue = (val: any): { display: string; isMissing: boolean } => {
+      if (val === null || val === undefined || val === '') {
+        return { display: '— / لم يتم تعبئة هذا الحقل', isMissing: true };
+      }
+      if (typeof val === 'boolean') return { display: val ? 'نعم' : 'لا', isMissing: false };
+      if (Array.isArray(val)) {
+        if (val.length === 0) return { display: '— / لم يتم تعبئة هذا الحقل', isMissing: true };
+        return { display: val.join('، '), isMissing: false };
+      }
+      if (typeof val === 'object') {
+        try { return { display: JSON.stringify(val), isMissing: false }; } catch { return { display: String(val), isMissing: false }; }
+      }
+      return { display: String(val), isMissing: false };
+    };
+
+    const fieldEntries = Object.entries(fieldsData).filter(([k]) => {
+      return !ignoredKeys.includes(k) && !k.startsWith('_');
+    });
+
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, height: 0, y: -6 }}
+        animate={{ opacity: 1, height: 'auto', y: 0 }}
+        exit={{ opacity: 0, height: 0, y: -6 }}
+        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          padding: isMobileView ? '14px 12px' : '18px 22px',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(17, 24, 39, 0.94) 0%, rgba(11, 15, 25, 0.96) 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: isDark ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid rgba(19, 93, 121, 0.18)',
+          borderRight: `5px solid ${lampColor}`,
+          borderRadius: isMobileView ? '12px' : '14px',
+          margin: isMobileView ? '6px 0 10px 0' : '6px 0 12px 0',
+          boxShadow: isDark
+            ? '0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            : '0 8px 25px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          fontFamily: "'Cairo', 'Tajawal', sans-serif",
+          cursor: 'default'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Loading Indicator */}
+        {isLoading && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11.5px', color: '#38bdf8' }}>
+            <RefreshCw size={13} className="animate-spin" />
+            <span>جاري مزامنة وتحديث أحدث تفاصيل واستمارة المعاملة...</span>
+          </div>
+        )}
+
+        {/* 1. Bento Header: Contextual Summary */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobileView ? '1fr 1fr' : 'repeat(4, 1fr)',
+          gap: '10px',
+          background: isDark ? 'rgba(255, 255, 255, 0.025)' : '#f8fafc',
+          padding: '12px 14px',
+          borderRadius: '12px',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+        }}>
+          {/* Card A: Location & Building */}
+          <div>
+            <div style={{ fontSize: '10.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Building2 size={13} color="#0284c7" />
+              <span>المبنى والموقع:</span>
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a', marginTop: '3px' }}>
+              {ticket.creatorBuilding || 'المقر الرئيسي'}
+            </div>
+            <div style={{ fontSize: '10px', color: isDark ? '#38bdf8' : '#0369a1', marginTop: '1px' }}>
+              {ticket.creatorDepartment ? `إدارة: ${ticket.creatorDepartment}` : 'نطاق الموقع الميداني'}
+            </div>
+          </div>
+
+          {/* Card B: Creator / Requester */}
+          <div>
+            <div style={{ fontSize: '10.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <User size={13} color="#f97316" />
+              <span>صاحب الطلب:</span>
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a', marginTop: '3px' }}>
+              {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
+            </div>
+            <div style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#64748b', marginTop: '1px' }}>
+              {ticket.creator?.department?.name || ticket.departmentName || 'إدارة التشغيل'}
+            </div>
+          </div>
+
+          {/* Card C: Assignee */}
+          <div>
+            <div style={{ fontSize: '10.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <ShieldCheck size={13} color="#10b981" />
+              <span>المسؤول الميداني:</span>
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a', marginTop: '3px' }}>
+              {ticket.assignedTo ? ticket.assignedTo.fullName : 'شاغر (بالحوض)'}
+            </div>
+            <div style={{ fontSize: '10px', color: ticket.assignedTo ? '#10b981' : '#f59e0b', marginTop: '1px' }}>
+              {ticket.assignedTo ? 'معالجة جارية' : 'متاح للاستلام الفوري'}
+            </div>
+          </div>
+
+          {/* Card D: Time & Route */}
+          <div>
+            <div style={{ fontSize: '10.5px', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Clock size={13} color="#a855f7" />
+              <span>تاريخ وسرعة الإنجاز:</span>
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a', marginTop: '3px' }}>
+              {new Date(ticket.createdAt).toLocaleDateString('ar-LY')} • {new Date(ticket.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div style={{ fontSize: '10px', color: isDark ? '#c084fc' : '#7e22ce', marginTop: '1px' }}>
+              مسار: {ticket.flowDefinitionName || 'مسار عام'}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Form Fields Grid (All applicant input data, with — / لم يتم تعبئة هذا الحقل) */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <FileText size={14} color="#f97316" />
+            <span style={{ fontSize: '11.5px', fontWeight: 800, color: isDark ? '#ffffff' : '#0f172a' }}>
+              بيانات واستمارة المسار المعبأة:
+            </span>
+          </div>
+
+          {fieldEntries.length > 0 ? (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobileView ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '8px'
+            }}>
+              {fieldEntries.map(([key, rawVal]) => {
+                const label = getCleanFieldLabel(key);
+                const { display, isMissing } = formatFieldValue(rawVal);
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '9px',
+                      background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #e2e8f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px'
+                    }}
+                  >
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b' }}>
+                      {label}
+                    </span>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: isMissing ? 500 : 700,
+                      color: isMissing ? '#94a3b8' : (isDark ? '#f8fafc' : '#0f172a'),
+                      fontStyle: isMissing ? 'italic' : 'normal'
+                    }}>
+                      {display}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '9px',
+              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+              border: isDark ? '1px dashed rgba(255, 255, 255, 0.1)' : '1px dashed #cbd5e1',
+              color: '#94a3b8',
+              fontSize: '11.5px',
+              fontStyle: 'italic'
+            }}>
+              — / لم يتم تسجيل حقول إضافية لهذا المسار
+            </div>
+          )}
+        </div>
+
+        {/* 3. Operational Action Ribbon */}
+        <div style={{
+          paddingTop: '12px',
+          borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
+          {/* Action Buttons Group */}
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            {/* Action 1: Claim to Me (If unassigned) */}
+            {isUnassigned && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleClaimTicket(ticket.id); }}
+                disabled={claimingId === ticket.id}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: claimingId === ticket.id ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Zap size={13} />
+                <span>{claimingId === ticket.id ? 'جاري الاستلام...' : 'سحب التذكرة للمتابعة'}</span>
+              </button>
+            )}
+
+            {/* Action 2: Assign / Transfer to Colleague */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setInspectTicket(ticket);
+                handleOpenTransferModal();
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                background: isDark ? 'rgba(13, 148, 136, 0.2)' : '#f0fdfa',
+                color: isDark ? '#2dd4bf' : '#0f766e',
+                border: isDark ? '1px solid rgba(13, 148, 136, 0.45)' : '1px solid #99f6e4',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <UserCheck size={13} />
+              <span>إسناد / تحويل لزميل</span>
+            </button>
+
+            {/* Action 3: Priority Calibration */}
+            {canManagePriority && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: isDark ? 'rgba(255,255,255,0.04)' : '#f1f5f9',
+                padding: '3px 6px',
+                borderRadius: '10px',
+                border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0'
+              }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', padding: '0 4px' }}>الأولوية:</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleUpdateTicketPriority(ticket.id, 'HIGH'); }}
+                  style={{
+                    padding: '4px 9px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: (bizPriority === 'HIGH' || bizPriority === 'CRITICAL' || bizPriority === 'URGENT') ? '#ef4444' : 'transparent',
+                    color: (bizPriority === 'HIGH' || bizPriority === 'CRITICAL' || bizPriority === 'URGENT') ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔥 عاجل
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleUpdateTicketPriority(ticket.id, 'MEDIUM'); }}
+                  style={{
+                    padding: '4px 9px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: bizPriority === 'MEDIUM' ? '#eab308' : 'transparent',
+                    color: bizPriority === 'MEDIUM' ? '#000000' : (isDark ? '#cbd5e1' : '#475569'),
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚡ متوسط
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleUpdateTicketPriority(ticket.id, 'NORMAL'); }}
+                  style={{
+                    padding: '4px 9px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: (bizPriority === 'NORMAL' || bizPriority === 'LOW') ? '#10b981' : 'transparent',
+                    color: (bizPriority === 'NORMAL' || bizPriority === 'LOW') ? '#ffffff' : (isDark ? '#cbd5e1' : '#475569'),
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🟢 عادي
+                </button>
+              </div>
+            )}
+
+            {/* Action 4: Close / Complete Action */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setInspectTicket(ticket);
+                setActionModal({
+                  type: 'CLOSE',
+                  title: 'إنهاء وإغلاق المعاملة',
+                  description: 'يرجى تدوين ملخص المعالجة الفنية أو تقرير الإنجاز لتوثيق إغلاق الطلب.',
+                  confirmLabel: 'تأكيد إغلاق المعاملة',
+                  confirmColor: '#10b981',
+                  isNoteRequired: true
+                });
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <CheckCircle2 size={13} />
+              <span>إنهاء وإغلاق المعاملة</span>
+            </button>
+          </div>
+
+          {/* Action 5: Full Inspection in Modal */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setInspectTicket(ticket);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '10px',
+              background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+              color: isDark ? '#e2e8f0' : '#334155',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            <ExternalLink size={13} />
+            <span>فحص في نافذة كاملة</span>
+          </button>
+        </div>
+
+        {/* 4. Inline Quick Note Strip */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '8px 12px',
+          borderRadius: '10px',
+          background: isDark ? 'rgba(15, 23, 42, 0.65)' : '#ffffff',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #e2e8f0',
+          flexWrap: isMobileView ? 'wrap' : 'nowrap'
+        }} onClick={(e) => e.stopPropagation()}>
+          <MessageSquare size={15} color={isDark ? '#38bdf8' : '#0284c7'} style={{ flexShrink: 0 }} />
+          <input
+            type="text"
+            placeholder="أدخل ملاحظة أو توجيه فني داخلي سريع على هذه المعاملة..."
+            value={quickNoteInputs[ticket.id] || ''}
+            onChange={(e) => setQuickNoteInputs(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleQuickSubmitNote(ticket.id, e as any); }}
+            style={{
+              flex: 1,
+              minWidth: isMobileView ? '100%' : '260px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #cbd5e1',
+              background: isDark ? 'rgba(0, 0, 0, 0.25)' : '#f8fafc',
+              color: isDark ? '#f8fafc' : '#0f172a',
+              fontSize: '12px',
+              fontFamily: "'Cairo', sans-serif",
+              outline: 'none'
+            }}
+          />
+          <button
+            type="button"
+            disabled={isSubmittingQuickNote[ticket.id] || !(quickNoteInputs[ticket.id] || '').trim()}
+            onClick={(e) => handleQuickSubmitNote(ticket.id, e)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              background: !(quickNoteInputs[ticket.id] || '').trim() 
+                ? (isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0') 
+                : 'linear-gradient(135deg, #f36c21 0%, #ea580c 100%)',
+              color: !(quickNoteInputs[ticket.id] || '').trim() ? '#94a3b8' : '#ffffff',
+              border: 'none',
+              fontSize: '11.5px',
+              fontWeight: 800,
+              cursor: !(quickNoteInputs[ticket.id] || '').trim() ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s ease',
+              flexShrink: 0
+            }}
+          >
+            <span>حفظ الملاحظة</span>
+            {isSubmittingQuickNote[ticket.id] ? <RefreshCw size={12} className="animate-spin" /> : <span>💬</span>}
+          </button>
+        </div>
+      </motion.div>
     );
   };
 
@@ -1604,7 +2169,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
     <div style={{
       ...styles.container,
       minHeight: '100%',
-      padding: isMobile ? '8px 8px 85px 8px' : '20px 24px 95px 24px',
+      padding: isMobile ? '8px 8px 24px 8px' : '16px 20px 24px 20px',
       overflowX: 'hidden',
       maxWidth: '100%',
       background: isDark
@@ -3790,14 +4355,14 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                         const timeAgoStr = formatTimeAgo(ticket.createdAt);
 
                                         return (
-                                          <motion.div
-                                            key={ticket.id}
+                                          <React.Fragment key={ticket.id}>
+                                            <motion.div
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ delay: Math.min(i * 0.015, 0.15) }}
-                                            onClick={() => setInspectTicket(ticket)}
-                                            title="انقر على أي مكان في الصف لعرض التفاصيل وفحص المعاملة"
+                                            onClick={() => handleToggleExpand(ticket)}
+                                            title="انقر لعرض كامل التفاصيل والتحكم في الإجراءات"
                                             style={{
                                               display: 'grid',
                                               gridTemplateColumns: '135px minmax(240px, 2.5fr) minmax(180px, 2fr) 140px 115px 140px 115px',
@@ -3825,6 +4390,17 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                           >
                                             {/* 1. الرمز */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                              <ChevronDown
+                                                size={15}
+                                                style={{
+                                                  transform: expandedTicketId === ticket.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                  transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                  color: expandedTicketId === ticket.id ? (isDark ? '#38bdf8' : '#0284c7') : '#94a3b8',
+                                                  cursor: 'pointer',
+                                                  flexShrink: 0
+                                                }}
+                                                onClick={(e) => handleToggleExpand(ticket, e)}
+                                              />
                                               <TicketCodeBadge code={ticketCode} color={accentColor} compact />
                                               {renderPriorityLamp(ticket)}
                                             </div>
@@ -4015,6 +4591,10 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                               </span>
                                             </div>
                                           </motion.div>
+                                            <AnimatePresence>
+                                              {expandedTicketId === ticket.id && renderExpandedTicketCard(ticket, false)}
+                                            </AnimatePresence>
+                                          </React.Fragment>
                                         );
                                       })}
                                     </AnimatePresence>
@@ -4043,13 +4623,14 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                       const timeAgoStr = formatTimeAgo(ticket.createdAt);
 
                                       return (
-                                        <motion.div
-                                          key={ticket.id}
-                                          initial={{ opacity: 0, y: 6 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          exit={{ opacity: 0 }}
-                                          transition={{ delay: Math.min(i * 0.015, 0.12) }}
-                                          onClick={() => setInspectTicket(ticket)}
+                                        <React.Fragment key={ticket.id}>
+                                          <motion.div
+                                            key={ticket.id}
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ delay: Math.min(i * 0.015, 0.12) }}
+                                            onClick={() => handleToggleExpand(ticket)}
                                           style={{
                                             background: inspectTicket?.id === ticket.id
                                               ? (isDark ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.08)')
@@ -4111,9 +4692,21 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                                             <span style={{ fontSize: '9.5px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                                               {timeAgoStr}
                                             </span>
-                                            <ChevronLeft size={13} color="#94a3b8" />
+                                            <ChevronDown
+                                              size={14}
+                                              style={{
+                                                transform: expandedTicketId === ticket.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                color: expandedTicketId === ticket.id ? (isDark ? '#38bdf8' : '#0284c7') : '#94a3b8',
+                                                flexShrink: 0
+                                              }}
+                                            />
                                           </div>
                                         </motion.div>
+                                          <AnimatePresence>
+                                            {expandedTicketId === ticket.id && renderExpandedTicketCard(ticket, true)}
+                                          </AnimatePresence>
+                                        </React.Fragment>
                                       );
                                     })}
                                   </AnimatePresence>
