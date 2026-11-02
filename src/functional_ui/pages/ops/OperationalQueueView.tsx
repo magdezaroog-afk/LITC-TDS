@@ -2019,14 +2019,14 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
           <div
             className="unified-operations-canvas-card"
             style={{
-              background: isDark ? 'rgba(18, 21, 28, 0.78)' : 'rgba(255, 255, 255, 0.94)',
+              background: isDark ? 'rgba(18, 21, 28, 0.55)' : 'rgba(255, 255, 255, 0.75)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
               border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.07)',
               borderRadius: isMobile ? '16px' : '20px',
               padding: isMobile ? '14px 10px' : '24px 28px',
               boxShadow: isDark ? '0 12px 36px rgba(0, 0, 0, 0.45)' : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03)',
-              minHeight: isMobile ? 'auto' : '780px',
+              minHeight: 'auto',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
@@ -3020,38 +3020,50 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                         className={isRail ? 'ops-tickets-rail-item' : ''}
                         style={isRail ? undefined : { minWidth: 0, height: '100%' }}
                       >
-                        <CinemaTicketFrame
-                          accentColor={accentColor}
-                          isSelected={inspectTicket?.id === ticket.id}
-                          alwaysGlow={bizPriority === 'CRITICAL' || bizPriority === 'URGENT'}
-                          cornerCutout={7}
-                          notchRadius={3.5}
-                          numNotches={2}
-                          dashIndent={10}
-                          contentPadding="12px 14px"
-                          customFill={isDark ? 'rgba(15, 23, 42, 0.92)' : '#ffffff'}
+                        <div
                           onClick={() => setInspectTicket(ticket)}
                           style={{
                             width: '100%',
                             height: '100%',
-                            minHeight: isMobile ? '205px' : '235px',
+                            minHeight: isMobile ? '205px' : '225px',
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             cursor: 'pointer',
-                            transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                            borderRadius: '16px',
+                            background: inspectTicket?.id === ticket.id
+                              ? (isDark ? 'linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))' : 'linear-gradient(145deg, rgba(238, 242, 255, 0.98), rgba(224, 231, 255, 0.95))')
+                              : (isDark ? 'linear-gradient(145deg, rgba(20, 26, 38, 0.88), rgba(11, 16, 26, 0.92))' : 'linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.92))'),
+                            border: inspectTicket?.id === ticket.id
+                              ? '1.5px solid #0284c7'
+                              : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.08)'),
+                            borderRight: `4px solid ${accentColor}`,
+                            boxShadow: isDark
+                              ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                              : '0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.03)',
+                            padding: '14px 16px',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxSizing: 'border-box'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.transform = 'translateY(-3px)';
+                            e.currentTarget.style.boxShadow = isDark
+                              ? '0 16px 32px -6px rgba(0, 0, 0, 0.65)'
+                              : '0 12px 30px -4px rgba(15, 23, 42, 0.1)';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = isDark
+                              ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                              : '0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.03)';
                           }}
                         >
                           {/* Card Content Top & Middle */}
                           <div>
                             {/* Card Header: Code Badge + Priority Lamp + Status */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '10px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                                 <div style={{
                                   width: '24px',
@@ -3076,36 +3088,37 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                               </div>
                             </div>
 
-                            {/* Service Flow Category: ONLY if operator handles multiple routes */}
+                            {/* Service Route Category: ONLY if operator handles multiple routes */}
                             {hasMultipleRoutes && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '7px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                                 <span style={{
-                                  fontSize: '10px',
+                                  fontSize: '10.5px',
                                   color: '#6366f1',
                                   background: isDark ? 'rgba(99, 102, 241, 0.14)' : '#eef2ff',
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
+                                  border: isDark ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(99, 102, 241, 0.2)',
+                                  padding: '1.5px 7px',
+                                  borderRadius: '5px',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '3px',
+                                  gap: '3.5px',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap'
                                 }}>
-                                  <Layers size={9.5} color="#6366f1" />
-                                  <span style={{ fontWeight: 700 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
+                                  <Layers size={10} color="#6366f1" />
+                                  <span style={{ fontWeight: 800 }}>{ticket.flowDefinitionName || 'مسار عام'}</span>
                                 </span>
                               </div>
                             )}
 
                             {/* Ticket Subject/Title */}
                             <h3 style={{
-                              margin: '0 0 6px 0',
-                              fontSize: '13px',
+                              margin: '0 0 8px 0',
+                              fontSize: '13.5px',
                               fontWeight: 800,
                               color: isDark ? '#ffffff' : '#0f172a',
-                              fontFamily: "'Tajawal', sans-serif",
-                              lineHeight: 1.45,
+                              fontFamily: "'Tajawal', 'Cairo', sans-serif",
+                              lineHeight: 1.5,
                               display: '-webkit-box',
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
@@ -3115,7 +3128,7 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                             </h3>
 
                             {/* Sub-badges (Handover / Sub-ticket) */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
                               {ticket.isPendingHandover && (
                                 <span style={{
                                   background: isDark ? 'rgba(245, 158, 11, 0.2)' : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
@@ -3178,71 +3191,67 @@ export const OperationalQueueView: React.FC<OperationalQueueViewProps> = ({ hide
                               )}
                             </div>
 
-                            {/* Detailed Metadata: Requester & Requester Department + Target Dept + Assignee */}
+                            {/* Detailed Metadata: Requester & Requester Department + Building */}
                             <div style={{
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '3.5px',
+                              gap: '4px',
                               fontSize: '11px',
                               color: isDark ? '#94a3b8' : '#64748b',
                               fontFamily: "'Cairo', sans-serif",
-                              marginTop: '5px',
+                              marginTop: '2px',
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <User size={12} color="#6366f1" style={{ flexShrink: 0 }} />
-                                <span style={{ color: isDark ? '#cbd5e1' : '#334155', fontWeight: 700 }}>
+                                <span style={{ color: isDark ? '#e2e8f0' : '#1e293b', fontWeight: 800 }}>
                                   {ticket.creatorName || ticket.creator?.fullName || 'غير معروف'}
                                 </span>
-                                <span style={{ color: '#94a3b8', fontSize: '10px' }}>
-                                  ({ticket.creator?.department?.name || ticket.departmentName || 'إدارة التشغيل'})
+                                <span style={{ color: '#94a3b8', fontSize: '10.5px' }}>
+                                  ({ticket.creator?.department?.name || ticket.creatorDepartment || ticket.departmentName || 'إدارة التشغيل'})
                                 </span>
                               </div>
-
-                              {ticket.creatorBuilding && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  <Building2 size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
-                                  <span>المبنى: {ticket.creatorBuilding}</span>
-                                </div>
-                              )}
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <Building2 size={12} color="#0284c7" style={{ flexShrink: 0 }} />
-                                <span>المختصة: {ticket.departmentName || 'إدارة الخدمات'}</span>
+                                <span style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '10.5px', fontWeight: 600 }}>
+                                  {ticket.creatorBuilding || 'المبنى الرئيسي (كم/4)'}
+                                </span>
                               </div>
-
-                              {ticket.assignedTo ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isDark ? '#a5b4fc' : '#4f46e5', fontWeight: 700, fontSize: '10.5px' }}>
-                                  <ShieldCheck size={12} style={{ flexShrink: 0 }} />
-                                  <span>المسؤول: {ticket.assignedTo.fullName}</span>
-                                </div>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isDark ? '#38bdf8' : '#0284c7', fontWeight: 700, fontSize: '10.5px' }}>
-                                  <Zap size={12} style={{ flexShrink: 0 }} />
-                                  <span>شاغر (غير مسند - بالحوض)</span>
-                                </div>
-                              )}
                             </div>
                           </div>
 
-                          {/* Card Footer: Timestamp and Click hint (Clicking anywhere on card opens details) */}
+                          {/* Card Footer: Assignee & Timestamp */}
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            paddingTop: '8px',
-                            borderTop: isDark ? '1px dashed rgba(255, 255, 255, 0.08)' : '1px dashed #e2e8f0',
+                            paddingTop: '9px',
+                            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(15, 23, 42, 0.06)',
                             marginTop: '10px',
                             gap: '8px',
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isDark ? '#cbd5e1' : '#334155', fontSize: '11px', fontWeight: 700 }}>
-                              <Clock size={11} color="#64748b" />
-                              <span>{timeAgoStr}</span>
+                            {/* Assignee info on right */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                              {ticket.assignedTo ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#a5b4fc' : '#4f46e5', fontWeight: 800, fontSize: '10.5px' }}>
+                                  <ShieldCheck size={12} style={{ flexShrink: 0 }} />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ticket.assignedTo.fullName}</span>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#38bdf8' : '#0284c7', fontWeight: 800, fontSize: '10.5px' }}>
+                                  <Zap size={12} style={{ flexShrink: 0 }} />
+                                  <span>شاغر بالحوض</span>
+                                </div>
+                              )}
                             </div>
-                            <div style={{ fontSize: '9.5px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                              {timeStr}
+
+                            {/* Timestamp on left */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isDark ? '#94a3b8' : '#64748b', fontSize: '10.5px', fontWeight: 600, flexShrink: 0 }}>
+                              <Clock size={11} />
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{timeAgoStr}</span>
                             </div>
                           </div>
-                        </CinemaTicketFrame>
+                        </div>
                       </motion.div>
                     );
                   };
