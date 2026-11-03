@@ -8,7 +8,7 @@ generator client {
 }
 
 // ==========================================
-// 1. إدارة الهوية والأمان والموارد والموقع
+// 1. Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‡ÙˆÙŠØ© ÙˆØ§Ù„Ø£Ù…Ø§Ù† ÙˆØ§Ù„Ù…ÙˆØ§Ø±Ø¯ ÙˆØ§Ù„Ù…ÙˆÙ‚Ø¹
 // ==========================================
 
 model User {
@@ -54,9 +54,9 @@ model User {
   department   Department? @relation("DeptMembers", fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   buildingId Int?
-  // ⚠️ ARCH-NOTE: buildingId references SystemReference.id (INT auto-increment).
+  // âš ï¸ ARCH-NOTE: buildingId references SystemReference.id (INT auto-increment).
   // SystemReference uses globalId (UUID) as the upsert key.
-  // If a building is deleted and re-created with the same globalId, the INT id changes → FK breaks silently.
+  // If a building is deleted and re-created with the same globalId, the INT id changes â†’ FK breaks silently.
   // FUTURE MIGRATION REQUIRED: Change FK to reference globalId (unique) instead of id.
   building   SystemReference? @relation("BuildingUsers", fields: [buildingId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
@@ -134,7 +134,7 @@ model Role {
 }
 
 // ==========================================
-// 2. الهيكل التنظيمي والفرق المتعددة
+// 2. Ø§Ù„Ù‡ÙŠÙƒÙ„ Ø§Ù„ØªÙ†Ø¸ÙŠÙ…ÙŠ ÙˆØ§Ù„ÙØ±Ù‚ Ø§Ù„Ù…ØªØ¹Ø¯Ø¯Ø©
 // ==========================================
 
 model Department {
@@ -189,7 +189,7 @@ model UserTeam {
 // ==========================================
 
 // ==========================================
-// 3. محرك الواجهات، التخصيص الديناميكي والإعدادات
+// 3. Ù…Ø­Ø±Ùƒ Ø§Ù„ÙˆØ§Ø¬Ù‡Ø§ØªØŒ Ø§Ù„ØªØ®ØµÙŠØµ Ø§Ù„Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠ ÙˆØ§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª
 // ==========================================
 model SystemSetting {
   id           Int      @id @default(autoincrement())
@@ -256,15 +256,15 @@ model WAFRule {
 }
 
 // ==========================================
-// 4. إدارة الأصول، المعدات والبنية التحتية ونوافذ الصيانة
+// 4. Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø£ØµÙˆÙ„ØŒ Ø§Ù„Ù…Ø¹Ø¯Ø§Øª ÙˆØ§Ù„Ø¨Ù†ÙŠØ© Ø§Ù„ØªØ­ØªÙŠØ© ÙˆÙ†ÙˆØ§ÙØ° Ø§Ù„ØµÙŠØ§Ù†Ø©
 // ==========================================
 
 // ==========================================
-// 5. قاعدة المعرفة، الوسوم، أكواد الإغلاق، الموردين والأولويات
+// 5. Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ù…Ø¹Ø±ÙØ©ØŒ Ø§Ù„ÙˆØ³ÙˆÙ…ØŒ Ø£ÙƒÙˆØ§Ø¯ Ø§Ù„Ø¥ØºÙ„Ø§Ù‚ØŒ Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ† ÙˆØ§Ù„Ø£ÙˆÙ„ÙˆÙŠØ§Øª
 // ==========================================
 
 // ==========================================
-// 6. التذاكر وحوكمة الحالات والتصعيد
+// 6. Ø§Ù„ØªØ°Ø§ÙƒØ± ÙˆØ­ÙˆÙƒÙ…Ø© Ø§Ù„Ø­Ø§Ù„Ø§Øª ÙˆØ§Ù„ØªØµØ¹ÙŠØ¯
 // ==========================================
 model IssueCategory {
   id            Int             @id @default(autoincrement())
@@ -331,7 +331,7 @@ model Ticket {
   routeId          String?
   routingMetadata  String?         @db.NVarChar(Max)
 
-  // ─── Asset Inventory & Satellite Integration (Bi-directional Binding) ───
+  // â”€â”€â”€ Asset Inventory & Satellite Integration (Bi-directional Binding) â”€â”€â”€
   assetId                String?   // Device ID in Asset Inventory (e.g. DEV-1042)
   assetName              String?   // Device Name/Model
   assetCategory          String?   // Category (PC, PRINTER, NETWORK, etc.)
@@ -340,7 +340,7 @@ model Ticket {
   assetSyncStatus        String?   @default("NONE") // NONE, PENDING_RECONNECT, SYNCED, MANUAL_VERIFICATION_REQUIRED
   assetResolutionLocked  Boolean   @default(false) // Gated Resolution: Cannot close ticket until asset is verified
   
-  // ─── Dual-Type Internal Ticket Architecture ───
+  // â”€â”€â”€ Dual-Type Internal Ticket Architecture â”€â”€â”€
   isInternalRequest      Boolean   @default(false) // Standalone or Linked Internal Request
   internalScope          String?   // TEAM, DEPARTMENT, CROSS_DEPT
 
@@ -399,7 +399,7 @@ model TicketAssignment {
 }
 
 // ==========================================
-// 7. محرك الـ SLA، الإشعارات، والتدقيق الشامل
+// 7. Ù…Ø­Ø±Ùƒ Ø§Ù„Ù€ SLAØŒ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§ØªØŒ ÙˆØ§Ù„ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„Ø´Ø§Ù…Ù„
 // ==========================================
 
 model BusinessHours {
@@ -514,7 +514,7 @@ model UECPAuditLog {
 // REMOVED SecurityAuditLog, using SecurityEventLog instead
 
 // ==========================================
-// 13. محرك المسارات الديناميكية (Dynamic Flow Engine)
+// 13. Ù…Ø­Ø±Ùƒ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ© (Dynamic Flow Engine)
 // ==========================================
 
 model FormSchema {
@@ -561,7 +561,7 @@ model FlowUserPermission {
   flowId String
   flow   FlowDefinition @relation(fields: [flowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // الركيزة الأولى: الصلاحيات التشغيلية
+  // Ø§Ù„Ø±ÙƒÙŠØ²Ø© Ø§Ù„Ø£ÙˆÙ„Ù‰: Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„ØªØ´ØºÙŠÙ„ÙŠØ©
   canViewPool         Boolean @default(true)
   canPull             Boolean @default(false)
   canTransferInternal Boolean @default(false)
@@ -570,7 +570,7 @@ model FlowUserPermission {
   canReopen           Boolean @default(false)
   canAddInternalNotes Boolean @default(true)
 
-  // الركيزة الثالثة: معايرة أولوية الإدارة
+  // Ø§Ù„Ø±ÙƒÙŠØ²Ø© Ø§Ù„Ø«Ø§Ù„Ø«Ø©: Ù…Ø¹Ø§ÙŠØ±Ø© Ø£ÙˆÙ„ÙˆÙŠØ© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©
   canCalibratePriority Boolean @default(false)
 
   grantedById Int?
@@ -663,7 +663,7 @@ model TicketFlowProgress {
 }
 
 // ==========================================
-// 14. مرفقات التذاكر الذكية (Smart File Storage)
+// 14. Ù…Ø±ÙÙ‚Ø§Øª Ø§Ù„ØªØ°Ø§ÙƒØ± Ø§Ù„Ø°ÙƒÙŠØ© (Smart File Storage)
 // ==========================================
 
 model TicketFile {
@@ -684,7 +684,7 @@ model TicketFile {
 }
 
 // ==========================================
-// 15. تعليقات التذاكر
+// 15. ØªØ¹Ù„ÙŠÙ‚Ø§Øª Ø§Ù„ØªØ°Ø§ÙƒØ±
 // ==========================================
 
 model TicketComment {
@@ -703,7 +703,7 @@ model TicketComment {
 }
 
 // ==========================================
-// 16. تقييم الخدمة
+// 16. ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ø®Ø¯Ù…Ø©
 // ==========================================
 
 model TicketRating {
@@ -716,7 +716,7 @@ model TicketRating {
 }
 
 // ==========================================
-// 17. بيانات الأنظمة الخارجية (External Enrichment)
+// 17. Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ù†Ø¸Ù…Ø© Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠØ© (External Enrichment)
 // ==========================================
 
 model ExternalDataSnapshot {
@@ -767,7 +767,7 @@ model WebhookSubscription {
 }
 
 // ==========================================
-// 19. سياسات المكونات وحوكمة المشرفين
+// 19. Ø³ÙŠØ§Ø³Ø§Øª Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª ÙˆØ­ÙˆÙƒÙ…Ø© Ø§Ù„Ù…Ø´Ø±ÙÙŠÙ†
 // ==========================================
 model UserComponentPolicy {
   id                      Int      @id @default(autoincrement())
@@ -829,7 +829,7 @@ model DynamicField {
 }
 
 // ==========================================
-// 21. Social & Gamification (AI Studio Functional UI)
+// 21. Corporate Communication & Knowledge Hub
 // ==========================================
 
 model OfficialNews {
@@ -1012,7 +1012,7 @@ model PublishingAuthority {
 }
 
 // ==========================================
-// 22. حوكمة صلاحيات التحليلات المتقاطعة (Cross-Department Analytics Governance)
+// 22. Ø­ÙˆÙƒÙ…Ø© ØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„ØªØ­Ù„ÙŠÙ„Ø§Øª Ø§Ù„Ù…ØªÙ‚Ø§Ø·Ø¹Ø© (Cross-Department Analytics Governance)
 // ==========================================
 model AnalyticsPermission {
   id           String     @id @default(cuid())
@@ -1034,7 +1034,7 @@ model AnalyticsPermission {
 }
 
 // ==========================================
-// 23. طابور المزامنة العكسية مع منظومة جرد الأصول (Bi-Directional Asset Sync Outbox)
+// 23. Ø·Ø§Ø¨ÙˆØ± Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¹ÙƒØ³ÙŠØ© Ù…Ø¹ Ù…Ù†Ø¸ÙˆÙ…Ø© Ø¬Ø±Ø¯ Ø§Ù„Ø£ØµÙˆÙ„ (Bi-Directional Asset Sync Outbox)
 // ==========================================
 model AssetSyncOutbox {
   id              Int       @id @default(autoincrement())
